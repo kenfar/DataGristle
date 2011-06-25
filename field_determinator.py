@@ -35,6 +35,11 @@ import math
 
 DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01
 DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01
+DATE_MAX_LEN           = 26
+DATE_INVALID_CHARS = ['`','`','!','@','#','$','%','^','&','*','(',')',
+                      '_','+','=','[','{','}','}','|',
+                      ';','"',"'",'<','>','?',
+                      'q','z','x']
 DATE_FORMATS = [ # <scope>, <pattern>, <format>
                 ("year",   "YYYY",           "%Y"),
                 ("month",  "YYYYMM",         "%Y%m"),
@@ -610,35 +615,6 @@ def is_unknown_value(value):
         return False
        
 
-def datetime_basic_check(time_str):
-    """ Performs initial checks to determine if the string could possibly
-        be a timestamp of some type.
-        To do: improve logic - it's very primitive
-    """
-    invalid_chars = ['`','`','!','@','#','$','%','^','&','*','(',')',
-                     '_','+','=','[','{','}','}','|',
-                     ';','"',"'",'<','>','?',
-                     'q','z','x']
-    #valid_chars   = ['-', '/', ':', ',', '.']  # just for reference
-    MAX_LEN       = 23 # for all-numeric & symbol timestamp
-
-    if len(time_str) == 0:
-       return False
-
-    for char in list(time_str):
-       if char in invalid_chars:
-           return False
-
-    if time_str != time_str.lower():
-       return False
-    elif time_str != time_str.upper():
-       return False
-    elif len(time_str) > MAX_LEN:
-       return False
-    else:
-       return True
-
-
 def is_timestamp(time_str):
     """ Determine if arg is a timestamp and if so what format
 
@@ -648,7 +624,15 @@ def is_timestamp(time_str):
            status   - True if date/time False if not
            scope    - kind of timestamp
            pattern  - date mask
+
+        To do:
+           - consider overrides to default date min & max epoch limits
+           - consider consolidating epoch checks with rest of checks
     """
+    non_date = (False, None, None)
+    if len(time_str) > DATE_MAX_LEN:
+       return non_date
+   
     try:
        float_str = float(time_str)
        if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:

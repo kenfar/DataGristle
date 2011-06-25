@@ -5,7 +5,7 @@ Its objectives include:
    * multi-language (primarily python)
    * free - no cripple-licensing
    * primary audience is programming data analysts - not non-technical analysts
-   * primary environment is command-line rather han windows, graphical desktop
+   * primary environment is command-line rather than windows, graphical desktop
      or eclipse
    * extensible
    * allow a bi-directional iteration between ETL & data analysis
@@ -14,11 +14,14 @@ DEPENDENCIES
    * Python 2.6
 
 COMPONENTS
+   * file_determinator.py 
+       - identifies file formats, generates metadata
+       - status:  90% complete
+   * field_determinator.py 
+       - identifies field formats, generates metadata
+       - status:  80% complete
    * metadata.py 
        - manages metadata
-   * file_determinator.py 
-       - identifies file and field formats, generates metadata
-       - status:  70% complete
    * file_converter 
        - converts a file into a new format
        - conversions include compression, delimited/fixed-length, delimiter, 

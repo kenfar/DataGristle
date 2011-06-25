@@ -19,35 +19,28 @@ def suit():
 
 
 
-class TestDatetimeChecker(unittest.TestCase):
+class Test_is_timestamp(unittest.TestCase):
 
     def setUp(self):
-        self.MyCheck = mod.DatetimeChecker()
+        pass
 
     def tearDown(self):
         pass
 
     def runner(self, date):
-        result, scope, pattern = self.MyCheck.datetime_check(date)
+        result, scope, pattern = mod.is_timestamp(date)
         return result, scope
  
-    def test_datetime_basic_check(self):
-        assert(self.MyCheck.datetime_basic_check("blah") is False)
-        assert(self.MyCheck.datetime_basic_check("blah2foop") is False)
-        assert(self.MyCheck.datetime_basic_check("$100") is False)
-        assert(self.MyCheck.datetime_basic_check("") is False)
-        #assert(self.MyCheck.datetime_basic_check(None) is False)
-
-        assert(self.MyCheck.datetime_basic_check("2011-03-11") is True)
-        assert(self.MyCheck.datetime_basic_check("2011-03-11 03:02:01.99") is True)
-        assert(self.MyCheck.datetime_basic_check("2011") is True)
-
-    def test_DatetimeChecker(self):
+    def test_failures(self):
         assert(self.runner("0")         == (False, None))
         assert(self.runner("-4")        == (False, None))
         assert(self.runner("-4.7")      == (False, None))
         assert(self.runner("blah")      == (False, None))
+        assert(self.runner("blah")      == (False, None))
+        assert(self.runner("2009 ")     == (False, None))
+        assert(self.runner("2009 ")     == (False, None))
 
+    def test_real_dates(self):
         assert(self.runner("1172969203.1")   == (True, 'second'))
 
         assert(self.runner("2009")   == (True, 'year'))
@@ -80,9 +73,6 @@ class TestDatetimeChecker(unittest.TestCase):
         assert(self.runner("2009-10-06-18") == (True, 'hour'))
         assert(self.runner("2009-10-06-03.02.01") == (True, 'second'))
 
-        assert(self.runner("blah")  == (False, None))
-        assert(self.runner("2009 ") == (False, None))
-        assert(self.runner("2009 ") == (False, None))
 
 
 
