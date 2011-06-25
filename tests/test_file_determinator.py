@@ -57,7 +57,7 @@ class TestQuotedCSV(unittest.TestCase):
 
     def testMisc(self):
         assert(self.MyTest.record_number == self.record_number)
-        assert(self.MyTest.field_number == 4)
+        assert(self.MyTest.field_cnt == 4)
         assert(self.MyTest.format_type == 'csv')
         assert(self.MyTest.dialect.delimiter == self.delimiter)
         assert(self.MyTest.csv_quoting == self.quoting)
@@ -79,7 +79,7 @@ class TestNonQuotedCSV(unittest.TestCase):
 
     def testMisc(self):
         assert(self.MyTest.record_number == self.record_number)
-        assert(self.MyTest.field_number == 4)
+        assert(self.MyTest.field_cnt == 4)
         assert(self.MyTest.format_type == 'csv')
         assert(self.MyTest.dialect.delimiter == self.delimiter)
         assert(self.MyTest.csv_quoting == self.quoting)

@@ -1,7 +1,9 @@
 #!/usr/bin/env python2.7
 """ Purpose of this module is to identify the types of fields
-    Classes include:
+    Classes & Functions Include:
       FieldTyper   - class runs all checks on all fields
+      get_field_type()
+      get_type()
       is_timestamp() - determines if arg is a timestamp of some type
       is_float()   - determines if arg is a number
       is_integer() - determines if arg is a number
@@ -10,8 +12,6 @@
       get_min()
       get_max()
       get_median()
-      get_field_type()
-      get_type()
     Todo:
       - change get_types to consider whatever has 2 STDs 
       - replace get_types freq length logic with something that says, if all types
@@ -88,12 +88,12 @@ class FieldTyper(object):
     def __init__(self        , 
                  filename    , 
                  format_type , 
-                 field_number,
+                 field_cnt   ,
                  has_header  ,
                  dialect):
         self.filename            = filename
         self.format_type         = format_type
-        self.field_number        = field_number
+        self.field_cnt           = field_cnt
         self.has_header          = has_header
         self.dialect             = dialect
 
@@ -116,7 +116,7 @@ class FieldTyper(object):
         """ Determines types & names of fields
         """
         
-        for f_no in range(self.field_number):
+        for f_no in range(self.field_cnt):
             if field_number:
                if f_no <> field_number:
                   continue

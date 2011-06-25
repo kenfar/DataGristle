@@ -52,10 +52,10 @@ def main():
     # Get Analysis on ALL Fields:
     MyFields = fielder.FieldTyper(opts.filename,
                                   MyFile.format_type,
-                                  MyFile.field_number,
+                                  MyFile.field_cnt,
                                   MyFile.has_header,
                                   MyFile.dialect)
-    MyFields.analyze_fields(opts.field_number)
+    MyFields.analyze_fields(opts.column_number)
 
     if opts.verbose:
         print print_field_info(MyFile, MyFields)
@@ -67,7 +67,7 @@ def print_file_info(MyFile):
         print 
         print 'File Structure:'
         print '  format type      = %s'     % MyFile.format_type
-        print '  field_number     = %d'     % MyFile.field_number
+        print '  field_cnt        = %d'     % MyFile.field_cnt
         print '  record number    = %d'     % MyFile.record_number
         print '  has header       = %s'     % MyFile.has_header
 
@@ -147,7 +147,7 @@ def get_opts_and_args():
     elif not os.path.exists(opts.filename):
         parser.error("filename %s could not be accessed" % opts.filename)
 
-    if opts.brief and opts.field_number:
+    if opts.brief and opts.column_number:
         parser.error('must not specify both brevity and column number')
 
     return opts, args
@@ -175,7 +175,7 @@ class FileTyper(object):
         self.has_header           = None
         self.format_type          = None
         self.fixed_length         = None
-        self.field_number         = None
+        self.field_cnt            = None
         self.record_number        = None
         self.csv_quoting          = None
         self.dialect              = None # python csv module variable
@@ -187,7 +187,7 @@ class FileTyper(object):
         self.format_type   = self._get_format_type()
         self.dialect       = self._get_dialect()
         self.has_header    = self._has_header()
-        self.field_number  = self._get_field_number()
+        self.field_cnt     = self._get_field_cnt()
         self.record_number = self._count_records()
         if QUOTE_DICT[self.dialect.quoting] == 'QUOTE_NONE':
             self.csv_quoting = False
@@ -214,7 +214,7 @@ class FileTyper(object):
         sample      = open(self.fqfn, 'r').read(50000)
         return csv.Sniffer().has_header(sample)
         
-    def _get_field_number(self):
+    def _get_field_cnt(self):
         """ determines the number of fields in the file.
  
             To do:  make it less naive - it currently assumes that all #recs
