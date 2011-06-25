@@ -1,5 +1,0 @@
-Conclusions:
-
-1.  long month & day names use all but 3 letters (q, x, z)
-2.  limiting month names to 3 characters does not further reduce the letters used
-3.  limiting day names to 3-5 characters also fails to further reduce letters used
