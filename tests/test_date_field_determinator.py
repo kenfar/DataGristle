@@ -74,9 +74,6 @@ class Test_is_timestamp(unittest.TestCase):
         assert(self.runner("2009-10-06-03.02.01") == (True, 'second'))
 
 
-
-
-
 if __name__ == "__main__":
     unittest.main()
 
