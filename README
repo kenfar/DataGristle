@@ -1,0 +1,60 @@
+Gristle is a tough and flexible data connection and analysis set of libraries and utilities.
+
+Its objectives include:
+   * multi-platform (linux, mac os, windows)
+   * multi-language (primarily python)
+   * free - no cripple-licensing
+   * primary audience is programming data analysts - not non-technical analysts
+   * primary environment is command-line rather han windows, graphical desktop
+     or eclipse
+   * extensible
+   * allow a bi-directional iteration between ETL & data analysis
+
+DEPENDENCIES
+   * Python 2.6
+
+COMPONENTS
+   * metadata.py 
+       - manages metadata
+   * file_determinator.py 
+       - identifies file and field formats, generates metadata
+       - status:  70% complete
+   * file_converter 
+       - converts a file into a new format
+       - conversions include compression, delimited/fixed-length, delimiter, 
+         string quoting, etc
+   * file_validator 
+       - confirms validity of file format & contents
+   * file_differ
+       - compares two structured files and report to writes out the differences
+   * file_joiner
+       - joins two files on their common keys and produces a new file
+   * file_aggregator
+       - reads a file, aggregates on a given set of fields, produces a new file
+   * file_misc
+       - misc file utiltities, including:
+           - file-name parsing
+   * db_validator 
+       - confirms validity of database contents
+   * db_loader.py 
+       - loads a file into a database
+   * db_extractor.py 
+       - extracts data from a database into a file
+   * process_misc
+       - manages audit data (process & business rule)
+       - assigns run_ids
+       - tracks all files
+   * analysis_misc
+     - place-holder for misc analysis functions like:
+         - histogram
+         - histogram-comparison
+         - aggregation
+         - uniqueness 
+         - distinct_counter 
+         - etc
+
+LICENSING
+   * Gristle uses the BSD license - see the separate LICENSE file for further 
+     information
+
+

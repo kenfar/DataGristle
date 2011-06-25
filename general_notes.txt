@@ -1,0 +1,46 @@
+1.  determine:
+    - field types                         - done
+    - format consistency
+    - field min & max values              - done
+    - field names                         - done
+    - field 
+    - field correlations
+    - field histogram                     - done
+    - file web page?
+    - find invalid characters
+    - find inconsistent code sets
+    - find required vs optional fields
+    - shallow determinator vs deep-determinator
+
+2.  metadata
+    - allow use of yaml (decentralized) or central repository
+    - generate metadata
+
+3.  what it isn't
+    - enterprise ETL tool
+
+4.  other markup languages:
+    - xml
+      - consider mapping each field as an xpath in regular metadata database
+    - yaml
+    - json
+
+5.  misc
+    - licensing
+    - copyright
+    - readme
+    - setup tools
+    - testing for various versions of python
+
+6.  histogrammer
+    - automatic bucketing:
+      - integers:    
+        - min & max range calculation - then determine buckets from that
+      - dates & times
+        - min & max range calculation
+      - strings
+        - sort file - take most common?
+        - change to all lower case?
+        - truncate?
+        - hash?
+    
