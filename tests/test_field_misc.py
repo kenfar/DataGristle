@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+#  See the file "LICENSE" for the full license governing this code. 
+
+import sys
+import os
+import tempfile
+import random
+import unittest
+
+sys.path.append('../lib')
+import field_misc  as mod
+
+
+def suit():
+    suite = unittest.TestSuit()
+    suite.addTest(unittest.makeSuite(TestSomething))
+
+    return suite
+
+
+
+class Test_get_case(unittest.TestCase):
+
+    def setUp(self):
+        self.test_u1 = ['AAA','BBB','CCC']
+        self.test_u2 = ['AAA','BBB','CCC','$B']
+        self.test_u2 = ['AAA','BBB','CCC','D`~!@#$%^&*()-+=[{]}']
+
+        self.test_m1 = ['aaa','bbb','ccc']
+        self.test_m2 = ['aaa','BBB','ccc']
+
+        self.test_unk1 = ['111','222','333']
+        self.test_unk2 = []
+
+    def tearDown(self):
+        pass
+ 
+    def test_1(self):
+        assert(mod.get_case('string', self.test_u1) == 'upper')
+        assert(mod.get_case('string', self.test_u2) == 'upper')
+
+        assert(mod.get_case('string', self.test_m1) == 'lower')
+        assert(mod.get_case('string', self.test_m2) == 'mixed')
+
+        assert(mod.get_case('string', self.test_unk1) == 'unknown')
+        assert(mod.get_case('string', self.test_unk2) == 'unknown')
+
+
+
+class TestGetFieldNames(unittest.TestCase):
+
+    def setUp(self):
+        header_rec = 'name,phone,gender,age'
+        data_rec = 'ralph,719-555-1212,m,39'
+
+        (fd1, self.header_fqfn) = tempfile.mkstemp()
+        fp1 = os.fdopen(fd1,"w")
+        fp1.write(header_rec)
+        fp1.write(data_rec)
+        fp1.close()
+
+        (fd2, self.headless_fqfn) = tempfile.mkstemp()
+        fp2 = os.fdopen(fd2,"w")
+        fp2.write(data_rec)
+        fp2.close()
+
+        (fd3, self.empty_fqfn) = tempfile.mkstemp()
+        fp3 = os.fdopen(fd3,"w")
+        fp3.close()
+
+    def tearDown(self):
+        os.remove(self.header_fqfn)
+        os.remove(self.headless_fqfn)
+        os.remove(self.empty_fqfn)
+
+    def test_header(self):
+        assert(mod.get_field_names(self.header_fqfn,1, True, ',') == 'phone')
+
+    def test_headless(self):
+        assert(mod.get_field_names(self.headless_fqfn,1, False, ',') == 'field_num_1')
+
+    def test_empty(self):
+        assert(mod.get_field_names(self.empty_fqfn,1, True, ',') is None )
+
+
+
+class TestMinAndMax(unittest.TestCase):
+
+    def setUp(self):
+        self.empty_dict  = {}
+        self.empty_list  = []
+        self.easy_dict   = {'Wyoming': 3,
+                            'Nevada':  2,
+                            'Texas':   4}
+        self.easy_list   = ['Wyoming',
+                            'Nevada',
+                            'Texas' ]
+        self.unk_list    = ['UNK',
+                            'unknown',
+                            ' ',
+                            'Nevada',
+                            'Texas' ]
+        self.unk_dict    = {'UNK':1    ,
+                            'unknown':3,
+                            ' ':99     ,
+                            'Nevada':4 ,
+                            'Texas': 4}
+        self.num_dict    = {'9':1      ,
+                            '202':3    ,
+                            ' ':99     ,
+                            '51':4     ,
+                            '777':2    ,
+                            '11':2 }
+    def tearDown(self):
+        pass
+
+    def test_emptiness(self):
+        assert(mod.get_max('string', self.empty_dict) is None)
+        assert(mod.get_max('string', self.empty_list) is None)
+        assert(mod.get_min('string', self.empty_dict) is None)
+        assert(mod.get_min('string', self.empty_list) is None)
+
+    def test_easy_dict(self):
+        assert(mod.get_max('string', self.easy_dict)  == 'Wyoming')
+        assert(mod.get_min('string', self.easy_dict)  == 'Nevada')
+
+    def test_easy_list(self):
+        assert(mod.get_max('string', self.easy_list)  == 'Wyoming')
+        assert(mod.get_min('string', self.easy_list)  == 'Nevada')
+
+    def test_unknowns(self):
+        assert(mod.get_max('string', self.unk_list)  == 'Texas')
+        assert(mod.get_max('string', self.unk_dict)  == 'Texas')
+        assert(mod.get_min('string', self.unk_dict)  == 'Nevada')
+        assert(mod.get_min('string', self.unk_list)  == 'Nevada')
+
+    def test_mins(self):
+        assert(mod.get_min('integer', self.num_dict)  == '9')
+
+
+
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+
+
