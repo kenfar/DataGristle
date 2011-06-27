@@ -21,8 +21,7 @@ import field_type as typer
 
 #--- CONSTANTS -----------------------------------------------------------
 
-MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
-
+MAX_FREQ_SIZE_DEFAULT  = 10000     # limits entries within freq dictionaries
 
 
 def get_field_names(filename, 
@@ -103,23 +102,25 @@ def get_case(field_type, values):
 def get_field_freq(filename, 
                    field_number,
                    has_header,
-                   field_delimiter):
+                   field_delimiter,
+                   max_freq_size=MAX_FREQ_SIZE_DEFAULT):
     """ Collects a frequency distribution for a single field by reading
         the file provided.
     """
-
-    freq  = collections.defaultdict(int)
-    rec_cnt = 0
+    freq      = collections.defaultdict(int)
+    rec_cnt   = 0
+    truncated = False
     for rec in csv.reader(open(filename,'r'), delimiter=field_delimiter):
         rec_cnt += 1
         if rec_cnt == 1 and has_header:
             continue
         freq[rec[field_number]] += 1
-        if len(freq) > MAX_FREQ_SIZE:
+        if len(freq) >= max_freq_size:
             print 'WARNING: freq is getting too large - will truncate'
+            truncated = True
             break
         
-    return freq
+    return freq, truncated
 
 
 

@@ -29,8 +29,6 @@ import field_misc   as miscer
 
 #--- CONSTANTS -----------------------------------------------------------
 
-MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
-
 
 
 class FieldDeterminator(object):
@@ -45,6 +43,7 @@ class FieldDeterminator(object):
           - self.field_case   - dictionary with fieldnumber key
           - self.field_min_length   - dictionary with fieldnumber key
           - self.field_max_length   - dictionary with fieldnumber key
+          - self.field_trunc  - dictionary with fieldnumber key
     """
 
     def __init__(self        , 
@@ -69,6 +68,7 @@ class FieldDeterminator(object):
         self.field_case          = {}
         self.field_max_length    = {}
         self.field_min_length    = {}
+        self.field_trunc         = {}
 
         #--- public field frequency distributions - organized by field number
         #--- each dictionary has a collection within it:
@@ -99,7 +99,8 @@ class FieldDeterminator(object):
                                            self.has_header,
                                            self.dialect.delimiter)
 
-            self.field_freqs[f_no]   = miscer.get_field_freq(self.filename, 
+            (self.field_freqs[f_no],
+            self.field_trunc[f_no])  = miscer.get_field_freq(self.filename, 
                                            f_no, 
                                            self.has_header,
                                            self.dialect.delimiter)

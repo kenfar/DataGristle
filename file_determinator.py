@@ -86,12 +86,13 @@ def print_field_info(MyFile, MyFields):
         print 'Fields: '
         for sub in range(MyFields.field_cnt):
             print 
-            print '   Name:  %-20s   ' %  MyFields.field_names[sub]
-            if MyFile.has_header:
-               print '      Number:      %-20s ' %   sub
-            print '      Type:           %-20s ' %   MyFields.field_types[sub]
-            print '      Max:            %-20s ' %   MyFields.field_max[sub]
-            print '      Min:            %-20s ' %   MyFields.field_min[sub]
+            print '      Name:           %-20s ' %  MyFields.field_names[sub]
+            print '      Number:         %-20s ' %  sub
+            if MyFields.field_trunc[sub]:
+               print '      Data Truncated - analysis will be partial'
+            print '      Type:           %-20s ' %  MyFields.field_types[sub]
+            print '      Max:            %-20s ' %  MyFields.field_max[sub]
+            print '      Min:            %-20s ' %  MyFields.field_min[sub]
             print '      Unique Values:  %-20d    known:  %-20d' %   \
                          (len(MyFields.field_freqs[sub]),
                           len(MyFields.get_known_values(sub)))

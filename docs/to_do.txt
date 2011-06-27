@@ -1,5 +1,4 @@
 Very next things to do:
-1.  Fix get_median() 
 2.  Add more unit tests
 3.  Add indicator if max freq was hit
 4.  Eliminate duplicate get freq function
@@ -17,7 +16,7 @@ General Things To Do:
 
 1.  determine:
     - field types                               - 90%
-    - field min, max, mean, median values       - 90%
+    - field min, max, mean, median values       - 95%
     - field length min, max, mean, median	- 50%
     - field names                               - 100%
     - field case                                - 100%

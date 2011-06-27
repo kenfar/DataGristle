@@ -46,6 +46,42 @@ class Test_get_case(unittest.TestCase):
         assert(mod.get_case('string', self.test_unk2) == 'unknown')
 
 
+class Test_get_field_freq(unittest.TestCase):
+
+    def setUp(self):
+        (fd1, self.test1_fqfn) = tempfile.mkstemp()
+        fp1 = os.fdopen(fd1,"w")
+        for x in range(100):
+           reca = 'a%d|a%d|a%d\n' % (x,x,x)
+           fp1.write(reca)
+           recb = 'b%d|b%d|b%d\n' % (x,x,x)
+           fp1.write(recb)
+        fp1.close()
+
+    def tearDown(self):
+        os.remove(self.test1_fqfn)
+
+    def test_truncation(self):
+        (freq, trunc_flag) = mod.get_field_freq(self.test1_fqfn, 
+                                   field_number=0,
+                                   has_header=False,
+                                   field_delimiter='|',
+                                   max_freq_size=4)
+        assert(len(freq) == 4)
+        assert(trunc_flag is True)
+
+    def test_1(self):
+        (freq, trunc_flag) = mod.get_field_freq(self.test1_fqfn, 
+                                   field_number=0,
+                                   has_header=False,
+                                   field_delimiter='|')
+        assert(len(freq) == 200)
+        assert(trunc_flag is False)
+                              
+
+
+                              
+
 
 class TestGetFieldNames(unittest.TestCase):
 
