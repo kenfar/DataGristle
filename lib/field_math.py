@@ -32,44 +32,7 @@ import field_type
 MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
 
 
-def get_median(values):
-    """ Returns the median value for the input.  Ignores unknown values, 
-        if no values found besides unknown it will just return 'None'
-
-        Inputs:
-          - a list or dictionary of strings
-        Outputs:
-          - a single value - the mean of the inputs
-        Test Coverage:
-          - complete via test harness
-        To Do:
-          - fails on dictiomaries!
-    """
-    clean_list = []
-    for val in values:
-        if field_type.is_unknown(val):
-            continue
-        try:
-            clean_list.append(float(val))
-        except TypeError:
-            continue
-        except ValueError:    # catches non-numbers
-            continue
-
-    if not clean_list:
-        return None
-    else:
-        sorted_list = sorted(clean_list)
-
-    list_len = len(sorted_list)
-    if list_len % 2 == 1:
-        sub = (list_len+1)//2 - 1 
-        return sorted_list[sub]
-    else:
-        lowval  = sorted_list[list_len//2-1]
-        highval = sorted_list[list_len//2]
-        return (lowval + highval) / 2
-           
+    
 
 
 def get_mean(values):
@@ -77,7 +40,9 @@ def get_mean(values):
         values found besides unknown it will just return 'None'
 
         Inputs:
-          - a list or dictionary of strings
+          - a list or dictionary of numeric data. If it is a dictionary then
+            it must be a frequency distribution - with the value representing
+            the number of occurances of the key.
         Outputs:
           - a single value - the mean of the inputs
         Test Coverage:
@@ -87,15 +52,15 @@ def get_mean(values):
     accum   = 0
 
     for value in values:
-        try:
+        try:                    # tries dictionary first
            accum += int(value) * int(values[value])
            count += int(values[value])
         except TypeError:       # catches list of numeric strings
-           count += 1
            accum += int(value)
+           count += 1
         except IndexError:      # catches list of integers
-           count += 1
            accum += int(value)
+           count += 1
         except ValueError:      # catches dictionary with string
            pass                 # usually 'unknown values', sometimes garbage
           
@@ -105,4 +70,131 @@ def get_mean(values):
         return None
 
 
+
+class GetDictMedian(object):
+    """ Calculates a median number for a list or dictionary of numbers.
+        This has been designed as a class with a set of private functions mostly
+        to help with testing.
+    """
+
+
+    def run (self, values):
+        """ calculates the median on a list or dictionary of numbers
+        """
+     
+        #---- catch empty inputs ------------------------------------------
+        if not values:
+           return None
+
+        #---- first get everything into a list of tuples ------------------
+        values_list  = self._get_tuple_list(values)
+
+        #---- create all-numeric copy and get total count -----------------
+        numeric_list = self._get_numeric_tuple_list(values_list)
+        # just in case there was no numeric data in the inputs
+        if not numeric_list:
+            return None
+
+        #---- sort by the keys --------------------------------------------
+        sorted_list = sorted(numeric_list)
+
+        tuple_count = self._get_tuple_list_count(numeric_list)
+
+        #--- find middle subscripts ---------------------------------------
+        low_sub, high_sub = self._get_median_subs(tuple_count)
+
+        #--- find middle 2 scores: ----------------------------------------
+        low_val  = self._get_median_keys(sorted_list, low_sub)
+        high_val = self._get_median_keys(sorted_list, high_sub)
+
+        #--- avg mid 2 scores (will be identical for odd counts) ----------
+        try:
+           self.median = (low_val + high_val) / 2   
+        except UnboundLocalError:   # empty input will have vals of None
+           self.median = None
+
+        return self.median
+
+
+    def _get_tuple_list(self, values):
+
+        try:                     # tries dictionary first
+           values_list = list(values.items())
+        except AttributeError:   # catches list
+           values_list = [(k,1) for k in values]
+        return values_list
+
+    
+    def _get_numeric_tuple_list(self, tuple_list):
+        """ Makes a copy of a list of tuples with all data converted to 
+            floats.
+            Any conversion errors are addressed by dropping tuple out of list
+            Input:
+               - List of tuples  ex:  [('1',3),('9','2'),(5,'4')]
+            Output:
+               - list of tuples  ex:  [(1.0,3.0),(9.0,2.0),(5.0,4.0)]
+        """
+        numeric_list = []
+        for key, count in tuple_list:
+            try:
+               pair = (float(key), float(count))
+               numeric_list.append(pair)
+            except ValueError:
+               pass
+        return numeric_list
+       
+
+    def _get_tuple_list_count(self, tuple_list):
+
+        count = 0
+        for pair in tuple_list:
+            count += pair[1]
+ 
+        return count
+
+    def _get_median_subs(self, count):    
+        """ Identifies 2 middle number out of a count
+            Inputs:
+              - count:    assumed to be the length of a list
+            Outputs:
+              - low_sub:   the lower of the two numbers, offset from 0
+              - high_sub:  the higher of the two numbers, offset from 0
+            Test Coverage:
+              - complete via test harness
+        """
+        if count <= 0:
+           return 0, 0
+ 
+        middle  = count // 2 
+        if count % 2 == 1:
+            low_sub  = middle
+            high_sub = middle
+        else:
+           low_sub  = middle - 1
+           high_sub = middle
+
+        return low_sub, high_sub
+           
+
+    def _get_median_keys(self, sorted_tuples, sub):
+        """ Determines middle keys in a list of sorted tuples.
+            - Dependencies:  
+                - must be 2 items per tuple
+                - list must be sorted by first element of each tuple
+                - sub must be validated against list - and exist
+            - inputs:
+                - sorted tuple:  [(3,2),(4,3),(5,2)]
+                - sub:  A reference to an occurance of a key (NOT A TUPLE),
+                        since the second value in the tuple is the count, a 3
+                        would refer to the 4 in the second tuple above.
+                     - ex: 3
+            - outputs:
+                - key:  4
+        """
+        accum = 0
+        sub  += 1  # need to adjust offset from zero to tuple counts
+        for key, count in sorted_tuples:
+           accum += count
+           if accum >= sub:
+               return key
 
