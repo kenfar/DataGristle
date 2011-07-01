@@ -2,10 +2,12 @@
 """ Purpose of this module is to identify the types of fields
     Classes & Functions Include:
       - get_field_names
-      - get_field_freq
       - get_case
+      - get_field_freq
       - get_min
       - get_max
+      - get_max_length
+      - get_min_length
     
     Todo:
 """

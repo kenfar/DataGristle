@@ -4,8 +4,8 @@
     limited to data that can be represented as integers or floats.
 
     Classes & Functions Include:
-      get_mean()
-      get_median()
+      get_mean
+      GetDictMedian
 
     Todo:
       - fix functions to handle dictionaries of frequencies!!

@@ -1,4 +1,19 @@
-Gristle is a tough and flexible data connection and analysis set of libraries and utilities.
+DataGristle is a toolbox of tough and flexible data connectors and analyzers.  
+It's kind of an interactive mix between ETL and data analysis optimized for 
+rapid analysis and manipulation of a wide variety of data.
+
+This is substantially different from pure ETL tools - that are intended to be 
+used *after* substantial data analysis has identified all transformation 
+requirements.  It's likewise different from pure analysis tools - that 
+generally require initial data transformation, mapping and definitions and have more open-ended features that distract from fundamental analysis needs.
+
+DataGristle occupies a space between these tools where quick & simple 
+transformation & analysis are necessary in order to work with the large numbers
+of datasets available today.
+
+
+Current Status:  automatic identification of file delimiters, field types and 
+characteristics - produces a strong initial dataset analysis.
 
 Its objectives include:
    * multi-platform (linux, mac os, windows)
