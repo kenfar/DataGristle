@@ -6,7 +6,7 @@ version = "0.1"
 DESCRIPTION      = 'A toolbox of ETL & Analysis Tools'
 LONG_DESCRIPTION = open('README').read()
 
-setup(name             = 'DataGristle',
+setup(name             = 'data_gristle',
       version          = version,
       description      = DESCRIPTION,
       long_description = LONG_DESCRIPTION,
