@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools.core import setup, find_packages
+from setuptools import setup, find_packages
 
 version = "0.1"
 DESCRIPTION      = 'A toolbox of ETL & Analysis Tools'
