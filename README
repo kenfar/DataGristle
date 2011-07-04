@@ -5,7 +5,8 @@ rapid analysis and manipulation of a wide variety of data.
 This is substantially different from pure ETL tools - that are intended to be 
 used *after* substantial data analysis has identified all transformation 
 requirements.  It's likewise different from pure analysis tools - that 
-generally require initial data transformation, mapping and definitions and have more open-ended features that distract from fundamental analysis needs.
+generally require initial data transformation, mapping and definitions and 
+have more open-ended features that distract from fundamental analysis needs.
 
 DataGristle occupies a space between these tools where quick & simple 
 transformation & analysis are necessary in order to work with the large numbers
@@ -29,47 +30,31 @@ DEPENDENCIES
    * Python 2.6
 
 COMPONENTS
-   * file_determinator.py 
-       - identifies file formats, generates metadata
-       - status:  90% complete
-   * field_determinator.py 
-       - identifies field formats, generates metadata
-       - status:  80% complete
-   * metadata.py 
-       - manages metadata
-   * file_converter 
-       - converts a file into a new format
-       - conversions include compression, delimited/fixed-length, delimiter, 
+   * gz_determinator.py 
+       - Identifies file formats, generates metadata.
+       - Status:  90% complete
+   * gz_metadata.py 
+       - Manages metadata - allows users to query, add, update, delete
+         file, field, transformation, reporting descriptions.
+   * gz_transformer.py
+       - Converts a file into a new format.
+       - Conversions include compression, delimited/fixed-length, delimiter, 
          string quoting, etc
-   * file_validator 
-       - confirms validity of file format & contents
-   * file_differ
-       - compares two structured files and report to writes out the differences
-   * file_joiner
+   * gz_file_differ.py
+       - Compares two structured files and writes out the differences.
+   * gz_file_viewer.py
+       - Shows one record from a file at a time - formatted based on metadata. 
+         User can page up & down through the file.
+   * gz_file_joiner.py
        - joins two files on their common keys and produces a new file
-   * file_aggregator
+   * gz_file_aggregator.py
        - reads a file, aggregates on a given set of fields, produces a new file
-   * file_misc
-       - misc file utiltities, including:
-           - file-name parsing
-   * db_validator 
-       - confirms validity of database contents
-   * db_loader.py 
+   * gz_validator 
+       - Confirms validity of database and file structure and contents.
+   * gz_db_loader.py 
        - loads a file into a database
-   * db_extractor.py 
+   * gz_db_extractor.py 
        - extracts data from a database into a file
-   * process_misc
-       - manages audit data (process & business rule)
-       - assigns run_ids
-       - tracks all files
-   * analysis_misc
-     - place-holder for misc analysis functions like:
-         - histogram
-         - histogram-comparison
-         - aggregation
-         - uniqueness 
-         - distinct_counter 
-         - etc
 
 LICENSING
    * Gristle uses the BSD license - see the separate LICENSE file for further 
