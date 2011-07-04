@@ -8,8 +8,8 @@ LONG_DESCRIPTION = open('README').read()
 
 setup(name             = 'DataGristle',
       version          = version,
-      description      = DESCRIPTION
-      long_description = LONG_DESCRIPTION
+      description      = DESCRIPTION,
+      long_description = LONG_DESCRIPTION,
       author           = 'Ken Farmer',
       author_email     = 'kenfar@gmail.com',
       url              = 'http://github.com/kenfar/DataGristle',
