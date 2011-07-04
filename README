@@ -29,31 +29,31 @@ Its objectives include:
 DEPENDENCIES
    * Python 2.6
 
-COMPONENTS
-   * gz_determinator.py 
+UTILITIES
+   * dg_determinator.py 
        - Identifies file formats, generates metadata.
        - Status:  90% complete
-   * gz_metadata.py 
+   * dg_metadata.py 
        - Manages metadata - allows users to query, add, update, delete
          file, field, transformation, reporting descriptions.
-   * gz_transformer.py
+   * dg_transformer.py
        - Converts a file into a new format.
        - Conversions include compression, delimited/fixed-length, delimiter, 
          string quoting, etc
-   * gz_file_differ.py
+   * dg_validator 
+       - Confirms validity of database and file structure and contents.
+   * dg_file_differ.py
        - Compares two structured files and writes out the differences.
-   * gz_file_viewer.py
+   * dg_file_viewer.py
        - Shows one record from a file at a time - formatted based on metadata. 
          User can page up & down through the file.
-   * gz_file_joiner.py
+   * dg_file_joiner.py
        - joins two files on their common keys and produces a new file
-   * gz_file_aggregator.py
+   * dg_file_aggregator.py
        - reads a file, aggregates on a given set of fields, produces a new file
-   * gz_validator 
-       - Confirms validity of database and file structure and contents.
-   * gz_db_loader.py 
+   * dg_db_loader.py 
        - loads a file into a database
-   * gz_db_extractor.py 
+   * dg_db_extractor.py 
        - extracts data from a database into a file
 
 LICENSING

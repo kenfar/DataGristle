@@ -11,9 +11,12 @@ sys.path.append('../lib')
 import field_misc  as mod
 
 
-def suit():
-    suite = unittest.TestSuit()
-    suite.addTest(unittest.makeSuite(TestSomething))
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(Test_get_case))
+    suite.addTest(unittest.makeSuite(Test_get_field_freq))
+    suite.addTest(unittest.makeSuite(TestGetFieldNames))
+    suite.addTest(unittest.makeSuite(TestMinAndMax))
 
     return suite
 

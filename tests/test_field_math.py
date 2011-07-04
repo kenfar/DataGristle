@@ -10,12 +10,14 @@ import unittest
 sys.path.append('../lib')
 import field_math  as mod
 
-
-
-def suit():
-    suite = unittest.TestSuit()
+def suite():
+    suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestGetDictMedian))
-
+    suite.addTest(unittest.makeSuite(Test_get_tuple_list))
+    suite.addTest(unittest.makeSuite(Test_get_numeric_tuple_list))
+    suite.addTest(unittest.makeSuite(Test_get_median_subs))
+    suite.addTest(unittest.makeSuite(Test_get_median_keys))
+    suite.addTest(unittest.makeSuite(TestGetMean))
     return suite
 
 

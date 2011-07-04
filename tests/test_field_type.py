@@ -11,9 +11,15 @@ sys.path.append('../lib')
 import field_type  as mod
 
 
-def suit():
-    suite = unittest.TestSuit()
-    suite.addTest(unittest.makeSuite(TestSomething))
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(Test_is_integer))
+    suite.addTest(unittest.makeSuite(Test_is_float))
+    suite.addTest(unittest.makeSuite(Test_is_string))
+    suite.addTest(unittest.makeSuite(Test_is_unknown))
+    suite.addTest(unittest.makeSuite(Test_is_timestamp))
+    suite.addTest(unittest.makeSuite(TestGetType))
+    suite.addTest(unittest.makeSuite(TestGetFieldType))
 
     return suite
 

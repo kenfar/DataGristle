@@ -11,9 +11,11 @@ sys.path.append('../lib')
 import file_type  as mod
 
 
-def suit():
-    suite = unittest.TestSuit()
-    suite.addTest(unittest.makeSuite(TestSomething))
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(TestQuotedCSV))
+    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
+    suite.addTest(unittest.makeSuite(TestInternals))
 
     return suite
 
@@ -109,6 +111,5 @@ class TestInternals(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    #unittest.main(defaultTest="suite")
     unittest.main()
 
