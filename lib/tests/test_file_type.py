@@ -7,7 +7,7 @@ import tempfile
 import random
 import unittest
 
-sys.path.append('../lib')
+sys.path.append('../')
 import file_type  as mod
 
 
