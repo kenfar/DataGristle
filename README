@@ -16,6 +16,13 @@ of datasets available today.
 Current Status:  automatic identification of file delimiters, field types and 
 characteristics - produces a strong initial dataset analysis.
 
+Next Steps:  
+   * improve setup
+   * create file_viewer.py
+   * README markdown
+   * Attractive PDF output of dg_determinator.py
+   * metadata database population
+
 Its objectives include:
    * multi-platform (linux, mac os, windows)
    * multi-language (primarily python)
