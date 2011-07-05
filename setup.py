@@ -28,5 +28,5 @@ setup(name             = 'data_gristle',
       download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,
       scripts      = ['scripts/dg_determinator.py'],
       packages     = find_packages(),
-      test_suite   = 'lib.tests'
+      test_suite   = 'data_gristle.tests'
      )
