@@ -6,7 +6,7 @@ version = "0.1"
 DESCRIPTION      = 'A toolbox of ETL & Analysis Tools'
 LONG_DESCRIPTION = open('README').read()
 
-setup(name             = 'data_gristle',
+setup(name             = 'gristle',
       version          = version,
       description      = DESCRIPTION,
       long_description = LONG_DESCRIPTION,
@@ -26,7 +26,7 @@ setup(name             = 'data_gristle',
             'Topic :: Utilities'
             ],
       download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,
-      scripts      = ['scripts/dg_determinator.py'],
+      scripts      = ['scripts/gristle_determinator.py'],
       packages     = find_packages(),
-      test_suite   = 'data_gristle.tests'
+      test_suite   = 'gristle.tests'
      )

@@ -1,4 +1,4 @@
-DataGristle is a toolbox of tough and flexible data connectors and analyzers.  
+Gristle is a toolbox of tough and flexible data connectors and analyzers.  
 It's kind of an interactive mix between ETL and data analysis optimized for 
 rapid analysis and manipulation of a wide variety of data.
 
@@ -8,7 +8,7 @@ requirements.  It's likewise different from pure analysis tools - that
 generally require initial data transformation, mapping and definitions and 
 have more open-ended features that distract from fundamental analysis needs.
 
-DataGristle occupies a space between these tools where quick & simple 
+Gristle occupies a space between these tools where quick & simple 
 transformation & analysis are necessary in order to work with the large numbers
 of datasets available today.
 
@@ -20,7 +20,7 @@ Next Steps:
    * improve setup
    * create file_viewer.py
    * README markdown
-   * Attractive PDF output of dg_determinator.py
+   * Attractive PDF output of gristle_determinator.py
    * metadata database population
 
 Its objectives include:
@@ -37,30 +37,30 @@ DEPENDENCIES
    * Python 2.6
 
 UTILITIES
-   * dg_determinator.py 
+   * gristle_determinator.py 
        - Identifies file formats, generates metadata.
        - Status:  90% complete
-   * dg_metadata.py 
+   * gristle_metadata.py 
        - Manages metadata - allows users to query, add, update, delete
          file, field, transformation, reporting descriptions.
-   * dg_transformer.py
+   * gristle_transformer.py
        - Converts a file into a new format.
        - Conversions include compression, delimited/fixed-length, delimiter, 
          string quoting, etc
-   * dg_validator 
+   * gristle_validator 
        - Confirms validity of database and file structure and contents.
-   * dg_file_differ.py
+   * gristle_file_differ.py
        - Compares two structured files and writes out the differences.
-   * dg_file_viewer.py
+   * gristle_file_viewer.py
        - Shows one record from a file at a time - formatted based on metadata. 
          User can page up & down through the file.
-   * dg_file_joiner.py
+   * gristle_file_joiner.py
        - joins two files on their common keys and produces a new file
-   * dg_file_aggregator.py
+   * gristle_file_aggregator.py
        - reads a file, aggregates on a given set of fields, produces a new file
-   * dg_db_loader.py 
+   * gristle_db_loader.py 
        - loads a file into a database
-   * dg_db_extractor.py 
+   * gristle_db_extractor.py 
        - extracts data from a database into a file
 
 LICENSING

@@ -57,7 +57,7 @@ class TestQuotedCSV(unittest.TestCase):
     def tearDown(self):
         os.remove(self.test1_fqfn)
 
-    def testMisc(self):
+    def test_file_a01_Misc(self):
         assert(self.MyTest.record_cnt == self.record_cnt)
         assert(self.MyTest.field_cnt == 4)
         assert(self.MyTest.format_type == 'csv')
@@ -79,7 +79,7 @@ class TestNonQuotedCSV(unittest.TestCase):
     def tearDown(self):
         os.remove(self.test1_fqfn)
 
-    def testMisc(self):
+    def test_file_b01_Misc(self):
         assert(self.MyTest.record_cnt == self.record_cnt)
         assert(self.MyTest.field_cnt == 4)
         assert(self.MyTest.format_type == 'csv')
@@ -101,11 +101,11 @@ class TestInternals(unittest.TestCase):
     def tearDown(self):
         os.remove(self.test1_fqfn)
 
-    def testRecordNumber(self):
+    def test_file_c01_RecordNumber(self):
         assert(self.MyTest._count_records()
                 == self.record_cnt)
 
-    def testFormatType(self):
+    def test_file_c02_FormatType(self):
         assert(self.MyTest._get_format_type()
                 == 'csv')
 

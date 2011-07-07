@@ -33,7 +33,7 @@ class Test_is_integer(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_is_integer(self):
+    def test_field_a01_is_integer(self):
         assert(mod.is_integer('3')         is True)
         assert(mod.is_integer('-3')        is True)
         assert(mod.is_integer(3)           is True)
@@ -56,7 +56,7 @@ class Test_is_float(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_is_float(self):
+    def test_field_b01_is_float(self):
         assert(mod.is_float('33.22')     is True)
         assert(mod.is_float(44.55)       is True)
         assert(mod.is_float(3)           is False)
@@ -80,7 +80,7 @@ class Test_is_string(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_is_string(self):
+    def test_field_c01_is_string(self):
         assert(mod.is_string('b')         is True)
         assert(mod.is_string('')          is True)
         assert(mod.is_string(' ')         is True)
@@ -101,7 +101,7 @@ class Test_is_unknown(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_is_unknown(self):
+    def test_field_d01_is_unknown(self):
         assert(mod.is_unknown('')          is True)
         assert(mod.is_unknown(' ')         is True)
         assert(mod.is_unknown('na')        is True)
@@ -133,7 +133,7 @@ class Test_is_timestamp(unittest.TestCase):
         result, scope, pattern = mod.is_timestamp(date)
         return result, scope
  
-    def test_failures(self):
+    def test_field_e01_failures(self):
         assert(self.runner("0")         == (False, None))
         assert(self.runner("-4")        == (False, None))
         assert(self.runner("-4.7")      == (False, None))
@@ -145,7 +145,7 @@ class Test_is_timestamp(unittest.TestCase):
         assert(self.runner("2009-10-06-18") == (True, 'hour'))
         assert(self.runner("2009-10-06-03.02.01") == (True, 'second'))
 
-    def test_real_dates(self):
+    def test_field_e02_real_dates(self):
         assert(self.runner("1172969203.1")   == (True, 'second'))
 
         assert(self.runner("2009")   == (True, 'year'))
@@ -186,7 +186,7 @@ class TestGetType(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_1(self):
+    def test_field_f01(self):
         assert(mod.get_type('n/a')  == 'unknown')
         assert(mod.get_type('UNK')  == 'unknown')
         assert(mod.get_type('unk')  == 'unknown')
@@ -226,7 +226,7 @@ class TestGetFieldType(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_1(self):
+    def test_field_g01(self):
         assert(mod.get_field_type(self.type_0a) == 'unknown')
         assert(mod.get_field_type(self.type_0b) == 'unknown')
         assert(mod.get_field_type(self.type_1a) == 'string')

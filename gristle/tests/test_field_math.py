@@ -46,12 +46,12 @@ class TestGetDictMedian(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_lists(self):
+    def test_math_a01_lists(self):
         assert(self.mymed.run(self.list_1) == self.list_1a)
         assert(self.mymed.run(self.list_2) == self.list_2a)
         assert(self.mymed.run(self.list_3) == self.list_3a)
 
-    def test_dicts(self):
+    def test_math_a02_dicts(self):
         #print self.mymed.run(self.med_dict_1)
         assert(self.mymed.run(self.dict_1) == self.dict_1a)
         assert(self.mymed.run(self.dict_2) == self.dict_2a)
@@ -74,12 +74,12 @@ class Test_get_tuple_list(unittest.TestCase):
         self.dict_2a       = [('1',2),('4',4),('8',3)]
     def tearDown(self):
         pass
-    def test_emptiness(self):
+    def test_math_b01_emptiness(self):
         assert(self.mymed.run(self.dict_1) == self.dict_1a )
         assert(self.mymed.run(self.list_1) == self.list_1a )
-    def test_lists(self):
+    def test_math_b02_lists(self):
         assert(self.mymed._get_tuple_list(self.list_2) == self.list_2a)
-    def test_dicts(self):
+    def test_math_b03_dicts(self):
         tup_list = self.mymed._get_tuple_list(self.dict_2)
         assert(sorted(tup_list) == sorted(self.dict_2a))
 
@@ -98,7 +98,7 @@ class Test_get_numeric_tuple_list(unittest.TestCase):
         self.list_4        = [('8','1'),('a',1),(4,'b')]
         self.list_4a       = [(8,1)]
 
-    def test_1(self):
+    def test_math_c01(self):
         assert(self.mymed._get_numeric_tuple_list(self.list_1) == self.list_1a )
         assert(self.mymed._get_numeric_tuple_list(self.list_2) == self.list_2a )
         assert(self.mymed._get_numeric_tuple_list(self.list_3) == self.list_3a )
@@ -109,7 +109,7 @@ class Test_get_median_subs(unittest.TestCase):
     def setUp(self):
         # suffix of 'a' indicates the answer
         self.mymed         =  mod.GetDictMedian()
-    def test_1(self):
+    def test_math_d01(self):
         assert(self.mymed._get_median_subs(0) == (0,0))
         assert(self.mymed._get_median_subs(1) == (0,0))
         assert(self.mymed._get_median_subs(2) == (0,1))
@@ -135,7 +135,7 @@ class Test_get_median_keys(unittest.TestCase):
         self.hard_2        = [(1,5),(4,1),(8,1)]
         self.hard_3        = [(1,2),(4,1),(8,1),(10,1),(99,1),(99,1)]
 
-    def test_1(self):
+    def test_math_e01(self):
         assert(self.mymed._get_median_keys(self.med_1,  1) == 4)
         assert(self.mymed._get_median_keys(self.med_2,  1) == 4)
         assert(self.mymed._get_median_keys(self.med_3,  0) == 1)
@@ -161,21 +161,21 @@ class TestGetMean(unittest.TestCase):
         self.unk_dict    = {'UNK':1, 'unknown':3, ' ':99, '8':4, '2':2 }
         self.med_dict_1  = {'10':4, '100':86 }
 
-    def test_emptiness(self):
+    def test_math_f01_emptiness(self):
         assert(mod.get_mean(self.empty_dict_1) is None)
         assert(mod.get_mean(self.empty_list_1) is None)
         assert(mod.get_mean(self.empty_dict_2) is None)
         assert(mod.get_mean(self.empty_list_2) is None)
 
-    def test_easy_list(self):
+    def test_math_f02_easy_list(self):
         assert(mod.get_mean(self.easy_list)  == 4)
 
-    def test_small_sets(self):
+    def test_math_f03_small_sets(self):
         assert(mod.get_mean(self.small_list_1)  == 8)
         assert(mod.get_mean(self.small_list_2)  == 5)
         assert(mod.get_mean(self.small_list_3)  == 4)
 
-    def test_medium_sets(self):
+    def test_math_f04_medium_sets(self):
         assert(mod.get_mean(self.med_dict_1)  == 96)
 
 
