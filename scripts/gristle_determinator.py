@@ -18,11 +18,11 @@ import optparse
 import csv
 
 #--- gristle modules -------------------
-sys.path.append('lib')
+sys.path.append('../')  # allows running out of project structure
 
-import file_type  
-import field_type as typer
-import field_determinator 
+import gristle.file_type  
+import gristle.field_type as typer
+import gristle.field_determinator 
 
 
 QUOTE_DICT = {}
