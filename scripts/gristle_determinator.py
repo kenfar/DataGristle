@@ -19,10 +19,14 @@ import csv
 
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure
+sys.path.append('../gristle')  # allows running out of project structure
 
-import gristle.file_type  
-import gristle.field_type as typer
-import gristle.field_determinator 
+#import gristle.file_type  
+import file_type  
+#import gristle.field_type as typer
+import field_type as typer
+#import gristle.field_determinator 
+import field_determinator 
 
 
 QUOTE_DICT = {}
@@ -83,13 +87,15 @@ def print_file_info(MyFile):
         print
 
 def print_field_info(MyFile, MyFields):
-        print 'Fields: '
+        print
+        print 'Fields Analysis Results: '
         for sub in range(MyFields.field_cnt):
             print 
+            print '      ------------------------------------------------------'
             print '      Name:           %-20s ' %  MyFields.field_names[sub]
-            print '      Number:         %-20s ' %  sub
+            print '      Field Number:   %-20s ' %  sub
             if MyFields.field_trunc[sub]:
-               print '      Data Truncated - analysis will be partial'
+               print '      Data Truncated: analysis will be partial'
             print '      Type:           %-20s ' %  MyFields.field_types[sub]
             print '      Max:            %-20s ' %  MyFields.field_max[sub]
             print '      Min:            %-20s ' %  MyFields.field_min[sub]
@@ -107,11 +113,13 @@ def print_field_info(MyFile, MyFields):
 
             if MyFields.field_freqs[sub] is not None:
                 sorted_list = MyFields.get_top_freq_values(sub, 4)
-                print     '      Top Values: '
-                for pair in sorted_list:
-                    if not typer.is_unknown(pair[0]): 
-                       #print '         %-20.20s - %d ' % ( pair[0], pair[1])
-                       print '         %-20s - %d ' % ( pair[0], pair[1])
+                if sorted_list[0][1] == 1:
+                    print '      Top Values not shown - all values are unique'
+                else:
+                    print     '      Top Values: '
+                    for pair in sorted_list:
+                        if not typer.is_unknown(pair[0]): 
+                           print '         %-20s x %d occurances' % ( pair[0], pair[1])
     
 
 

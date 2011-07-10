@@ -118,7 +118,7 @@ def get_field_freq(filename,
             continue
         freq[rec[field_number]] += 1
         if len(freq) >= max_freq_size:
-            print 'WARNING: freq is getting too large - will truncate'
+            print '      WARNING: freq dist dictionary is too large - will trunc'
             truncated = True
             break
         

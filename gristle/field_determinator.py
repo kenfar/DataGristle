@@ -86,13 +86,13 @@ class FieldDeterminator(object):
                - populates public class structures
         """
         
+        print 'Field Analysis Progress: '
         for f_no in range(self.field_cnt):
             if field_number:
                if f_no <> field_number:
                   continue
 
-            print
-            print 'Analyzing field: %d' % f_no 
+            print '   Analyzing field: %d' % f_no 
 
             self.field_names[f_no]   = miscer.get_field_names(self.filename, 
                                            f_no,

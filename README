@@ -17,7 +17,7 @@ Current Status:  automatic identification of file delimiters, field types and
 characteristics - produces a strong initial dataset analysis.
 
 Next Steps:  
-   * improve setup
+   * finalize names
    * create file_viewer.py
    * README markdown
    * Attractive PDF output of gristle_determinator.py
