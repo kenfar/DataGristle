@@ -1,0 +1,90 @@
+Metadata-Version: 1.0
+Name: gristle
+Version: 0.1
+Summary: A toolbox of ETL & Analysis Tools
+Home-page: http://github.com/kenfar/DataGristle
+Author: Ken Farmer
+Author-email: kenfar@gmail.com
+License: BSD
+Download-URL: http://github.com/downloads/kenfar/DataGristle/DataGristle-0.1.tar.gz
+Description: Gristle is a toolbox of tough and flexible data connectors and analyzers.  
+        It's kind of an interactive mix between ETL and data analysis optimized for 
+        rapid analysis and manipulation of a wide variety of data.
+        
+        This is substantially different from pure ETL tools - that are intended to be 
+        used *after* substantial data analysis has identified all transformation 
+        requirements.  It's likewise different from pure analysis tools - that 
+        generally require initial data transformation, mapping and definitions and 
+        have more open-ended features that distract from fundamental analysis needs.
+        
+        Gristle occupies a space between these tools where quick & simple 
+        transformation & analysis are necessary in order to work with the large numbers
+        of datasets available today.
+        
+        
+        Current Status:  automatic identification of file delimiters, field types and 
+        characteristics - produces a strong initial dataset analysis.
+        
+        Next Steps:  
+           * finalize names
+           * create file_viewer.py
+           * README markdown
+           * Attractive PDF output of gristle_determinator.py
+           * metadata database population
+        
+        Its objectives include:
+           * multi-platform (linux, mac os, windows)
+           * multi-language (primarily python)
+           * free - no cripple-licensing
+           * primary audience is programming data analysts - not non-technical analysts
+           * primary environment is command-line rather than windows, graphical desktop
+             or eclipse
+           * extensible
+           * allow a bi-directional iteration between ETL & data analysis
+        
+        DEPENDENCIES
+           * Python 2.6
+        
+        UTILITIES
+           * gristle_determinator.py 
+               - Identifies file formats, generates metadata.
+               - Status:  90% complete
+           * gristle_metadata.py 
+               - Manages metadata - allows users to query, add, update, delete
+                 file, field, transformation, reporting descriptions.
+           * gristle_transformer.py
+               - Converts a file into a new format.
+               - Conversions include compression, delimited/fixed-length, delimiter, 
+                 string quoting, etc
+           * gristle_validator 
+               - Confirms validity of database and file structure and contents.
+           * gristle_file_differ.py
+               - Compares two structured files and writes out the differences.
+           * gristle_file_viewer.py
+               - Shows one record from a file at a time - formatted based on metadata. 
+                 User can page up & down through the file.
+           * gristle_file_joiner.py
+               - joins two files on their common keys and produces a new file
+           * gristle_file_aggregator.py
+               - reads a file, aggregates on a given set of fields, produces a new file
+           * gristle_db_loader.py 
+               - loads a file into a database
+           * gristle_db_extractor.py 
+               - extracts data from a database into a file
+        
+        LICENSING
+           * Gristle uses the BSD license - see the separate LICENSE file for further 
+             information
+        
+        
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: License ::  OSI Approved :: BSD License
+Classifier: Programming Language :: Python
+Classifier: Intended Audience :: System Administrators
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Database
+Classifier: Topic :: Utilities
