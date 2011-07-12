@@ -1,11 +1,8 @@
 Very next things to do:
-4.  Eliminate duplicate get freq function
 5.  Add more string analysis:  length mean & median
 6.  Add more numeric analysis:  std, variance, quartiles
-7.  Don't show freq distribution unless data is 'interesting'
 8.  test with python 2.7
 9.  Review documentation
-10. Review tags
 11. Review dist utils
 12. Test on mac
 
