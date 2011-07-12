@@ -2,8 +2,8 @@
 
 from setuptools import setup, find_packages
 
-version = "0.1"
-DESCRIPTION      = 'A toolbox of ETL & Analysis Tools'
+version = "0.2"
+DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
 LONG_DESCRIPTION = open('README').read()
 
 setup(name             = 'gristle',
@@ -15,14 +15,18 @@ setup(name             = 'gristle',
       url              = 'http://github.com/kenfar/DataGristle',
       license          = 'BSD',
       classifiers=[
-            'Development Status :: 2 - Pre-Alpha',
+            'Development Status :: 3 - Alpha',
+            'Environment :: Console',
+            'Intended Audience :: Developers',
+            'Intended Audience :: Information Technology',
+            'Intended Audience :: Science/Research',
             'License ::  OSI Approved :: BSD License',
             'Programming Language :: Python',
-            'Intended Audience :: System Administrators',
-            'Intended Audience :: Developers',
-            'Intended Audience :: Science/Research',
+            'Operating System :: POSIX',
             'Topic :: Scientific/Engineering',
             'Topic :: Database',
+            'Topic :: Scientific/Engineering :: Information Analysis',
+            'Topic :: Text Processing',
             'Topic :: Utilities'
             ],
       download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,

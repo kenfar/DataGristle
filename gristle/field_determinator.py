@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """ Purpose of this module is to identify the types of fields
     Classes & Functions Include:
       FieldDeterminator   - class runs all checks on all fields
