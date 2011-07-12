@@ -11,20 +11,16 @@
     Todo:
       - change get_types to consider whatever has 2 STDs 
       - replace get_types freq length logic with something that says, if all 
-        types are basically numic, choose float
+        types are basically numeric, choose float
       - consistency metric
       - leverage list comprehensions more
       - change returned data format to be based on field
 """
 from __future__ import division
-import time
 import datetime
 import collections
-import csv
-import fileinput
 import math
 
-import field_misc
 
 #--- CONSTANTS -----------------------------------------------------------
 
@@ -310,17 +306,17 @@ def is_timestamp(time_str):
     """
     non_date = (False, None, None)
     if len(time_str) > DATE_MAX_LEN:
-       return non_date
+        return non_date
    
     try:
-       float_str = float(time_str)
-       if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:
-           t_date = datetime.datetime.fromtimestamp(float(time_str))
-           return True, 'second', 'epoch'
+        float_str = float(time_str)
+        if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:
+            t_date = datetime.datetime.fromtimestamp(float(time_str))
+            return True, 'second', 'epoch'
     except ValueError:
-       pass
+        pass
 
-    for scope, pattern, format in DATE_FORMATS:
+    for scope, pattern, date_format in DATE_FORMATS:
         if scope == "microsecond":
             # Special handling for microsecond part. AFAIK there isn't a
             # strftime code for this.
@@ -332,7 +328,7 @@ def is_timestamp(time_str):
             except ValueError:
                 continue
         try:
-            t_date = datetime.datetime.strptime(time_str, format)
+            t_date = datetime.datetime.strptime(time_str, date_format)
         except ValueError:
             pass
         else:

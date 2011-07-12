@@ -10,11 +10,8 @@
 """
 
 #--- standard modules ------------------
-import sys
-import os
 import fileinput
 import collections
-import optparse
 import csv
 
 #--- gristle modules -------------------
@@ -73,10 +70,10 @@ class FileTyper(object):
         """
         csvfile = open(self.fqfn, "rb")
         try:
-           dialect = csv.Sniffer().sniff(csvfile.read(50000))
+            dialect = csv.Sniffer().sniff(csvfile.read(50000))
         except:
-           print 'ERROR: Could not analyze file!'
-           raise
+            print 'ERROR: Could not analyze file!'
+            raise
            
         csvfile.close()
         return dialect

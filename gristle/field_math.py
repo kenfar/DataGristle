@@ -18,14 +18,7 @@
       - change returned data format to be based on field
 """
 from __future__ import division
-import time
-import datetime
-import collections
-import csv
-import fileinput
-import math
 
-import field_type
 
 #--- CONSTANTS -----------------------------------------------------------
 
@@ -53,16 +46,16 @@ def get_mean(values):
 
     for value in values:
         try:                    # tries dictionary first
-           accum += int(value) * int(values[value])
-           count += int(values[value])
+            accum += int(value) * int(values[value])
+            count += int(values[value])
         except TypeError:       # catches list of numeric strings
-           accum += int(value)
-           count += 1
+            accum += int(value)
+            count += 1
         except IndexError:      # catches list of integers
-           accum += int(value)
-           count += 1
+            accum += int(value)
+            count += 1
         except ValueError:      # catches dictionary with string
-           pass                 # usually 'unknown values', sometimes garbage
+            pass                 # usually 'unknown values', sometimes garbage
           
     try:
         return accum / count
@@ -76,6 +69,8 @@ class GetDictMedian(object):
         This has been designed as a class with a set of private functions mostly
         to help with testing.
     """
+    def __init__(self):
+        self.median = None
 
 
     def run (self, values):
@@ -84,7 +79,7 @@ class GetDictMedian(object):
      
         #---- catch empty inputs ------------------------------------------
         if not values:
-           return None
+            return None
 
         #---- first get everything into a list of tuples ------------------
         values_list  = self._get_tuple_list(values)
@@ -109,9 +104,9 @@ class GetDictMedian(object):
 
         #--- avg mid 2 scores (will be identical for odd counts) ----------
         try:
-           self.median = (low_val + high_val) / 2   
+            self.median = (low_val + high_val) / 2   
         except UnboundLocalError:   # empty input will have vals of None
-           self.median = None
+            self.median = None
 
         return self.median
 
@@ -119,9 +114,9 @@ class GetDictMedian(object):
     def _get_tuple_list(self, values):
 
         try:                     # tries dictionary first
-           values_list = list(values.items())
+            values_list = list(values.items())
         except AttributeError:   # catches list
-           values_list = [(k,1) for k in values]
+            values_list = [(k, 1) for k in values]
         return values_list
 
     
@@ -137,10 +132,10 @@ class GetDictMedian(object):
         numeric_list = []
         for key, count in tuple_list:
             try:
-               pair = (float(key), float(count))
-               numeric_list.append(pair)
+                pair = (float(key), float(count))
+                numeric_list.append(pair)
             except ValueError:
-               pass
+                pass
         return numeric_list
        
 
@@ -163,15 +158,15 @@ class GetDictMedian(object):
               - complete via test harness
         """
         if count <= 0:
-           return 0, 0
+            return 0, 0
  
         middle  = count // 2 
         if count % 2 == 1:
             low_sub  = middle
             high_sub = middle
         else:
-           low_sub  = middle - 1
-           high_sub = middle
+            low_sub  = middle - 1
+            high_sub = middle
 
         return low_sub, high_sub
            
@@ -194,7 +189,7 @@ class GetDictMedian(object):
         accum = 0
         sub  += 1  # need to adjust offset from zero to tuple counts
         for key, count in sorted_tuples:
-           accum += count
-           if accum >= sub:
-               return key
+            accum += count
+            if accum >= sub:
+                return key
 

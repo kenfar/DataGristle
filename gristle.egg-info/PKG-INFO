@@ -1,12 +1,12 @@
 Metadata-Version: 1.0
 Name: gristle
-Version: 0.1
-Summary: A toolbox of ETL & Analysis Tools
+Version: 0.2
+Summary: A toolbox and library of ETL & data analysis tools
 Home-page: http://github.com/kenfar/DataGristle
 Author: Ken Farmer
 Author-email: kenfar@gmail.com
 License: BSD
-Download-URL: http://github.com/downloads/kenfar/DataGristle/DataGristle-0.1.tar.gz
+Download-URL: http://github.com/downloads/kenfar/DataGristle/DataGristle-0.2.tar.gz
 Description: Gristle is a toolbox of tough and flexible data connectors and analyzers.  
         It's kind of an interactive mix between ETL and data analysis optimized for 
         rapid analysis and manipulation of a wide variety of data.
@@ -79,12 +79,16 @@ Description: Gristle is a toolbox of tough and flexible data connectors and anal
         
         
 Platform: UNKNOWN
-Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Development Status :: 3 - Alpha
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: Science/Research
 Classifier: License ::  OSI Approved :: BSD License
 Classifier: Programming Language :: Python
-Classifier: Intended Audience :: System Administrators
-Classifier: Intended Audience :: Developers
-Classifier: Intended Audience :: Science/Research
+Classifier: Operating System :: POSIX
 Classifier: Topic :: Scientific/Engineering
 Classifier: Topic :: Database
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Topic :: Text Processing
 Classifier: Topic :: Utilities

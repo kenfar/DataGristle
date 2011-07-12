@@ -15,12 +15,6 @@
       - change returned data format to be based on field
 """
 from __future__ import division
-import time
-import datetime
-import collections
-import csv
-import fileinput
-import math
 
 import field_type   as typer
 import field_math   as mather
@@ -89,8 +83,8 @@ class FieldDeterminator(object):
         print 'Field Analysis Progress: '
         for f_no in range(self.field_cnt):
             if field_number:
-               if f_no <> field_number:
-                  continue
+                if f_no != field_number:
+                    continue
 
             print '   Analyzing field: %d' % f_no 
 
@@ -120,12 +114,12 @@ class FieldDeterminator(object):
                 self.field_median[f_no] = mather.GetDictMedian().run(self.field_freqs[f_no])
 
     def get_known_values(self, fieldno):
-       """ returns a frequency-distribution dictionary that is the 
-           self.field_freqs with unknown values removed.
-       """
+        """ returns a frequency-distribution dictionary that is the 
+            self.field_freqs with unknown values removed.
+        """
 
-       return [val for val in self.field_freqs[fieldno]
-               if typer.is_unknown(val) is False]
+        return [val for val in self.field_freqs[fieldno]
+                if typer.is_unknown(val) is False]
 
 
     def get_top_freq_values(self,

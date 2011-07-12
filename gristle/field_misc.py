@@ -12,12 +12,8 @@
     Todo:
 """
 from __future__ import division
-import time
-import datetime
 import collections
 import csv
-import fileinput
-import math
 
 import field_type as typer
 
@@ -126,12 +122,12 @@ def get_field_freq(filename,
 
 
 
-def get_min(type, values):
+def get_min(value_type, values):
     """ Returns the minimum value of the input.  Ignores unknown values, if 
         no values found besides unknown it will just return 'None'
 
         Inputs:
-          - type - one of integer, float, string, timestap
+          - value_type - one of integer, float, string, timestap
           - dictionary or list of string values
         Outputs:
           - the single maximum value
@@ -139,33 +135,33 @@ def get_min(type, values):
         Test Coverage:
           - complete via test harness
     """
-    assert(type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
-    if type == 'integer':
-       clean_values = [int(val) for val in values 
+    assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
+    if value_type == 'integer':
+        clean_values = [int(val) for val in values 
                        if typer.is_unknown(val) is False]
-    elif type == 'float':
-       clean_values = [float(val) for val in values 
+    elif value_type == 'float':
+        clean_values = [float(val) for val in values 
                        if typer.is_unknown(val) is False]
     else:
-       clean_values = [val for val in values 
+        clean_values = [val for val in values 
                        if typer.is_unknown(val) is False]
 
     try:
-        if type in ['integer','float']:
-           return str(min(clean_values))
+        if value_type in ['integer','float']:
+            return str(min(clean_values))
         else:
-           return min(clean_values)
+            return min(clean_values)
     except ValueError:
         return None
 
 
 
-def get_max(type, values):
+def get_max(value_type, values):
     """ Returns the maximum value of the input.  Ignores unknown values, if 
         no values found besides unknown it will just return 'None'
 
         Inputs:
-          - type - one of integer, float, string, timestap
+          - value_type - one of integer, float, string, timestap
           - dictionary or list of string values
         Outputs:
           - the single maximum value
@@ -173,23 +169,23 @@ def get_max(type, values):
         Test Coverage:
           - complete via test harness
     """
-    assert(type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
+    assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
 
-    if type == 'integer':
-       clean_values = [int(val) for val in values
+    if value_type == 'integer':
+        clean_values = [int(val) for val in values
                        if typer.is_unknown(val) is False]
-    elif type == 'float':
-       clean_values = [float(val) for val in values
+    elif value_type == 'float':
+        clean_values = [float(val) for val in values
                        if typer.is_unknown(val) is False]
     else:
-       clean_values = [val for val in values
+        clean_values = [val for val in values
                        if typer.is_unknown(val) is False]
 
     try:
-        if type in ['integer','float']:
-           return str(max(clean_values))
+        if value_type in ['integer','float']:
+            return str(max(clean_values))
         else:
-           return max(clean_values)
+            return max(clean_values)
     except ValueError:
         return None
 
@@ -208,8 +204,8 @@ def get_max_length(values):
 
     for value in values:
         if not typer.is_unknown(value):
-           if len(value) > max_length:
-               max_length = len(value)
+            if len(value) > max_length:
+                max_length = len(value)
 
     return max_length
 
@@ -228,8 +224,8 @@ def get_min_length(values):
 
     for value in values:
         if not typer.is_unknown(value):
-           if len(value) < min_length:
-               min_length = len(value)
+            if len(value) < min_length:
+                min_length = len(value)
 
     return min_length
 

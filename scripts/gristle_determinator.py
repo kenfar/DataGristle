@@ -12,10 +12,7 @@
 #--- standard modules ------------------
 import sys
 import os
-import fileinput
-import collections
 import optparse
-import csv
 
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure
@@ -48,7 +45,7 @@ def main():
 
 
     if opts.brief:
-       return 0
+        return 0
 
     # Get Analysis on ALL Fields:
     MyFields = field_determinator.FieldDeterminator(opts.filename,
@@ -59,63 +56,62 @@ def main():
     MyFields.analyze_fields(opts.column_number)
 
     if opts.verbose:
-        print print_field_info(MyFile, MyFields)
+        print print_field_info(MyFields)
 
     return 0     
 
 
 def print_file_info(MyFile):
+    print 
+    print 'File Structure:'
+    print '  format type      = %s'     % MyFile.format_type
+    print '  field_cnt        = %d'     % MyFile.field_cnt
+    print '  record_cnt       = %d'     % MyFile.record_cnt
+    print '  has header       = %s'     % MyFile.has_header
+
+    print '  delimiter        = %-6r  ' % MyFile.dialect.delimiter
+    print '  csv_quoting      = %-6r  ' % MyFile.csv_quoting
+    print '  skipinitialspace = %r'     % MyFile.dialect.skipinitialspace
+    print '  quoting          = %-6r  ' % QUOTE_DICT[MyFile.dialect.quoting]
+    print '  doublequote      = %-6r  ' % MyFile.dialect.doublequote
+    print '  quotechar        = %-6r  ' % MyFile.dialect.quotechar
+    print '  lineterminator   = %r'     % MyFile.dialect.lineterminator
+    print '  escapechar       = %-6r'   % MyFile.dialect.escapechar
+    print
+
+def print_field_info(MyFields):
+    print
+    print 'Fields Analysis Results: '
+    for sub in range(MyFields.field_cnt):
         print 
-        print 'File Structure:'
-        print '  format type      = %s'     % MyFile.format_type
-        print '  field_cnt        = %d'     % MyFile.field_cnt
-        print '  record_cnt       = %d'     % MyFile.record_cnt
-        print '  has header       = %s'     % MyFile.has_header
-
-        print '  delimiter        = %-6r  ' % MyFile.dialect.delimiter
-        print '  csv_quoting      = %-6r  ' % MyFile.csv_quoting
-        print '  skipinitialspace = %r'     % MyFile.dialect.skipinitialspace
-        print '  quoting          = %-6r  ' % QUOTE_DICT[MyFile.dialect.quoting]
-        print '  doublequote      = %-6r  ' % MyFile.dialect.doublequote
-        print '  quotechar        = %-6r  ' % MyFile.dialect.quotechar
-        print '  lineterminator   = %r'     % MyFile.dialect.lineterminator
-        print '  escapechar       = %-6r'   % MyFile.dialect.escapechar
-        print
-
-def print_field_info(MyFile, MyFields):
-        print
-        print 'Fields Analysis Results: '
-        for sub in range(MyFields.field_cnt):
-            print 
-            print '      ------------------------------------------------------'
-            print '      Name:           %-20s ' %  MyFields.field_names[sub]
-            print '      Field Number:   %-20s ' %  sub
-            if MyFields.field_trunc[sub]:
-               print '      Data Truncated: analysis will be partial'
-            print '      Type:           %-20s ' %  MyFields.field_types[sub]
-            print '      Max:            %-20s ' %  MyFields.field_max[sub]
-            print '      Min:            %-20s ' %  MyFields.field_min[sub]
-            print '      Unique Values:  %-20d    known:  %-20d' %   \
+        print '      ------------------------------------------------------'
+        print '      Name:           %-20s ' %  MyFields.field_names[sub]
+        print '      Field Number:   %-20s ' %  sub
+        if MyFields.field_trunc[sub]:
+            print '      Data Truncated: analysis will be partial'
+        print '      Type:           %-20s ' %  MyFields.field_types[sub]
+        print '      Max:            %-20s ' %  MyFields.field_max[sub]
+        print '      Min:            %-20s ' %  MyFields.field_min[sub]
+        print '      Unique Values:  %-20d    known:  %-20d' %   \
                          (len(MyFields.field_freqs[sub]),
                           len(MyFields.get_known_values(sub)))
-            if MyFields.field_types[sub] in ('integer','float'):
-                print '      Mean:           %-20s ' % MyFields.field_mean[sub]
-                print '      Median:         %-20s ' % MyFields.field_median[sub]
-            elif MyFields.field_types[sub] == 'string':
-               print '      Case:           %-20s ' %   MyFields.field_case[sub]
-               print '      Min Length:     %-20s ' %   MyFields.field_min_length[sub]
-               print '      Max Length:     %-20s ' %   MyFields.field_max_length[sub]
+        if MyFields.field_types[sub] in ('integer','float'):
+            print '      Mean:           %-20s ' % MyFields.field_mean[sub]
+            print '      Median:         %-20s ' % MyFields.field_median[sub]
+        elif MyFields.field_types[sub] == 'string':
+            print '      Case:           %-20s ' %   MyFields.field_case[sub]
+            print '      Min Length:     %-20s ' %   MyFields.field_min_length[sub]
+            print '      Max Length:     %-20s ' %   MyFields.field_max_length[sub]
 
-
-            if MyFields.field_freqs[sub] is not None:
-                sorted_list = MyFields.get_top_freq_values(sub, 4)
-                if sorted_list[0][1] == 1:
-                    print '      Top Values not shown - all values are unique'
-                else:
-                    print     '      Top Values: '
-                    for pair in sorted_list:
-                        if not typer.is_unknown(pair[0]): 
-                           print '         %-20s x %d occurances' % ( pair[0], pair[1])
+        if MyFields.field_freqs[sub] is not None:
+            sorted_list = MyFields.get_top_freq_values(sub, 4)
+            if sorted_list[0][1] == 1:
+                print '      Top Values not shown - all values are unique'
+            else:
+                print     '      Top Values: '
+                for pair in sorted_list:
+                    if not typer.is_unknown(pair[0]): 
+                        print '         %-20s x %d occurances' % ( pair[0], pair[1])
     
 
 
