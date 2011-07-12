@@ -230,3 +230,21 @@ def get_min_length(values):
     return min_length
 
 
+def get_mean_length(values):
+    """ Returns the mean length value of the input.   If
+        no values found besides unknown it will just return 'None'
+
+        Inputs:
+          - dictionary or list of string values
+        Outputs:
+          - the single mean value
+    """
+    mean_length  = None
+    clean_values = [len(x) for x in values 
+                    if typer.is_unknown(x) is False]
+    try:
+       return sum(clean_values) / len(clean_values)
+    except ZeroDivisionError:
+       return None
+    
+

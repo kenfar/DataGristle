@@ -22,6 +22,28 @@ def suite():
 
 
 
+class Test_get_mean_length(unittest.TestCase):
+
+    def setUp(self):
+        self.test_u1 = ['AAA','BBB','CCC']
+        self.test_u2 = ['A','B','CCCCC','DDDDD']
+
+        self.test_m1 = ['a','b','unk']
+
+        self.test_unk1 = ['unk','n/a','']
+        self.test_unk2 = []
+
+    def tearDown(self):
+        pass
+ 
+    def test_misc_a01(self):
+        assert(mod.get_mean_length(self.test_u1) == 3)
+        assert(mod.get_mean_length(self.test_u2) == 3)
+        assert(mod.get_mean_length(self.test_m1) == 1)
+        assert(mod.get_mean_length(self.test_unk1) is None)
+        assert(mod.get_mean_length(self.test_unk2) is None)
+
+
 class Test_get_case(unittest.TestCase):
 
     def setUp(self):
@@ -47,6 +69,31 @@ class Test_get_case(unittest.TestCase):
 
         assert(mod.get_case('string', self.test_unk1) == 'unknown')
         assert(mod.get_case('string', self.test_unk2) == 'unknown')
+
+
+class Test_get_field_freq(unittest.TestCase):
+
+    def setUp(self):
+        (fd1, self.test1_fqfn) = tempfile.mkstemp()
+        fp1 = os.fdopen(fd1,"w")
+        for x in range(100):
+           reca = 'a%d|a%d|a%d\n' % (x,x,x)
+           fp1.write(reca)
+           recb = 'b%d|b%d|b%d\n' % (x,x,x)
+           fp1.write(recb)
+        fp1.close()
+
+    def tearDown(self):
+        os.remove(self.test1_fqfn)
+
+    def test_misc_b01_truncation(self):
+        (freq, trunc_flag) = mod.get_field_freq(self.test1_fqfn, 
+                                   field_number=0,
+                                   has_header=False,
+                                   field_delimiter='|',
+                                   max_freq_size=4)
+        assert(len(freq) == 4)
+        assert(trunc_flag is True)
 
 
 class Test_get_field_freq(unittest.TestCase):

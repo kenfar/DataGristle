@@ -3,7 +3,6 @@
     contains:
       - main function
       - get_opts_and_args function
-    todo:
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
@@ -28,6 +27,8 @@ QUOTE_DICT[1] = 'QUOTE_ALL'
 QUOTE_DICT[2] = 'QUOTE_NONNUMERIC'
 QUOTE_DICT[3] = 'QUOTE_NONE'
 
+from pprint import pprint as pp
+pp(sys.path)
 
 
 #------------------------------------------------------------------------------
@@ -102,6 +103,7 @@ def print_field_info(MyFields):
             print '      Case:           %-20s ' %   MyFields.field_case[sub]
             print '      Min Length:     %-20s ' %   MyFields.field_min_length[sub]
             print '      Max Length:     %-20s ' %   MyFields.field_max_length[sub]
+            print '      Mean Length:    %-20s ' %   MyFields.field_mean_length[sub]
 
         if MyFields.field_freqs[sub] is not None:
             sorted_list = MyFields.get_top_freq_values(sub, 4)

@@ -62,6 +62,7 @@ class FieldDeterminator(object):
         self.field_case          = {}
         self.field_max_length    = {}
         self.field_min_length    = {}
+        self.field_mean_length   = {}
         self.field_trunc         = {}
 
         #--- public field frequency distributions - organized by field number
@@ -108,6 +109,8 @@ class FieldDeterminator(object):
                                                 self.field_freqs[f_no])
             self.field_min_length[f_no] = miscer.get_min_length(self.field_freqs[f_no])
             self.field_max_length[f_no] = miscer.get_max_length(self.field_freqs[f_no])
+            self.field_mean_length[f_no] = miscer.get_mean_length(self.field_freqs[f_no])
+
 
             if self.field_types[f_no] in ['integer','float']:
                 self.field_mean[f_no]   = mather.get_mean(self.field_freqs[f_no])
