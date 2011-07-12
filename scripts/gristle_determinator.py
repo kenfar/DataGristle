@@ -20,9 +20,9 @@ import csv
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure
 
-import gristle.file_type  
-import gristle.field_type as typer
-import gristle.field_determinator 
+import gristle.file_type           as file_type 
+import gristle.field_type          as typer
+import gristle.field_determinator  as field_determinator
 
 
 QUOTE_DICT = {}
