@@ -90,8 +90,8 @@ def print_field_info(MyFields):
         if MyFields.field_trunc[sub]:
             print '      Data Truncated: analysis will be partial'
         print '      Type:           %-20s ' %  MyFields.field_types[sub]
-        print '      Max:            %-20s ' %  MyFields.field_max[sub]
         print '      Min:            %-20s ' %  MyFields.field_min[sub]
+        print '      Max:            %-20s ' %  MyFields.field_max[sub]
         print '      Unique Values:  %-20d    known:  %-20d' %   \
                          (len(MyFields.field_freqs[sub]),
                           len(MyFields.get_known_values(sub)))

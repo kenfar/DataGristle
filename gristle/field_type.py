@@ -3,7 +3,7 @@
     Classes & Functions Include:
       FieldTyper   - class runs all checks on all fields
       get_field_type()
-      get_type()
+      _get_type()
       is_timestamp() - determines if arg is a timestamp of some type
       is_float()   - determines if arg is a float
       is_integer() - determines if arg is an integer
@@ -20,6 +20,7 @@ from __future__ import division
 import datetime
 import collections
 import math
+import pprint
 
 
 #--- CONSTANTS -----------------------------------------------------------
@@ -92,52 +93,27 @@ def get_field_type(values):
     type_freq  = collections.defaultdict(int)
     field_type = None
 
-    # count occurances of each case type in values:
+
+    # count occurances of each type:
     for key in values:
-        type_freq[get_type(key)] += 1
+        type_freq[_get_type(key)] += 1
+    type_list = type_freq.keys()
 
-    # create consolidated array:
-    field_type = 'unknown'
-
-    if len(type_freq)  == 1:
-        key        = type_freq.keys()
-        field_type = key[0]
-    elif len(type_freq) == 2  \
-    and 'unknown' in type_freq:
-        if 'string'    in type_freq:
-            field_type = 'string'
-        elif 'number'  in type_freq:
-            field_type = 'number'
-        elif 'integer' in type_freq:
-            field_type = 'integer'
-        elif 'float'   in type_freq:
-            field_type = 'float'
-    elif len(type_freq) == 2:
-        if 'float'     in type_freq  \
-        and 'integer'  in type_freq:
-            field_type  = 'float'
-    elif len(type_freq) == 3:
-        if  ('unknown' in type_freq  \
-        and 'float'    in type_freq  \
-        and 'integer'  in type_freq):
-            field_type = 'float'
-    elif len(type_freq) == 4:
-        if  ('unknown' in type_freq  \
-        and 'timestamp' in type_freq \
-        and 'float'    in type_freq  \
-        and 'integer'  in type_freq):
-            field_type = 'float'
-    else:
-        # if one value is far more common then the other, select it:
-        # add code here
-        # otherwise, go with unknown:
-        field_type = 'unknown'
+    # try simple rules:
+    result = _get_field_type_rule(type_list)
+    if result:
+        return result
+  
+    # try probabilities:
+    result = _get_field_type_probability(type_freq)
+    if result:
+        return result
 
     return field_type
 
 
 
-def get_type(value):
+def _get_type(value):
     """ accepts a single string value and returns its potential type
 
         Types identified (and returned) include:
@@ -165,6 +141,60 @@ def get_type(value):
     else:
         return 'string'
 
+
+def _get_field_type_rule(type_list):
+    """ The intent is to resolve type determinations through simplistic
+        rules.
+    """
+    # boolean sets - if distribution is == to any of these sets, then
+    # it is of the type named in the set:
+    timestamp_set_2u = set(['timestamp','unknown'])
+    string_set_2u    = set(['string','unknown'])
+    int_set_2u       = set(['integer','unknown'])
+    float_set_2u     = set(['float','unknown'])
+    float_set_2i     = set(['integer','float'])
+    float_set_2t     = set(['float','timestamp'])
+    float_set_3      = set(['integer','float','unknown'])
+    float_set_4      = set(['integer','float','unknown','timestamp'])
+    unk_set_3        = set(['integer','unknown','string'])
+    unk_set_4        = set(['integer','float','unknown','string'])
+    
+    type_set  = set(type_list)
+
+    if len(type_list) == 0:
+        return 'unknown'
+    elif len(type_list)  == 1:
+        field_type = type_list[0]
+        return field_type
+    elif len(type_list) == 2:
+       if not type_set.symmetric_difference(string_set_2u):
+          return 'string'
+       elif not type_set.symmetric_difference(float_set_2i):
+          return 'float'
+       elif not type_set.symmetric_difference(float_set_2u):
+          return 'float'
+       elif not type_set.symmetric_difference(float_set_2t):
+          return 'float'
+       elif not type_set.symmetric_difference(int_set_2u):
+          return 'integer'
+       elif not type_set.symmetric_difference(timestamp_set_2u):
+          return 'timestamp'
+    elif len(type_list) == 3:
+       if not type_set.symmetric_difference(float_set_3):
+          return 'float'
+       elif not type_set.symmetric_difference(unk_set_3):
+          return 'unknown'
+    elif len(type_list) == 4:
+       if not type_set.symmetric_difference(float_set_4):
+          return 'float'
+       elif not type_set.symmetric_difference(unk_set_4):
+          return 'unknown'
+    else:
+       return None
+
+
+def _get_field_type_probability(type_freq):
+    return None
 
 
 
