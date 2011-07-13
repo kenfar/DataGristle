@@ -137,20 +137,17 @@ def get_min(value_type, values):
     """
     assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
     if value_type == 'integer':
-        clean_values = [int(val) for val in values 
-                       if typer.is_unknown(val) is False]
+        y = [int(val) for val in values if not typer.is_unknown(val)]
     elif value_type == 'float':
-        clean_values = [float(val) for val in values 
-                       if typer.is_unknown(val) is False]
+        y = [float(val) for val in values if not typer.is_unknown(val)]
     else:
-        clean_values = [val for val in values 
-                       if typer.is_unknown(val) is False]
+        y = [val for val in values if not typer.is_unknown(val)]
 
     try:
         if value_type in ['integer','float']:
-            return str(min(clean_values))
+            return str(min(y))
         else:
-            return min(clean_values)
+            return min(y)
     except ValueError:
         return None
 
@@ -172,20 +169,17 @@ def get_max(value_type, values):
     assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
 
     if value_type == 'integer':
-        clean_values = [int(val) for val in values
-                       if typer.is_unknown(val) is False]
+        y = [int(val) for val in values if not typer.is_unknown(val)]
     elif value_type == 'float':
-        clean_values = [float(val) for val in values
-                       if typer.is_unknown(val) is False]
+        y = [float(val) for val in values if not typer.is_unknown(val)]
     else:
-        clean_values = [val for val in values
-                       if typer.is_unknown(val) is False]
+        y = [val for val in values if not typer.is_unknown(val)]
 
     try:
         if value_type in ['integer','float']:
-            return str(max(clean_values))
+            return str(max(y))
         else:
-            return max(clean_values)
+            return max(y)
     except ValueError:
         return None
 
@@ -230,21 +224,5 @@ def get_min_length(values):
     return min_length
 
 
-def get_mean_length(values):
-    """ Returns the mean length value of the input.   If
-        no values found besides unknown it will just return 'None'
 
-        Inputs:
-          - dictionary or list of string values
-        Outputs:
-          - the single mean value
-    """
-    mean_length  = None
-    clean_values = [len(x) for x in values 
-                    if typer.is_unknown(x) is False]
-    try:
-       return sum(clean_values) / len(clean_values)
-    except ZeroDivisionError:
-       return None
-    
 

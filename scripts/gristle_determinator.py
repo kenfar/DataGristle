@@ -44,7 +44,6 @@ def main():
     if opts.verbose:
         print_file_info(MyFile)
 
-
     if opts.brief:
         return 0
 

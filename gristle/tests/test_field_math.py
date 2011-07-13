@@ -180,7 +180,39 @@ class TestGetMean(unittest.TestCase):
 
 
 
+class Test_get_mean_length(unittest.TestCase):
+
+    def setUp(self):
+        self.empty_dict_1  = {}
+        self.empty_list_1  = []
+        self.easy_dict   = {'8': 3, '1': 2, '3': 4}
+        self.easy_list   = ['8', '1', '3' ]
+        self.small_list_1 = ['8']
+        self.small_list_2 = ['a','aaa']
+        self.unk_list    = ['unk', 'unk', ' ', '8', '2' ]
+        self.unk_dict    = {'UNK':1, 'unknown':3, ' ':99, '8':4, '2':2 }
+        self.med_dict_1  = {'aaa':1, 'a':3 }
+
+    def test_math_g01_emptiness(self):
+        assert(mod.get_mean_length(self.empty_dict_1) is None)
+        assert(mod.get_mean_length(self.empty_list_1) is None)
+
+    def test_math_g02_unknowns(self):
+        assert(mod.get_mean_length(self.unk_list)    == 1)
+        assert(mod.get_mean_length(self.unk_dict)    == 1)
+
+    def test_math_g03_easy_list(self):
+        assert(mod.get_mean_length(self.easy_list)  == 1)
+
+    def test_math_g04_small_sets(self):
+        assert(mod.get_mean_length(self.small_list_1)  == 1)
+        assert(mod.get_mean_length(self.small_list_2)  == 2)
+
+    def test_math_g05_medium_sets(self):
+        assert(mod.get_mean_length(self.med_dict_1)  == 1.5)
+
+
+
 if __name__ == "__main__":
     unittest.main()
-
 

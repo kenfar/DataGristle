@@ -18,6 +18,7 @@
       - change returned data format to be based on field
 """
 from __future__ import division
+import field_type
 
 
 #--- CONSTANTS -----------------------------------------------------------
@@ -25,7 +26,39 @@ from __future__ import division
 MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
 
 
-    
+
+def get_mean_length(values):
+    """ Returns the mean (average) length of the input.  Ignores unknown 
+        values, if no values found besides unknown it will just return 'None'
+
+        Inputs:
+          - a list or dictionary of string data. If it is a dictionary then
+            it must be a frequency distribution - with the value representing
+            the number of occurances of the key.
+        Outputs:
+          - a single value - the mean of the inputs
+        Test Coverage:
+          - complete via test harness
+    """
+    count   = 0
+    accum   = 0
+
+    for value in values:
+        if field_type.is_unknown(value):
+            continue
+        try:                    # tries dictionary first
+            accum += len(value) * int(values[value])
+            count += int(values[value])
+        except TypeError:       # catches list of numeric strings
+            accum += len(value)
+            count += 1
+        except ValueError:      # catches dictionary with string
+            pass                # usually 'unknown values', sometimes garbage
+    try:
+        return accum / count
+    except ZeroDivisionError:
+        return None
+
 
 
 def get_mean(values):

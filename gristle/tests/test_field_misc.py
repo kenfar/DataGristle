@@ -22,28 +22,6 @@ def suite():
 
 
 
-class Test_get_mean_length(unittest.TestCase):
-
-    def setUp(self):
-        self.test_u1 = ['AAA','BBB','CCC']
-        self.test_u2 = ['A','B','CCCCC','DDDDD']
-
-        self.test_m1 = ['a','b','unk']
-
-        self.test_unk1 = ['unk','n/a','']
-        self.test_unk2 = []
-
-    def tearDown(self):
-        pass
- 
-    def test_misc_a01(self):
-        assert(mod.get_mean_length(self.test_u1) == 3)
-        assert(mod.get_mean_length(self.test_u2) == 3)
-        assert(mod.get_mean_length(self.test_m1) == 1)
-        assert(mod.get_mean_length(self.test_unk1) is None)
-        assert(mod.get_mean_length(self.test_unk2) is None)
-
-
 class Test_get_case(unittest.TestCase):
 
     def setUp(self):
