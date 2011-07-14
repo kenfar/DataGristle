@@ -1,5 +1,4 @@
 Very next things to do:
-5.  Add more string analysis:  length median
 6.  Add more numeric analysis:  std, variance, quartiles
 8.  test with python 2.7
 9.  Review documentation
