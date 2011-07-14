@@ -41,7 +41,7 @@ def main():
     MyFile       = file_type.FileTyper(opts.filename)
     MyFile.analyze_file()
 
-    if opts.verbose:
+    if not opts.silent:
         print_file_info(MyFile)
 
     if opts.brief:
@@ -52,10 +52,11 @@ def main():
                                   MyFile.format_type,
                                   MyFile.field_cnt,
                                   MyFile.has_header,
-                                  MyFile.dialect)
+                                  MyFile.dialect,
+                                  opts.verbose)
     MyFields.analyze_fields(opts.column_number)
 
-    if opts.verbose:
+    if not opts.silent:
         print print_field_info(MyFields)
 
     return 0     
@@ -104,8 +105,12 @@ def print_field_info(MyFields):
             print '      Max Length:     %-20s ' %   MyFields.field_max_length[sub]
             print '      Mean Length:    %-20s ' %   MyFields.field_mean_length[sub]
 
+        print 'full list:'
+        print MyFields.field_freqs[sub]
+        print 'sorted list:'
         if MyFields.field_freqs[sub] is not None:
-            sorted_list = MyFields.get_top_freq_values(sub, 4)
+            sorted_list = MyFields.get_top_freq_values(sub, limit=4)
+            print sorted_list
             if sorted_list[0][1] == 1:
                 print '      Top Values not shown - all values are unique'
             else:
@@ -134,6 +139,11 @@ def get_opts_and_args():
                       dest='verbose',
                       default=True,
                       help='provides more detail')
+    parser.add_option('-s', '--silent',
+                      action='store_true',
+                      dest='silent',
+                      default=False,
+                      help='performs operation with no output')
     parser.add_option('-b', '--brief',
                       action='store_true',
                       dest='brief',
@@ -155,6 +165,9 @@ def get_opts_and_args():
 
     if opts.brief and opts.column_number:
         parser.error('must not specify both brevity and column number')
+
+    if opts.silent:
+        opts.verbose = False
 
     return opts, args
 

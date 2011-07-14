@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-""" Used to identify characteristics of a file
+""" Used to display a single record of a file, one field per line, with
+    field names displayed as labels to the left of the field values.
+
     contains:
       - main function
+      - get_rec
+      - display_rec
       - get_opts_and_args function
 
     See the file "LICENSE" for the full license governing this code. 
@@ -46,40 +50,40 @@ def main():
                                   MyFile.format_type,
                                   MyFile.field_cnt,
                                   MyFile.has_header,
-                                  MyFile.dialect)
+                                  MyFile.dialect,
+                                  opts.verbose)
     MyFields.analyze_fields()
 
+    rec = get_rec(opts.filename, 
+                  opts.recnum, 
+                  MyFile.dialect)
+    if rec is None:
+       print 'No record found'
+       return
     
-    display_rec(opts.filename, opts.recnum, MyFile, MyFields)
+    display_rec(rec, MyFile, MyFields)
 
     return 0     
 
 
 
-def display_rec(filename, recnum, MyFile, MyFields):
+def display_rec(rec, MyFile, MyFields):
 
     print
 
-    rec = get_rec(filename, recnum)
-    if rec is None:
-       print 'No record found'
-       return
-
-    print rec
-
     for sub in range(MyFile.field_cnt):
-        print '%s:   %s' % (MyFields.field_names[sub], rec[sub])
-
-    
+        print '%-20s   %-40s' % (MyFields.field_names[sub], rec[sub])
 
 
-def get_rec(filename, recnum):
+
+def get_rec(filename, recnum, dialect):
 
     f = open(filename, 'rt')
-    i = 0
+
     rec = None
+    i   = 0
     try:
-       reader = csv.reader(f)
+       reader = csv.reader(f, dialect)
        for row in reader:
            i += 1
            if i == recnum:
@@ -102,17 +106,21 @@ def get_opts_and_args():
     parser.add_option('-q', '--quiet',
                       action='store_false',
                       dest='verbose',
-                      default=True,
+                      default=False,
                       help='provides less detail')
     parser.add_option('-v', '--verbose',
                       action='store_true',
                       dest='verbose',
-                      default=True,
                       help='provides more detail')
+    parser.add_option('-s', '--silent',
+                      action='store_true',
+                      dest='silent',
+                      default=False,
+                      help='performs operation with no output')
     parser.add_option('-r', '--recnum',
-                      default=0,
+                      default=1,
                       type=int,
-                      help='display this record number')
+                      help='display this record number, default to 1')
 
     (opts, args) = parser.parse_args()
 
@@ -121,6 +129,9 @@ def get_opts_and_args():
         parser.error("no filename was provided")
     elif not os.path.exists(opts.filename):
         parser.error("filename %s could not be accessed" % opts.filename)
+
+    if opts.silent:
+        opts.verbose = False
 
     return opts, args
 

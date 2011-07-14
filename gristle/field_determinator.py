@@ -45,12 +45,14 @@ class FieldDeterminator(object):
                  format_type , 
                  field_cnt   ,
                  has_header  ,
-                 dialect):
+                 dialect     ,
+                 verbose=False):
         self.filename            = filename
         self.format_type         = format_type
         self.field_cnt           = field_cnt
         self.has_header          = has_header
         self.dialect             = dialect
+        self.verbose             = verbose
 
         #--- public field dictionaries - organized by field_number --- #
         self.field_names         = {}
@@ -81,13 +83,15 @@ class FieldDeterminator(object):
                - populates public class structures
         """
         
-        print 'Field Analysis Progress: '
+        if self.verbose:
+            print 'Field Analysis Progress: '
         for f_no in range(self.field_cnt):
             if field_number:
                 if f_no != field_number:
                     continue
 
-            print '   Analyzing field: %d' % f_no 
+            if self.verbose:
+                print '   Analyzing field: %d' % f_no 
 
             self.field_names[f_no]   = miscer.get_field_names(self.filename, 
                                            f_no,
@@ -145,6 +149,9 @@ class FieldDeterminator(object):
                         [['ca',120],
                          ['ny',89],
                          ['tx',71]]
+             Issues:
+                   - need to test with array with just 1 row, seems to be blowing up
+                     probably an off by 1 error, no time to diagnose now.
         """
         sort_list = sorted(self.field_freqs[fieldno],
                            key=self.field_freqs[fieldno].get)

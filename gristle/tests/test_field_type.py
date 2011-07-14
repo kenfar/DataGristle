@@ -223,7 +223,14 @@ class TestGetFieldType(unittest.TestCase):
                        'blah':  2,
                        '0':     2,
                        '1.1':   4}
+        self.type_5 = {'n/a':     1,
+                       'blah':  999,
+                       '0':       1,
+                       '1.1':     1,
+                       '2011-04': 1}
 
+    def tearDown(self):
+        pass
 
     def tearDown(self):
         pass
@@ -242,6 +249,9 @@ class TestGetFieldType(unittest.TestCase):
         assert(mod.get_field_type(self.type_3a) == 'float')
         assert(mod.get_field_type(self.type_3b) == 'unknown')
         assert(mod.get_field_type(self.type_4)  == 'unknown')
+
+    def test_type_g02(self):
+        assert(mod.get_field_type(self.type_5)  == 'string')
 
 
 

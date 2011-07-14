@@ -96,7 +96,12 @@ def get_field_type(values):
 
     # count occurances of each type:
     for key in values:
-        type_freq[_get_type(key)] += 1
+        i = _get_type(key)
+        if i != 'unknown':
+           try:                             # values is a dict
+              type_freq[i] += values[key]
+           except TypeError:                # values is a list
+              type_freq[i] += 1
     type_list = type_freq.keys()
 
     # try simple rules:
@@ -108,8 +113,8 @@ def get_field_type(values):
     result = _get_field_type_probability(type_freq)
     if result:
         return result
-
-    return field_type
+    else:
+        return 'unknown'
 
 
 
@@ -144,20 +149,17 @@ def _get_type(value):
 
 def _get_field_type_rule(type_list):
     """ The intent is to resolve type determinations through simplistic
-        rules.
+        rules:
+        - empty list = unknown
+        - one-item list = that item
+        - 2-3 item list of number types = float
     """
-    # boolean sets - if distribution is == to any of these sets, then
-    # it is of the type named in the set:
-    timestamp_set_2u = set(['timestamp','unknown'])
-    string_set_2u    = set(['string','unknown'])
-    int_set_2u       = set(['integer','unknown'])
-    float_set_2u     = set(['float','unknown'])
+    # floats with nothing to the right of the decimal point may be ints
     float_set_2i     = set(['integer','float'])
-    float_set_2t     = set(['float','timestamp'])
-    float_set_3      = set(['integer','float','unknown'])
-    float_set_4      = set(['integer','float','unknown','timestamp'])
-    unk_set_3        = set(['integer','unknown','string'])
-    unk_set_4        = set(['integer','float','unknown','string'])
+    # some floats fall into the timestamp epoch range:
+    float_set_2t     = set(['float','timestamp'])  
+    # or a mix of the above two:
+    float_set_3      = set(['integer','float','timestamp'])
     
     type_set  = set(type_list)
 
@@ -167,34 +169,36 @@ def _get_field_type_rule(type_list):
         field_type = type_list[0]
         return field_type
     elif len(type_list) == 2:
-       if not type_set.symmetric_difference(string_set_2u):
-          return 'string'
-       elif not type_set.symmetric_difference(float_set_2i):
-          return 'float'
-       elif not type_set.symmetric_difference(float_set_2u):
+       if not type_set.symmetric_difference(float_set_2i):
           return 'float'
        elif not type_set.symmetric_difference(float_set_2t):
           return 'float'
-       elif not type_set.symmetric_difference(int_set_2u):
-          return 'integer'
-       elif not type_set.symmetric_difference(timestamp_set_2u):
-          return 'timestamp'
     elif len(type_list) == 3:
        if not type_set.symmetric_difference(float_set_3):
           return 'float'
-       elif not type_set.symmetric_difference(unk_set_3):
-          return 'unknown'
-    elif len(type_list) == 4:
-       if not type_set.symmetric_difference(float_set_4):
-          return 'float'
-       elif not type_set.symmetric_difference(unk_set_4):
-          return 'unknown'
     else:
        return None
 
 
 def _get_field_type_probability(type_freq):
-    return None
+    total = 0
+    for key in type_freq:
+        total += type_freq[key]
+
+    # if the sample-size is too small, then we can't be sure:
+    if total < 10:
+        return 'unknown'
+
+    type_pct  = collections.defaultdict(int)
+    for key in type_freq:
+        type_pct[key] = type_freq[key] / total
+
+    for key in type_pct:
+        if type_pct[key] >= 0.98:
+           return key
+     
+    # no clear winner, we can't be sure:
+    return 'unknown'
 
 
 
