@@ -27,8 +27,8 @@ QUOTE_DICT[1] = 'QUOTE_ALL'
 QUOTE_DICT[2] = 'QUOTE_NONNUMERIC'
 QUOTE_DICT[3] = 'QUOTE_NONE'
 
-from pprint import pprint as pp
-pp(sys.path)
+#from pprint import pprint as pp
+#pp(sys.path)
 
 
 #------------------------------------------------------------------------------
