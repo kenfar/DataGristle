@@ -27,9 +27,8 @@ Description: Gristle is a toolbox of tough and flexible data connectors and anal
         
         Next Steps:  
            * finalize names
-           * create file_viewer.py
            * README markdown
-           * Attractive PDF output of gristle_determinator.py
+           * attractive PDF output of gristle_determinator.py
            * metadata database population
         
         Its objectives include:
@@ -45,10 +44,19 @@ Description: Gristle is a toolbox of tough and flexible data connectors and anal
         DEPENDENCIES
            * Python 2.6
         
-        UTILITIES
+        EXISTING UTILITIES:
            * gristle_determinator.py 
-               - Identifies file formats, generates metadata.
-               - Status:  90% complete
+               - Identifies file formats, generates metadata, prints file analysis report
+               - Status:  98% complete
+               - Next:    Dislay field type consistency metric
+           * gristle_record_viewer.py
+               - Shows one record from a file at a time - formatted based on metadata. 
+               - Status:  98% complete
+               - Next:    Display indicators to the right of the field values to show
+                 how typical or unusual those values are.  Consider file navigation
+                 commands.
+        
+        FUTURE UTILITIES:
            * gristle_metadata.py 
                - Manages metadata - allows users to query, add, update, delete
                  file, field, transformation, reporting descriptions.
@@ -56,13 +64,12 @@ Description: Gristle is a toolbox of tough and flexible data connectors and anal
                - Converts a file into a new format.
                - Conversions include compression, delimited/fixed-length, delimiter, 
                  string quoting, etc
+           * gristle_generator
+               - Generates test data based on gristle metadata
            * gristle_validator 
                - Confirms validity of database and file structure and contents.
            * gristle_file_differ.py
                - Compares two structured files and writes out the differences.
-           * gristle_file_viewer.py
-               - Shows one record from a file at a time - formatted based on metadata. 
-                 User can page up & down through the file.
            * gristle_file_joiner.py
                - joins two files on their common keys and produces a new file
            * gristle_file_aggregator.py
