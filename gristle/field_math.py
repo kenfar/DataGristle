@@ -4,6 +4,8 @@
     limited to data that can be represented as integers or floats.
 
     Classes & Functions Include:
+      get_mean_length
+      get_variance_and_stddev
       get_mean
       GetDictMedian
 
@@ -19,6 +21,7 @@
 """
 from __future__ import division
 import field_type
+import math
 
 
 #--- CONSTANTS -----------------------------------------------------------
@@ -32,9 +35,9 @@ def get_mean_length(values):
         values, if no values found besides unknown it will just return 'None'
 
         Inputs:
-          - a list or dictionary of string data. If it is a dictionary then
-            it must be a frequency distribution - with the value representing
-            the number of occurances of the key.
+          - a dictionary of frequency distribution - with all data of a 
+            string type, and character keyss and numeric data representing
+            occurances of the keys.  Exceptions will be ignored.
         Outputs:
           - a single value - the mean of the inputs
         Test Coverage:
@@ -46,18 +49,52 @@ def get_mean_length(values):
     for value in values:
         if field_type.is_unknown(value):
             continue
-        try:                    # tries dictionary first
+        try:                   
             accum += len(value) * int(values[value])
             count += int(values[value])
-        except TypeError:       # catches list of numeric strings
-            accum += len(value)
-            count += 1
-        except ValueError:      # catches dictionary with string
+        except ValueError:    
             pass                # usually 'unknown values', sometimes garbage
     try:
         return accum / count
     except ZeroDivisionError:
         return None
+
+
+def get_variance_and_stddev(values, mean=None):
+    """ Returns the variance & standard deviation of the input.  
+        Ignores unknown and character values, if no values found besides 
+        unknown it will just return 'None'.  Note this the equation 
+        implemented involves division by the number of entries, not division
+        by the number of entries + 1.
+
+        Inputs:
+          - a dictionary of frequency distribution - with all data of a 
+            string type, but numeric keys and numeric data representing
+            occurances of the keys.  Exceptions will be ignored.
+        Outputs:
+          - a single value - the mean of the inputs
+        Test Coverage:
+          - complete via test harness
+    """
+    count   = 0
+    accum   = 0
+
+    if values and not mean:
+        mean = get_mean(values)
+
+    for value in values:
+        try:                    
+            accum += math.pow(mean - int(value),2)  * int(values[value])
+            count += int(values[value])
+        except ValueError:      # catches dictionary with string
+            pass                # usually 'unknown values', sometimes garbage
+          
+    try:
+        variance = accum / count
+        stddev   = math.sqrt(variance)
+        return variance, stddev
+    except ZeroDivisionError:
+        return None, None
 
 
 
@@ -66,9 +103,8 @@ def get_mean(values):
         values found besides unknown it will just return 'None'
 
         Inputs:
-          - a list or dictionary of numeric data. If it is a dictionary then
-            it must be a frequency distribution - with the value representing
-            the number of occurances of the key.
+          - a dictionary of occurances of numeric data.  For example:
+            {5:31, 8:4} indicating 31 occurances of 5 and 4 occurances of 8
         Outputs:
           - a single value - the mean of the inputs
         Test Coverage:
@@ -78,17 +114,11 @@ def get_mean(values):
     accum   = 0
 
     for value in values:
-        try:                    # tries dictionary first
+        try:                    
             accum += int(value) * int(values[value])
             count += int(values[value])
-        except TypeError:       # catches list of numeric strings
-            accum += int(value)
-            count += 1
-        except IndexError:      # catches list of integers
-            accum += int(value)
-            count += 1
-        except ValueError:      # catches dictionary with string
-            pass                 # usually 'unknown values', sometimes garbage
+        except ValueError:      # catches occasional garbage data
+            pass                
           
     try:
         return accum / count
@@ -98,7 +128,7 @@ def get_mean(values):
 
 
 class GetDictMedian(object):
-    """ Calculates a median number for a list or dictionary of numbers.
+    """ Calculates a median number for a dictionary of numbers.
         This has been designed as a class with a set of private functions mostly
         to help with testing.
     """
@@ -146,11 +176,7 @@ class GetDictMedian(object):
 
     def _get_tuple_list(self, values):
 
-        try:                     # tries dictionary first
-            values_list = list(values.items())
-        except AttributeError:   # catches list
-            values_list = [(k, 1) for k in values]
-        return values_list
+        return list(values.items())
 
     
     def _get_numeric_tuple_list(self, tuple_list):

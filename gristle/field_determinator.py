@@ -21,10 +21,6 @@ import field_math   as mather
 import field_misc   as miscer
 
 
-#--- CONSTANTS -----------------------------------------------------------
-
-
-
 class FieldDeterminator(object):
     """ Examines ALL fields within a file
         Output structures:
@@ -66,6 +62,8 @@ class FieldDeterminator(object):
         self.field_min_length    = {}
         self.field_mean_length   = {}
         self.field_trunc         = {}
+        self.variance            = {}
+        self.stddev              = {}
 
         #--- public field frequency distributions - organized by field number
         #--- each dictionary has a collection within it:
@@ -85,6 +83,7 @@ class FieldDeterminator(object):
         
         if self.verbose:
             print 'Field Analysis Progress: '
+
         for f_no in range(self.field_cnt):
             if field_number:
                 if f_no != field_number:
@@ -109,16 +108,21 @@ class FieldDeterminator(object):
                                                self.field_freqs[f_no])
             self.field_min[f_no]     = miscer.get_min(self.field_types[f_no],
                                                self.field_freqs[f_no])
-            self.field_case[f_no]    = miscer.get_case(self.field_types[f_no],
-                                                self.field_freqs[f_no])
-            self.field_min_length[f_no] = miscer.get_min_length(self.field_freqs[f_no])
-            self.field_max_length[f_no] = miscer.get_max_length(self.field_freqs[f_no])
-            self.field_mean_length[f_no] = mather.get_mean_length(self.field_freqs[f_no])
+
+            if self.field_types[f_no] == 'string':
+                self.field_case[f_no]  = miscer.get_case(self.field_types[f_no],
+                                                         self.field_freqs[f_no])
+                self.field_min_length[f_no]  = miscer.get_min_length(self.field_freqs[f_no])
+                self.field_max_length[f_no]  = miscer.get_max_length(self.field_freqs[f_no])
+                self.field_mean_length[f_no] = mather.get_mean_length(self.field_freqs[f_no])
 
 
             if self.field_types[f_no] in ['integer','float']:
                 self.field_mean[f_no]   = mather.get_mean(self.field_freqs[f_no])
                 self.field_median[f_no] = mather.GetDictMedian().run(self.field_freqs[f_no])
+                (self.variance[f_no], self.stddev[f_no])   \
+                   =  mather.get_variance_and_stddev(self.field_freqs[f_no], 
+                                                     self.field_mean[f_no])
 
     def get_known_values(self, fieldno):
         """ returns a frequency-distribution dictionary that is the 

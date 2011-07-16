@@ -1,5 +1,5 @@
 Very next things to do:
-6.  Add more numeric analysis:  std, variance, quartiles
+6.  Add more numeric analysis:  quartiles
 8.  test with python 2.7
 9.  Review documentation
 11. Review dist utils
@@ -9,9 +9,9 @@ Very next things to do:
 General Things To Do:
 
 1.  determine:
-    - field types                               - 90%
-    - field min, max, mean, median values       - 95%
-    - field length min, max, mean, median	- 50%
+    - field types                               - 95%
+    - field min, max, mean, median values       - 100%
+    - field length min, max, mean        	- 100%
     - field names                               - 100%
     - field case                                - 100%
     - field histogram                           - 100%

@@ -90,27 +90,28 @@ def print_field_info(MyFields):
         print '      Field Number:   %-20s ' %  sub
         if MyFields.field_trunc[sub]:
             print '      Data Truncated: analysis will be partial'
+
         print '      Type:           %-20s ' %  MyFields.field_types[sub]
         print '      Min:            %-20s ' %  MyFields.field_min[sub]
         print '      Max:            %-20s ' %  MyFields.field_max[sub]
         print '      Unique Values:  %-20d    known:  %-20d' %   \
                          (len(MyFields.field_freqs[sub]),
                           len(MyFields.get_known_values(sub)))
+
         if MyFields.field_types[sub] in ('integer','float'):
             print '      Mean:           %-20s ' % MyFields.field_mean[sub]
             print '      Median:         %-20s ' % MyFields.field_median[sub]
+            print '      Variance:       %-20s ' % MyFields.variance[sub]
+            print '      Std Dev:        %-20s ' % MyFields.stddev[sub]
         elif MyFields.field_types[sub] == 'string':
             print '      Case:           %-20s ' %   MyFields.field_case[sub]
             print '      Min Length:     %-20s ' %   MyFields.field_min_length[sub]
             print '      Max Length:     %-20s ' %   MyFields.field_max_length[sub]
             print '      Mean Length:    %-20s ' %   MyFields.field_mean_length[sub]
 
-        print 'full list:'
-        print MyFields.field_freqs[sub]
-        print 'sorted list:'
         if MyFields.field_freqs[sub] is not None:
             sorted_list = MyFields.get_top_freq_values(sub, limit=4)
-            print sorted_list
+            #print sorted_list
             if sorted_list[0][1] == 1:
                 print '      Top Values not shown - all values are unique'
             else:
