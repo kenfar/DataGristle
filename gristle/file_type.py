@@ -39,31 +39,47 @@ class FileTyper(object):
           - has_header
     """
 
-    def __init__(self, fqfn):
+    def __init__(self, fqfn, delimiter, rec_delimiter, has_header):
         """  fqfn = fully qualified file name
         """
         self.fqfn                 = fqfn
-        self.has_header           = None
+        self.delimiter            = delimiter
+        self.rec_delimiter        = rec_delimiter
+        self.has_header           = has_header
         self.format_type          = None
         self.fixed_length         = None
         self.field_cnt            = None
         self.record_cnt           = None
         self.csv_quoting          = None
-        self.dialect              = None # python csv module variable
+        self.dialect              = None
 
     def analyze_file(self):
         """ analyzes a file to determine the structure of the file in terms
             of whether or it it is delimited, what the delimiter is, etc.
         """
+        if self.delimiter:  # delimiter overridden
+           self.dialect                  = csv.Dialect
+           self.dialect.delimiter        = self.delimiter
+           self.dialect.skipinitialspace = False
+           self.dialect.quoting          = True
+           self.dialect.quotechar        = '"'
+           self.dialect.lineterminator   = '\n'
+        else:
+           self.dialect                  = self._get_dialect()
+           self.delimiter                = self.dialect.delimiter
+        
         self.format_type   = self._get_format_type()
-        self.dialect       = self._get_dialect()
         self.has_header    = self._has_header()
         self.field_cnt     = self._get_field_cnt()
         self.record_cnt    = self._count_records()
-        if QUOTE_DICT[self.dialect.quoting] == 'QUOTE_NONE':
-            self.csv_quoting = False
-        else:
-            self.csv_quoting = True
+           
+        
+        if not self.delimiter:       
+           if QUOTE_DICT[self.dialect.quoting] == 'QUOTE_NONE':
+               self.csv_quoting = False
+           else:
+               self.csv_quoting = True
+
 
     def _get_dialect(self):
         """ gets the dialect for a file
@@ -78,26 +94,49 @@ class FileTyper(object):
         csvfile.close()
         return dialect
 
+
     def _has_header(self):
-        """ figure out whether or not there's a header based on the
-            first 50,000 bytes
+        """ if the has_header flag was already provided, then just return it
+            back.
+            Otherwise, figure out whether or not there's a header based on 
+            the first 50,000 bytes
         """
-        sample      = open(self.fqfn, 'r').read(50000)
-        return csv.Sniffer().has_header(sample)
+        if self.has_header:
+            return self.has_header
+        else:
+            sample      = open(self.fqfn, 'r').read(50000)
+            return csv.Sniffer().has_header(sample)
         
+
     def _get_field_cnt(self):
         """ determines the number of fields in the file.
- 
+  
             To do:  make it less naive - it currently assumes that all #recs
             will have the same number of fields.  It should be improved to 
             deal with bad data.
         """
-        for row in csv.reader(open(self.fqfn,'r'), self.dialect):
-            return len(row)
+        if not self.delimiter or len(self.delimiter) == 1:
+           csvfile = open(self.fqfn, "r")
+           for row in csv.reader(csvfile, self.dialect):
+               row_len = len(row)
+               csvfile.close()
+               break
+        else:
+           # csv module can't handle multi-column delimiters:
+           for rec in fileinput.input(self.fqfn):
+               fields = rec[:-1].split(self.delimiter)
+               fileinput.close()
+               row_len = len(fields)
+               break
+
+        return row_len
  
+
     def _get_format_type(self):
         """ Determines format type based on whether or not all records
             are of the same length.
+
+            Returns either 'csv' or 'fixed'
         """
         rec_length = collections.defaultdict(int)
         rec_cnt = 0
@@ -113,12 +152,14 @@ class FileTyper(object):
         else:
             return 'csv'
 
+
     def _count_records(self):
         """ Returns the number of records in the file
         """
         rec_cnt = 0
         for rec in fileinput.input(self.fqfn):
             rec_cnt += 1
+        fileinput.close()
         return rec_cnt
 
 

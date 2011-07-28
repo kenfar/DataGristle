@@ -51,7 +51,7 @@ class TestQuotedCSV(unittest.TestCase):
         self.delimiter     = '|'
         self.quoting       = True
         self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, self.record_cnt)
-        self.MyTest     = mod.FileTyper(self.test1_fqfn)
+        self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 
     def tearDown(self):
@@ -62,6 +62,9 @@ class TestQuotedCSV(unittest.TestCase):
         assert(self.MyTest.field_cnt == 4)
         assert(self.MyTest.format_type == 'csv')
         assert(self.MyTest.dialect.delimiter == self.delimiter)
+        print 
+        print 'csv quoting test: '
+        print self.MyTest.csv_quoting 
         assert(self.MyTest.csv_quoting == self.quoting)
 
 
@@ -73,7 +76,7 @@ class TestNonQuotedCSV(unittest.TestCase):
         self.quoting       = True
         self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, 
                           self.record_cnt)
-        self.MyTest     = mod.FileTyper(self.test1_fqfn)
+        self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 
     def tearDown(self):
@@ -95,19 +98,17 @@ class TestInternals(unittest.TestCase):
         self.quoting       = False
         self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, 
                           self.record_cnt)
-        self.MyTest     = mod.FileTyper(self.test1_fqfn)
+        self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 
     def tearDown(self):
         os.remove(self.test1_fqfn)
 
     def test_file_c01_RecordNumber(self):
-        assert(self.MyTest._count_records()
-                == self.record_cnt)
+        assert(self.MyTest._count_records() == self.record_cnt)
 
     def test_file_c02_FormatType(self):
-        assert(self.MyTest._get_format_type()
-                == 'csv')
+        assert(self.MyTest._get_format_type() == 'csv')
 
 
 if __name__ == "__main__":

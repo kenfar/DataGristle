@@ -42,7 +42,7 @@ def main():
     """ 
     """
     (opts, args) = get_opts_and_args()
-    MyFile       = file_type.FileTyper(opts.filename)
+    MyFile       = file_type.FileTyper(opts.filename, opts.delimiter)
     MyFile.analyze_file()
 
     # Get Analysis on ALL Fields:
@@ -100,7 +100,7 @@ def get_opts_and_args():
         run program with -h or --help for command line args
     """
     # get args
-    use = "Usage: %prog -f [file] -q -v -r [record-number]"
+    use = "Usage: %prog -f [file] -q -v -r [record-number] -d [delimiter]"
     parser = optparse.OptionParser(usage = use)
     parser.add_option('-f', '--file', dest='filename', help='input file')
     parser.add_option('-q', '--quiet',
@@ -121,6 +121,9 @@ def get_opts_and_args():
                       default=1,
                       type=int,
                       help='display this record number, default to 1')
+    parser.add_option('-d', '--delimiter',
+                      help='specify a field delimiter - essential for multi-column delimiters.  Delimiter must be quoted.')
+
 
     (opts, args) = parser.parse_args()
 

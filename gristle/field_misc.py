@@ -14,6 +14,7 @@
 from __future__ import division
 import collections
 import csv
+import fileinput
 
 import field_type as typer
 
@@ -25,19 +26,31 @@ MAX_FREQ_SIZE_DEFAULT  = 10000     # limits entries within freq dictionaries
 def get_field_names(filename, 
                     field_number,
                     has_header,
-                    field_delimiter):
+                    field_delimiter,
+                    rec_delimiter,
+                    field_cnt):
     """ Determines names of fields 
     """
-    in_file   = open(filename, "r")
-    in_rec    = in_file.readline()
-    in_file.close()
-
-    if not in_rec:
+    #print 'get_field_names - has_header: %s' % has_header
+    bad_rec = False
+    for rec in fileinput.input(filename):
+        if rec_delimiter:
+            partial_rec = rec[:-1].split(rec_delimiter)[0]
+        else:
+            partial_rec = rec[:-1]
+        #print partial_rec
+        fields = partial_rec.split(field_delimiter)
+        if len(fields) != field_cnt:
+            bad_rec = True
+            print 'bad_rec! len: %d, expected: %d' % (len(fields), field_cnt)
+        break # we're only after the first record
+    fileinput.close()
+    if not fields:
+        print 'Error: Empty file'
         return None
 
-    fields    = in_rec[:-1].split(field_delimiter)
-
-    if has_header is True:     # get field names from header record
+    if has_header \
+    and not bad_rec:
         field_name = fields[field_number]
     else:
         field_name = 'field_num_%d' % field_number
@@ -101,22 +114,62 @@ def get_field_freq(filename,
                    field_number,
                    has_header,
                    field_delimiter,
+                   rec_delimiter,
+                   field_cnt,
                    max_freq_size=MAX_FREQ_SIZE_DEFAULT):
     """ Collects a frequency distribution for a single field by reading
         the file provided.
     """
-    freq      = collections.defaultdict(int)
-    rec_cnt   = 0
-    truncated = False
-    for rec in csv.reader(open(filename,'r'), delimiter=field_delimiter):
-        rec_cnt += 1
-        if rec_cnt == 1 and has_header:
-            continue
-        freq[rec[field_number]] += 1
-        if len(freq) >= max_freq_size:
-            print '      WARNING: freq dist dictionary is too large - will trunc'
-            truncated = True
-            break
+    #print 'field_delimiter: %s' % field_delimiter
+    freq        = collections.defaultdict(int)
+    rec_cnt     = 0
+    bad_rec_cnt = 0
+    truncated   = False
+    #print 'field_delimiter: %s' % field_delimiter
+    if len(field_delimiter) == 1:
+        for fields in csv.reader(open(filename,'r'), delimiter=field_delimiter):
+            rec_cnt += 1
+            if rec_cnt == 1 and has_header:
+                continue
+            if len(fields) != field_number:
+                bad_rec_cnt += 1
+                continue
+            freq[fields[field_number]] += 1
+            if len(freq) >= max_freq_size:
+                print '      WARNING: freq dict is too large - will trunc'
+                truncated = True
+                break
+    else:
+        for rec in fileinput.input(filename):
+            if rec_delimiter:
+               x = rec[:-1].split(rec_delimiter)
+               partial_rec = x[0]
+            else:
+               partial_rec = rec[:-1]
+            fields = partial_rec.split(field_delimiter)
+            #print fields
+            rec_cnt += 1
+            if rec_cnt == 1 and has_header:
+                continue
+            if len(fields) != field_cnt:
+                bad_rec_cnt += 1
+                continue
+            try:
+                freq[fields[field_number]] += 1
+            except IndexError:
+                print('IndexError')
+                print('Field Number: %d' % field_number)
+                print(fields)
+                print(rec)
+                print('rec_cnt: %d' % rec_cnt)
+                print('field_cnt:    %d' % field_cntr)
+                print('field_len:    %d' % len(fields))
+            if len(freq) >= max_freq_size:
+                print '      WARNING: freq dict is too large - will trunc'
+                truncated = True
+                break
+        fileinput.close()
+   
         
     return freq, truncated
 
@@ -137,7 +190,12 @@ def get_min(value_type, values):
     """
     assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
     if value_type == 'integer':
-        y = [int(val) for val in values if not typer.is_unknown(val)]
+        try:
+            y = [int(val) for val in values if not typer.is_unknown(val)]
+        except ValueError:
+            print('ERROR: invalid non-numeric value')
+            print values
+            return None
     elif value_type == 'float':
         y = [float(val) for val in values if not typer.is_unknown(val)]
     else:
@@ -169,7 +227,12 @@ def get_max(value_type, values):
     assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
 
     if value_type == 'integer':
-        y = [int(val) for val in values if not typer.is_unknown(val)]
+        try:
+           y = [int(val) for val in values if not typer.is_unknown(val)]
+        except ValueError:
+           print 'ERROR: unexpected non-numeric value'
+           print values
+           return None
     elif value_type == 'float':
         y = [float(val) for val in values if not typer.is_unknown(val)]
     else:

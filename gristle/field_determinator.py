@@ -15,6 +15,7 @@
       - change returned data format to be based on field
 """
 from __future__ import division
+import pprint       as pp
 
 import field_type   as typer
 import field_math   as mather
@@ -42,13 +43,18 @@ class FieldDeterminator(object):
                  field_cnt   ,
                  has_header  ,
                  dialect     ,
+                 delimiter   ,
+                 rec_delimiter=None,
                  verbose=False):
         self.filename            = filename
         self.format_type         = format_type
         self.field_cnt           = field_cnt
         self.has_header          = has_header
         self.dialect             = dialect
+        self.delimiter           = delimiter
+        self.rec_delimiter       = rec_delimiter
         self.verbose             = verbose
+        #pp.pprint(locals())
 
         #--- public field dictionaries - organized by field_number --- #
         self.field_names         = {}
@@ -85,7 +91,7 @@ class FieldDeterminator(object):
             print 'Field Analysis Progress: '
 
         for f_no in range(self.field_cnt):
-            if field_number:
+            if field_number is not None:
                 if f_no != field_number:
                     continue
 
@@ -95,13 +101,17 @@ class FieldDeterminator(object):
             self.field_names[f_no]   = miscer.get_field_names(self.filename, 
                                            f_no,
                                            self.has_header,
-                                           self.dialect.delimiter)
+                                           self.delimiter,
+                                           self.rec_delimiter,
+                                           self.field_cnt)
 
             (self.field_freqs[f_no],
             self.field_trunc[f_no])  = miscer.get_field_freq(self.filename, 
                                            f_no, 
                                            self.has_header,
-                                           self.dialect.delimiter)
+                                           self.delimiter,
+                                           self.rec_delimiter,
+                                           self.field_cnt)
 
             self.field_types[f_no]   = typer.get_field_type(self.field_freqs[f_no])
             self.field_max[f_no]     = miscer.get_max(self.field_types[f_no],

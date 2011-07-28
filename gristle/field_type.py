@@ -160,6 +160,8 @@ def _get_field_type_rule(type_list):
     float_set_2t     = set(['float','timestamp'])  
     # or a mix of the above two:
     float_set_3      = set(['integer','float','timestamp'])
+    # some integers also fall into the timestamp epoch range:
+    integer_set_2t   = set(['integer','timestamp'])  
     
     type_set  = set(type_list)
 
@@ -173,6 +175,8 @@ def _get_field_type_rule(type_list):
           return 'float'
        elif not type_set.symmetric_difference(float_set_2t):
           return 'float'
+       elif not type_set.symmetric_difference(integer_set_2t):
+          return 'integer'
     elif len(type_list) == 3:
        if not type_set.symmetric_difference(float_set_3):
           return 'float'
@@ -194,7 +198,7 @@ def _get_field_type_probability(type_freq):
         type_pct[key] = type_freq[key] / total
 
     for key in type_pct:
-        if type_pct[key] >= 0.98:
+        if type_pct[key] >= 0.95:
            return key
      
     # no clear winner, we can't be sure:
