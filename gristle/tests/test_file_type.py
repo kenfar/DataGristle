@@ -50,8 +50,10 @@ class TestQuotedCSV(unittest.TestCase):
         self.record_cnt = 100
         self.delimiter     = '|'
         self.quoting       = True
-        self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, self.record_cnt)
-        self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
+        self.test1_fqfn    = generate_test_file1(self.delimiter, 
+                                                 self.quoting, self.record_cnt)
+        # run FileTyper without csv dialect info:
+        self.MyTest        = mod.FileTyper(self.test1_fqfn)
         self.MyTest.analyze_file()
 
     def tearDown(self):
@@ -62,9 +64,6 @@ class TestQuotedCSV(unittest.TestCase):
         assert(self.MyTest.field_cnt == 4)
         assert(self.MyTest.format_type == 'csv')
         assert(self.MyTest.dialect.delimiter == self.delimiter)
-        print 
-        print 'csv quoting test: '
-        print self.MyTest.csv_quoting 
         assert(self.MyTest.csv_quoting == self.quoting)
 
 

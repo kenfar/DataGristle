@@ -26,8 +26,8 @@ import pprint
 #--- CONSTANTS -----------------------------------------------------------
 
 MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
-DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01
-DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01
+DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01   # (not the actual minimum)
+DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01   # (not the acutal maximum)
 DATE_MAX_LEN           = 26
 DATE_INVALID_CHARS = ['`','`','!','@','#','$','%','^','&','*','(',')',
                       '_','+','=','[','{','}','}','|',
@@ -93,11 +93,10 @@ def get_field_type(values):
     type_freq  = collections.defaultdict(int)
     field_type = None
 
-
     # count occurances of each type:
     for key in values:
         i = _get_type(key)
-        if i != 'unknown':
+        if i != 'unknown':                  # NOTE: unknown is filtered out
            try:                             # values is a dict
               type_freq[i] += values[key]
            except TypeError:                # values is a list
@@ -150,12 +149,23 @@ def _get_type(value):
 def _get_field_type_rule(type_list):
     """ The intent is to resolve type determinations through simplistic
         rules:
-        - empty list = unknown
-        - one-item list = that item
-        - 2-3 item list of number types = float
+        Additional Notes to consider:
+        1. Note that type of 'unknown' must not be included within type_list
+        2. empty list = unknown
+        3. one-item list = that item
+        4. 2-3 item list of number types = float
+        5. timestamps include epochs - which look like any integer or float.
+           Because of this a mix of timestamps + floats/integers will be considered
+           a float or integer.  
+        Challenge is in handling data quality problems - like the documented 
+        case in which a file with 8000 timestamps in the yyyy-mm-dd have 4 records
+        with floats.   These floats should have been kicked out as garbage data -
+        but if the timestamps were epochs then that would not be appropriate.
     """
+    assert('unknown' not in type_list)
+
     # floats with nothing to the right of the decimal point may be ints
-    float_set_2i     = set(['integer','float'])
+    float_set_2i     = set(['integer','float'])   
     # some floats fall into the timestamp epoch range:
     float_set_2t     = set(['float','timestamp'])  
     # or a mix of the above two:

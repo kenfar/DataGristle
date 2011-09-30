@@ -61,12 +61,7 @@ def main():
                                   MyFile.delimiter,
                                   opts.recdelimiter,
                                   opts.verbose)
-    
-    if opts.column_type_overrides:
-        assert max(opts.column_type_overrides) < MyFile.field_cnt,   \
-           "ERROR: column_type_override references column_number that does not exist"
-
-    MyFields.analyze_fields(opts.column_number, opts.column_type_overrides)
+    MyFields.analyze_fields(opts.column_number)
 
     if not opts.silent:
         print print_field_info(MyFields, opts.column_number)
@@ -77,19 +72,19 @@ def main():
 def print_file_info(MyFile):
     print 
     print 'File Structure:'
-    print '  format type:       %s'     % MyFile.format_type
-    print '  field cnt:         %d'     % MyFile.field_cnt
-    print '  record cnt:        %d'     % MyFile.record_cnt
-    print '  has header:        %s'     % MyFile.has_header
+    print '  format type      = %s'     % MyFile.format_type
+    print '  field cnt        = %d'     % MyFile.field_cnt
+    print '  record cnt       = %d'     % MyFile.record_cnt
+    print '  has header       = %s'     % MyFile.has_header
 
-    print '  delimiter:         %-6s  ' % MyFile.delimiter
-    print '  csv quoting:       %-6s  ' % MyFile.csv_quoting
-    print '  skipinitialspace:  %r'     % MyFile.dialect.skipinitialspace
-    print '  quoting:           %-6s  ' % QUOTE_DICT[MyFile.dialect.quoting]
-    print '  doublequote:       %-6r  ' % MyFile.dialect.doublequote
-    print '  quotechar:         %-6s  ' % MyFile.dialect.quotechar
-    print '  lineterminator:    %r'     % MyFile.dialect.lineterminator
-    print '  escapechar:        %-6r'   % MyFile.dialect.escapechar
+    print '  delimiter        = %-6s  ' % MyFile.delimiter
+    print '  csv quoting      = %-6s  ' % MyFile.csv_quoting
+    print '  skipinitialspace = %r'     % MyFile.dialect.skipinitialspace
+    print '  quoting          = %-6s  ' % QUOTE_DICT[MyFile.dialect.quoting]
+    print '  doublequote      = %-6r  ' % MyFile.dialect.doublequote
+    print '  quotechar        = %-6s  ' % MyFile.dialect.quotechar
+    print '  lineterminator   = %r'     % MyFile.dialect.lineterminator
+    print '  escapechar       = %-6r'   % MyFile.dialect.escapechar
     print
 
 def print_field_info(MyFields, column_number):
@@ -102,8 +97,7 @@ def print_field_info(MyFields, column_number):
 
         print 
         print '      ------------------------------------------------------'
-        print '      Name:           %-20s ' %  MyFields.field_names[sub]
-        #print '      Name:           %-20s ' %  MyFields.field_names[sub][0]
+        print '      Name:           %-20s ' %  MyFields.field_names[sub][0]
         print '      Field Number:   %-20s ' %  sub
         if MyFields.field_trunc[sub]:
             print '      Data Truncated: analysis will be partial'
@@ -111,8 +105,9 @@ def print_field_info(MyFields, column_number):
         print '      Type:           %-20s ' %  MyFields.field_types[sub]
         print '      Min:            %-20s ' %  MyFields.field_min[sub]
         print '      Max:            %-20s ' %  MyFields.field_max[sub]
-        print '      Unique Values:  %-20d ' %  len(MyFields.field_freqs[sub])
-        print '      Known Values:   %-20d ' %  len(MyFields.get_known_values(sub))
+        print '      Unique Values:  %-20d    known:  %-20d' %   \
+                         (len(MyFields.field_freqs[sub]),
+                          len(MyFields.get_known_values(sub)))
 
         if MyFields.field_types[sub] in ('integer','float'):
             print '      Mean:           %-20s ' % MyFields.field_mean[sub]
@@ -137,7 +132,7 @@ def print_field_info(MyFields, column_number):
             else:
                 print     '      Top Values: '
                 for pair in sorted_list:
-                    print '         %-20s x %d occurrences' % \
+                    print '         %-20s x %d occurances' % \
                           ( pair[key_sub], pair[val_sub])
     
 
@@ -173,19 +168,15 @@ def get_opts_and_args():
     parser.add_option('-c', '--column',
                       type=int,
                       dest='column_number',
-                      help='Restrict analysis to a single column (field number) - using a zero-offset')
+                      help='restrict analysis to a single column (field number) - using a zero-offset')
     parser.add_option('-d', '--delimiter',
-                      help='Specify a field delimiter - essential for multi-column delimiters.  Delimiter must be quoted.')
+                      help='specify a field delimiter - essential for multi-column delimiters.  Delimiter must be quoted.')
     parser.add_option('--recdelimiter',
-                      help='Specify an end-of-record delimiter.  The deimiter must be quoted.')
+                      help='specify an end-of-record delimiter.  The deimiter must be quoted.')
     parser.add_option('--hasheader',
                       default=False,
                       action='store_true',
-                      help='Indicates that there is a header in the file.  Essential for multi-column delimited files.')
-    parser.add_option('-T', '--types',
-                      type='string',
-                      dest='column_types',
-                      help='Allows manual specification of field types: integer, float, string, timestamp. Use format: "colno:type, colno:type, colno:type"')
+                      help='indicates that there is a header in the file.  Essential for multi-column delimited files.')
 
 
     (opts, args) = parser.parse_args()
@@ -201,22 +192,6 @@ def get_opts_and_args():
 
     if opts.silent:
         opts.verbose = False
-
-    # set up column_type_overrides
-    opts.column_type_overrides = {}
-    if opts.column_types:
-        for col_type_pair in opts.column_types.split(','):
-            try:
-               (col_no, col_type) = col_type_pair.split(':')
-               try:
-                   int(col_no)
-               except ValueError:
-                   parser.error('invalid column number for types option')
-               if col_type not in ['integer','float','string','timestamp']:
-                   parser.error('invalid type for types option')
-            except ValueError:
-               parser.error('invalid format for types option')
-            opts.column_type_overrides[int(col_no)] = col_type
 
     return opts, args
 

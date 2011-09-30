@@ -6,6 +6,8 @@ import os
 import tempfile
 import random
 import unittest
+import subprocess
+from subprocess import PIPE, STDOUT, Popen
 
 sys.path.append('../')
 sys.path.append('../../')
@@ -14,10 +16,10 @@ import gristle_slicer  as mod
 
 def suite():
     suite = unittest.TestSuite()
-    #suite.addTest(unittest.makeSuite(Test_get_case))
+    suite.addTest(unittest.makeSuite(Test_spec_evaluator))
+    suite.addTest(unittest.makeSuite(Test_process_cols))
 
     return suite
-
 
 
 class Test_spec_evaluator(unittest.TestCase):
@@ -60,7 +62,7 @@ class Test_spec_evaluator(unittest.TestCase):
         self.result9 = False
 
 
-    def donttest_slicer_a01(self):
+    def test_slicer_a01(self):
         assert(mod.spec_evaluator(self.value1, self.spec1) == self.result1)
         assert(mod.spec_evaluator(self.value2, self.spec2) == self.result2)
         assert(mod.spec_evaluator(self.value3, self.spec3) == self.result3)

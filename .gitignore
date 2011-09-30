@@ -1,0 +1,5 @@
+analysis
+*.pyc
+obsolete
+remover.bash
+scripts/custom

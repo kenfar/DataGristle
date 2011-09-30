@@ -24,37 +24,36 @@ MAX_FREQ_SIZE_DEFAULT  = 10000     # limits entries within freq dictionaries
 
 
 def get_field_names(filename, 
-                    field_number,
-                    has_header,
-                    field_delimiter,
-                    rec_delimiter,
-                    field_cnt):
+                    dialect,
+                    col_number=None):
     """ Determines names of fields 
+        Inputs:
+        Outputs:
+        Misc:
+          - if the file is empty it will return None
     """
-    #print 'get_field_names - has_header: %s' % has_header
-    bad_rec = False
-    for rec in fileinput.input(filename):
-        if rec_delimiter:
-            partial_rec = rec[:-1].split(rec_delimiter)[0]
-        else:
-            partial_rec = rec[:-1]
-        #print partial_rec
-        fields = partial_rec.split(field_delimiter)
-        if len(fields) != field_cnt:
-            bad_rec = True
-            print 'bad_rec! len: %d, expected: %d' % (len(fields), field_cnt)
-        break # we're only after the first record
-    fileinput.close()
-    if not fields:
-        print 'Error: Empty file'
-        return None
+    reader = csv.reader(open(filename, 'r'), dialect=dialect)
+    try:
+       field_names = reader.next()    
+    except StopIteration:
+       return None              # empty file
 
-    if has_header \
-    and not bad_rec:
-        field_name = fields[field_number]
+    if col_number is None:      # it could be 0
+        final_names = []
+        for col_sub in range(len(field_names)):
+            if dialect.has_header:
+                final_names.append(field_names[col_sub])
+            else:
+                final_names.append('field_%d' % col_sub)
+        return final_names
     else:
-        field_name = 'field_num_%d' % field_number
-    return field_name
+        final_name = ''
+        if dialect.has_header:
+            final_name = field_names[col_number]
+        else:
+            final_name = 'field_%d' % col_number
+        return final_name
+
 
 
 
@@ -111,65 +110,27 @@ def get_case(field_type, values):
 
 
 def get_field_freq(filename, 
+                   dialect,
                    field_number,
-                   has_header,
-                   field_delimiter,
-                   rec_delimiter,
-                   field_cnt,
                    max_freq_size=MAX_FREQ_SIZE_DEFAULT):
     """ Collects a frequency distribution for a single field by reading
         the file provided.
+        Issues:
+        - does not check for rows of wrong number of fields
     """
-    #print 'field_delimiter: %s' % field_delimiter
     freq        = collections.defaultdict(int)
     rec_cnt     = 0
-    bad_rec_cnt = 0
     truncated   = False
-    #print 'field_delimiter: %s' % field_delimiter
-    if len(field_delimiter) == 1:
-        for fields in csv.reader(open(filename,'r'), delimiter=field_delimiter):
-            rec_cnt += 1
-            if rec_cnt == 1 and has_header:
-                continue
-            if len(fields) != field_number:
-                bad_rec_cnt += 1
-                continue
-            freq[fields[field_number]] += 1
-            if len(freq) >= max_freq_size:
-                print '      WARNING: freq dict is too large - will trunc'
-                truncated = True
-                break
-    else:
-        for rec in fileinput.input(filename):
-            if rec_delimiter:
-               x = rec[:-1].split(rec_delimiter)
-               partial_rec = x[0]
-            else:
-               partial_rec = rec[:-1]
-            fields = partial_rec.split(field_delimiter)
-            #print fields
-            rec_cnt += 1
-            if rec_cnt == 1 and has_header:
-                continue
-            if len(fields) != field_cnt:
-                bad_rec_cnt += 1
-                continue
-            try:
-                freq[fields[field_number]] += 1
-            except IndexError:
-                print('IndexError')
-                print('Field Number: %d' % field_number)
-                print(fields)
-                print(rec)
-                print('rec_cnt: %d' % rec_cnt)
-                print('field_cnt:    %d' % field_cntr)
-                print('field_len:    %d' % len(fields))
-            if len(freq) >= max_freq_size:
-                print '      WARNING: freq dict is too large - will trunc'
-                truncated = True
-                break
-        fileinput.close()
-   
+
+    for fields in csv.reader(open(filename,'r'), dialect=dialect):
+        rec_cnt += 1
+        if rec_cnt == 1 and dialect.has_header:
+            continue
+        freq[fields[field_number]] += 1
+        if len(freq) >= max_freq_size:
+            print '      WARNING: freq dict is too large - will trunc'
+            truncated = True
+            break
         
     return freq, truncated
 

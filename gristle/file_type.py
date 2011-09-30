@@ -13,6 +13,7 @@
 import fileinput
 import collections
 import csv
+import os
 
 #--- gristle modules -------------------
 #import field_determinator as fielder
@@ -39,7 +40,8 @@ class FileTyper(object):
           - has_header
     """
 
-    def __init__(self, fqfn, delimiter, rec_delimiter, has_header):
+    def __init__(self, fqfn, 
+                 delimiter=None, rec_delimiter=None, has_header=None):
         """  fqfn = fully qualified file name
         """
         self.fqfn                 = fqfn
@@ -57,28 +59,29 @@ class FileTyper(object):
         """ analyzes a file to determine the structure of the file in terms
             of whether or it it is delimited, what the delimiter is, etc.
         """
-        if self.delimiter:  # delimiter overridden
+        if os.path.getsize(self.fqfn) == 0:
+           raise(IOError, "Empty File")
+           
+        if self.delimiter:                                 #delimiter overridden
            self.dialect                  = csv.Dialect
            self.dialect.delimiter        = self.delimiter
            self.dialect.skipinitialspace = False
-           self.dialect.quoting          = True
-           self.dialect.quotechar        = '"'
-           self.dialect.lineterminator   = '\n'
+           self.dialect.quoting          = True            #naive default!
+           self.dialect.quotechar        = '"'             #naive default!
+           self.dialect.lineterminator   = '\n'            #naive default!
         else:
            self.dialect                  = self._get_dialect()
            self.delimiter                = self.dialect.delimiter
-        
-        self.format_type   = self._get_format_type()
-        self.has_header    = self._has_header()
-        self.field_cnt     = self._get_field_cnt()
-        self.record_cnt    = self._count_records()
-           
-        
-        if not self.delimiter:       
            if QUOTE_DICT[self.dialect.quoting] == 'QUOTE_NONE':
-               self.csv_quoting = False
+               self.csv_quoting = False  # almost never see this value
            else:
                self.csv_quoting = True
+
+        self.format_type         = self._get_format_type()
+        self.dialect.has_header  = self._has_header(self.has_header)
+        self.has_header          = self.dialect.has_header  # should eliminate
+        self.field_cnt           = self._get_field_cnt()
+        self.record_cnt          = self._count_records()
 
 
     def _get_dialect(self):
@@ -90,19 +93,18 @@ class FileTyper(object):
         except:
             print 'ERROR: Could not analyze file!'
             raise
-           
         csvfile.close()
         return dialect
 
 
-    def _has_header(self):
+    def _has_header(self, has_header):
         """ if the has_header flag was already provided, then just return it
             back.
             Otherwise, figure out whether or not there's a header based on 
             the first 50,000 bytes
         """
-        if self.has_header:
-            return self.has_header
+        if has_header:
+            return has_header
         else:
             sample      = open(self.fqfn, 'r').read(50000)
             return csv.Sniffer().has_header(sample)

@@ -57,27 +57,33 @@ class FieldDeterminator(object):
         #pp.pprint(locals())
 
         #--- public field dictionaries - organized by field_number --- #
-        self.field_names         = {}
-        self.field_types         = {}
-        self.field_min           = {}
-        self.field_max           = {}
-        self.field_mean          = {}   
-        self.field_median        = {}  
-        self.field_case          = {}
-        self.field_max_length    = {}
-        self.field_min_length    = {}
-        self.field_mean_length   = {}
-        self.field_trunc         = {}
-        self.variance            = {}
-        self.stddev              = {}
+        # every field should have a key in every one of these dictionaries
+        # but if the dictionary doesn't apply, then the value may be None
+        self.field_names         = {}  # all data
+        self.field_types         = {}  # all data
+        self.field_min           = {}  # all data
+        self.field_max           = {}  # all data
+        self.field_trunc         = {}  # all data
+
+        self.field_mean          = {}  # only for numeric data
+        self.field_median        = {}  # only for numeric data
+        self.variance            = {}  # only for numeric data
+        self.stddev              = {}  # only for numeric data
+
+        self.field_case          = {}  # only for string data
+        self.field_max_length    = {}  # only for string data
+        self.field_min_length    = {}  # only for string data
+        self.field_mean_length   = {}  # only for string data
 
         #--- public field frequency distributions - organized by field number
         #--- each dictionary has a collection within it:
         self.field_freqs         = {}  # includes unknown values     
  
+        assert(has_header in [True, False])
+        assert(0 < field_cnt < 1000)
 
 
-    def analyze_fields(self, field_number=None):
+    def analyze_fields(self, field_number=None, field_types_overrides=None):
         """ Determines types, names, and characteristics of fields.
 
             Inputs:
@@ -99,21 +105,20 @@ class FieldDeterminator(object):
                 print '   Analyzing field: %d' % f_no 
 
             self.field_names[f_no]   = miscer.get_field_names(self.filename, 
-                                           f_no,
-                                           self.has_header,
-                                           self.delimiter,
-                                           self.rec_delimiter,
-                                           self.field_cnt)
+                                                              self.dialect,
+                                                              f_no)
 
             (self.field_freqs[f_no],
             self.field_trunc[f_no])  = miscer.get_field_freq(self.filename, 
-                                           f_no, 
-                                           self.has_header,
-                                           self.delimiter,
-                                           self.rec_delimiter,
-                                           self.field_cnt)
+                                                             self.dialect,
+                                                             f_no)
 
             self.field_types[f_no]   = typer.get_field_type(self.field_freqs[f_no])
+            if field_types_overrides:
+                for col_no in field_types_overrides:
+                    self.field_types[col_no] = field_types_overrides[col_no]
+
+
             self.field_max[f_no]     = miscer.get_max(self.field_types[f_no],
                                                self.field_freqs[f_no])
             self.field_min[f_no]     = miscer.get_min(self.field_types[f_no],
@@ -125,6 +130,11 @@ class FieldDeterminator(object):
                 self.field_min_length[f_no]  = miscer.get_min_length(self.field_freqs[f_no])
                 self.field_max_length[f_no]  = miscer.get_max_length(self.field_freqs[f_no])
                 self.field_mean_length[f_no] = mather.get_mean_length(self.field_freqs[f_no])
+            else:
+                self.field_case[f_no]        = None
+                self.field_min_length[f_no]  = None
+                self.field_max_length[f_no]  = None
+                self.field_mean_length[f_no] = None
 
 
             if self.field_types[f_no] in ['integer','float']:
@@ -133,6 +143,11 @@ class FieldDeterminator(object):
                 (self.variance[f_no], self.stddev[f_no])   \
                    =  mather.get_variance_and_stddev(self.field_freqs[f_no], 
                                                      self.field_mean[f_no])
+            else:
+                self.field_mean[f_no]   = None
+                self.field_median[f_no] = None
+                self.variance[f_no]     = None
+                self.stddev[f_no]       = None
 
     def get_known_values(self, fieldno):
         """ returns a frequency-distribution dictionary that is the 
@@ -172,7 +187,7 @@ class FieldDeterminator(object):
         sub           = len(sort_list) - 1
         count         = 0
         rev_sort_list = []
-        while sub > 0:
+        while sub >= 0:
             freq  = self.field_freqs[fieldno][sort_list[sub]]
             rev_sort_list.append([sort_list[sub], freq])
             count += 1

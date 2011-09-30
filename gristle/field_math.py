@@ -114,13 +114,22 @@ def get_mean(values):
     accum   = 0
 
     for value in values:
+        #print value
         try:                    
-            accum += int(value) * int(values[value])
-            count += int(values[value])
+            #accum += int(value) * int(values[value])
+            #count += int(values[value])
+            accum += float(value) * float(values[value])
+            count += float(values[value])
+            #print accum
+            #print count
+            #print 'worked!'
         except ValueError:      # catches occasional garbage data
+            #print 'failed!'
             pass                
           
     try:
+        #print 'final value: '
+        #print accum / count
         return accum / count
     except ZeroDivisionError:
         return None

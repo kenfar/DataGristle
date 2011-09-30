@@ -1,5 +1,9 @@
 #!/usr/bin/env python
+#----------------------------------------------------------------------------
 #  See the file "LICENSE" for the full license governing this code. 
+#  To do:
+#  1.  add tests for floats
+#----------------------------------------------------------------------------
 
 import sys
 import os
@@ -20,6 +24,7 @@ def suite():
     suite.addTest(unittest.makeSuite(Test_get_median_subs))
     suite.addTest(unittest.makeSuite(Test_get_median_keys))
     suite.addTest(unittest.makeSuite(TestGetMean))
+
     return suite
 
 
@@ -232,7 +237,6 @@ class Test_get_mean_length(unittest.TestCase):
 
     def test_math_g05_medium_sets(self):
         assert(mod.get_mean_length(self.med_dict_1)  == 1.5)
-
 
 
 

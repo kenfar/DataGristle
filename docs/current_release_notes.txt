@@ -1,0 +1,130 @@
+gristle_file_converter.py		90%
+gristle_slicer.py			100%
+gristle_filter.py			90%
+gristle_viewer.py			90%
+gristle_freq.py                         50%
+gristle_diff.py                         90%
+gristle_scalar.py			50%
+gristle_graphviz_generator.py           50%
+gristle_determinator.py
+
+gristle_file_converter.py
+	- f [input file]
+	- d [input file delimiter]
+        - D [output file delimiter]
+        - r [input file record delimiter]
+        - R [output file record delimiter]
+	- hasheader
+	- H [output file hasheader]
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 50%
+	- to do:
+		- handle empty files
+
+gristle_slicer.py
+	- f [input file]
+	- c [inc cols]
+	- C [exc cols]
+	- r [in rows]
+	- R [exc rows]
+	- d [delimiter]
+	- recdelimiter [recdelimiter]
+	- hasheader			-- copy it to output?
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- done
+	- to do:
+		- handle empty files
+
+gristle_filter.py
+	- f [input file]
+	- c [criteria]
+	- C [exclusion criteria]
+	- d [file delimiter]
+        - D [output file delimiter]
+	- hasheader
+	- H [output file hasheader]
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 50%
+	- to do:
+		- handle empty files
+	
+gristle_viewer.py
+	- f [input file]
+	- r [rec number]
+	- d [delimiter]
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 50%
+	- to do:
+		- handle empty files
+
+
+gristle_freq.py
+	- f [input file]
+	- d [input file delimiter]
+        - c [column number]
+	- d [delimiter]
+        - recdelimiter [input file record delimiter]
+	- hasheader
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 0%
+	- to do:
+		- handle empty files
+
+gristle_diff.py
+	- 1 [input file 1]
+	- 2 [input file 2]
+	- d [input file delimiter]
+	- k [key columns]
+        - c [compare columns]
+	--sorted
+	- d [delimiter]
+        - recdelimiter [input file record delimiter]
+	- hasheader
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 50%
+	- to do:
+		- handle empty files
+		- support large sorted files
+
+
+
+gristle_scalar.py
+	- f [input file]
+	- d [input file delimiter]
+        - c [column number]
+	- d [delimiter]
+        - recdelimiter [input file record delimiter]
+	- hasheader
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 0%
+	- to do:
+
+
+
+gristle_graphviz_generator.py
+	- f [input file]
+	- d [input file delimiter]
+	- d [delimiter]
+        - recdelimiter [input file record delimiter]
+	- hasheader
+
+	- good help info?		-- done
+	- good docstring info?		-- done
+	- tests?			-- 0%
+	- to do:
+
+

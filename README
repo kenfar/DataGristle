@@ -1,23 +1,19 @@
-Gristle is a toolbox of tough and flexible data connectors and analyzers.  
+Datagristle is a toolbox of tough and flexible data connectors and analyzers.  
 It's kind of an interactive mix between ETL and data analysis optimized for 
 rapid analysis and manipulation of a wide variety of data.
 
-This is substantially different from pure ETL tools - that are intended to be 
-used *after* substantial data analysis has identified all transformation 
-requirements.  It's likewise different from pure analysis tools - that 
-generally require initial data transformation, mapping and definitions and 
-have more open-ended features that distract from fundamental analysis needs.
-
-Gristle occupies a space between these tools where quick & simple 
-transformation & analysis are necessary in order to work with the large numbers
-of datasets available today.
+It's neither an enterprise ETL tool, nor an enterprise analysis, reporting, 
+or data mining tool.  It's intended to be an easily-adopted tool for technical
+analysts that combines the most useful subset of data transformation and 
+analysis capabilities necessary to do 80% of the work.  Its open source python
+codebase allows it to be easily extended to with custom code to handle that
+always challenging last 20%.
 
 
-Current Status:  automatic identification of file delimiters, field types and 
-characteristics - produces a strong initial dataset analysis.
+Current Status:  Strong support for easy analysis and simple transformations of
+csv files. 
 
 Next Steps:  
-   * finalize names
    * README markdown
    * attractive PDF output of gristle_determinator.py
    * metadata database population
@@ -31,6 +27,8 @@ Its objectives include:
      or eclipse
    * extensible
    * allow a bi-directional iteration between ETL & data analysis
+   * can quickly perform initial data analysis prior to longer-duration, deeper
+     analysis with heavier-weight tools.
 
 DEPENDENCIES
    * Python 2.6
@@ -38,37 +36,43 @@ DEPENDENCIES
 EXISTING UTILITIES:
    * gristle_determinator.py 
        - Identifies file formats, generates metadata, prints file analysis report
-       - Status:  98% complete
-       - Next:    Dislay field type consistency metric
-   * gristle_record_viewer.py
+   * gristle_diff.py
+       - Shows differences between two files
+   * gristle_file_converter.py
+       - Converts a csv from one dialect to another.  Can handle multi-character
+         field delimiters as well as record delimiters.
+   * gristle_filter.py 
+       - Applies simple filter logic to file.
+   * gristle_freq.py
+       - Prints a frequency distribution of any column of an input file.
+   * gristle_graphviz_generator.py
+       - Generates a graphiz dot file based upon an input file and command-line
+         preferences.
+   * gristle_scalar.py
+       - Performs scalar operations (min, max, avg, count unique, etc) on a file
+   * gristle_slicer.py
+       - Used to extract a subset of columns and rows out of an input file.
+   * gristle_viewer.py
        - Shows one record from a file at a time - formatted based on metadata. 
-       - Status:  98% complete
-       - Next:    Display indicators to the right of the field values to show
-         how typical or unusual those values are.  Consider file navigation
-         commands.
 
 FUTURE UTILITIES:
    * gristle_metadata.py 
        - Manages metadata - allows users to query, add, update, delete
          file, field, transformation, reporting descriptions.
-   * gristle_transformer.py
-       - Converts a file into a new format.
-       - Conversions include compression, delimited/fixed-length, delimiter, 
-         string quoting, etc
    * gristle_generator
        - Generates test data based on gristle metadata
    * gristle_validator 
        - Confirms validity of database and file structure and contents.
-   * gristle_file_differ.py
-       - Compares two structured files and writes out the differences.
    * gristle_file_joiner.py
        - joins two files on their common keys and produces a new file
-   * gristle_file_aggregator.py
+   * gristle_grouper.py
        - reads a file, aggregates on a given set of fields, produces a new file
    * gristle_db_loader.py 
        - loads a file into a database
    * gristle_db_extractor.py 
        - extracts data from a database into a file
+   * gristle_field_merge.py 
+       - prints the matched values from multiple files side by side along with counts
 
 LICENSING
    * Gristle uses the BSD license - see the separate LICENSE file for further 

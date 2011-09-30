@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-""" Prints subsets of a file based on user-specified columns and rows.
+""" Extracts subsets of input file based on user-specified columns and rows.
+    The input file is assumed to be a csv file - as is the output printed 
+    through stdout.
+
+    The columns and rows are specified using python list slicing syntax -
+    so individual columns or rows can be listed as can ranges.   Inclusion
+    or exclusion logic can be used - and even combined.
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
@@ -14,6 +20,7 @@ from pprint import pprint as pp
 
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure
+sys.path.append('../../')  # allows running out of project structure test directory
 
 import gristle.file_type           as file_type 
 
@@ -141,35 +148,49 @@ def spec_evaluator(value, spec_list):
 
 
 def write_fields(fields, MyFile):
+    """ Writes output to output destination.
+        Input:
+            - list of fields to write
+            - output object
+        Output:
+            - delimited output record written to stdout
+        To Do:
+            - write to output file
+    """
     rec = MyFile.delimiter.join(fields)
     print rec
 
 
 def get_opts_and_args():
     """ gets opts & args and returns them
-        run program with -h or --help for command line args
+        Input:
+            - command line args & options
+        Output:
+            - opts dictionary
+            - args dictionary 
     """
-    # get args
-    use = "Usage: %prog -f [file] -c [included columns] -C [excluded columns] -r [included records] -R [excluded records] --delimiter [quoted delimiter] --recdelimiter [quoted record delimiter] --hasheader"
+    use = ("The %prog is used to extract column and row subsets out of files and write them out to stdout: \n" 
+          + "   %prog -f [file] -c [included columns] -C [excluded columns] -r [included records] -R [excluded records]  "
+          + " --delimiter [quoted delimiter] --recdelimiter [quoted record delimiter] --hasheader --help")
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('-f', '--file', dest='filename', help='input file')
 
     parser.add_option('-c', '--columns',
                       default=':',
-                      help='comma-separated list of column numbers to include')
+                      help='comma-separated list of column numbers and column ranges to include')
     parser.add_option('-C', '--excolumns',
-                      help='comma-separated list of column numbers to exclude')
+                      help='comma-separated list of column numbers and column ranges to exclude')
     parser.add_option('-r', '--records',
                       default=':',
-                      help='comma-separated list of record numbers to include')
+                      help='comma-separated list of record numbers and record ranges to include')
     parser.add_option('-R', '--exrecords',
-                      help='comma-separated list of record numbers to exclude')
+                      help='comma-separated list of record numbers and record ranges to exclude')
 
     parser.add_option('-d', '--delimiter',
-                      help='specify a field delimiter.  Delimiter must be quoted.')
+                      help='specify a single-column field delimiter.  Delimiter must be quoted.')
     parser.add_option('--recdelimiter',
-                      help='specify an end-of-record delimiter.  The deimiter must be quoted.')
+                      help='specify an end-of-record delimiter.  The delimiter must be quoted.')
     parser.add_option('--hasheader',
                       default=False,
                       action='store_true',
@@ -177,7 +198,6 @@ def get_opts_and_args():
 
     (opts, args) = parser.parse_args()
 
-    # validate opts
     if opts.filename is None:
         parser.error("Error:  no filename was provided")
     elif not os.path.exists(opts.filename):

@@ -4,6 +4,7 @@ import os
 import sys
 
 import unittest
+import test_field_determinator
 import test_field_math
 import test_field_misc
 import test_field_type
@@ -12,6 +13,7 @@ import test_file_type
 def main():
 
    suite  = unittest.TestSuite()
+   suite.addTest(test_field_determinator.suite())
    suite.addTest(test_field_math.suite())
    suite.addTest(test_field_misc.suite())
    suite.addTest(test_field_type.suite())

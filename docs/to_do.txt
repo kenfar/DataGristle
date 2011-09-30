@@ -3,52 +3,37 @@ Very next things to do:
 8.  test with python 2.7
 9.  Review documentation
 11. Review dist utils
-12. Test on mac
 
 
 General Things To Do:
 
-1.  determine:
-    - field types                               - 95%
-    - field min, max, mean, median values       - 100%
-    - field length min, max, mean        	- 100%
-    - field names                               - 100%
-    - field case                                - 100%
-    - field histogram                           - 100%
-    - format consistency
-    - field 
-    - field correlations
-    - file web page?
-    - find invalid characters
-    - find inconsistent code sets
-    - find required vs optional fields
-    - shallow determinator vs deep-determinator
-
-2.  metadata
+1.  data & metadata management
+    - gristle_determinator.py next:            - 95%
+       - field correlations
+       - file web page?
+       - find invalid characters
+       - find inconsistent code sets
+       - find required vs optional fields
+       - shallow-vs-deep determinator runs
     - allow use of yaml (decentralized) or central repository
-    - generate metadata
+    - generate metadata                        - 30%
+    - support many data formats:               - 20%
+    - incorporate SQLAlchemy for metadata      - 0%
 
-3.  what it isn't
-    - enterprise ETL tool
+2.  data transformation tools:
+    - gristle_slicer.py                        - 100%
+    - gristle_file_converter.py                - 80%
+    - gristle_graphviz_generator.py            - 50%
+    - gristle_scrubber.py                      - 0%
+    - gristle_validator.py                     - 0%
 
-4.  Add other data formats to analyze:
-    - relational databases
-    - files (fixed length records, xml, yaml, json, html)
+3.  data analysis tools:
+    - gristle_freq.py                          - 80%
+    - gristle_viewer.py                        - 80%
+    - gristle_histogramer.py                   - 0%
 
-5.  misc
+5.  deployment
     - setup tools
     - testing for various versions of python
     - testing on various OS
 
-6.  histogrammer
-    - automatic bucketing:
-      - integers:    
-        - min & max range calculation - then determine buckets from that
-      - dates & times
-        - min & max range calculation
-      - strings
-        - sort file - take most common?
-        - change to all lower case?
-        - truncate?
-        - hash?
-    
