@@ -1,14 +1,18 @@
 Very next things to do:
-6.  Add more numeric analysis:  quartiles
-8.  test with python 2.7
-9.  Review documentation
-11. Review dist utils
+==================================================================
+
+1.  Add more test harnesses
+2.  Add more numeric analysis:  quartiles
+3.  test with python 2.7
+4.  Review documentation
+5.  Review dist utils
 
 
-General Things To Do:
+Longer-term things to do:
+==================================================================
 
 1.  data & metadata management
-    - gristle_determinator.py next:            - 95%
+    - gristle_determinator.py                  - 95%
        - field correlations
        - file web page?
        - find invalid characters
@@ -23,16 +27,18 @@ General Things To Do:
 2.  data transformation tools:
     - gristle_slicer.py                        - 100%
     - gristle_file_converter.py                - 80%
-    - gristle_graphviz_generator.py            - 50%
+    - gristle_diff.py                          - 60%
+    - gristle_filter.py                        - 60%
     - gristle_scrubber.py                      - 0%
     - gristle_validator.py                     - 0%
 
 3.  data analysis tools:
     - gristle_freq.py                          - 80%
     - gristle_viewer.py                        - 80%
+    - gristle_graphviz_generator.py            - 50%
     - gristle_histogramer.py                   - 0%
 
-5.  deployment
+4.  deployment
     - setup tools
     - testing for various versions of python
     - testing on various OS

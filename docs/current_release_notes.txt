@@ -1,13 +1,3 @@
-gristle_file_converter.py		90%
-gristle_slicer.py			100%
-gristle_filter.py			90%
-gristle_viewer.py			90%
-gristle_freq.py                         50%
-gristle_diff.py                         90%
-gristle_scalar.py			50%
-gristle_graphviz_generator.py           50%
-gristle_determinator.py
-
 gristle_file_converter.py
 	- f [input file]
 	- d [input file delimiter]

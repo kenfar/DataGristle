@@ -30,7 +30,15 @@ setup(name             = 'gristle',
             'Topic :: Utilities'
             ],
       download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,
-      scripts      = ['scripts/gristle_determinator.py'],
+      scripts      = ['scripts/gristle_determinator.py',
+                      'scripts/gristle_diff.py',
+                      'scripts/gristle_file_converter.py',
+                      'scripts/gristle_filter.py',
+                      'scripts/gristle_freq.py',
+                      'scripts/gristle_graphviz_generator.py',
+                      'scripts/gristle_scalar.py',
+                      'scripts/gristle_slicer.py',
+                      'scripts/gristle_viewer.py' ],
       packages     = find_packages(),
       test_suite   = 'gristle.tests'
      )

@@ -1,3 +1,6 @@
 # ignore very large data files:
 japan_station_radiation.csv
 city_location.csv
+
+# ignore custom data
+custom
