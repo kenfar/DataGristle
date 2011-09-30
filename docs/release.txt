@@ -1,5 +1,0 @@
-2011-08-03
-   - field_misc.py
-     - get_field_names:  simplified it, improved tests
-     - get_field_freeq:  needs work
-2011-09-03
