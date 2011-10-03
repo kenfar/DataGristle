@@ -4,8 +4,8 @@
       FieldDeterminator   - class runs all checks on all fields
     Todo:
       - change get_types to consider whatever has 2 STDs 
-      - replace get_types freq length logic with something that says, if all types
-        are basically numic, choose float
+      - replace get_types freq length logic with something that says, 
+        if all types are basically numic, choose float
       - add quartiles, variances and standard deviations
       - add statistical analysis for data quality
       - add histogram to automatically bucketize data
@@ -15,11 +15,11 @@
       - change returned data format to be based on field
 """
 from __future__ import division
-import pprint       as pp
+#import pprint       as pp
 
-import field_type   as typer
-import field_math   as mather
-import field_misc   as miscer
+import gristle.field_type   as typer
+import gristle.field_math   as mather
+import gristle.field_misc   as miscer
 
 
 class FieldDeterminator(object):
@@ -109,20 +109,20 @@ class FieldDeterminator(object):
                                                               f_no)
 
             (self.field_freqs[f_no],
-            self.field_trunc[f_no])  = miscer.get_field_freq(self.filename, 
-                                                             self.dialect,
-                                                             f_no)
+            self.field_trunc[f_no]) = miscer.get_field_freq(self.filename, 
+                                                            self.dialect,
+                                                            f_no)
 
-            self.field_types[f_no]   = typer.get_field_type(self.field_freqs[f_no])
+            self.field_types[f_no]  = typer.get_field_type(self.field_freqs[f_no])
             if field_types_overrides:
                 for col_no in field_types_overrides:
                     self.field_types[col_no] = field_types_overrides[col_no]
 
 
-            self.field_max[f_no]     = miscer.get_max(self.field_types[f_no],
-                                               self.field_freqs[f_no])
-            self.field_min[f_no]     = miscer.get_min(self.field_types[f_no],
-                                               self.field_freqs[f_no])
+            self.field_max[f_no]    = miscer.get_max(self.field_types[f_no],
+                                              self.field_freqs[f_no])
+            self.field_min[f_no]    = miscer.get_min(self.field_types[f_no],
+                                              self.field_freqs[f_no])
 
             if self.field_types[f_no] == 'string':
                 self.field_case[f_no]  = miscer.get_case(self.field_types[f_no],

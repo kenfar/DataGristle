@@ -20,14 +20,14 @@ from __future__ import division
 import datetime
 import collections
 import math
-import pprint
+#import pprint
 
 
 #--- CONSTANTS -----------------------------------------------------------
 
 MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
-DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01   # (not the actual minimum)
-DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01   # (not the acutal maximum)
+DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01  # (not actual min)
+DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01  # (not acutal max)
 DATE_MAX_LEN           = 26
 DATE_INVALID_CHARS = ['`','`','!','@','#','$','%','^','&','*','(',')',
                       '_','+','=','[','{','}','}','|',
@@ -91,16 +91,15 @@ def get_field_type(values):
           - complete via test harness
     """  
     type_freq  = collections.defaultdict(int)
-    field_type = None
 
     # count occurances of each type:
     for key in values:
         i = _get_type(key)
         if i != 'unknown':                  # NOTE: unknown is filtered out
-           try:                             # values is a dict
-              type_freq[i] += values[key]
-           except TypeError:                # values is a list
-              type_freq[i] += 1
+            try:                             # values is a dict
+                type_freq[i] += values[key]
+            except TypeError:                # values is a list
+                type_freq[i] += 1
     type_list = type_freq.keys()
 
     # try simple rules:
@@ -131,7 +130,7 @@ def _get_type(value):
         Test Coverage:
           - complete via test harness
     """
-    dtc_status, dtc_scope, dtc_pattern = is_timestamp(value)
+    dtc_status, dummy, dummy  = is_timestamp(value)
     if dtc_status:
         return 'timestamp'
     elif is_unknown(value):
@@ -165,13 +164,13 @@ def _get_field_type_rule(type_list):
     assert('unknown' not in type_list)
 
     # floats with nothing to the right of the decimal point may be ints
-    float_set_2i     = set(['integer','float'])   
+    float_set_2i     = set(['integer', 'float'])   
     # some floats fall into the timestamp epoch range:
-    float_set_2t     = set(['float','timestamp'])  
+    float_set_2t     = set(['float', 'timestamp'])  
     # or a mix of the above two:
-    float_set_3      = set(['integer','float','timestamp'])
+    float_set_3      = set(['integer', 'float', 'timestamp'])
     # some integers also fall into the timestamp epoch range:
-    integer_set_2t   = set(['integer','timestamp'])  
+    integer_set_2t   = set(['integer', 'timestamp'])  
     
     type_set  = set(type_list)
 
@@ -181,20 +180,23 @@ def _get_field_type_rule(type_list):
         field_type = type_list[0]
         return field_type
     elif len(type_list) == 2:
-       if not type_set.symmetric_difference(float_set_2i):
-          return 'float'
-       elif not type_set.symmetric_difference(float_set_2t):
-          return 'float'
-       elif not type_set.symmetric_difference(integer_set_2t):
-          return 'integer'
+        if not type_set.symmetric_difference(float_set_2i):
+            return 'float'
+        elif not type_set.symmetric_difference(float_set_2t):
+            return 'float'
+        elif not type_set.symmetric_difference(integer_set_2t):
+            return 'integer'
     elif len(type_list) == 3:
-       if not type_set.symmetric_difference(float_set_3):
-          return 'float'
+        if not type_set.symmetric_difference(float_set_3):
+            return 'float'
     else:
-       return None
+        return None
 
 
 def _get_field_type_probability(type_freq):
+    """ Determines type of field based on the type of the vast majority of
+        values.
+    """
     total = 0
     for key in type_freq:
         total += type_freq[key]
@@ -209,7 +211,7 @@ def _get_field_type_probability(type_freq):
 
     for key in type_pct:
         if type_pct[key] >= 0.95:
-           return key
+            return key
      
     # no clear winner, we can't be sure:
     return 'unknown'
@@ -262,7 +264,7 @@ def is_integer(value):
     """
     try:
         i            = float(value)
-        fract, integ = math.modf(i)
+        fract, dummy = math.modf(i)
         if fract > 0:
             return False
         else:
@@ -292,7 +294,7 @@ def is_float(value):
     """
     try:
         i            = float(value)
-        fract, integ = math.modf(i)
+        fract, dummy = math.modf(i)
         if fract == 0:
             return False
         else:

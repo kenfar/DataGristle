@@ -16,14 +16,16 @@ import sys
 import os
 import optparse
 import csv
-from pprint import pprint as pp
+#from pprint import pprint as pp
 
 #--- gristle modules -------------------
-sys.path.append('../')  # allows running out of project structure
-sys.path.append('../../')  # allows running out of project structure test directory
+sys.path.append('../')     # allows running from project structure
+sys.path.append('../../')  # allows running from project structure
 
 import gristle.file_type           as file_type 
 
+SMALL_SIDE = 0
+LARGE_SIDE = 1
 
 #------------------------------------------------------------------------------
 # Command-line section 
@@ -35,21 +37,21 @@ def main():
             - runs each input record through process_cols to get output
             - writes records
     """
-    (opts, args) = get_opts_and_args()
-    MyFile       = file_type.FileTyper(opts.filename, 
+    (opts, dummy) = get_opts_and_args()
+    my_file       = file_type.FileTyper(opts.filename, 
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
-    MyFile.analyze_file()
+    my_file.analyze_file()
 
     rec_cnt = -1
-    csvfile = open(MyFile.fqfn, "r")
-    for cols in csv.reader(csvfile, MyFile.dialect):
+    csvfile = open(my_file.fqfn, "r")
+    for cols in csv.reader(csvfile, my_file.dialect):
         rec_cnt += 1
         new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
                                 cols, opts.columns, opts.excolumns)
         if new_cols:
-            write_fields(new_cols, MyFile)
+            write_fields(new_cols, my_file)
     csvfile.close()
 
     return 
@@ -101,8 +103,9 @@ def spec_evaluator(value, spec_list):
               - 5:      = values 5 to the end 
               - :5      = values 0 to 4 (end - 1)
               - :       = all values
-            - template:  spec, spec, spec:spec, spec, spec_spec
-            - example:   4,    8,  , 10:14    , 21  , 48:55
+            - template:  spec, spec, spec:spec, spec, spec:spec
+            - example:   4,    8   , 10:14    , 21  , 48:55
+            - The above example is stored in a five-element spec-list
         Input:
             - value:  a column or record number
             - spec_list: a list, can be None
@@ -114,12 +117,8 @@ def spec_evaluator(value, spec_list):
             - support slice steps
             - support negative numbers
     """
-
-    SMALL_SIDE = 0
-    LARGE_SIDE = 1
-
     if spec_list is None:
-       return False
+        return False
 
     int_value = int(value)
     for spec in spec_list:
@@ -133,13 +132,15 @@ def spec_evaluator(value, spec_list):
 
             if spec.endswith(':'):          
                 if int_value >= int(spec_parts[SMALL_SIDE]):
-                   return True
+                    return True
             elif spec.startswith(':'):       
                 if int_value < int(spec_parts[LARGE_SIDE]):
-                   return True
+                    return True
             else:
-                if int(spec_parts[SMALL_SIDE]) <= int_value < int(spec_parts[LARGE_SIDE]):
-                   return True
+                if (int(spec_parts[SMALL_SIDE]) 
+                    <= int_value 
+                    < int(spec_parts[LARGE_SIDE])):
+                    return True
         elif int_value == int(spec):               
             return True
 
@@ -147,7 +148,7 @@ def spec_evaluator(value, spec_list):
            
 
 
-def write_fields(fields, MyFile):
+def write_fields(fields, my_file):
     """ Writes output to output destination.
         Input:
             - list of fields to write
@@ -157,7 +158,7 @@ def write_fields(fields, MyFile):
         To Do:
             - write to output file
     """
-    rec = MyFile.delimiter.join(fields)
+    rec = my_file.delimiter.join(fields)
     print rec
 
 
@@ -169,32 +170,41 @@ def get_opts_and_args():
             - opts dictionary
             - args dictionary 
     """
-    use = ("The %prog is used to extract column and row subsets out of files and write them out to stdout: \n" 
-          + "   %prog -f [file] -c [included columns] -C [excluded columns] -r [included records] -R [excluded records]  "
-          + " --delimiter [quoted delimiter] --recdelimiter [quoted record delimiter] --hasheader --help")
+    use = ("%prog is used to extract column and row subsets out of "
+           "files and write them out to stdout: \n" 
+           " \n"
+           "   %prog -f [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('-f', '--file', dest='filename', help='input file')
 
     parser.add_option('-c', '--columns',
-                      default=':',
-                      help='comma-separated list of column numbers and column ranges to include')
+           default=':',
+           help=('Specify the columns to include via a comma-separated list of '
+                 'columns and colon-separated pairs of column start & '
+                 'stop ranges. The default is to include all columns. '))
     parser.add_option('-C', '--excolumns',
-                      help='comma-separated list of column numbers and column ranges to exclude')
+           help=('Specify the columns to exclude via a comma-separated list of '
+                 'columns and colon-separated pairs of column start & '
+                 'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-r', '--records',
-                      default=':',
-                      help='comma-separated list of record numbers and record ranges to include')
+           default=':',
+           help=('Specify the records to include via a comma-separated list of '
+                 'record numbers and colon-separated pairs of record start & '
+                 'stop ranges.  The default is to include all records. '))
     parser.add_option('-R', '--exrecords',
-                      help='comma-separated list of record numbers and record ranges to exclude')
-
+           help=('Specify the records to exclude via a comma-separated list of '
+                 'record numbers and colon-separated pairs of record start & '
+                 'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
-                      help='specify a single-column field delimiter.  Delimiter must be quoted.')
+           help=('Specify a quoted single-column field delimiter. This may be'
+                 'determined automatically by the program. '))
     parser.add_option('--recdelimiter',
-                      help='specify an end-of-record delimiter.  The delimiter must be quoted.')
+           help='Specify a quoted end-of-record delimiter. ')
     parser.add_option('--hasheader',
-                      default=False,
-                      action='store_true',
-                      help='indicates that there is a header in the file.')
+           default=False,
+           action='store_true',
+           help='Indicate that there is a header in the file.')
 
     (opts, args) = parser.parse_args()
 
@@ -205,6 +215,8 @@ def get_opts_and_args():
 
 
     def lister(arg_string):
+        """ converts input commma-delimited string into a list
+        """
         if arg_string:
             if ',' in arg_string:
                 return arg_string.split(',')

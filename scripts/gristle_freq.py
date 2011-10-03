@@ -11,7 +11,6 @@ import sys
 import os
 import optparse
 import csv
-import pprint as pp
 import collections
 import operator
 
@@ -34,25 +33,23 @@ def main():
     """
     field_freq = collections.defaultdict(int)
 
-    (opts, args) = get_opts_and_args()
-    MyFile       = file_type.FileTyper(opts.filename, 
+    (opts, dummy) = get_opts_and_args()
+    my_file       = file_type.FileTyper(opts.filename, 
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
-    MyFile.analyze_file()
+    my_file.analyze_file()
 
 
-    rec_cnt = -1
-    csvfile = open(MyFile.fqfn, "r")
-    for fields in csv.reader(csvfile, MyFile.dialect):
-        rec_cnt += 1
+    csvfile = open(my_file.fqfn, "r")
+    for fields in csv.reader(csvfile, my_file.dialect):
         try:
-           field_freq[fields[opts.column_number]] += 1
+            field_freq[fields[opts.column_number]] += 1
         except IndexError:
-           continue   # skip short, bad, record
+            continue   # skip short, bad, record
         if len(field_freq) > 50000:
-           print 'Number of unique values exceeds limits - will truncate'
-           break
+            print 'Number of unique values exceeds limits - will truncate'
+            break
     csvfile.close()
 
     sort_freq = sorted(field_freq.iteritems(), 
@@ -87,10 +84,11 @@ def get_opts_and_args():
             - opts dictionary
             - args dictionary 
     """
-    use = ("The %prog is used to print a frequency distribution of a single column from the input file: \n"
-
-          + "   %prog -f [file] -c [column_number] "
-          + "--delimiter [value] --recdelimiter [value] --hasheader --help")
+    use = ("%prog is used to print a frequency distribution of a single column"
+           " from the input file: \n"
+           "\n"
+           "   %prog -f [file] [misc options] "
+           "\n")
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('-f', '--file', dest='filename', help='input file')
@@ -112,9 +110,9 @@ def get_opts_and_args():
                       help='column number to analyze')
 
     parser.add_option('-d', '--delimiter',
-                      help='specify a field delimiter.  Delimiter must be quoted.')
+                      help='Specify quoted field delimiter.')
     parser.add_option('--recdelimiter',
-                      help='specify an end-of-record delimiter.  The deimiter must be quoted.')
+                      help='Specify quoted end-of-record delimiter.')
     parser.add_option('--hasheader',
                       default=False,
                       action='store_true',

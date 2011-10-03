@@ -9,6 +9,7 @@ import unittest
 import csv
 
 sys.path.append('../')
+sys.path.append('../../')
 import field_determinator  as mod
 
 

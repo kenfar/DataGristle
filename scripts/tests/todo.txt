@@ -1,3 +1,8 @@
 
 1.  gristle_determinator:
 	- doesn't test field results
+
+2.  test_gristle_slicer_cmd.py
+	- handle empty file
+
+

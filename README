@@ -43,6 +43,7 @@ EXISTING UTILITIES:
          field delimiters as well as record delimiters.
    * gristle_filter.py 
        - Applies simple filter logic to file.
+       - Very simplistic utility.
    * gristle_freq.py
        - Prints a frequency distribution of any column of an input file.
    * gristle_graphviz_generator.py
@@ -50,6 +51,7 @@ EXISTING UTILITIES:
          preferences.
    * gristle_scalar.py
        - Performs scalar operations (min, max, avg, count unique, etc) on a file
+       - Very simplistic utility.
    * gristle_slicer.py
        - Used to extract a subset of columns and rows out of an input file.
    * gristle_viewer.py

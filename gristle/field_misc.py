@@ -14,13 +14,12 @@
 from __future__ import division
 import collections
 import csv
-import fileinput
 
-import field_type as typer
+import gristle.field_type as typer
 
 #--- CONSTANTS -----------------------------------------------------------
 
-MAX_FREQ_SIZE_DEFAULT  = 10000     # limits entries within freq dictionaries
+MAX_FREQ_SIZE_DEFAULT  = 100000     # limits entries within freq dictionaries
 
 
 def get_field_names(filename, 
@@ -34,9 +33,9 @@ def get_field_names(filename,
     """
     reader = csv.reader(open(filename, 'r'), dialect=dialect)
     try:
-       field_names = reader.next()    
+        field_names = reader.next()    
     except StopIteration:
-       return None              # empty file
+        return None              # empty file
 
     if col_number is None:      # it could be 0
         final_names = []
@@ -149,24 +148,23 @@ def get_min(value_type, values):
         Test Coverage:
           - complete via test harness
     """
-    assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
-    if value_type == 'integer':
-        try:
-            y = [int(val) for val in values if not typer.is_unknown(val)]
-        except ValueError:
-            print('ERROR: invalid non-numeric value')
-            print values
-            return None
-    elif value_type == 'float':
-        y = [float(val) for val in values if not typer.is_unknown(val)]
-    else:
-        y = [val for val in values if not typer.is_unknown(val)]
+    assert(value_type in ['integer', 'float', 'string', 'timestamp', 
+                          'unknown', None])
 
+    # first handle types & unknowns:
+    if value_type == 'integer':
+        known_vals = [int(val) for val in values if not typer.is_unknown(val)]
+    elif value_type == 'float':
+        known_vals = [float(val) for val in values if not typer.is_unknown(val)]
+    else:
+        known_vals = [val for val in values if not typer.is_unknown(val)]
+
+    # next return the minimum value
     try:
-        if value_type in ['integer','float']:
-            return str(min(y))
+        if value_type in ['integer', 'float']:
+            return str(min(known_vals))
         else:
-            return min(y)
+            return min(known_vals)
     except ValueError:
         return None
 
@@ -185,25 +183,21 @@ def get_max(value_type, values):
         Test Coverage:
           - complete via test harness
     """
-    assert(value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None])
+    assert(value_type in ['integer', 'float', 'string', 'timestamp', 
+                          'unknown', None])
 
     if value_type == 'integer':
-        try:
-           y = [int(val) for val in values if not typer.is_unknown(val)]
-        except ValueError:
-           print 'ERROR: unexpected non-numeric value'
-           print values
-           return None
+        known_vals = [int(val) for val in values if not typer.is_unknown(val)]
     elif value_type == 'float':
-        y = [float(val) for val in values if not typer.is_unknown(val)]
+        known_vals = [float(val) for val in values if not typer.is_unknown(val)]
     else:
-        y = [val for val in values if not typer.is_unknown(val)]
+        known_vals = [val for val in values if not typer.is_unknown(val)]
 
     try:
         if value_type in ['integer','float']:
-            return str(max(y))
+            return str(max(known_vals))
         else:
-            return max(y)
+            return max(known_vals)
     except ValueError:
         return None
 

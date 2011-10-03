@@ -12,6 +12,7 @@ import random
 import unittest
 
 sys.path.append('../')
+sys.path.append('../../')
 import field_math  as mod
 from pprint import pprint
 

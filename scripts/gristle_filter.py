@@ -17,11 +17,11 @@ import sys
 import os
 import optparse
 import csv
-from pprint import pprint as pp
+#from pprint import pprint as pp
 
 #--- gristle modules -------------------
-sys.path.append('../')  # allows running out of project structure
-sys.path.append('../../')  # allows running out of project structure test directory
+sys.path.append('../')     # allows running from project structure
+sys.path.append('../../')  # allows running from project test directory
 
 import gristle.file_type           as file_type 
 
@@ -36,21 +36,19 @@ def main():
             - runs each input record through process_cols to get output
             - writes records
     """
-    (opts, args) = get_opts_and_args()
-    MyFile       = file_type.FileTyper(opts.filename,
+    (opts, dummy) = get_opts_and_args()
+    my_file       = file_type.FileTyper(opts.filename,
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
                                        
-    MyFile.analyze_file()
+    my_file.analyze_file()
 
-    rec_cnt = -1
-    csvfile = open(MyFile.fqfn, "r")
-    for rec in csv.reader(csvfile, MyFile.dialect):
-        rec_cnt += 1
+    csvfile = open(my_file.fqfn, "r")
+    for rec in csv.reader(csvfile, my_file.dialect):
         out_rec  = process_rec(rec, opts.criteria, opts.excriteria)
         if out_rec:
-            write_fields(out_rec, MyFile)
+            write_fields(out_rec, my_file)
     csvfile.close()
 
     return 
@@ -86,21 +84,21 @@ def spec_evaluator(rec, spec):
              using pyparsing, etc.
     """
     if spec:
-       tokens = spec.split()
-       assert(len(tokens) == 3)
-       assert(tokens[1] in ['=','==','>','=>','>=','>','<','<=','=<','!='])
-       assert(0 <= int(tokens[0]) < 200)
-       query = "'%s' %s '%s'" % (rec[int(tokens[0])], tokens[1], tokens[2])
-       if eval(query):
-           return True
-       else:
-           return False
+        tokens = spec.split()
+        assert(len(tokens) == 3)
+        assert(tokens[1] in ['=','==','>','=>','>=','>','<','<=','=<','!='])
+        assert(0 <= int(tokens[0]) < 200)
+        query = "'%s' %s '%s'" % (rec[int(tokens[0])], tokens[1], tokens[2])
+        if eval(query):
+            return True
+        else:
+            return False
     else:
-       return False
+        return False
  
 
 
-def write_fields(fields, MyFile):
+def write_fields(fields, my_file):
     """ Writes output to output destination.
         Input:
             - list of fields to write
@@ -110,7 +108,7 @@ def write_fields(fields, MyFile):
         To Do:
             - write to output file
     """
-    rec = MyFile.delimiter.join(fields)
+    rec = my_file.delimiter.join(fields)
     print rec
 
 
@@ -122,10 +120,11 @@ def get_opts_and_args():
             - opts dictionary
             - args dictionary 
     """
-    use = ("The %prog is used to extract rows that match filter criteria and write them out to stdout: \n"
-          + "   %prog -f [file] -d [delimiter value] -c [inclusion criteria] -C [exclusion criteria]  "
-          + " --delimiter [quoted delimiter] --recdelimiter [quoted record delimiter] --hasheader --help \n"
-          + "   example:  %prog -f state_stats.csv -c '0 == alabama'")
+    use = ("%prog is used to extract rows that match filter criteria and write "
+           "them out to stdout: \n"
+           "\n"
+           "   %prog -f [file] [misc options]"
+           "\n")
 
     parser = optparse.OptionParser(usage = use)
 
@@ -137,7 +136,7 @@ def get_opts_and_args():
     parser.add_option('-C', '--excriteria',
                       help='exclusion criteria')
     parser.add_option('-d', '--delimiter',
-                      help='specify a field delimiter.  Delimiter must be quoted.')
+                      help='Specify a quoted field delimiter.')
     parser.add_option('--hasheader',
                       default=False,
                       action='store_true',

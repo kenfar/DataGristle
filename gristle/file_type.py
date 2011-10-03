@@ -60,22 +60,22 @@ class FileTyper(object):
             of whether or it it is delimited, what the delimiter is, etc.
         """
         if os.path.getsize(self.fqfn) == 0:
-           raise(IOError, "Empty File")
+            raise(IOError, "Empty File")
            
         if self.delimiter:                                 #delimiter overridden
-           self.dialect                  = csv.Dialect
-           self.dialect.delimiter        = self.delimiter
-           self.dialect.skipinitialspace = False
-           self.dialect.quoting          = True            #naive default!
-           self.dialect.quotechar        = '"'             #naive default!
-           self.dialect.lineterminator   = '\n'            #naive default!
+            self.dialect                  = csv.Dialect
+            self.dialect.delimiter        = self.delimiter
+            self.dialect.skipinitialspace = False
+            self.dialect.quoting          = True            #naive default!
+            self.dialect.quotechar        = '"'             #naive default!
+            self.dialect.lineterminator   = '\n'            #naive default!
         else:
-           self.dialect                  = self._get_dialect()
-           self.delimiter                = self.dialect.delimiter
-           if QUOTE_DICT[self.dialect.quoting] == 'QUOTE_NONE':
-               self.csv_quoting = False  # almost never see this value
-           else:
-               self.csv_quoting = True
+            self.dialect                  = self._get_dialect()
+            self.delimiter                = self.dialect.delimiter
+            if QUOTE_DICT[self.dialect.quoting] == 'QUOTE_NONE':
+                self.csv_quoting = False  # almost never see this value
+            else:
+                self.csv_quoting = True
 
         self.format_type         = self._get_format_type()
         self.dialect.has_header  = self._has_header(self.has_header)
@@ -118,18 +118,18 @@ class FileTyper(object):
             deal with bad data.
         """
         if not self.delimiter or len(self.delimiter) == 1:
-           csvfile = open(self.fqfn, "r")
-           for row in csv.reader(csvfile, self.dialect):
-               row_len = len(row)
-               csvfile.close()
-               break
+            csvfile = open(self.fqfn, "r")
+            for row in csv.reader(csvfile, self.dialect):
+                row_len = len(row)
+                csvfile.close()
+                break
         else:
-           # csv module can't handle multi-column delimiters:
-           for rec in fileinput.input(self.fqfn):
-               fields = rec[:-1].split(self.delimiter)
-               fileinput.close()
-               row_len = len(fields)
-               break
+            # csv module can't handle multi-column delimiters:
+            for rec in fileinput.input(self.fqfn):
+                fields = rec[:-1].split(self.delimiter)
+                fileinput.close()
+                row_len = len(fields)
+                break
 
         return row_len
  
@@ -159,7 +159,7 @@ class FileTyper(object):
         """ Returns the number of records in the file
         """
         rec_cnt = 0
-        for rec in fileinput.input(self.fqfn):
+        for dummy in fileinput.input(self.fqfn):
             rec_cnt += 1
         fileinput.close()
         return rec_cnt

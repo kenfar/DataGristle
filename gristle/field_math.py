@@ -20,7 +20,7 @@
       - change returned data format to be based on field
 """
 from __future__ import division
-import field_type
+import gristle.field_type as field_type
 import math
 
 
@@ -84,7 +84,7 @@ def get_variance_and_stddev(values, mean=None):
 
     for value in values:
         try:                    
-            accum += math.pow(mean - int(value),2)  * int(values[value])
+            accum += math.pow(mean - int(value), 2)  * int(values[value])
             count += int(values[value])
         except ValueError:      # catches dictionary with string
             pass                # usually 'unknown values', sometimes garbage
@@ -187,7 +187,7 @@ class GetDictMedian(object):
 
         return list(values.items())
 
-    
+
     def _get_numeric_tuple_list(self, tuple_list):
         """ Makes a copy of a list of tuples with all data converted to 
             floats.
@@ -208,6 +208,8 @@ class GetDictMedian(object):
        
 
     def _get_tuple_list_count(self, tuple_list):
+        """ Returns a count of the number of pairs in the tuple_list
+        """
 
         count = 0
         for pair in tuple_list:

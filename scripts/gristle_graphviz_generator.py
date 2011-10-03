@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-""" Creates graphviz networkmap dot file from the first two columns of an input file.
+""" Creates graphviz networkmap dot file from the first two columns of an input
+    file.  This is an extremely primitive, early effort.
 
     To do:
        - Replace internal terminology related to ips & users with something more
          generic.
        - Add user controls to affect graph type, colors, fonts, arrowheads, etc.
        - Add user controls to choose which columns to use for diagram.
+       - Possibly switch to a library to handle graphviz language formatting.
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
@@ -17,8 +19,7 @@ import os
 import optparse
 import csv
 import collections
-import fileinput
-import pprint as pp
+#import pprint as pp
 
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure
@@ -32,43 +33,40 @@ import gristle.file_type           as file_type
 
 
 def main():
-    """ Gets args, analyzes input file for structure, reads one record at a time into 3 arrays:
+    """ Gets args, analyzes input file for structure, reads one record at a
+        time into 3 arrays:
           - ip        (which is column 0)
           - user      (which is column 1)
           - edge_list 
-        Then prints out graphviz dot file to produce a network map from the above data.
+        Then prints out graphviz dot file to produce a network map from the
+        above data.
     """
     field_0_freq = collections.defaultdict(int)
     field_1_freq = collections.defaultdict(int)
     edge_list   = []
 
-    (opts, args) = get_opts_and_args()
-    MyFile       = file_type.FileTyper(opts.filename, 
-                                       opts.delimiter,
-                                       opts.recdelimiter,
-                                       opts.hasheader)
+    (opts, dummy) = get_opts_and_args()
+    my_file        = file_type.FileTyper(opts.filename, 
+                                         opts.delimiter,
+                                         opts.recdelimiter,
+                                         opts.hasheader)
 
     if opts.delimiter and len(opts.delimiter) > 1:
-        MyFile.delimiter    = opts.delimiter
-        MyFile.recdelimiter = opts.recdelimiter
-        MyFile.hasheader    = opts.hasheader
+        my_file.delimiter    = opts.delimiter
+        my_file.recdelimiter = opts.recdelimiter
+        my_file.hasheader    = opts.hasheader
     else:
-        MyFile.analyze_file()
+        my_file.analyze_file()
 
     print 'graph networkmap {'
 
-    rec_cnt = -1
-    csvfile = open(MyFile.fqfn, "r")
-    field_0_style="filled"
-    field_0_color="red"
-    field_1_style="filled"
-    field_1_color="green"
+    csvfile = open(my_file.fqfn, "r")
+    field_0_style = "filled"
+    field_0_color = "red"
+    field_1_style = "filled"
+    field_1_color = "green"
 
-    for fields in csv.reader(csvfile, MyFile.dialect):
-        rec_cnt += 1
-        if rec_cnt > 500:
-           break
-
+    for fields in csv.reader(csvfile, my_file.dialect):
         ip   = '"%s"' % fields[0]     # 'ip' terminology is obsolete
         t    = fields[1].split("@")   # this transformation is obsolete!
         user = t[0]                   # 'user' terminology is obsolete
@@ -114,24 +112,27 @@ def get_opts_and_args():
 
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', dest='filename', help='input file')
+    parser.add_option('-f', '--file', 
+           dest='filename', 
+           help='input file')
 
     parser.add_option('-v', '--verbose',
-                      action='store_true',
-                      dest='verbose',
-                      default=True,
-                      help='provides more detail')
+           action='store_true',
+           dest='verbose',
+           default=True,
+           help='provides more detail')
 
     parser.add_option('-d', '--delimiter',
-                      help='specify a field delimiter - essential for multi-column delimiters.  Delimiter must be quoted.')
+           help=('Specify a quoted field delimiter.'
+                 'This is essential for multi-column delimiters. '))
 
     parser.add_option('--recdelimiter',
-                      help='specify an end-of-record delimiter.  The deimiter must be quoted.')
+           help='specify an end-of-record delimiter.  The deimiter must be quoted.')
 
     parser.add_option('--hasheader',
-                      default=False,
-                      action='store_true',
-                      help='indicates that there is a header in the file.  Essential for multi-column delimited files.')
+           default=False,
+           action='store_true',
+           help='Indicates that there is a header in the file. ')
 
 
     (opts, args) = parser.parse_args()
