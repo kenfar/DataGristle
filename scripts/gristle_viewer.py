@@ -2,6 +2,8 @@
 """ Display data a single record of a file, one field per line, with
     field names displayed as labels to the left of the field values.
 
+    Also allows simple navigation between records.
+
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
 """
@@ -20,13 +22,15 @@ sys.path.append('../../')  # allows running out of project structure
 
 import gristle.file_type           as file_type 
 import gristle.field_determinator  as field_determinator
+import gristle.field_type          as field_type
 
 
 #------------------------------------------------------------------------------
 # Command-line section 
 #------------------------------------------------------------------------------
 def main():
-    """ Analyzes file then displays a single record
+    """ Analyzes file then displays a single record and allows simple 
+        navigation between records.
     """
     (opts, dummy) = get_opts_and_args()
     my_file       = file_type.FileTyper(opts.filename, opts.delimiter)
@@ -41,14 +45,32 @@ def main():
                                   opts.verbose)
     my_fields.analyze_fields()
 
-    rec = get_rec(opts.filename, 
-                  opts.recnum, 
-                  my_file.dialect)
-    if rec is None:
-        print 'No record found'
-        return
+
+    while True:
+       rec = get_rec(opts.filename, 
+                     opts.recnum, 
+                     my_file.dialect)
+       if rec is None:
+           print 'No record found'
+           return
     
-    display_rec(rec, my_file, my_fields)
+       display_rec(rec, my_file, my_fields)
+ 
+       response = raw_input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
+       if response == 'q':
+           break
+       elif response == 'p':
+           opts.recnum -= 1
+       elif response == 'n':
+           opts.recnum += 1
+       elif response == 't':
+           opts.recnum = 0
+       elif field_type._get_type(response) == 'integer':
+           opts.recnum = int(response)
+       else:
+           print 'Invalid response, please enter q, p, n, t, or a specific record number'
+       
+       print response
 
     return 0     
 
@@ -56,9 +78,6 @@ def main():
 
 def display_rec(rec, my_file, my_fields):
     """ Displays a single record
-     
-        To do:
-           - add simple navigation 
     """
 
     # figure out label length for formatting:
@@ -67,7 +86,7 @@ def display_rec(rec, my_file, my_fields):
        if len(v) > max_v_len:
            max_v_len = len(v)
     min_format_len  =  max_v_len + 4
-
+    
     # print in column order:
     for sub in range(my_file.field_cnt):
         print '%-*s  -  %-40s' % (min_format_len, my_fields.field_names[sub], rec[sub])
@@ -78,6 +97,11 @@ def get_rec(filename, recnum, dialect):
     """ Gets a single record from a file
         Since it reads from the begining of the file it can take a while to get
         to records at the end of a large file
+
+        To do:
+           - possibly keep file open in case user wants to navigate about
+           - possibly keep some of the data in a dictionary in case the user
+             wants to navigate about
     """
 
     f = open(filename, 'rt')
