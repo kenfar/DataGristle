@@ -11,6 +11,8 @@ import sys
 import os
 import optparse
 import csv
+from pprint import pprint as pp
+
 
 #--- gristle modules -------------------
 sys.path.append('../')     # allows running out of project structure
@@ -58,8 +60,17 @@ def display_rec(rec, my_file, my_fields):
         To do:
            - add simple navigation 
     """
+
+    # figure out label length for formatting:
+    max_v_len = 0
+    for v in my_fields.field_names.values():
+       if len(v) > max_v_len:
+           max_v_len = len(v)
+    min_format_len  =  max_v_len + 4
+
+    # print in column order:
     for sub in range(my_file.field_cnt):
-        print '%-20s  -  %-40s' % (my_fields.field_names[sub], rec[sub])
+        print '%-*s  -  %-40s' % (min_format_len, my_fields.field_names[sub], rec[sub])
 
 
 
@@ -76,10 +87,11 @@ def get_rec(filename, recnum, dialect):
     try:
         reader = csv.reader(f, dialect)
         for row in reader:
-            i += 1
             if i == recnum:
                 rec = row 
                 break
+            else:
+                i += 1
     finally:
         f.close()
     return rec
@@ -113,7 +125,7 @@ def get_opts_and_args():
     parser.add_option('-r', '--recnum',
                       default=1,
                       type=int,
-                      help='display this record number, default to 1')
+                      help='display this record number, start at 0, default to 1')
     parser.add_option('-d', '--delimiter',
                       help=('Specify a quoted field delimiter -'
                             ' esp. for multi-col delimiters.'))
