@@ -41,14 +41,14 @@ def get_field_names(filename,
         final_names = []
         for col_sub in range(len(field_names)):
             if dialect.has_header:
-                final_names.append(field_names[col_sub])
+                final_names.append(field_names[col_sub].strip())
             else:
                 final_names.append('field_%d' % col_sub)
         return final_names
     else:
         final_name = ''
         if dialect.has_header:
-            final_name = field_names[col_number]
+            final_name = field_names[col_number].strip()
         else:
             final_name = 'field_%d' % col_number
         return final_name
