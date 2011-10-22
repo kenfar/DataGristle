@@ -176,7 +176,9 @@ def get_opts_and_args():
            "   %prog -f [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', dest='filename', help='input file')
+    parser.add_option('-f', '--file', 
+           dest='filename', 
+           help='input file')
 
     parser.add_option('-c', '--columns',
            default=':',
@@ -209,7 +211,7 @@ def get_opts_and_args():
     (opts, args) = parser.parse_args()
 
     if opts.filename is None:
-        parser.error("Error:  no filename was provided")
+        parser.error("no filename was provided")
     elif not os.path.exists(opts.filename):
         parser.error("filename %s could not be accessed" % opts.filename)
 
