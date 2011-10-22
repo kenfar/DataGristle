@@ -13,6 +13,7 @@
       - Can only process a single file
 
     To do:
+      - Eliminate col type arg or at least automate some of it
       - Add max dictionary checks for freq & countdistinct operations
       - Add actions: stddev & count
       - Add actions: countknown & countunknown
@@ -165,8 +166,10 @@ def get_opts_and_args():
            type=int,
            dest='column_number')
     parser.add_option('-t', '--column_type',
+           choices=['integer', 'float', 'string'],
            help='column type:  integer, float or string')
     parser.add_option('-a', '--action',
+           choices=['min', 'max', 'avg', 'sum', 'freq', 'countdistinct'],
            help=('scalar action to be performed:  min, max, avg, sum, freq, '
                  'countdistinct'))
     parser.add_option('-d', '--delimiter',
@@ -184,8 +187,6 @@ def get_opts_and_args():
     elif not os.path.exists(opts.filename):
         parser.error("filename %s could not be accessed" % opts.filename)
 
-    assert(opts.column_type in ('integer', 'float', 'string'))
-    assert(opts.action in ('min', 'max', 'sum', 'avg', 'freq', 'countdistinct'))
     if opts.action == 'string':
         assert(opts.action in ['min', 'max', 'freq', 'countdistinct'])
 
