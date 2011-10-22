@@ -272,7 +272,7 @@ def get_opts_and_args():
     (opts, args) = parser.parse_args()
 
     if opts.file1 is None:
-        parser.error("Error:  no filename was provided")
+        parser.error("no filename was provided")
     elif not os.path.exists(opts.file1):
         parser.error("file1 %s could not be accessed" % opts.file1)
 
