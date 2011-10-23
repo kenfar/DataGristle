@@ -8,6 +8,9 @@
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
+
+    Example Usage:
+    $ cat ../data/*crime* | ./gristle_file_converter.py -d ',' -D '|'  
 """
 
 #--- standard modules ------------------
