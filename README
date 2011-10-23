@@ -19,7 +19,7 @@ Next Steps:
    * metadata database population
 
 Its objectives include:
-   * multi-platform (linux, mac os, windows)
+   * multi-platform (unix, linux, mac os, windows) 
    * multi-language (primarily python)
    * free - no cripple-licensing
    * primary audience is programming data analysts - not non-technical analysts
@@ -33,29 +33,37 @@ Its objectives include:
 DEPENDENCIES
    * Python 2.6
 
-EXISTING UTILITIES:
+EXISTING UTILITIES (in descending order of maturity):
    * gristle_determinator.py 
        - Identifies file formats, generates metadata, prints file analysis report
+       - This is the most mature - and also used by the other utilities so that 
+         you generally do not need to enter file structure info.
+   * gristle_slicer.py
+       - Used to extract a subset of columns and rows out of an input file.
+       - Very mature.
+   * gristle_viewer.py
+       - Shows one record from a file at a time - formatted based on metadata. 
+       - Very mature.
    * gristle_diff.py
        - Shows differences between two files
+       - Mostly mature.
+   * gristle_freq.py
+       - Produces a frequency distribution of one column of the input file
+       - Mostly mature
    * gristle_file_converter.py
        - Converts a csv from one dialect to another.  Can handle multi-character
          field delimiters as well as record delimiters.
+       - Slightly mature.
    * gristle_filter.py 
        - Applies simple filter logic to file.
-       - Very simplistic utility.
-   * gristle_freq.py
-       - Prints a frequency distribution of any column of an input file.
+       - Immature.
+   * gristle_scalar.py
+       - Performs scalar operations (min, max, avg, count unique, etc) on a file
+       - Very simplistic .
    * gristle_graphviz_generator.py
        - Generates a graphiz dot file based upon an input file and command-line
          preferences.
-   * gristle_scalar.py
-       - Performs scalar operations (min, max, avg, count unique, etc) on a file
-       - Very simplistic utility.
-   * gristle_slicer.py
-       - Used to extract a subset of columns and rows out of an input file.
-   * gristle_viewer.py
-       - Shows one record from a file at a time - formatted based on metadata. 
+       - Really just a child.
 
 FUTURE UTILITIES:
    * gristle_metadata.py 
