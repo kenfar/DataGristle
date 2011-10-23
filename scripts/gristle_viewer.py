@@ -6,6 +6,11 @@
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
+
+    To do:
+       1.  check for recnum > number of records in input file
+       2.  consider adding records up to some threshold to dictionary
+           to allow navigation for stdin data & faster for files
 """
 
 #--- standard modules ------------------
@@ -33,28 +38,44 @@ def main():
         navigation between records.
     """
     (opts, dummy) = get_opts_and_args()
-    my_file       = file_type.FileTyper(opts.filename, opts.delimiter)
-    my_file.analyze_file()
 
-    # Get Analysis on ALL Fields:
-    my_fields = field_determinator.FieldDeterminator(opts.filename,
-                                  my_file.format_type,
-                                  my_file.field_cnt,
-                                  my_file.has_header,
-                                  my_file.dialect,
-                                  opts.verbose)
-    my_fields.analyze_fields()
-
+    if opts.filename:
+        my_file                = file_type.FileTyper(opts.filename, opts.delimiter)
+        my_file.analyze_file()
+        my_fields              = field_determinator.FieldDeterminator(opts.filename,
+                                      my_file.format_type,
+                                      my_file.field_cnt,
+                                      my_file.has_header,
+                                      my_file.dialect,
+                                      opts.verbose)
+        my_fields.analyze_fields()
+        dialect                = my_file.dialect
+    else:
+        # Dialect parameters needed for stdin - since the normal code can't
+        # analyze this data & guess the csv properties.
+        my_fields              = None
+        dialect                = csv.Dialect
+        dialect.delimiter      = opts.delimiter
+        dialect.quoting        = opts.quoting
+        dialect.quotechar      = opts.quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
 
     while True:
        rec = get_rec(opts.filename, 
                      opts.recnum, 
-                     my_file.dialect)
+                     dialect)
        if rec is None:
            print 'No record found'
            return
     
-       display_rec(rec, my_file, my_fields)
+       display_rec(rec, my_fields, opts.output)
+
+       # Need to end here if data came from stdin:
+       if not opts.filename:
+           break
+       # Need to end here if data is being directed to a file - and not interactive
+       if opts.output:
+           break
  
        response = raw_input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
        if response == 'q':
@@ -76,24 +97,40 @@ def main():
 
 
 
-def display_rec(rec, my_file, my_fields):
+def display_rec(rec, my_fields, outfile_name):
     """ Displays a single record
     """
 
     # figure out label length for formatting:
-    max_v_len = 0
-    for v in my_fields.field_names.values():
-       if len(v) > max_v_len:
-           max_v_len = len(v)
-    min_format_len  =  max_v_len + 4
+    field_names = []
+    if my_fields:
+        max_v_len = 0
+        for v in my_fields.field_names.values():
+           if len(v) > max_v_len:
+               max_v_len = len(v)
+        min_format_len  =  max_v_len + 4
+        field_names = my_fields.field_names
+    else:
+        for sub in range(len(rec)):
+            field_names.append('field_%d' % sub)        
+        min_format_len = 12
+
+    if outfile_name:
+        outfile = open(outfile_name, 'w')
+    else:
+        outfile = sys.stdout
     
-    # print in column order:
-    for sub in range(my_file.field_cnt):
-        print '%-*s  -  %-40s' % (min_format_len, my_fields.field_names[sub], rec[sub])
+    # write in column order:
+    for sub in range(len(rec)):
+        outfile.write('%-*s  -  %-40s\n' % (min_format_len, field_names[sub], rec[sub]))
+
+    # don't close stdout
+    if outfile_name:
+        outfile.close()
 
 
 
-def get_rec(filename, recnum, dialect):
+def get_rec(infile_name, recnum, dialect):
     """ Gets a single record from a file
         Since it reads from the begining of the file it can take a while to get
         to records at the end of a large file
@@ -104,12 +141,15 @@ def get_rec(filename, recnum, dialect):
              wants to navigate about
     """
 
-    f = open(filename, 'rt')
+    if infile_name:
+        infile = open(infile_name, 'r')
+    else:
+        infile = sys.stdin
 
     rec = None
     i   = 0
     try:
-        reader = csv.reader(f, dialect)
+        reader = csv.reader(infile, dialect)
         for row in reader:
             if i == recnum:
                 rec = row 
@@ -117,7 +157,10 @@ def get_rec(filename, recnum, dialect):
             else:
                 i += 1
     finally:
-        f.close()
+        # only close infile if it's not stdin:
+        if infile_name:
+            infile.close()
+
     return rec
 
 
@@ -136,32 +179,39 @@ def get_opts_and_args():
            "--recnum [value] \n")
 
     parser = optparse.OptionParser(usage = use)
-    parser.add_option('-f', '--file', dest='filename', help='input file')
+    parser.add_option('-f', '--file', 
+           dest='filename', 
+           help='Specifies the input file, defaults to stdin.')
+    parser.add_option('-o', '--output', 
+           help='Specifies the output file, defaults to stdout.')
     parser.add_option('-q', '--quiet',
-                      action='store_false',
-                      dest='verbose',
-                      default=False,
-                      help='provides less detail')
+           action='store_false',
+           dest='verbose',
+           default=False,
+           help='provides less detail')
     parser.add_option('-v', '--verbose',
-                      action='store_true',
-                      dest='verbose',
-                      help='provides more detail')
+           action='store_true',
+           dest='verbose',
+           help='provides more detail')
     parser.add_option('-r', '--recnum',
-                      default=1,
-                      type=int,
-                      help='display this record number, start at 0, default to 1')
+           default=1,
+           type=int,
+           help='display this record number, start at 0, default to 1')
     parser.add_option('-d', '--delimiter',
-                      help=('Specify a quoted field delimiter -'
-                            ' esp. for multi-col delimiters.'))
+           default=',',
+           help='Specify a quoted field delimiter.  Defaults to comma')
+    parser.add_option('--quoting',
+           default=False,
+           help='Specify field quoting - generally only used for stdin data.'
+                '  The default is False.')
+    parser.add_option('--quotechar',
+           default='"',
+           help='Specify field quoting character - generally only used for '
+                'stdin data.  Default is double-quote')
+
 
 
     (opts, args) = parser.parse_args()
-
-    # validate opts
-    if opts.filename is None:
-        parser.error("no filename was provided")
-    elif not os.path.exists(opts.filename):
-        parser.error("filename %s could not be accessed" % opts.filename)
 
     return opts, args
 
