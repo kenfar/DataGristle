@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """ Extracts subsets of input file based on user-specified columns and rows.
-    The input file is assumed to be a csv file - as is the output printed 
-    through stdout.
+    The input csv file can be piped into the program through stdin or identified
+    via a command line option.  The output will default to stdout, or redirected
+    to a filename via a command line option.
 
     The columns and rows are specified using python list slicing syntax -
     so individual columns or rows can be listed as can ranges.   Inclusion
@@ -33,26 +34,54 @@ LARGE_SIDE = 1
 def main():
     """ runs all processes:
             - gets opts & args
-            - analyzes file to determine csv characteristics
+            - analyzes file to determine csv characteristics unless data is 
+              provided via stdin
             - runs each input record through process_cols to get output
             - writes records
     """
     (opts, dummy) = get_opts_and_args()
-    my_file       = file_type.FileTyper(opts.filename, 
-                                       opts.delimiter,
-                                       opts.recdelimiter,
-                                       opts.hasheader)
-    my_file.analyze_file()
+    if opts.filename != '-':
+        my_file                = file_type.FileTyper(opts.filename, 
+                                            opts.delimiter,
+                                            opts.recdelimiter,
+                                            opts.hasheader)
+        my_file.analyze_file()
+        dialect                = my_file.Dialect
+    else:
+        # dialect parameters needed for stdin - since the normal code can't
+        # analyze this data.
+        dialect                = csv.Dialect
+        dialect.delimiter      = opts.delimiter       
+        dialect.quoting        = opts.quoting
+        dialect.quotechar      = opts.quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
 
     rec_cnt = -1
-    csvfile = open(my_file.fqfn, "r")
-    for cols in csv.reader(csvfile, my_file.dialect):
-        rec_cnt += 1
-        new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
-                                cols, opts.columns, opts.excolumns)
-        if new_cols:
-            write_fields(new_cols, my_file)
-    csvfile.close()
+
+    if opts.filename == '-':
+        infile = sys.stdin
+    else:
+        infile = open(opts.filename, "r")
+
+    if opts.output == '-':
+        outfile = sys.stdout
+    else:
+        outfile = open(opts.output, "w")
+
+    try:
+        for cols in csv.reader(infile, dialect):
+            rec_cnt += 1
+            if not cols:
+                break
+            new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
+                                    cols, opts.columns, opts.excolumns)
+            if new_cols:
+                write_fields(outfile, new_cols, dialect.delimiter)
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    infile.close()
+    outfile.close()
 
     return 
 
@@ -148,7 +177,7 @@ def spec_evaluator(value, spec_list):
            
 
 
-def write_fields(fields, my_file):
+def write_fields(outfile, fields, delimiter):
     """ Writes output to output destination.
         Input:
             - list of fields to write
@@ -158,8 +187,8 @@ def write_fields(fields, my_file):
         To Do:
             - write to output file
     """
-    rec = my_file.delimiter.join(fields)
-    print rec
+    rec = delimiter.join(fields)
+    outfile.write(rec + '\n')
 
 
 def get_opts_and_args():
@@ -170,21 +199,26 @@ def get_opts_and_args():
             - opts dictionary
             - args dictionary 
     """
-    use = ("%prog is used to extract column and row subsets out of "
-           "files and write them out to stdout: \n" 
+    use = ("%prog is used to extract column and row subsets out of files "
+           "and write them out to stdout or a given filename: \n" 
            " \n"
            "   %prog -f [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('-f', '--file', 
+           default='-',
            dest='filename', 
            help='input file')
-
+    parser.add_option('-o', '--output', 
+           default='-',
+           help='Specifies the output file.  The default is stdout.  Note that'
+                'if a filename is provided the program will override any '
+                'file of that name.')
     parser.add_option('-c', '--columns',
            default=':',
            help=('Specify the columns to include via a comma-separated list of '
                  'columns and colon-separated pairs of column start & '
-                 'stop ranges. The default is to include all columns. '))
+                 'stop ranges. The default is to include all columns (":"). '))
     parser.add_option('-C', '--excolumns',
            help=('Specify the columns to exclude via a comma-separated list of '
                  'columns and colon-separated pairs of column start & '
@@ -193,14 +227,24 @@ def get_opts_and_args():
            default=':',
            help=('Specify the records to include via a comma-separated list of '
                  'record numbers and colon-separated pairs of record start & '
-                 'stop ranges.  The default is to include all records. '))
+                 'stop ranges.  The default is to include all records (":").'))
     parser.add_option('-R', '--exrecords',
            help=('Specify the records to exclude via a comma-separated list of '
                  'record numbers and colon-separated pairs of record start & '
                  'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
+           default=',',
            help=('Specify a quoted single-column field delimiter. This may be'
-                 'determined automatically by the program. '))
+                 'determined automatically by the program - unless you pipe the'
+                 'data in. Default is comma.'))
+    parser.add_option('--quoting',
+           default=False,
+           help='Specify field quoting - generally only used for stdin data.'
+                '  The default is False.')
+    parser.add_option('--quotechar',
+           default='"',
+           help='Specify field quoting character - generally only used for '
+                'stdin data.  Default is double-quote')
     parser.add_option('--recdelimiter',
            help='Specify a quoted end-of-record delimiter. ')
     parser.add_option('--hasheader',
@@ -209,12 +253,6 @@ def get_opts_and_args():
            help='Indicate that there is a header in the file.')
 
     (opts, args) = parser.parse_args()
-
-    if opts.filename is None:
-        parser.error("no filename was provided")
-    elif not os.path.exists(opts.filename):
-        parser.error("filename %s could not be accessed" % opts.filename)
-
 
     def lister(arg_string):
         """ converts input commma-delimited string into a list
