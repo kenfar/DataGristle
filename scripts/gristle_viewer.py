@@ -198,8 +198,7 @@ def get_opts_and_args():
            type=int,
            help='display this record number, start at 0, default to 1')
     parser.add_option('-d', '--delimiter',
-           default=',',
-           help='Specify a quoted field delimiter.  Defaults to comma')
+           help='Specify a quoted field delimiter. ')
     parser.add_option('--quoting',
            default=False,
            help='Specify field quoting - generally only used for stdin data.'
@@ -209,9 +208,11 @@ def get_opts_and_args():
            help='Specify field quoting character - generally only used for '
                 'stdin data.  Default is double-quote')
 
-
-
     (opts, args) = parser.parse_args()
+
+    if not opts.filename:
+       if not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin')
 
     return opts, args
 
