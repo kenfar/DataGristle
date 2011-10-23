@@ -50,16 +50,34 @@ def main():
             - writes records
     """
     (opts, dummy) = get_opts_and_args()
-    my_file       = file_type.FileTyper(opts.filename,
+
+    if opts.filename:
+        my_file       = file_type.FileTyper(opts.filename,
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
-                                       
-    my_file.analyze_file()
+        my_file.analyze_file()
+        dialect       = my_file.dialect
+    else:
+        # dialect parameters needed for stdin - since the normal code can't
+        # analyze this data.
+        dialect                = csv.Dialect
+        dialect.delimiter      = opts.delimiter
+        dialect.quoting        = opts.quoting
+        dialect.quotechar      = opts.quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
+
+    if opts.filename:
+        infile = open(opts.filename, 'r')
+    else:
+        infile = sys.stdin
+    if opts.output:
+        outfile = open(opts.output, 'w')
+    else:
+        outfile = sys.stdout
 
     rec_cnt = 0
-    csvfile = open(my_file.fqfn, "r")
-    for rec in csv.reader(csvfile, my_file.dialect):
+    for rec in csv.reader(infile, dialect):
         rec_cnt      += 1
         if (opts.hasheader 
             and rec_cnt == 1): 
@@ -68,7 +86,6 @@ def main():
             converted_column = type_converter(rec[opts.column_number], 
                                               opts.column_type)
             process_value(converted_column, opts.action)
-    csvfile.close()
 
     if (opts.hasheader
     and rec_cnt > 0):
@@ -77,15 +94,19 @@ def main():
         process_cnt = rec_cnt
 
     if opts.action in ['sum', 'min', 'max']:
-        print temp_value
+        outfile.write('%s\n' % str(temp_value))
     elif opts.action == 'avg':
-        print temp_value / process_cnt
+        outfile.write('%s\n' % str(temp_value / process_cnt))
     elif opts.action == 'freq':
         for key in temp_dict:
-            print '%s - %d' % (key, temp_dict[key])
+            outfile.write('%s - %d\n' % (key, temp_dict[key]))
     elif opts.action == 'countdistinct':
-        print len(temp_dict)
+        outfile.write('%s\n' % len(temp_dict))
 
+    if opts.filename:
+        infile.close()
+    if opts.output:
+        outfile.close()
 
     return 
 
@@ -125,7 +146,10 @@ def process_value(value, action):
             else:
                 temp_value += value
     elif action == 'avg':
-        temp_value += value
+        if temp_value is None:
+            temp_value = value
+        elif value is not None:
+            temp_value += value
     elif action == 'min':
         if (temp_value is None 
             or value < temp_value):
@@ -161,7 +185,9 @@ def get_opts_and_args():
 
     parser.add_option('-f', '--file', 
            dest='filename', 
-           help='input file')
+           help='Specifies input file.  Default is stdin.')
+    parser.add_option('-o', '--output', 
+           help='Specifies output file.  Default is stdout.')
     parser.add_option('-c', '--column',
            type=int,
            dest='column_number')
@@ -173,7 +199,17 @@ def get_opts_and_args():
            help=('scalar action to be performed:  min, max, avg, sum, freq, '
                  'countdistinct'))
     parser.add_option('-d', '--delimiter',
-           help='specify a field delimiter.  Delimiter must be quoted.')
+           help=('Specify a quoted single-column field delimiter. This may be'
+                 'determined automatically by the program - unless you pipe the'
+                 'data in. Default is comma.'))
+    parser.add_option('--quoting',
+           default=False,
+           help='Specify field quoting - generally only used for stdin data.'
+                '  The default is False.')
+    parser.add_option('--quotechar',
+           default='"',
+           help='Specify field quoting character - generally only used for '
+                'stdin data.  Default is double-quote')
     parser.add_option('--hasheader',
            default=False,
            action='store_true',
@@ -182,10 +218,12 @@ def get_opts_and_args():
 
     (opts, args) = parser.parse_args()
 
-    if opts.filename is None:
-        parser.error("no filename was provided")
-    elif not os.path.exists(opts.filename):
-        parser.error("filename %s could not be accessed" % opts.filename)
+    if opts.filename:
+        if not os.path.exists(opts.filename):
+            parser.error("filename %s could not be accessed" % opts.filename)
+    else:
+        if not opts.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin')
 
     if opts.action == 'string':
         assert(opts.action in ['min', 'max', 'freq', 'countdistinct'])
