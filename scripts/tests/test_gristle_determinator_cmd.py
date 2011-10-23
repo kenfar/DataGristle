@@ -16,7 +16,6 @@ import unittest
 import time
 import subprocess
 import fileinput
-from subprocess import PIPE, STDOUT, Popen
 
 sys.path.append('../')
 sys.path.append('../../')
@@ -129,7 +128,7 @@ class FileStructureFixtureManager(unittest.TestCase):
                print 'objective: %s %s' % (objective[rownum][label], objective[rownum][value])
                raise    
 
-    def _eval_field_struct(self, fix):
+    def broken_eval_field_struct(self, fix):
         # reads entire command output - skipping past file section and focusing
         # on just the field bits
 
@@ -199,7 +198,7 @@ class FileStructureFixtureManager(unittest.TestCase):
         # Tests hasheader, delimiter, and recdelimiter args
         pass
 
-    def test_simple_field_counts(self):
+    def broken_test_simple_field_counts(self):
         fix = 2
         fn  = self._create_fixture(fix) 
         self.cmd = ['../gristle_determinator.py', '-f', fn, '-c', 0 ]   # may need to be overridden
@@ -299,7 +298,7 @@ class TestFileStructureSingleCol(FileStructureFixtureManager):
     def test_simple_file_counts(self):
         pass
 
-    def test_simple_field_counts(self):
+    def broken_test_simple_field_counts(self):
         fix = 2
         fn  = self._create_fixture(fix) 
         self.cmd = ['../gristle_determinator.py', '-f', fn, '-c', '1' ]   # may need to be overridden
