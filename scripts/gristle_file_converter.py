@@ -41,55 +41,80 @@ def main():
         for writing the records.
     """
     (opts, dummy) = get_opts_and_args()
-    my_file       = file_type.FileTyper(opts.filename, 
-                                       opts.delimiter,
-                                       opts.recdelimiter,
-                                       opts.hasheader)
-    my_file.analyze_file()
+
+    if opts.filename:
+        my_file       = file_type.FileTyper(opts.filename, 
+                                           opts.delimiter,
+                                           opts.recdelimiter,
+                                           opts.hasheader)
+        my_file.analyze_file()
+        dialect       = my_file.dialect
+    else:
+        # dialect parameters needed for stdin - since the normal code can't
+        # analyze this data.
+        dialect                = csv.Dialect
+        dialect.delimiter      = opts.delimiter
+        dialect.quoting        = opts.quoting
+        dialect.quotechar      = opts.quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
+
+    if opts.filename:
+        infile  = open(opts.filename, 'r')
+    else:
+        infile  = sys.stdin
+    if opts.output:
+        outfile  = open(opts.output, 'w')
+    else:
+        outfile  = sys.stdout
 
     rec_cnt = -1
-    if not my_file.delimiter or len(my_file.delimiter) == 1:
-        csvfile = open(my_file.fqfn, "r")
-        for fields in csv.reader(csvfile, my_file.dialect):
+    if (not dialect.delimiter
+    or len(dialect.delimiter) == 1):
+        for fields in csv.reader(infile, dialect):
             rec_cnt += 1
-            if my_file.has_header and rec_cnt == 0:
-                continue
-            write_fields(fields, my_file, opts.out_delimiter, 
-                         opts.out_recdelimiter)
-        csvfile.close()
+            #if my_file.has_header and rec_cnt == 0:   # need to review what to do with this
+            #    continue
+            write_fields(fields, opts.out_delimiter, 
+                         opts.out_recdelimiter, outfile)        # replace my_file with what?
     else:
         # csv module can't handle multi-column delimiters:
-        for rec in fileinput.input(my_file.fqfn):
-            rec_cnt += 1
+        while true:
+            rec = infile.read()
+            if not rec:
+                break
+            else:
+                rec_cnt += 1
             if opts.recdelimiter:
                 clean_rec = rec[:-1].split(opts.recdelimiter)[0]
             else:
                 clean_rec = rec[:-1]
-            fields = clean_rec.split(my_file.delimiter)
-            if my_file.has_header and rec_cnt == 0:
-                continue
-            write_fields(fields, my_file, opts.out_delimiter, 
-                         opts.out_recdelimiter)
-        fileinput.close()
+            fields = clean_rec.split(dialect.delimiter)
+            #if my_file.has_header and rec_cnt == 0:              # replace my_file with what?
+            #    continue
+            write_fields(fields, opts.out_delimiter, 
+                         opts.out_recdelimiter, outfile)         # replace my_file with what?
+
+    if opts.filename:
+        infile.close()
+    if opts.output:
+        outfile.close()
 
     return 0     
 
 
-def write_fields(fields, my_file, out_delimiter, out_rec_delimiter):
+def write_fields(fields, out_delimiter, out_rec_delimiter, outfile):
     """ Writes output to output destination.
         Input:
             - list of fields to write
             - output object
         Output:
-            - delimited output record written to stdout
-        To Do:
-            - write to output file
+            - delimited output record written 
     """
     if out_rec_delimiter is None:
         rec = out_delimiter.join(fields)
     else:
         rec = "%s%s" % (out_delimiter.join(fields), out_rec_delimiter)
-    print rec
+    outfile.write('%s\n'% rec)
 
 
 def get_opts_and_args():
@@ -110,7 +135,9 @@ def get_opts_and_args():
 
     parser.add_option('-f', '--file', 
            dest='filename', 
-           help='input file')
+           help='Specifies input file. Default is stdin.')
+    parser.add_option('-o', '--output', 
+           help='Specifies output file. Default is stdout.')
     parser.add_option('-q', '--quiet',
            action='store_false',
            dest='verbose',
@@ -133,6 +160,14 @@ def get_opts_and_args():
     parser.add_option('-R', '--outrecdelimiter',
            dest='out_recdelimiter',
            help='Specify a quoted end-of-record delimiter. ')
+    parser.add_option('--quoting',
+           default=False,
+           help='Specify field quoting - generally only used for stdin data.'
+                '  The default is False.')
+    parser.add_option('--quotechar',
+           default='"',
+           help='Specify field quoting character - generally only used for '
+                'stdin data.  Default is double-quote')
     parser.add_option('--hasheader',
            default=False,
            action='store_true',
@@ -146,10 +181,9 @@ def get_opts_and_args():
     (opts, args) = parser.parse_args()
 
     # validate opts
-    if opts.filename is None:
-        parser.error("no filename was provided")
-    elif not os.path.exists(opts.filename):
-        parser.error("filename %s could not be accessed" % opts.filename)
+    if opts.filename:
+        if not os.path.exists(opts.filename):
+            parser.error("filename %s could not be accessed" % opts.filename)
 
     return opts, args
 
