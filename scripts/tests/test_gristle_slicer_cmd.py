@@ -1,5 +1,10 @@
 #!/usr/bin/env python
+#------------------------------------------------------------------------------
+#  To do:
+#  1. 
+#
 #  See the file "LICENSE" for the full license governing this code. 
+#------------------------------------------------------------------------------
 
 import sys
 import os
@@ -7,8 +12,8 @@ import tempfile
 import random
 import unittest
 import time
+import fileinput
 import subprocess
-from subprocess import PIPE, STDOUT, Popen
 
 sys.path.append('../')
 sys.path.append('../../')
@@ -23,7 +28,7 @@ def suite():
 
 
 def generate_test_file(delim, record_cnt):
-    (fd, fqfn) = tempfile.mkstemp()
+    (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicerIn_')
     fp = os.fdopen(fd,"w") 
  
     for i in range(record_cnt):
@@ -41,62 +46,81 @@ def generate_test_file(delim, record_cnt):
 
 class TestCommandLine(unittest.TestCase):
 
+    def setUp(self):
+
+        self.easy_fqfn          = generate_test_file(delim='|', record_cnt=100)
+        self.empty_fqfn         = generate_test_file(delim='|', record_cnt=0)
+        (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestSliceOut_')
+
+    def tearDown(self): 
+        os.remove(self.easy_fqfn)
+        os.remove(self.empty_fqfn)
+        os.remove(self.out_fqfn)
+
 
     def test_easy_file(self):
 
-        easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
-        cmd = ['../gristle_slicer.py','-f', easy_fqfn, 
+        cmd = ['../gristle_slicer.py',
+               '-f', self.easy_fqfn, 
+               '-o', self.out_fqfn,
                '-c', ':',
                '-C', '3',
                '-r', '15:20',
-               '-R', '18']
-        p = subprocess.Popen(cmd,
+               '-R', '18' ]
+
+        p = subprocess.Popen(cmd, 
+                             stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              close_fds=True)
-        p_output = p.communicate()[0]
-        p_recs   = p_output[:-1].split('\n')
-        for rec in p_recs:
+        p_output      = p.communicate()[0]
+        stdout_recs   = p_output[:-1].split('\n')
+        out_recs      = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+
+        for rec in out_recs:
             assert(rec.count('|') == 2)
             assert(rec.count('18') == 0 )
-        assert(len(p_recs) == 4)
-
-        os.remove(easy_fqfn)
+        assert(len(out_recs) == 4)
 
 
-    def test_small_file(self):
-        easy_fqfn    = generate_test_file(delim='|', record_cnt=1)
-        cmd = '../gristle_slicer.py -f %s -r 15:20' % easy_fqfn
+
+    def test_asking_for_too_much(self):
+        cmd = '../gristle_slicer.py -f %s -o %s -r 10:200' % (self.easy_fqfn, self.out_fqfn)
         try:
-          p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-          #records =  p.communicate()[0].split('\n')
-          records =  p.communicate()[0]
-          assert(len(records) == 0)
+            p =  subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+            records   =  p.communicate()[0]
+            out_recs  = []
+            for rec in fileinput.input(self.out_fqfn):
+                out_recs.append(rec)
+            assert(len(out_recs) == 90)  # gets everything from 10 to 100 == 90
         except IOError:
            print 'IOError!'
         p.stdin.close()
-        os.remove(easy_fqfn)
+
 
 
     def test_empty_file(self):
-        easy_fqfn    = generate_test_file(delim='|', record_cnt=0)
-        cmd = '../gristle_slicer.py -f %s -r 15:20' % easy_fqfn
-        try:
-          p =  subprocess.Popen(cmd,
+        """ Should show proper handling of an empty file.   Need to modify 
+            file_type.analyze_file() to get everything straightened out
+        """
+        print '\n ignore analyze_file() msg'
+        cmd = '../gristle_slicer.py -f %s -o %s -r 15:20' % (self.empty_fqfn, self.out_fqfn)
+        p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
                               close_fds=True,
                               shell=True)
-          #records =  p.communicate()[0].split('\n')
-          records =  p.communicate()[0]
-          assert(len(records) == 0)
-        except IOError:
-           print 'IOError!'
+        records =  p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+        assert(len(out_recs) == 0)
         p.stdin.close()
-        os.remove(easy_fqfn)
 
 
 if __name__ == "__main__":
