@@ -234,8 +234,7 @@ def get_opts_and_args():
                  'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted single-column field delimiter. This may be'
-                 'determined automatically by the program - unless you pipe the'
-                 'data in. '))
+                 'determined automatically by the program.'))
     parser.add_option('--quoting',
            default=False,
            help='Specify field quoting - generally only used for stdin data.'
