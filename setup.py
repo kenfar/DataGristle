@@ -40,5 +40,5 @@ setup(name             = 'gristle',
                       'scripts/gristle_slicer.py',
                       'scripts/gristle_viewer.py' ],
       packages     = find_packages(),
-      test_suite   = 'gristle.tests'
+      test_suite   = 'gristle.tests.__init__.py'
      )
