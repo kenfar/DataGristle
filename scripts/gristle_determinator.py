@@ -39,6 +39,12 @@ def main():
     """ Allows users to directly call file_determinator() from command line
     """
     (opts, dummy) = get_opts_and_args()
+
+    if opts.output:
+        outfile   = open(opts.output, 'w')
+    else:
+        outfile   = sys.stdout
+
     my_file       = file_type.FileTyper(opts.filename, 
                                        opts.delimiter,
                                        opts.recdelimiter,
@@ -46,7 +52,7 @@ def main():
     my_file.analyze_file()
 
     if not opts.silent:
-        print_file_info(my_file)
+        print_file_info(my_file, outfile)
 
     if opts.brief:
         return 0
@@ -68,65 +74,68 @@ def main():
     my_fields.analyze_fields(opts.column_number, opts.column_type_overrides)
 
     if not opts.silent:
-        print print_field_info(my_fields, opts.column_number)
+        print_field_info(my_fields, opts.column_number, outfile) 
+
+    if opts.output:
+        outfile.close()
 
     return 0     
 
 
-def print_file_info(my_file):
+def print_file_info(my_file, outfile):
     """ Prints information about the file structure
     """
-    print 
-    print 'File Structure:'
-    print '  format type:       %s'     % my_file.format_type
-    print '  field cnt:         %d'     % my_file.field_cnt
-    print '  record cnt:        %d'     % my_file.record_cnt
-    print '  has header:        %s'     % my_file.has_header
+    outfile.write('\n')
+    outfile.write('File Structure:\n')
+    outfile.write('  format type:       %s\n'     % my_file.format_type)
+    outfile.write('  field cnt:         %d\n'     % my_file.field_cnt)
+    outfile.write('  record cnt:        %d\n'     % my_file.record_cnt)
+    outfile.write('  has header:        %s\n'     % my_file.has_header)
 
-    print '  delimiter:         %-6s  ' % my_file.delimiter
-    print '  csv quoting:       %-6s  ' % my_file.csv_quoting
-    print '  skipinitialspace:  %r'     % my_file.dialect.skipinitialspace
-    print '  quoting:           %-6s  ' % QUOTE_DICT[my_file.dialect.quoting]
-    print '  doublequote:       %-6r  ' % my_file.dialect.doublequote
-    print '  quotechar:         %-6s  ' % my_file.dialect.quotechar
-    print '  lineterminator:    %r'     % my_file.dialect.lineterminator
-    print '  escapechar:        %-6r'   % my_file.dialect.escapechar
-    print
+    outfile.write('  delimiter:         %-6s  \n' % my_file.delimiter)
+    outfile.write('  csv quoting:       %-6s  \n' % my_file.csv_quoting)
+    outfile.write('  skipinitialspace:  %r    \n' % my_file.dialect.skipinitialspace)
+    outfile.write('  quoting:           %-6s  \n' % QUOTE_DICT[my_file.dialect.quoting])
+    outfile.write('  doublequote:       %-6r  \n' % my_file.dialect.doublequote)
+    outfile.write('  quotechar:         %-6s  \n' % my_file.dialect.quotechar)
+    outfile.write('  lineterminator:    %r    \n' % my_file.dialect.lineterminator)
+    outfile.write('  escapechar:        %-6r  \n' % my_file.dialect.escapechar)
+    outfile.write('\n')
 
-def print_field_info(my_fields, column_number):
+def print_field_info(my_fields, column_number, outfile):
     """ Prints information about each field within the file.
     """
-    print
-    print 'Fields Analysis Results: '
+    outfile.write('\n')
+    outfile.write('Fields Analysis Results: \n')
     for sub in range(my_fields.field_cnt):
         if column_number is not None \
         and sub != column_number:
             continue
 
-        print 
-        print '      ------------------------------------------------------'
-        print '      Name:           %-20s ' %  my_fields.field_names[sub]
-        #print '      Name:           %-20s ' %  my_fields.field_names[sub][0]
-        print '      Field Number:   %-20s ' %  sub
+        outfile.write('\n')
+        outfile.write('      ------------------------------------------------------\n')
+        outfile.write('      Name:           %-20s \n' %  my_fields.field_names[sub])
+        #outfile.write('      Name:           %-20s \n' %  my_fields.field_names[sub][0])
+        outfile.write('      Field Number:   %-20s \n' %  sub)
         if my_fields.field_trunc[sub]:
-            print '      Data Truncated: analysis will be partial'
+            outfile.write('      Data Truncated: analysis will be partial\n')
 
-        print '      Type:           %-20s ' %  my_fields.field_types[sub]
-        print '      Min:            %-20s ' %  my_fields.field_min[sub]
-        print '      Max:            %-20s ' %  my_fields.field_max[sub]
-        print '      Unique Values:  %-20d ' %  len(my_fields.field_freqs[sub])
-        print '      Known Values:   %-20d ' %  len(my_fields.get_known_values(sub))
+        outfile.write('      Type:           %-20s \n' %  my_fields.field_types[sub])
+        outfile.write('      Min:            %-20s \n' %  my_fields.field_min[sub])
+        outfile.write('      Max:            %-20s \n' %  my_fields.field_max[sub])
+        outfile.write('      Unique Values:  %-20d \n' %  len(my_fields.field_freqs[sub]))
+        outfile.write('      Known Values:   %-20d \n' %  len(my_fields.get_known_values(sub)))
 
         if my_fields.field_types[sub] in ('integer','float'):
-            print '      Mean:           %-20s ' % my_fields.field_mean[sub]
-            print '      Median:         %-20s ' % my_fields.field_median[sub]
-            print '      Variance:       %-20s ' % my_fields.variance[sub]
-            print '      Std Dev:        %-20s ' % my_fields.stddev[sub]
+            outfile.write('      Mean:           %-20s \n' % my_fields.field_mean[sub])
+            outfile.write('      Median:         %-20s \n' % my_fields.field_median[sub])
+            outfile.write('      Variance:       %-20s \n' % my_fields.variance[sub])
+            outfile.write('      Std Dev:        %-20s \n' % my_fields.stddev[sub])
         elif my_fields.field_types[sub] == 'string':
-            print '      Case:           %-20s ' %   my_fields.field_case[sub]
-            print '      Min Length:     %-20s ' %   my_fields.field_min_length[sub]
-            print '      Max Length:     %-20s ' %   my_fields.field_max_length[sub]
-            print '      Mean Length:    %-20.2f' %  my_fields.field_mean_length[sub]
+            outfile.write('      Case:           %-20s \n' %   my_fields.field_case[sub])
+            outfile.write('      Min Length:     %-20s \n' %   my_fields.field_min_length[sub])
+            outfile.write('      Max Length:     %-20s \n' %   my_fields.field_max_length[sub])
+            outfile.write('      Mean Length:    %-20.2f\n' %  my_fields.field_mean_length[sub])
 
         #for key in my_fields.field_freqs[0]:
         #    print 'key: %s           value: %s' % (key, my_fields.field_freqs[0][key])
@@ -136,12 +145,12 @@ def print_field_info(my_fields, column_number):
         if my_fields.field_freqs[sub] is not None:
             sorted_list = my_fields.get_top_freq_values(sub, limit=10)
             if sorted_list[key_sub][val_sub] == 1:
-                print '      Top Values not shown - all values are unique'
+               outfile.write('      Top Values not shown - all values are unique\n')
             else:
-                print     '      Top Values: '
+                outfile.write('      Top Values: \n')
                 for pair in sorted_list:
-                    print '         %-20s x %d occurrences' % \
-                          ( pair[key_sub], pair[val_sub])
+                    outfile.write('         %-20s x %d occurrences\n' % \
+                          ( pair[key_sub], pair[val_sub]))
     
 
 
@@ -156,7 +165,11 @@ def get_opts_and_args():
            "Usage: %prog -f [file] [misc options]"
            "\n")
     parser = optparse.OptionParser(usage = use)
-    parser.add_option('-f', '--file', dest='filename', help='input file')
+    parser.add_option('-f', '--file', 
+           dest='filename', 
+           help='Specify input file. ')
+    parser.add_option('-o', '--output',
+           help='Specify output file.  Default is stdout.')
     parser.add_option('-q', '--quiet',
            action='store_false',
            dest='verbose',
