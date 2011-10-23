@@ -8,7 +8,6 @@ import random
 import unittest
 import time
 import subprocess
-from subprocess import PIPE, STDOUT, Popen
 
 sys.path.append('../')
 sys.path.append('../../')
