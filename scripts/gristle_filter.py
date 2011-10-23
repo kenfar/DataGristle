@@ -10,6 +10,11 @@
     To do:
     - add more sophisticated query language and parsing
     - address issue with comparisons to strings
+
+    Usage examples:
+       cat ../data/*crime* | ./gristle_filter.py -c "0 == Washington " -d ','
+       cat ../data/*crime* | ./gristle_filter.py -c "0 == Washington " -d ','  -o /tmp/junk.dat
+       ./gristle_filter.py -c "0 == Washington " -d ',' -f ../data/*crime*
 """
 
 #--- standard modules ------------------
@@ -32,24 +37,48 @@ import gristle.file_type           as file_type
 def main():
     """ runs all processes:
             - gets opts & args
-            - analyzes file to determine csv characteristics
+            - analyzes file to determine csv characteristics for option files,
+              uses options & defaults for stdin.
             - runs each input record through process_cols to get output
-            - writes records
+            - writes records to stdout or an option filename
     """
     (opts, dummy) = get_opts_and_args()
-    my_file       = file_type.FileTyper(opts.filename,
+
+    if opts.filename:
+        my_file       = file_type.FileTyper(opts.filename,
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
                                        
-    my_file.analyze_file()
+        my_file.analyze_file()
+        dialect       = my_file.dialect
+    else:
+        # dialect parameters needed for stdin - since the normal code can't
+        # analyze this data.
+        dialect                = csv.Dialect
+        dialect.delimiter      = opts.delimiter
+        dialect.quoting        = opts.quoting
+        dialect.quotechar      = opts.quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
 
-    csvfile = open(my_file.fqfn, "r")
-    for rec in csv.reader(csvfile, my_file.dialect):
+    if opts.filename:
+        infile = open(opts.filename)
+    else:
+        infile = sys.stdin
+    if opts.output:
+        outfile = open(opts.output, 'w')
+    else:
+        outfile = sys.stdout
+
+    for rec in csv.reader(infile, dialect):
         out_rec  = process_rec(rec, opts.criteria, opts.excriteria)
         if out_rec:
-            write_fields(out_rec, my_file)
-    csvfile.close()
+            write_fields(out_rec, outfile, dialect.delimiter)
+
+    if opts.filename:
+        infile.close()
+    if opts.output:
+        outfile.close()
 
     return 
 
@@ -88,7 +117,7 @@ def spec_evaluator(rec, spec):
         assert(len(tokens) == 3)
         assert(tokens[1] in ['=','==','>','=>','>=','>','<','<=','=<','!='])
         assert(0 <= int(tokens[0]) < 200)
-        query = "'%s' %s '%s'" % (rec[int(tokens[0])], tokens[1], tokens[2])
+        query = "'%s' %s '%s'" % (rec[int(tokens[0])].strip(), tokens[1], tokens[2])
         if eval(query):
             return True
         else:
@@ -98,18 +127,17 @@ def spec_evaluator(rec, spec):
  
 
 
-def write_fields(fields, my_file):
+def write_fields(fields, outfile, delimiter):
     """ Writes output to output destination.
         Input:
             - list of fields to write
             - output object
         Output:
             - delimited output record written to stdout
-        To Do:
-            - write to output file
     """
-    rec = my_file.delimiter.join(fields)
-    print rec
+
+    rec = delimiter.join(fields)
+    outfile.write(rec + '\n')
 
 
 def get_opts_and_args():
@@ -128,27 +156,43 @@ def get_opts_and_args():
 
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', dest='filename', help='input file')
-
+    parser.add_option('-f', '--file', 
+           dest='filename', 
+           help='Specifies the input file.  The default is stdin.')
+    parser.add_option('-o', '--output', 
+           help='Specifies the output file.  The default is stdout.  Note that'
+                'if a filename is provided the program will override any '
+                'file of that name.')
     parser.add_option('-c', '--criteria',
-                      default=':',
-                      help='inclusion criteria')
+           default=':',
+           help='inclusion criteria')
     parser.add_option('-C', '--excriteria',
-                      help='exclusion criteria')
+           help='exclusion criteria')
     parser.add_option('-d', '--delimiter',
-                      help='Specify a quoted field delimiter.')
+           help=('Specify a quoted single-column field delimiter. This may be'
+                 'determined automatically by the program - unless you pipe the'
+                 'data in.'))
+    parser.add_option('--quoting',
+           default=False,
+           help='Specify field quoting - generally only used for stdin data.'
+                '  The default is False.')
+    parser.add_option('--quotechar',
+           default='"',
+           help='Specify field quoting character - generally only used for '
+                'stdin data.  Default is double-quote')
     parser.add_option('--hasheader',
-                      default=False,
-                      action='store_true',
-                      help='indicates that there is a header in the file.')
+           default=False,
+           action='store_true',
+           help='indicates that there is a header in the file.')
     parser.add_option('--recdelimiter')
 
     (opts, args) = parser.parse_args()
 
-    if opts.filename is None:
-        parser.error("no filename was provided")
-    elif not os.path.exists(opts.filename):
-        parser.error("filename %s could not be accessed" % opts.filename)
+    if opts.filename:
+        if not os.path.exists(opts.filename):
+            parser.error("filename %s could not be accessed" % opts.filename)
+        elif not opts.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin')
 
     return opts, args
 
