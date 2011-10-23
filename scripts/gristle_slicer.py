@@ -46,7 +46,7 @@ def main():
                                             opts.recdelimiter,
                                             opts.hasheader)
         my_file.analyze_file()
-        dialect                = my_file.Dialect
+        dialect                = my_file.dialect
     else:
         # dialect parameters needed for stdin - since the normal code can't
         # analyze this data.
@@ -233,10 +233,9 @@ def get_opts_and_args():
                  'record numbers and colon-separated pairs of record start & '
                  'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
-           default=',',
            help=('Specify a quoted single-column field delimiter. This may be'
                  'determined automatically by the program - unless you pipe the'
-                 'data in. Default is comma.'))
+                 'data in. '))
     parser.add_option('--quoting',
            default=False,
            help='Specify field quoting - generally only used for stdin data.'
@@ -253,6 +252,10 @@ def get_opts_and_args():
            help='Indicate that there is a header in the file.')
 
     (opts, args) = parser.parse_args()
+
+    if not opts.filename:
+       if not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin')
 
     def lister(arg_string):
         """ converts input commma-delimited string into a list
