@@ -191,7 +191,8 @@ def get_opts_and_args():
     if opts.filename:
         if not os.path.exists(opts.filename):
             parser.error("filename %s could not be accessed" % opts.filename)
-        elif not opts.delimiter:
+    else:
+        if not opts.delimiter:
             parser.error('Please provide delimiter when piping data into program via stdin')
 
     return opts, args
