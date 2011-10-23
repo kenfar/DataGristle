@@ -8,6 +8,9 @@
     so individual columns or rows can be listed as can ranges.   Inclusion
     or exclusion logic can be used - and even combined.
 
+    To do:
+       - work with analyze_file to produce a special exception for empty files.
+
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
 """
@@ -75,6 +78,7 @@ def main():
                 break
             new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
                                     cols, opts.columns, opts.excolumns)
+            print new_cols
             if new_cols:
                 write_fields(outfile, new_cols, dialect.delimiter)
     except KeyboardInterrupt:
