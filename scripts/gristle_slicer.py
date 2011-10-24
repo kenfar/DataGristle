@@ -20,6 +20,7 @@ import sys
 import os
 import optparse
 import csv
+import fileinput
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------
@@ -42,9 +43,9 @@ def main():
             - runs each input record through process_cols to get output
             - writes records
     """
-    (opts, dummy) = get_opts_and_args()
-    if opts.filename != '-':
-        my_file                = file_type.FileTyper(opts.filename, 
+    (opts, files) = get_opts_and_args()
+    if len(files) == 1:
+        my_file                = file_type.FileTyper(files[0],
                                             opts.delimiter,
                                             opts.recdelimiter,
                                             opts.hasheader)
@@ -61,30 +62,20 @@ def main():
 
     rec_cnt = -1
 
-    if opts.filename == '-':
-        infile = sys.stdin
-    else:
-        infile = open(opts.filename, "r")
-
     if opts.output == '-':
         outfile = sys.stdout
     else:
         outfile = open(opts.output, "w")
 
-    try:
-        for cols in csv.reader(infile, dialect):
-            rec_cnt += 1
-            if not cols:
-                break
-            new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
-                                    cols, opts.columns, opts.excolumns)
-            print new_cols
-            if new_cols:
-                write_fields(outfile, new_cols, dialect.delimiter)
-    except KeyboardInterrupt:
-        sys.exit(0)
+    for cols in csv.reader(fileinput.input(files), dialect):
+        rec_cnt += 1
+        if not cols:
+            break
+        new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
+                                cols, opts.columns, opts.excolumns)
+        if new_cols:
+            write_fields(outfile, new_cols, dialect.delimiter)
 
-    infile.close()
     outfile.close()
 
     return 
@@ -209,10 +200,6 @@ def get_opts_and_args():
            "   %prog -f [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', 
-           default='-',
-           dest='filename', 
-           help='input file')
     parser.add_option('-o', '--output', 
            default='-',
            help='Specifies the output file.  The default is stdout.  Note that'
@@ -254,11 +241,14 @@ def get_opts_and_args():
            action='store_true',
            help='Indicate that there is a header in the file.')
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
-    if not opts.filename:
+    if files:
+       if len(files) > 1 and not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    else:   # stdin
        if not opts.delimiter:
-           parser.error('Please provide delimiter when piping data into program via stdin')
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
     def lister(arg_string):
         """ converts input commma-delimited string into a list
@@ -276,7 +266,7 @@ def get_opts_and_args():
     opts.records   = lister(opts.records)
     opts.exrecords = lister(opts.exrecords)
 
-    return opts, args
+    return opts, files
 
 
 
