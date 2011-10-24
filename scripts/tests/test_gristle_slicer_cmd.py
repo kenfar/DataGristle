@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #------------------------------------------------------------------------------
 #  To do:
-#  1. 
+#  1.  test with multiple input files
 #
 #  See the file "LICENSE" for the full license governing this code. 
 #------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ class TestCommandLine(unittest.TestCase):
     def test_easy_file(self):
 
         cmd = ['../gristle_slicer.py',
-               '-f', self.easy_fqfn, 
+               self.easy_fqfn, 
                '-o', self.out_fqfn,
                '-c', ':',
                '-C', '3',
@@ -86,7 +86,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_asking_for_too_much(self):
-        cmd = '../gristle_slicer.py -f %s -o %s -r 10:200' % (self.easy_fqfn, self.out_fqfn)
+        cmd = '../gristle_slicer.py  %s -o %s -r 10:200' % (self.easy_fqfn, self.out_fqfn)
         try:
             p =  subprocess.Popen(cmd,
                                   stdin=subprocess.PIPE,
@@ -109,7 +109,7 @@ class TestCommandLine(unittest.TestCase):
             file_type.analyze_file() to get everything straightened out
         """
         print '\n ignore analyze_file() msg'
-        cmd = '../gristle_slicer.py -f %s -o %s -r 15:20' % (self.empty_fqfn, self.out_fqfn)
+        cmd = '../gristle_slicer.py %s -o %s -r 15:20' % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
