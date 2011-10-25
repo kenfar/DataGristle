@@ -167,7 +167,7 @@ def get_opts_and_args():
             - args dictionary 
     """
     use = ("The %prog is used to view data one record at a time. \n"
-           "   %prog -f [file] -q -v -h --delimiter [value] "
+           "   %prog  [file] -q -v -h --delimiter [value] "
            "--recnum [value] \n")
 
     parser = optparse.OptionParser(usage = use)
