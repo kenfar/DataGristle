@@ -44,7 +44,8 @@ class TestCommandLine(unittest.TestCase):
     def test_input_and_output_del(self):
 
         easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
-        cmd = ['../gristle_file_converter.py','-f', easy_fqfn, 
+        cmd = ['../gristle_file_converter.py',
+               easy_fqfn, 
                '-d', '|',
                '-D', ',']
         p = subprocess.Popen(cmd,
@@ -61,7 +62,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_output_del_only(self):
         easy_fqfn    = generate_test_file(delim='|', record_cnt=100)
-        cmd = "../gristle_file_converter.py -f %s -D ',' " % easy_fqfn
+        cmd = "../gristle_file_converter.py  %s -D ',' " % easy_fqfn
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
