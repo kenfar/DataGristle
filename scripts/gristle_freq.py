@@ -18,6 +18,7 @@ import optparse
 import csv
 import collections
 import operator
+import fileinput
 
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure
@@ -38,9 +39,9 @@ def main():
     """
     field_freq = collections.defaultdict(int)
 
-    (opts, dummy) = get_opts_and_args()
-    if opts.filename:
-        my_file       = file_type.FileTyper(opts.filename, 
+    (opts, files) = get_opts_and_args()
+    if len(files) == 1:
+        my_file       = file_type.FileTyper(files[0],
                                             opts.delimiter,
                                             opts.recdelimiter,
                                             opts.hasheader)
@@ -55,12 +56,7 @@ def main():
         dialect.quotechar      = opts.quotechar
         dialect.lineterminator = '\n'                 # naive assumption
 
-    if opts.filename:
-        infile = open(opts.filename, 'r')
-    else:
-        infile = sys.stdin
-
-    for fields in csv.reader(infile, dialect):
+    for fields in csv.reader(fileinput.input(files), dialect):
         try:
             field_freq[fields[opts.column_number]] += 1
         except IndexError:
@@ -68,7 +64,7 @@ def main():
         if len(field_freq) > 50000:
             print 'Number of unique values exceeds limits - will truncate'
             break
-    infile.close()
+    fileinput.close()
 
     sort_freq = sorted(field_freq.iteritems(), 
                        key=operator.itemgetter(1),
@@ -84,9 +80,7 @@ def write_freq(freq_list, outfile_name):
         Input:
             - frequency distribution
         Output:
-            - delimited output record written to stdout
-        To Do:
-            - write to output file
+            - delimited output record 
     """
     key   = 0
     value = 1
@@ -125,13 +119,10 @@ def get_opts_and_args():
     use = ("%prog is used to print a frequency distribution of a single column"
            " from the input file: \n"
            "\n"
-           "   %prog -f [file] [misc options] "
+           "   %prog [file] [misc options] "
            "\n")
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file',
-           dest='filename',
-           help='Specifies the input file, defaults to stdin.')
     parser.add_option('-o', '--output',
            help='Specifies the output file, defaults to stdout.')
     parser.add_option('-q', '--quiet',
@@ -167,17 +158,17 @@ def get_opts_and_args():
            action='store_true',
            help='indicates that there is a header in the file.')
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
     # validate opts
-    if opts.filename:
-        if not os.path.exists(opts.filename):
-            parser.error("filename %s could not be accessed" % opts.filename)
-    else:
-        if not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin')
+    if files:
+       if len(files) > 1 and not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    else:   # stdin
+       if not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
-    return opts, args
+    return opts, files
 
 
 
