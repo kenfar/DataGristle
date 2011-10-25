@@ -12,6 +12,7 @@
 import sys
 import os
 import optparse
+import fileinput
 
 #--- gristle modules -------------------
 sys.path.append('../')     # allows running out of project structure
@@ -38,14 +39,14 @@ QUOTE_DICT[3] = 'QUOTE_NONE'
 def main():
     """ Allows users to directly call file_determinator() from command line
     """
-    (opts, dummy) = get_opts_and_args()
+    (opts, files) = get_opts_and_args()
 
     if opts.output:
         outfile   = open(opts.output, 'w')
     else:
         outfile   = sys.stdout
 
-    my_file       = file_type.FileTyper(opts.filename, 
+    my_file       = file_type.FileTyper(files[0],
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
@@ -58,7 +59,7 @@ def main():
         return 0
 
     # Get Analysis on ALL Fields:
-    my_fields = field_determinator.FieldDeterminator(opts.filename,
+    my_fields = field_determinator.FieldDeterminator(files[0],
                                   my_file.format_type,
                                   my_file.field_cnt,
                                   my_file.has_header,
@@ -162,12 +163,9 @@ def get_opts_and_args():
            "column.\n"
            "Once complete it then prints the results for the user\n"
            "\n"
-           "Usage: %prog -f [file] [misc options]"
+           "Usage: %prog [file] [misc options]"
            "\n")
     parser = optparse.OptionParser(usage = use)
-    parser.add_option('-f', '--file', 
-           dest='filename', 
-           help='Specify input file. ')
     parser.add_option('-o', '--output',
            help='Specify output file.  Default is stdout.')
     parser.add_option('-q', '--quiet',
@@ -211,13 +209,15 @@ def get_opts_and_args():
                  'string, timestamp. Use format: "colno:type, colno:type, '
                  ' colno:type"'))
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
     # validate opts
-    if opts.filename is None:
+    if len(files) == 0:
         parser.error("no filename was provided")
-    elif not os.path.exists(opts.filename):
-        parser.error("filename %s could not be accessed" % opts.filename)
+    elif len(files) > 1:
+        parser.error("multiple files not yet supported")
+    elif not os.path.exists(files[0]):
+        parser.error("filename %s could not be accessed" % files[0])
 
     if opts.brief and opts.column_number:
         parser.error('must not specify both brevity and column number')
@@ -241,7 +241,7 @@ def get_opts_and_args():
                 parser.error('invalid format for types option')
             opts.column_type_overrides[int(col_no)] = col_type
 
-    return opts, args
+    return opts, files
 
 
 
