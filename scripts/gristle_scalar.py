@@ -2,7 +2,7 @@
 """ Prints a frequency distribution of a single column from the input file.
 
     Example usage:
-      - $ gristle_scalar.py -f ../data/state_crime.csv -c 2 -t float -a avg 
+      - $ gristle_scalar.py ../data/state_crime.csv -c 2 -t float -a avg 
       - $ 23045.79
     
     Limitations:
@@ -30,6 +30,7 @@ import os
 import optparse
 import csv
 import collections
+import fileinput
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------
@@ -49,10 +50,10 @@ def main():
             - runs each input record through process_value to get output
             - writes records
     """
-    (opts, dummy) = get_opts_and_args()
+    (opts, files) = get_opts_and_args()
 
-    if opts.filename:
-        my_file       = file_type.FileTyper(opts.filename,
+    if len(files) == 1:
+        my_file       = file_type.FileTyper(files[0],
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
@@ -67,17 +68,13 @@ def main():
         dialect.quotechar      = opts.quotechar
         dialect.lineterminator = '\n'                 # naive assumption
 
-    if opts.filename:
-        infile = open(opts.filename, 'r')
-    else:
-        infile = sys.stdin
     if opts.output:
         outfile = open(opts.output, 'w')
     else:
         outfile = sys.stdout
 
     rec_cnt = 0
-    for rec in csv.reader(infile, dialect):
+    for rec in csv.reader(fileinput.input(files), dialect):
         rec_cnt      += 1
         if (opts.hasheader 
             and rec_cnt == 1): 
@@ -103,8 +100,7 @@ def main():
     elif opts.action == 'countdistinct':
         outfile.write('%s\n' % len(temp_dict))
 
-    if opts.filename:
-        infile.close()
+    fileinput.close()
     if opts.output:
         outfile.close()
 
@@ -171,7 +167,7 @@ def get_opts_and_args():
             - command line args & options
         Output:
             - opts dictionary
-            - args dictionary 
+            - files list
     """
     use = ("%prog is used to perform a single scalar operation on one column "
            "within an input file. \n "
@@ -179,13 +175,10 @@ def get_opts_and_args():
            " CountDistinct"
            "\n"
            "   %prog -v -f [file] [misc options]"
-           "   example:  %prog -f ../data/state_crime.csv -c 2 -t float -a avg"
+           "   example:  %prog ../data/state_crime.csv -c 2 -t float -a avg"
            "\n")
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', 
-           dest='filename', 
-           help='Specifies input file.  Default is stdin.')
     parser.add_option('-o', '--output', 
            help='Specifies output file.  Default is stdout.')
     parser.add_option('-c', '--column',
@@ -216,19 +209,19 @@ def get_opts_and_args():
            help='indicates that there is a header in the file.')
     parser.add_option('--recdelimiter')
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
-    if opts.filename:
-        if not os.path.exists(opts.filename):
-            parser.error("filename %s could not be accessed" % opts.filename)
-    else:
-        if not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin')
+    if files:
+       if len(files) > 1 and not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    else:   # stdin
+       if not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
     if opts.action == 'string':
         assert(opts.action in ['min', 'max', 'freq', 'countdistinct'])
 
-    return opts, args
+    return opts, files
 
 
 
