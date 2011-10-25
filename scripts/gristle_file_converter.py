@@ -3,9 +3,6 @@
     Also can be used to convert between multi-columna and single-column
     field delimiters.
 
-    The input file is specified on the command line and the output is
-    written to stdout.
-
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
 
@@ -27,9 +24,6 @@ sys.path.append('../../')  # allows running tests out of project structure
 
 import gristle.file_type           as file_type 
 
-#from pprint import pprint as pp
-#pp(sys.path)
-
 
 #------------------------------------------------------------------------------
 # Command-line section 
@@ -43,10 +37,10 @@ def main():
         for multi-column delimited-files and doesn't use the csv module
         for writing the records.
     """
-    (opts, dummy) = get_opts_and_args()
+    (opts, files) = get_opts_and_args()
 
-    if opts.filename:
-        my_file       = file_type.FileTyper(opts.filename, 
+    if len(files) == 1:
+        my_file       = file_type.FileTyper(files[0],
                                            opts.delimiter,
                                            opts.recdelimiter,
                                            opts.hasheader)
@@ -61,10 +55,6 @@ def main():
         dialect.quotechar      = opts.quotechar
         dialect.lineterminator = '\n'                 # naive assumption
 
-    if opts.filename:
-        infile  = open(opts.filename, 'r')
-    else:
-        infile  = sys.stdin
     if opts.output:
         outfile  = open(opts.output, 'w')
     else:
@@ -73,7 +63,7 @@ def main():
     rec_cnt = -1
     if (not dialect.delimiter
     or len(dialect.delimiter) == 1):
-        for fields in csv.reader(infile, dialect):
+        for fields in csv.reader(fileinput.input(files), dialect):
             rec_cnt += 1
             #if my_file.has_header and rec_cnt == 0:   # need to review what to do with this
             #    continue
@@ -81,12 +71,8 @@ def main():
                          opts.out_recdelimiter, outfile)        # replace my_file with what?
     else:
         # csv module can't handle multi-column delimiters:
-        while true:
-            rec = infile.read()
-            if not rec:
-                break
-            else:
-                rec_cnt += 1
+        for rec in fileinput.input(files):
+            rec_cnt += 1
             if opts.recdelimiter:
                 clean_rec = rec[:-1].split(opts.recdelimiter)[0]
             else:
@@ -97,8 +83,7 @@ def main():
             write_fields(fields, opts.out_delimiter, 
                          opts.out_recdelimiter, outfile)         # replace my_file with what?
 
-    if opts.filename:
-        infile.close()
+    fileinput.close()
     if opts.output:
         outfile.close()
 
@@ -131,14 +116,11 @@ def get_opts_and_args():
     
     use = ("%prog converts files between different CSV file formats. \n"
            "\n"
-           "   %prog -f [file] [misc options]"
+           "   %prog [file] [misc options]"
            "\n")
 
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', 
-           dest='filename', 
-           help='Specifies input file. Default is stdin.')
     parser.add_option('-o', '--output', 
            help='Specifies output file. Default is stdout.')
     parser.add_option('-q', '--quiet',
@@ -181,14 +163,18 @@ def get_opts_and_args():
            dest='out_hasheader',
            help='Specify that a header within the input file will be retained')
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
     # validate opts
-    if opts.filename:
-        if not os.path.exists(opts.filename):
-            parser.error("filename %s could not be accessed" % opts.filename)
+    if files:
+       if len(files) > 1 and not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    else:   # stdin
+       if not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
-    return opts, args
+
+    return opts, files
 
 
 
