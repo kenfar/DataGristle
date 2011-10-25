@@ -49,7 +49,7 @@ class TestCommandLine(unittest.TestCase):
 
         easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
         cmd = ['../gristle_filter.py',
-               '-f', easy_fqfn, 
+               easy_fqfn, 
                '-c', '4 == foo']
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
