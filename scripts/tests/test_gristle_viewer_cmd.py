@@ -60,7 +60,7 @@ class TestCommandLine(unittest.TestCase):
     def test_easy_file(self):
 
         cmd = ['../gristle_viewer.py',
-               '-f', self.in_fqfn, 
+               self.in_fqfn, 
                '-r', '10',
                '-o', self.out_fqfn ]
         p = subprocess.Popen(cmd,
@@ -97,7 +97,7 @@ class TestCommandLine(unittest.TestCase):
         """
 
         cmd = ['../gristle_viewer.py',
-               '-f', self.in_fqfn, 
+               self.in_fqfn, 
                '-r', '999',
                '-o', self.out_fqfn ]
         p = subprocess.Popen(cmd,
