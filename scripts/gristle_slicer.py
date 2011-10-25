@@ -44,6 +44,7 @@ def main():
             - writes records
     """
     (opts, files) = get_opts_and_args()
+    print files
     if len(files) == 1:
         my_file                = file_type.FileTyper(files[0],
                                             opts.delimiter,
@@ -197,7 +198,7 @@ def get_opts_and_args():
     use = ("%prog is used to extract column and row subsets out of files "
            "and write them out to stdout or a given filename: \n" 
            " \n"
-           "   %prog -f [file] [misc options]")
+           "   %prog [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('-o', '--output', 
