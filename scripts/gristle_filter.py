@@ -22,7 +22,8 @@ import sys
 import os
 import optparse
 import csv
-#from pprint import pprint as pp
+import fileinput
+#from pprint import as pp
 
 #--- gristle modules -------------------
 sys.path.append('../')     # allows running from project structure
@@ -42,10 +43,10 @@ def main():
             - runs each input record through process_cols to get output
             - writes records to stdout or an option filename
     """
-    (opts, dummy) = get_opts_and_args()
+    (opts, files) = get_opts_and_args()
 
-    if opts.filename:
-        my_file       = file_type.FileTyper(opts.filename,
+    if len(files) == 1:
+        my_file       = file_type.FileTyper(files[0],
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
@@ -61,22 +62,17 @@ def main():
         dialect.quotechar      = opts.quotechar
         dialect.lineterminator = '\n'                 # naive assumption
 
-    if opts.filename:
-        infile = open(opts.filename)
-    else:
-        infile = sys.stdin
     if opts.output:
         outfile = open(opts.output, 'w')
     else:
         outfile = sys.stdout
 
-    for rec in csv.reader(infile, dialect):
+    for rec in csv.reader(fileinput.input(files), dialect):
         out_rec  = process_rec(rec, opts.criteria, opts.excriteria)
         if out_rec:
             write_fields(out_rec, outfile, dialect.delimiter)
+    fileinput.close()
 
-    if opts.filename:
-        infile.close()
     if opts.output:
         outfile.close()
 
@@ -146,19 +142,16 @@ def get_opts_and_args():
             - command line args & options
         Output:
             - opts dictionary
-            - args dictionary 
+            - files list
     """
     use = ("%prog is used to extract rows that match filter criteria and write "
            "them out to stdout: \n"
            "\n"
-           "   %prog -f [file] [misc options]"
+           "   %prog [file] [misc options]"
            "\n")
 
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-f', '--file', 
-           dest='filename', 
-           help='Specifies the input file.  The default is stdin.')
     parser.add_option('-o', '--output', 
            help='Specifies the output file.  The default is stdout.  Note that'
                 'if a filename is provided the program will override any '
@@ -186,16 +179,16 @@ def get_opts_and_args():
            help='indicates that there is a header in the file.')
     parser.add_option('--recdelimiter')
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
-    if opts.filename:
-        if not os.path.exists(opts.filename):
-            parser.error("filename %s could not be accessed" % opts.filename)
-    else:
-        if not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin')
+    if files:
+       if len(files) > 1 and not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    else:   # stdin
+       if not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
-    return opts, args
+    return opts, files
 
 
 
