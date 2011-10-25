@@ -182,7 +182,7 @@ class FileStructureFixtureManager(unittest.TestCase):
     def test_simple_file_counts(self):
         fix = 1
         fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator.py', '-f', fn, '-b' ]   # may need to be overridden
+        self.cmd = ['../gristle_determinator.py', fn, '-b' ]   # may need to be overridden
         #for rec in fileinput.input(fn):  print rec
         self._eval_file_struct(fix)
 
@@ -201,7 +201,7 @@ class FileStructureFixtureManager(unittest.TestCase):
     def broken_test_simple_field_counts(self):
         fix = 2
         fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator.py', '-f', fn, '-c', 0 ]   # may need to be overridden
+        self.cmd = ['../gristle_determinator.py', fn, '-c', 0 ]   # may need to be overridden
         #for rec in fileinput.input(fn):  print rec
         self._eval_field_struct(fix)
 
@@ -301,7 +301,7 @@ class TestFileStructureSingleCol(FileStructureFixtureManager):
     def broken_test_simple_field_counts(self):
         fix = 2
         fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator.py', '-f', fn, '-c', '1' ]   # may need to be overridden
+        self.cmd = ['../gristle_determinator.py', fn, '-c', '1' ]   # may need to be overridden
         self._eval_field_struct(fix)
 
 
