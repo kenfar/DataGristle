@@ -77,6 +77,7 @@ def main():
         if new_cols:
             write_fields(outfile, new_cols, dialect.delimiter)
 
+    fileinput.close()
     outfile.close()
 
     return 
