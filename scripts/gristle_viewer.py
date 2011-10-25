@@ -18,6 +18,7 @@ import sys
 import os
 import optparse
 import csv
+import fileinput
 from pprint import pprint as pp
 
 
@@ -37,12 +38,12 @@ def main():
     """ Analyzes file then displays a single record and allows simple 
         navigation between records.
     """
-    (opts, dummy) = get_opts_and_args()
+    (opts, files) = get_opts_and_args()
 
-    if opts.filename:
-        my_file                = file_type.FileTyper(opts.filename, opts.delimiter)
+    if len(files) == 1:
+        my_file                = file_type.FileTyper(files[0], opts.delimiter)
         my_file.analyze_file()
-        my_fields              = field_determinator.FieldDeterminator(opts.filename,
+        my_fields              = field_determinator.FieldDeterminator(files[0],
                                       my_file.format_type,
                                       my_file.field_cnt,
                                       my_file.has_header,
@@ -61,7 +62,7 @@ def main():
         dialect.lineterminator = '\n'                 # naive assumption
 
     while True:
-       rec = get_rec(opts.filename, 
+       rec = get_rec(files, 
                      opts.recnum, 
                      dialect)
        if rec is None:
@@ -71,7 +72,7 @@ def main():
        display_rec(rec, my_fields, opts.output)
 
        # Need to end here if data came from stdin:
-       if not opts.filename:
+       if not files:
            break
        # Need to end here if data is being directed to a file - and not interactive
        if opts.output:
@@ -130,7 +131,7 @@ def display_rec(rec, my_fields, outfile_name):
 
 
 
-def get_rec(infile_name, recnum, dialect):
+def get_rec(files, recnum, dialect):
     """ Gets a single record from a file
         Since it reads from the begining of the file it can take a while to get
         to records at the end of a large file
@@ -141,27 +142,18 @@ def get_rec(infile_name, recnum, dialect):
              wants to navigate about
     """
 
-    if infile_name:
-        infile = open(infile_name, 'r')
-    else:
-        infile = sys.stdin
+    found = None
+    i     = 0
+    for row in csv.reader(fileinput.input(files), dialect): 
+        if i == recnum:
+            found = row
+            break
+        else:
+            i += 1
+    fileinput.close()
 
-    rec = None
-    i   = 0
-    try:
-        reader = csv.reader(infile, dialect)
-        for row in reader:
-            if i == recnum:
-                rec = row 
-                break
-            else:
-                i += 1
-    finally:
-        # only close infile if it's not stdin:
-        if infile_name:
-            infile.close()
+    return found
 
-    return rec
 
 
 
@@ -179,9 +171,6 @@ def get_opts_and_args():
            "--recnum [value] \n")
 
     parser = optparse.OptionParser(usage = use)
-    parser.add_option('-f', '--file', 
-           dest='filename', 
-           help='Specifies the input file, defaults to stdin.')
     parser.add_option('-o', '--output', 
            help='Specifies the output file, defaults to stdout.')
     parser.add_option('-q', '--quiet',
@@ -208,13 +197,17 @@ def get_opts_and_args():
            help='Specify field quoting character - generally only used for '
                 'stdin data.  Default is double-quote')
 
-    (opts, args) = parser.parse_args()
+    (opts, files) = parser.parse_args()
 
-    if not opts.filename:
+    if files:
+       if len(files) > 1 and not opts.delimiter:
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    else:   # stdin
        if not opts.delimiter:
-           parser.error('Please provide delimiter when piping data into program via stdin')
+           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
-    return opts, args
+
+    return opts, files
 
 
 
