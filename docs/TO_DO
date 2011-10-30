@@ -1,0 +1,68 @@
+Very next things to do:
+==================================================================
+
+
+Then the next things to do:
+==================================================================
+1.  More Testing
+    - Test with tab delimiters
+    - Test more edge cases
+    - Write integration testing instructions for each script
+    - test with python 2.7
+2.  New & Improved Tools:
+    - Add more numeric analysis:  quartiles
+    - PDF outputs
+    - determinator:  add quartiles
+    - Add support for multi-character delimiters
+3.  New & Improved Documentation:
+    - Review documentation
+    - README in markdown
+4.  New & Improved Packaging:
+    - Review dist utils
+
+
+Longer-term things to do:
+==================================================================
+1.  Metadata Management
+    - Read & Write to SQLite db
+2.  Virtualenv
+
+    
+
+
+Status
+==================================================================
+
+1.  data & metadata management
+    - gristle_determinator.py                  - 95%
+       - field correlations
+       - file web page?
+       - find invalid characters
+       - find inconsistent code sets
+       - find required vs optional fields
+       - shallow-vs-deep determinator runs
+    - allow use of yaml (decentralized) or central repository
+    - generate metadata                        - 30%
+    - support many data formats:               - 20%
+    - incorporate SQLAlchemy for metadata      - 0%
+
+2.  data transformation tools:
+    - gristle_slicer.py                        - 100%
+    - gristle_file_converter.py                - 80%
+    - gristle_diff.py                          - 60%
+    - gristle_filter.py                        - 60%
+    - gristle_scrubber.py                      - 0%
+    - gristle_validator.py                     - 0%
+
+3.  data analysis tools:
+    - gristle_freq.py                          - 80%
+    - gristle_viewer.py                        - 80%
+    - gristle_scalar.py                        - 60%
+    - gristle_graphviz_generator.py            - 50%
+    - gristle_histogramer.py                   - 0%
+
+4.  deployment
+    - setup tools
+    - testing for various versions of python
+    - testing on various OS
+
