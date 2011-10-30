@@ -12,7 +12,6 @@
 
 #--- standard modules ------------------
 import sys
-import os
 import optparse
 import csv
 import fileinput
@@ -167,11 +166,11 @@ def get_opts_and_args():
 
     # validate opts
     if files:
-       if len(files) > 1 and not opts.delimiter:
-           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+        if len(files) > 1 and not opts.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
     else:   # stdin
-       if not opts.delimiter:
-           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+        if not opts.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
 
     return opts, files

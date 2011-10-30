@@ -1,4 +1,4 @@
-dist
+dist/*
 *.pyc
 obsolete
-remover.bash
+development_notes.txt

@@ -17,7 +17,6 @@
 
 #--- standard modules ------------------
 import sys
-import os
 import optparse
 import csv
 import fileinput
@@ -64,38 +63,38 @@ def main():
         dialect.lineterminator = '\n'                 # naive assumption
 
     while True:
-       rec = get_rec(files, 
-                     opts.recnum, 
-                     dialect)
-       if rec is None:
-           print 'No record found'
-           return
+        rec = get_rec(files, 
+                      opts.recnum, 
+                      dialect)
+        if rec is None:
+            print 'No record found'
+            return
     
-       display_rec(rec, my_fields, opts.output)
+        display_rec(rec, my_fields, opts.output)
 
-       # Need to end here if data came from stdin:
-       if not files:
-           break
+        # Need to end here if data came from stdin:
+        if not files:
+            break
 
-       # Need to end here if data is being directed to a file - and not interactive
-       if opts.output:
-           break
+        # Need to end here if data is being directed to a file - and not interactive
+        if opts.output:
+            break
  
-       response = raw_input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
-       if response == 'q':
-           break
-       elif response == 'p':
-           opts.recnum -= 1
-       elif response == 'n':
-           opts.recnum += 1
-       elif response == 't':
-           opts.recnum = 0
-       elif field_type._get_type(response) == 'integer':
-           opts.recnum = int(response)
-       else:
-           print 'Invalid response, please enter q, p, n, t, or a specific record number'
-       
-       print response
+        response = raw_input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
+        if response == 'q':
+            break
+        elif response == 'p':
+            opts.recnum -= 1
+        elif response == 'n':
+            opts.recnum += 1
+        elif response == 't':
+            opts.recnum = 0
+        elif field_type._get_type(response) == 'integer':
+            opts.recnum = int(response)
+        else:
+            print 'Invalid response, please enter q, p, n, t, or a specific record number'
+        
+        print response
 
     return 0     
 
@@ -110,8 +109,8 @@ def display_rec(rec, my_fields, outfile_name):
     if my_fields:
         max_v_len = 0
         for v in my_fields.field_names.values():
-           if len(v) > max_v_len:
-               max_v_len = len(v)
+            if len(v) > max_v_len:
+                max_v_len = len(v)
         min_format_len  =  max_v_len + 4
         field_names = my_fields.field_names
     else:
@@ -203,11 +202,11 @@ def get_opts_and_args():
     (opts, files) = parser.parse_args()
 
     if files:
-       if len(files) > 1 and not opts.delimiter:
-           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+        if len(files) > 1 and not opts.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
     else:   # stdin
-       if not opts.delimiter:
-           parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+        if not opts.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
 
     return opts, files

@@ -88,10 +88,14 @@ def main():
 
 
 def put_item(name, style, color):
+    """ Prints an item to stdout
+    """
     rec = '%(name)30s [style="%(style)s", color="%(color)s"] ;' % locals()
     print rec
 
 def put_edge(name0, name1):
+    """ Prints an edge (line between two items) to stdout
+    """
     rec = '%(name0)30s -- %(name1)30s ;' % locals()
     print rec
 

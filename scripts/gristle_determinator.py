@@ -12,7 +12,6 @@
 import sys
 import os
 import optparse
-import fileinput
 
 #--- gristle modules -------------------
 sys.path.append('../')     # allows running out of project structure
@@ -86,57 +85,58 @@ def main():
 def print_file_info(my_file, outfile):
     """ Prints information about the file structure
     """
-    outfile.write('\n')
-    outfile.write('File Structure:\n')
-    outfile.write('  format type:       %s\n'     % my_file.format_type)
-    outfile.write('  field cnt:         %d\n'     % my_file.field_cnt)
-    outfile.write('  record cnt:        %d\n'     % my_file.record_cnt)
-    outfile.write('  has header:        %s\n'     % my_file.has_header)
+    w = outfile.write
+    w('\n')
+    w('File Structure:\n')
+    w('  format type:       %s\n'     % my_file.format_type)
+    w('  field cnt:         %d\n'     % my_file.field_cnt)
+    w('  record cnt:        %d\n'     % my_file.record_cnt)
+    w('  has header:        %s\n'     % my_file.has_header)
 
-    outfile.write('  delimiter:         %-6s  \n' % my_file.delimiter)
-    outfile.write('  csv quoting:       %-6s  \n' % my_file.csv_quoting)
-    outfile.write('  skipinitialspace:  %r    \n' % my_file.dialect.skipinitialspace)
-    outfile.write('  quoting:           %-6s  \n' % QUOTE_DICT[my_file.dialect.quoting])
-    outfile.write('  doublequote:       %-6r  \n' % my_file.dialect.doublequote)
-    outfile.write('  quotechar:         %-6s  \n' % my_file.dialect.quotechar)
-    outfile.write('  lineterminator:    %r    \n' % my_file.dialect.lineterminator)
-    outfile.write('  escapechar:        %-6r  \n' % my_file.dialect.escapechar)
-    outfile.write('\n')
+    w('  delimiter:         %-6s  \n' % my_file.delimiter)
+    w('  csv quoting:       %-6s  \n' % my_file.csv_quoting)
+    w('  skipinitialspace:  %r    \n' % my_file.dialect.skipinitialspace)
+    w('  quoting:           %-6s  \n' % QUOTE_DICT[my_file.dialect.quoting])
+    w('  doublequote:       %-6r  \n' % my_file.dialect.doublequote)
+    w('  quotechar:         %-6s  \n' % my_file.dialect.quotechar)
+    w('  lineterminator:    %r    \n' % my_file.dialect.lineterminator)
+    w('  escapechar:        %-6r  \n' % my_file.dialect.escapechar)
+    w('\n')
 
 def print_field_info(my_fields, column_number, outfile):
     """ Prints information about each field within the file.
     """
-    outfile.write('\n')
-    outfile.write('Fields Analysis Results: \n')
+    w = outfile.write
+    w('\n')
+    w('Fields Analysis Results: \n')
     for sub in range(my_fields.field_cnt):
         if column_number is not None \
         and sub != column_number:
             continue
 
-        outfile.write('\n')
-        outfile.write('      ------------------------------------------------------\n')
-        outfile.write('      Name:           %-20s \n' %  my_fields.field_names[sub])
-        #outfile.write('      Name:           %-20s \n' %  my_fields.field_names[sub][0])
-        outfile.write('      Field Number:   %-20s \n' %  sub)
+        w('\n')
+        w('      ------------------------------------------------------\n')
+        w('      Name:           %-20s \n' %  my_fields.field_names[sub])
+        w('      Field Number:   %-20s \n' %  sub)
         if my_fields.field_trunc[sub]:
-            outfile.write('      Data Truncated: analysis will be partial\n')
+            w('      Data Truncated: analysis will be partial\n')
 
-        outfile.write('      Type:           %-20s \n' %  my_fields.field_types[sub])
-        outfile.write('      Min:            %-20s \n' %  my_fields.field_min[sub])
-        outfile.write('      Max:            %-20s \n' %  my_fields.field_max[sub])
-        outfile.write('      Unique Values:  %-20d \n' %  len(my_fields.field_freqs[sub]))
-        outfile.write('      Known Values:   %-20d \n' %  len(my_fields.get_known_values(sub)))
+        w('      Type:           %-20s \n' %  my_fields.field_types[sub])
+        w('      Min:            %-20s \n' %  my_fields.field_min[sub])
+        w('      Max:            %-20s \n' %  my_fields.field_max[sub])
+        w('      Unique Values:  %-20d \n' %  len(my_fields.field_freqs[sub]))
+        w('      Known Values:   %-20d \n' %  len(my_fields.get_known_values(sub)))
 
         if my_fields.field_types[sub] in ('integer','float'):
-            outfile.write('      Mean:           %-20s \n' % my_fields.field_mean[sub])
-            outfile.write('      Median:         %-20s \n' % my_fields.field_median[sub])
-            outfile.write('      Variance:       %-20s \n' % my_fields.variance[sub])
-            outfile.write('      Std Dev:        %-20s \n' % my_fields.stddev[sub])
+            w('      Mean:           %-20s \n' % my_fields.field_mean[sub])
+            w('      Median:         %-20s \n' % my_fields.field_median[sub])
+            w('      Variance:       %-20s \n' % my_fields.variance[sub])
+            w('      Std Dev:        %-20s \n' % my_fields.stddev[sub])
         elif my_fields.field_types[sub] == 'string':
-            outfile.write('      Case:           %-20s \n' %   my_fields.field_case[sub])
-            outfile.write('      Min Length:     %-20s \n' %   my_fields.field_min_length[sub])
-            outfile.write('      Max Length:     %-20s \n' %   my_fields.field_max_length[sub])
-            outfile.write('      Mean Length:    %-20.2f\n' %  my_fields.field_mean_length[sub])
+            w('      Case:           %-20s \n' %   my_fields.field_case[sub])
+            w('      Min Length:     %-20s \n' %   my_fields.field_min_length[sub])
+            w('      Max Length:     %-20s \n' %   my_fields.field_max_length[sub])
+            w('      Mean Length:    %-20.2f\n' %  my_fields.field_mean_length[sub])
 
         #for key in my_fields.field_freqs[0]:
         #    print 'key: %s           value: %s' % (key, my_fields.field_freqs[0][key])
@@ -146,11 +146,11 @@ def print_field_info(my_fields, column_number, outfile):
         if my_fields.field_freqs[sub] is not None:
             sorted_list = my_fields.get_top_freq_values(sub, limit=10)
             if sorted_list[key_sub][val_sub] == 1:
-               outfile.write('      Top Values not shown - all values are unique\n')
+                w('      Top Values not shown - all values are unique\n')
             else:
-                outfile.write('      Top Values: \n')
+                w('      Top Values: \n')
                 for pair in sorted_list:
-                    outfile.write('         %-20s x %d occurrences\n' % \
+                    w('         %-20s x %d occurrences\n' % \
                           ( pair[key_sub], pair[val_sub]))
     
 
