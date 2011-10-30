@@ -11,6 +11,8 @@
        1.  check for recnum > number of records in input file
        2.  consider adding records up to some threshold to dictionary
            to allow navigation for stdin data & faster for files
+       3.  confirm that record counting works identical for each situation
+       4.  use header info when using stdin
 """
 
 #--- standard modules ------------------
@@ -74,6 +76,7 @@ def main():
        # Need to end here if data came from stdin:
        if not files:
            break
+
        # Need to end here if data is being directed to a file - and not interactive
        if opts.output:
            break
