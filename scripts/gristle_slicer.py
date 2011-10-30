@@ -44,7 +44,6 @@ def main():
             - writes records
     """
     (opts, files) = get_opts_and_args()
-    print files
     if len(files) == 1:
         my_file                = file_type.FileTyper(files[0],
                                             opts.delimiter,
