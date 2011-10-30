@@ -1,2 +1,0 @@
-gristle/field_determinator.py
-   - fixed bug in which a unique list with just 1 value was not being reported
