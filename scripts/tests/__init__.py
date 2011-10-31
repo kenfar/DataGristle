@@ -4,7 +4,7 @@ import os
 import sys
 
 import unittest
-import test_gristle_diff_cmd            as diff_cmd
+import test_gristle_differ_cmd          as differ_cmd
 import test_gristle_file_converter_cmd  as conv_cmd
 import test_gristle_filter_cmd          as filter_cmd
 import test_gristle_slicer_cmd          as slicer_cmd
@@ -16,7 +16,7 @@ import test_gristle_determinator_cmd    as determinator_cmd
 def main():
 
    suite  = unittest.TestSuite()
-   suite.addTest(diff_cmd.suite())
+   suite.addTest(differ_cmd.suite())
    suite.addTest(conv_cmd.suite())
    suite.addTest(filter_cmd.suite())
    suite.addTest(slicer_cmd.suite())
