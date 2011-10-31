@@ -15,9 +15,6 @@ import collections
 import csv
 import os
 
-#--- gristle modules -------------------
-#import field_determinator as fielder
-
 
 QUOTE_DICT = {}
 QUOTE_DICT[0] = 'QUOTE_MINIMAL'

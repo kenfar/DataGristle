@@ -21,6 +21,18 @@ import gristle.field_type   as typer
 import gristle.field_math   as mather
 import gristle.field_misc   as miscer
 
+#------------------------------------------------------------------------------
+# override miscer.get_field_freq max dictionary size defaults:
+# The sizes are based on these assumptions:
+#   Single col with 10 million unique items, average item length of 20 bytes
+#   plus a hashed version of item key, plus two pointers.  That's about 40
+#   bytes per entry, or 400 MBytes maximum in this case.
+#   Multi-column needs to be more conservative since there could be 10,20, or
+#   80 different columns.  So it's limited to 1/10th the number of items.
+#------------------------------------------------------------------------------
+MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # 1 col, 10 mil items with 20 byte key = ~40 MB
+MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # 10 cols, each with 1 mil entries = ~40 MB
+
 
 class FieldDeterminator(object):
     """ Examines ALL fields within a file
@@ -83,7 +95,10 @@ class FieldDeterminator(object):
         assert(0 < field_cnt < 1000)
 
 
-    def analyze_fields(self, field_number=None, field_types_overrides=None):
+    def analyze_fields(self, 
+                       field_number=None, 
+                       field_types_overrides=None, 
+                       max_freq_number=None):
         """ Determines types, names, and characteristics of fields.
 
             Inputs:
@@ -92,6 +107,7 @@ class FieldDeterminator(object):
             Outputs:
                - populates public class structures
         """
+        self.max_freq_number     = max_freq_number
         
         if self.verbose:
             print 'Field Analysis Progress: '
@@ -108,10 +124,19 @@ class FieldDeterminator(object):
                                                               self.dialect,
                                                               f_no)
 
+            if max_freq_number is None:
+                if field_number is None:
+                    max_items = MAX_FREQ_MULTI_COL_DEFAULT
+                else:
+                    max_items = MAX_FREQ_SINGLE_COL_DEFAULT
+            else:
+                max_items = max_freq_number
+          
             (self.field_freqs[f_no],
             self.field_trunc[f_no]) = miscer.get_field_freq(self.filename, 
                                                             self.dialect,
-                                                            f_no)
+                                                            f_no, 
+                                                            max_items)
 
             self.field_types[f_no]  = typer.get_field_type(self.field_freqs[f_no])
             if field_types_overrides:

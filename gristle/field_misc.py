@@ -19,7 +19,7 @@ import gristle.field_type as typer
 
 #--- CONSTANTS -----------------------------------------------------------
 
-MAX_FREQ_SIZE_DEFAULT  = 100000     # limits entries within freq dictionaries
+MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
 
 
 def get_field_names(filename, 

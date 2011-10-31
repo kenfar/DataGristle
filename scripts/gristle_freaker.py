@@ -60,7 +60,7 @@ def main():
             field_freq[fields[opts.column_number]] += 1
         except IndexError:
             continue   # skip short, bad, record
-        if len(field_freq) > 50000:
+        if len(field_freq) > opts.number:
             print 'Number of unique values exceeds limits - will truncate'
             break
     fileinput.close()
@@ -122,6 +122,17 @@ def get_opts_and_args():
            "\n")
     parser = optparse.OptionParser(usage = use)
 
+    parser.add_option('-c', '--column',
+           type=int,
+           dest='column_number',
+           help='column number to analyze')
+    parser.add_option('-n', '--number',
+           type=int,
+           default=10000000,    # 10 million
+           help='Specifies the max number of items in frequency dictionary.  '
+                'Default is 10 million - expressed as 10000000.  This results '
+                'in approx 300 MBytes of memory used to store 10 million 20 byte'
+                'keys.')
     parser.add_option('-o', '--output',
            help='Specifies the output file, defaults to stdout.')
     parser.add_option('-q', '--quiet',
@@ -134,10 +145,6 @@ def get_opts_and_args():
            dest='verbose',
            default=True,
            help='provides more detail')
-    parser.add_option('-c', '--column',
-           type=int,
-           dest='column_number',
-           help='column number to analyze')
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted single-column field delimiter. This may be'
                  'determined automatically by the program - unless you pipe the'
@@ -166,6 +173,9 @@ def get_opts_and_args():
     else:   # stdin
         if not opts.delimiter:
             parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+
+    if opts.number < 1000:
+        parser.error('Please provided a value between 1001 and 1000000000 for number')
 
     return opts, files
 

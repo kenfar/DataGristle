@@ -14,6 +14,8 @@ import os
 import optparse
 
 #--- gristle modules -------------------
+#sys.path.insert(0, '../')     # allows running out of project structure
+#sys.path.insert(0,'../../')  # allows running out of project structure
 sys.path.append('../')     # allows running out of project structure
 sys.path.append('../../')  # allows running out of project structure
 
@@ -36,7 +38,7 @@ QUOTE_DICT[3] = 'QUOTE_NONE'
 # Command-line section 
 #------------------------------------------------------------------------------
 def main():
-    """ Allows users to directly call file_determinator() from command line
+    """ Allows users to directly call determinator from command line
     """
     (opts, files) = get_opts_and_args()
 
@@ -71,7 +73,9 @@ def main():
         assert max(opts.column_type_overrides) < my_file.field_cnt,   \
            "ERROR: column_type_override references non-existing column_number"
 
-    my_fields.analyze_fields(opts.column_number, opts.column_type_overrides)
+    my_fields.analyze_fields(opts.column_number, 
+                             opts.column_type_overrides,
+                             opts.number)
 
     if not opts.silent:
         print_field_info(my_fields, opts.column_number, outfile) 
@@ -193,6 +197,11 @@ def get_opts_and_args():
            dest='column_number',
            help=('Restrict analysis to a single column (field number)'
                  ' - using a zero-offset'))
+    parser.add_option('-n', '--number',
+           type=int,
+           help='Specify a maximum number of entries for freq dictionary. '
+                 'This is applied separately to each column.  The default is'
+                 ' set at approximately 1 million entries. ')
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted field delimiter.'
                  'This is essential for multi-column delimiters.'))
@@ -224,6 +233,10 @@ def get_opts_and_args():
 
     if opts.silent:
         opts.verbose = False
+
+    if (opts.number is not None 
+        and  opts.number < 1000):
+            parser.error('please specify a number between 1001 and 1000000000')
 
     # set up column_type_overrides
     opts.column_type_overrides = {}
