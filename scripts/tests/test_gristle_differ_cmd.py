@@ -11,7 +11,6 @@ import subprocess
 
 sys.path.append('../')
 sys.path.append('../../')
-import gristle_diff  as mod
 
 
 def suite():
@@ -54,7 +53,7 @@ class TestCommandLine(unittest.TestCase):
                        ['Wisconsin','13a','45b'] ]
         file2    = generate_test_file('|', file2_recs)
 
-        cmd = ['../gristle_diff.py',
+        cmd = ['../gristle_differ.py',
                '-1', file1,
                '-2', file2,
                '-k', '0',
