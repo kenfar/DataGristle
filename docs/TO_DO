@@ -1,6 +1,6 @@
 Very next things to do:
 ==================================================================
-
+1.  empty files
 
 Then the next things to do:
 ==================================================================
@@ -35,16 +35,10 @@ Status
 
 1.  data & metadata management
     - gristle_determinator.py                  - 95%
-       - field correlations
-       - file web page?
-       - find invalid characters
-       - find inconsistent code sets
-       - find required vs optional fields
-       - shallow-vs-deep determinator runs
-    - allow use of yaml (decentralized) or central repository
     - generate metadata                        - 30%
     - support many data formats:               - 20%
     - incorporate SQLAlchemy for metadata      - 0%
+    - metadata database:		       - 0%
 
 2.  data transformation tools:
     - gristle_slicer.py                        - 100%
