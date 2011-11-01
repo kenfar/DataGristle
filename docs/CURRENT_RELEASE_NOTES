@@ -42,31 +42,31 @@ field_determinator.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
 field_math.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		--
+        - pylint status:		-- checked
 
 field_misc.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		--
+        - pylint status:		-- checked
 
 field_type.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
 file_type.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		--
+        - pylint status:		-- checked
 
 
 ===============================================================================
@@ -77,54 +77,54 @@ gristle_determinator.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
 gristle_file_converter.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		--
+        - pylint status:		-- checked
 
 gristle_slicer.py
-	- test coverage:		-- done
+	- test coverage:		-- 90%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
 gristle_filter.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		--
+        - pylint status:		-- checked
 	
 gristle_viewer.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
-gristle_freq.py
+gristle_freaker.py
 	- test coverage:		-- 0%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		--
+        - pylint status:		-- checked
 
-gristle_diff.py
+gristle_differ.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
 gristle_scalar.py
 	- test coverage:		-- 0%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- 
+        - pylint status:		-- checked
 
 gristle_graphviz_generator.py
 	- test coverage:		-- 0%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:	 	--
+        - pylint status:	 	-- checked
 
 
