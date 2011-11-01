@@ -67,6 +67,7 @@ class FieldDeterminator(object):
         self.rec_delimiter       = rec_delimiter
         self.verbose             = verbose
         #pp.pprint(locals())
+        self.max_freq_number     = None  # will be set in analyze_fields
 
         #--- public field dictionaries - organized by field_number --- #
         # every field should have a key in every one of these dictionaries

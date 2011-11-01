@@ -1,31 +1,26 @@
 ===============================================================================
-Version:	 0.41
+Version:	 0.42
 ===============================================================================
 
 
 ===============================================================================
 Primary Changes:
 ===============================================================================
-	- Most scripts modified to accept input from either stdin or args - rather 
-	  than using a -f option.   They can also handle multiple input files as 
-          args.  However, when multiple files are provided or stdin is used - then
-          delimiter information must be manually provided.
-	- Most scripts modified to either write to stdout or a provided filename,
-          rather than only printing to stdout.
+        - Added smart defaults to frequency distribution dictionary max sizes:
+          they are far larger, and a single-column analysis is 10x the size of
+          the normal gristle_determinator.py multi-col analysis size.
+        - Added ability for user to override frequency distribution dictionary
+          max sizes with the -n or --number option on gristle_determinator.py and
+          gristle_freq.py.
 
 
 ===============================================================================
 Overall Testing status:
 ===============================================================================
-	- mac os with python 2.5.4:
-		- script unit tests
-                        - all passed
-		- gristle unit tests
-			- all passed
 	- linux ubuntu 10.10 with python 2.6.6
 		- script unit tests
                         - all passed
-		- gristle unit tests
+		- module unit tests
 			- all passed
 	- linux ubuntu 11.04 with python 2.7
 		- script unit tests
@@ -33,6 +28,11 @@ Overall Testing status:
 		- gristle unit tests
 			- ?
 		- setup tests
+			- ?
+	- mac os with python 2.5.4:
+		- script unit tests
+                        - ?
+		- module unit tests
 			- ?
 
 ===============================================================================
@@ -42,31 +42,31 @@ field_determinator.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
+        - pylint status:		-- 
 
 field_math.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
+        - pylint status:		--
 
 field_misc.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
+        - pylint status:		--
 
 field_type.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
+        - pylint status:		-- 
 
 file_type.py
 	- test coverage:		-- 
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
+        - pylint status:		--
 
 
 ===============================================================================
@@ -77,71 +77,54 @@ gristle_determinator.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
+        - pylint status:		-- 
 
 gristle_file_converter.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
+        - pylint status:		--
 
 gristle_slicer.py
 	- test coverage:		-- done
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
+        - pylint status:		-- 
 
 gristle_filter.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
+        - pylint status:		--
 	
 gristle_viewer.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
+        - pylint status:		-- 
 
 gristle_freq.py
 	- test coverage:		-- 0%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
+        - pylint status:		--
 
 gristle_diff.py
 	- test coverage:		-- 50%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
-		- handle empty files
-		- support large sorted files
+        - pylint status:		-- 
 
 gristle_scalar.py
 	- test coverage:		-- 0%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:		-- checked
-	- to do:
+        - pylint status:		-- 
 
 gristle_graphviz_generator.py
 	- test coverage:		-- 0%
         - unittest status:		-- checked
         - manual test status:		-- 
-        - pylint status:	 	-- checked
-	- to do:
+        - pylint status:	 	--
 
 

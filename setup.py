@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = "0.41"
+version = "0.42"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
 LONG_DESCRIPTION = open('README').read()
 
@@ -31,10 +31,10 @@ setup(name             = 'gristle',
             ],
       download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,
       scripts      = ['scripts/gristle_determinator.py',
-                      'scripts/gristle_diff.py',
+                      'scripts/gristle_differ.py',
                       'scripts/gristle_file_converter.py',
                       'scripts/gristle_filter.py',
-                      'scripts/gristle_freq.py',
+                      'scripts/gristle_freaker.py',
                       'scripts/gristle_graphviz_generator.py',
                       'scripts/gristle_scalar.py',
                       'scripts/gristle_slicer.py',

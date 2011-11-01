@@ -235,8 +235,8 @@ def get_opts_and_args():
         opts.verbose = False
 
     if (opts.number is not None 
-        and  opts.number < 1000):
-            parser.error('please specify a number between 1001 and 1000000000')
+    and  opts.number < 1000):
+        parser.error('please specify a number between 1001 and 1000000000')
 
     # set up column_type_overrides
     opts.column_type_overrides = {}
