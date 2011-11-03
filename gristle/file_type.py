@@ -9,6 +9,8 @@
     Copyright 2011 Ken Farmer
 """
 
+from __future__ import division
+
 #--- standard modules ------------------
 import fileinput
 import collections
