@@ -44,7 +44,10 @@ def main():
                                             opts.delimiter,
                                             opts.recdelimiter,
                                             opts.hasheader)
-        my_file.analyze_file()
+        try:
+            my_file.analyze_file()
+        except file_type.IOErrorEmptyFile:
+            sys.exit(1)
         dialect                = my_file.dialect
     else:
         # dialect parameters needed for stdin - since the normal code can't

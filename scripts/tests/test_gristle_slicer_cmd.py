@@ -105,10 +105,8 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        """ Should show proper handling of an empty file.   Need to modify 
-            file_type.analyze_file() to get everything straightened out
+        """ Should show proper handling of an empty file.   
         """
-        print '\n ignore analyze_file() msg'
         cmd = '../gristle_slicer.py %s -o %s -r 15:20' % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,

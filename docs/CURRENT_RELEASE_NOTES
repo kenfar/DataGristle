@@ -1,17 +1,13 @@
 ===============================================================================
-Version:	 0.42
+Version:	 0.43
 ===============================================================================
 
 
 ===============================================================================
 Primary Changes:
 ===============================================================================
-        - Added smart defaults to frequency distribution dictionary max sizes:
-          they are far larger, and a single-column analysis is 10x the size of
-          the normal gristle_determinator.py multi-col analysis size.
-        - Added ability for user to override frequency distribution dictionary
-          max sizes with the -n or --number option on gristle_determinator.py and
-          gristle_freq.py.
+        - Added consistent handling of empty files - with empty outputs and 
+          return codes of 1. 
 
 
 ===============================================================================
@@ -40,33 +36,33 @@ Module status:
 ===============================================================================
 field_determinator.py
 	- test coverage:		-- 
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 field_math.py
 	- test coverage:		-- 
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 field_misc.py
 	- test coverage:		-- 
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 field_type.py
 	- test coverage:		-- 
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 file_type.py
 	- test coverage:		-- 
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 
 ===============================================================================
@@ -75,56 +71,107 @@ Script Test status:
 
 gristle_determinator.py
 	- test coverage:		-- 50%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_file_converter.py
 	- test coverage:		-- 50%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_slicer.py
 	- test coverage:		-- 90%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_filter.py
 	- test coverage:		-- 50%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 	
 gristle_viewer.py
 	- test coverage:		-- 50%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_freaker.py
 	- test coverage:		-- 0%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_differ.py
 	- test coverage:		-- 50%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_scalar.py
 	- test coverage:		-- 0%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:		-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:		-- done
 
 gristle_graphviz_generator.py
 	- test coverage:		-- 0%
-        - unittest status:		-- checked
-        - manual test status:		-- 
-        - pylint status:	 	-- checked
+        - unittest status:		-- done
+        - manual test status:		-- done
+        - pylint status:	 	-- done
 
 
+===============================================================================
+Manual test cases:
+===============================================================================
+
+1.  gristle_slicer.py				-- done
+	- multi empty args			-- done
+	- empty arg followed by full arg	-- ?
+	- single empty arg			-- done
+	- stdin empty				-- done
+
+2.  gristle_viewer.py				-- in prog
+	- multi empty args			-- done
+	- multi full args			-- 
+	- empty arg followed by full arg	-- ?
+	- single empty arg			-- done
+	- single full arg			-- 
+	- stdin empty				-- done
+	- stdin full				-- 
+
+3.  gristle_determinator.py			
+	- single empty arg:			-- done
+	- single full arg:			--
+
+4.  gristle_differ.py
+	- file1 or file2 empty			-- done
+	- both files empty			-- done
+
+5.  gristle_freaker.py
+	- multi-empty args			-- done
+	- multi-full args			-- 
+	- empty arg followed by full arg:	-- done
+	- single empty arg:			-- done
+	- stdin empty				-- done
+
+6.  gristle_scalar.py
+	- multi-empty args			-- done
+	- multi-full args
+	- empty arg followed by full arg:	-- done
+	- stdin empty				-- done
+
+7.  gristle_filter.py
+	- multi-empty args			-- done
+	- multi-full args
+	- empty arg followed by full arg:	-- done
+	- stdin empty				-- done
+
+8.  gristle_file_converter
+	- multi-empty args			-- done
+	- multi-full args		
+	- empty arg followed by full arg:	-- done
+	- stdin empty				-- done

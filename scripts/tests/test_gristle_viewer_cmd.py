@@ -51,6 +51,7 @@ class TestCommandLine(unittest.TestCase):
 
     def setUp(self):
         self.in_fqfn             = generate_test_file(delim='|', record_cnt=100)
+        self.empty_fqfn          = generate_test_file(delim='|', record_cnt=0)
         (dummy, self.out_fqfn)   = tempfile.mkstemp(prefix='ViewerTestOut_') 
 
     def tearDown(self):
@@ -113,6 +114,25 @@ class TestCommandLine(unittest.TestCase):
         assert(p_stdout[0] == 'No record found')
 
         assert(len(p_outrecs) == 0)
+
+
+    def test_empty_file(self):
+        """ Should show proper handling of an empty file.   
+        """
+        cmd = ['../gristle_viewer.py',
+               self.empty_fqfn       ,  
+               '-o', self.out_fqfn   ,
+               '-r', '999'           ]
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              close_fds=True)
+        records   = p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+        assert(len(out_recs) == 0)
+
+
 
 
 if __name__ == "__main__":

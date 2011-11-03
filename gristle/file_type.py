@@ -57,7 +57,7 @@ class FileTyper(object):
             of whether or it it is delimited, what the delimiter is, etc.
         """
         if os.path.getsize(self.fqfn) == 0:
-            raise(IOError, "Empty File")
+            raise(IOErrorEmptyFile, "Empty File")
            
         if self.delimiter:                                 #delimiter overridden
             self.dialect                  = csv.Dialect
@@ -163,3 +163,7 @@ class FileTyper(object):
 
 
 
+class IOErrorEmptyFile(IOError):
+    """Error due to empty file
+    """
+    pass

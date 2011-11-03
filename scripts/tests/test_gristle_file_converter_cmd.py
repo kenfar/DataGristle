@@ -40,12 +40,18 @@ def generate_test_file(delim, record_cnt):
 
 class TestCommandLine(unittest.TestCase):
 
+    def setUp(self):
+        self.easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
+        self.empty_fqfn    = generate_test_file(delim='|', record_cnt=0)
+
+    def tearDown(self):
+        os.remove(self.easy_fqfn)
+        os.remove(self.empty_fqfn)
 
     def test_input_and_output_del(self):
 
-        easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
         cmd = ['../gristle_file_converter.py',
-               easy_fqfn, 
+               self.easy_fqfn, 
                '-d', '|',
                '-D', ',']
         p = subprocess.Popen(cmd,
@@ -57,12 +63,9 @@ class TestCommandLine(unittest.TestCase):
             assert(rec.count(',') == 3)
         assert(len(p_recs) == 100)
 
-        os.remove(easy_fqfn)
-
 
     def test_output_del_only(self):
-        easy_fqfn    = generate_test_file(delim='|', record_cnt=100)
-        cmd = "../gristle_file_converter.py  %s -D ',' " % easy_fqfn
+        cmd = "../gristle_file_converter.py  %s -D ',' " % self.easy_fqfn
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -75,7 +78,22 @@ class TestCommandLine(unittest.TestCase):
             assert(rec.count(',') == 3)
         assert(len(p_recs) == 100)
 
-        os.remove(easy_fqfn)
+
+    def test_empty_file(self):
+        """ Should show proper handling of an empty file.   
+        """
+        cmd = ['../gristle_file_converter.py',
+               self.empty_fqfn       ,
+               '-d', '|'             ,
+               '-D', ','             ]
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              close_fds=True)
+        p_output  = p.communicate()[0]
+        out_recs  = p_output[:-1].split('\n')
+        if not out_recs:
+            fail('produced output when input was empty')
+
 
 
 

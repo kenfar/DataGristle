@@ -43,14 +43,21 @@ def main():
 
     if len(files) == 1:
         my_file                = file_type.FileTyper(files[0], opts.delimiter)
-        my_file.analyze_file()
+        try:
+            my_file.analyze_file()
+        except file_type.IOErrorEmptyFile:
+            return 1
         my_fields              = field_determinator.FieldDeterminator(files[0],
                                       my_file.format_type,
                                       my_file.field_cnt,
                                       my_file.has_header,
                                       my_file.dialect,
                                       opts.verbose)
-        my_fields.analyze_fields()
+        try:
+            my_fields.analyze_fields()
+        except field_determinator.IOErrorEmptyFile:
+            return 1
+
         dialect                = my_file.dialect
     else:
         # Dialect parameters needed for stdin - since the normal code can't
@@ -153,6 +160,8 @@ def get_rec(files, recnum, dialect):
         else:
             i += 1
     fileinput.close()
+    if i == 0:             # empty file
+        sys.exit(1)
 
     return found
 

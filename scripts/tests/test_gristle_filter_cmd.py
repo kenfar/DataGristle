@@ -44,12 +44,19 @@ def generate_test_file(delim, record_cnt):
 
 class TestCommandLine(unittest.TestCase):
 
+    def setUp(self):
+        self.easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
+        self.empty_fqfn    = generate_test_file(delim='|', record_cnt=0)
+
+    def tearDown(self):
+        os.remove(self.easy_fqfn)
+        os.remove(self.empty_fqfn)
+
 
     def test_easy_file(self):
 
-        easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
         cmd = ['../gristle_filter.py',
-               easy_fqfn, 
+               self.easy_fqfn, 
                '-c', '4 == foo']
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
@@ -78,7 +85,22 @@ class TestCommandLine(unittest.TestCase):
         #assert(p_recs[3].strip().startswith('field_3'))
         #assert(p_recs[3].strip().endswith('C'))
 
-        os.remove(easy_fqfn)
+
+
+    def test_empty_file(self):
+        """ Should show proper handling of an empty file.   
+        """
+        cmd = ['../gristle_filter.py',
+               self.empty_fqfn       ,
+               '-c', '0 == foo'      ]
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              close_fds=True)
+        p_output  = p.communicate()[0]
+        out_recs  = p_output[:-1].split('\n')
+        if not out_recs:
+            fail('produced output when input was empty')
+
 
 
 if __name__ == "__main__":

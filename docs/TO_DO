@@ -1,6 +1,6 @@
 Very next things to do:
 ==================================================================
-1.  empty files
+?.
 
 Then the next things to do:
 ==================================================================
@@ -35,9 +35,6 @@ Status
 
 1.  data & metadata management
     - gristle_determinator.py                  - 95%
-    - generate metadata                        - 30%
-    - support many data formats:               - 20%
-    - incorporate SQLAlchemy for metadata      - 0%
     - metadata database:		       - 0%
 
 2.  data transformation tools:
@@ -54,9 +51,4 @@ Status
     - gristle_scalar.py                        - 60%
     - gristle_graphviz_generator.py            - 50%
     - gristle_histogramer.py                   - 0%
-
-4.  deployment
-    - setup tools
-    - testing for various versions of python
-    - testing on various OS
 

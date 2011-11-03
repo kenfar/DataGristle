@@ -56,7 +56,10 @@ def main():
         my_file.recdelimiter = opts.recdelimiter
         my_file.hasheader    = opts.hasheader
     else:
-        my_file.analyze_file()
+        try:
+            my_file.analyze_file()
+        except IOErrorEmptyFile:
+            return 1
 
     print 'graph networkmap {'
 

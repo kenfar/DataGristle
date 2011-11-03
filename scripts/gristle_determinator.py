@@ -51,7 +51,10 @@ def main():
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
-    my_file.analyze_file()
+    try:
+        my_file.analyze_file()
+    except file_type.IOErrorEmptyFile:
+        return 1
 
     if not opts.silent:
         print_file_info(my_file, outfile)

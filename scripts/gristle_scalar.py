@@ -56,7 +56,10 @@ def main():
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
-        my_file.analyze_file()
+        try:
+            my_file.analyze_file()
+        except file_type.IOErrorEmptyFile:
+            sys.exit(1)
         dialect       = my_file.dialect
     else:
         # dialect parameters needed for stdin - since the normal code can't
@@ -90,14 +93,18 @@ def main():
         process_cnt = rec_cnt
 
     if opts.action in ['sum', 'min', 'max']:
-        outfile.write('%s\n' % str(temp_value))
+        if temp_value is not None:
+            outfile.write('%s\n' % str(temp_value))
     elif opts.action == 'avg':
-        outfile.write('%s\n' % str(temp_value / process_cnt))
+        if temp_value is not None:
+            outfile.write('%s\n' % str(temp_value / process_cnt))
     elif opts.action == 'freq':
-        for key in temp_dict:
-            outfile.write('%s - %d\n' % (key, temp_dict[key]))
+        if temp_dict:
+            for key in temp_dict:
+                outfile.write('%s - %d\n' % (key, temp_dict[key]))
     elif opts.action == 'countdistinct':
-        outfile.write('%s\n' % len(temp_dict))
+        if temp_dict:
+            outfile.write('%s\n' % len(temp_dict))
 
     fileinput.close()
     if opts.output:
@@ -217,8 +224,15 @@ def get_opts_and_args():
         if not opts.delimiter:
             parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
 
-    if opts.action == 'string':
-        assert(opts.action in ['min', 'max', 'freq', 'countdistinct'])
+    if opts.column_type == 'string':
+        if opts.action not in ['min', 'max', 'freq', 'countdistinct']:
+            parser.error('invalid action for string type')
+    if not opts.action:
+        parser.error("action is a required option")
+    if opts.column_number is None:
+        parser.error("column is a required option")
+    if not opts.column_type:
+        parser.error("type is a required option")
 
     return opts, files
 

@@ -3,7 +3,7 @@
     utility it is file structure-aware and is both more accurate and more 
     detailed.
 
-    Two ways of performing the comparisons have been implemented:
+    Two ways of performing the comparisons will be supported:
        - unsorted input files:  for smaller files - all processing is performed
          in memory
        - sorted input files:  for larger files - minimal memory used - not
@@ -47,12 +47,22 @@ def main():
             - writes counts
     """
     (opts, dummy) = get_opts_and_args()
+
+    # either file may be empty - but at least one must have data in it.
     my_file       = file_type.FileTyper(opts.file1,
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader)
-                                       
-    my_file.analyze_file()
+    try:
+        my_file.analyze_file()
+    except file_type.IOErrorEmptyFile:
+        try:
+            my_file       = file_type.FileTyper(opts.file2,
+                                       opts.delimiter,
+                                       opts.recdelimiter,
+                                       opts.hasheader)
+        except file_type.IOErrorEmptyFile:
+            return 1
 
     if opts.sorted:
         file_diff(opts)
@@ -73,6 +83,8 @@ def main():
         print '   In file2 only:        %d' % f2only_cnt
         print '   Same:                 %d' % same_cnt
         print '   Changed:              %d' % chg_cnt
+
+    return 0
 
 
 
@@ -238,36 +250,40 @@ def get_opts_and_args():
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('-v', '--verbose',
-                      default=False,
-                      action='store_true')
+           default=False,
+           action='store_true')
 
-    parser.add_option('-1', '--file1', help='file1')
-    parser.add_option('-2', '--file2', help='file2')
+    parser.add_option('-1', '--file1', 
+           help='file1')
+    parser.add_option('-2', '--file2', 
+           help='file2')
 
     parser.add_option('-k', '--keycol',
-                      help='these are the columns that make up a unique row')
+           help='Specify the columns that constitute a unique row with a comma-'
+                'delimited list of numbers using a 0-offset.  This is a '
+                'required option.')
     parser.add_option('-c', '--comparecol',
-                      help='these are the columns to compare')
+           help='Specify the columns to be compared with a comma-delimited list'
+                'of numbers using a 0-offset.  This is a required option.')
     parser.add_option('-d', '--delimiter',
-                      help='Specify a quoted field delimiter. ')
+           help='Specify a quoted field delimiter. ')
     parser.add_option('-s', '--sorted',
-                      default=False,
-                      action='store_true',
-                      help='Large files must be sorted by key - TBD')
+           default=False,
+           action='store_true',
+           help='Large files must be sorted by key - TBD')
     parser.add_option('--hasheader',
-                      default=False,
-                      action='store_true',
-                      help='indicates that there is a header in the file.')
+           default=False,
+           action='store_true',
+           help='indicates that there is a header in the file.')
     parser.add_option('--recdelimiter')
     parser.add_option('--maxsize',
-                      default=10000,
-                      help='can override max number of rows to collect')
+           default=10000,
+           help='can override max number of rows to collect')
     parser.add_option('--casecompare',
-                      default=True,
-                      action='store_false',
-                      help=('Turns case-aware compares on and off.'
-                            '  Default is True (on)'))
-
+           default=True,
+           action='store_false',
+           help=('Turns case-aware compares on and off.'
+                 '  Default is True (on)'))
 
     (opts, args) = parser.parse_args()
 
@@ -278,6 +294,12 @@ def get_opts_and_args():
 
     if opts.sorted:
         parser.error("the sorted option has not been implemented yet")
+
+    if not opts.keycol:
+        parser.error("the keycol must be provided")
+    if not opts.comparecol:
+        parser.error("the comparecol must be provided")
+
 
     return opts, args
 

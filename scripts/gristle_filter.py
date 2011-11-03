@@ -50,7 +50,11 @@ def main():
                                        opts.recdelimiter,
                                        opts.hasheader)
                                        
-        my_file.analyze_file()
+        try:
+            my_file.analyze_file()
+        except file_type.IOErrorEmptyFile:
+            return 1
+
         dialect       = my_file.dialect
     else:
         # dialect parameters needed for stdin - since the normal code can't
@@ -75,7 +79,7 @@ def main():
     if opts.output:
         outfile.close()
 
-    return 
+    return 0
 
 
 def process_rec(rec, in_criteria, ex_criteria):

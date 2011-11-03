@@ -45,10 +45,14 @@ def main():
     (opts, files) = get_opts_and_args()
     if len(files) == 1:
         my_file                = file_type.FileTyper(files[0],
-                                            opts.delimiter,
+                                            opts.delimiter   ,
                                             opts.recdelimiter,
                                             opts.hasheader)
-        my_file.analyze_file()
+        try:
+            my_file.analyze_file()
+        except file_type.IOErrorEmptyFile:
+            return 1
+
         dialect                = my_file.dialect
     else:
         # dialect parameters needed for stdin - since the normal code can't
@@ -78,7 +82,7 @@ def main():
     fileinput.close()
     outfile.close()
 
-    return 
+    return 0
 
 
 def process_cols(rec_number,

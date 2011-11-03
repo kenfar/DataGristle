@@ -30,8 +30,8 @@ import gristle.field_misc   as miscer
 #   Multi-column needs to be more conservative since there could be 10,20, or
 #   80 different columns.  So it's limited to 1/10th the number of items.
 #------------------------------------------------------------------------------
-MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # 1 col, 10 mil items with 20 byte key = ~40 MB
-MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # 10 cols, each with 1 mil entries = ~40 MB
+MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
+MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # ex: 10 cols, each with 1 mil entries & 20 byte key = ~400 MB total
 
 
 class FieldDeterminator(object):
@@ -223,5 +223,11 @@ class FieldDeterminator(object):
                     break
 
         return rev_sort_list
+
+
+class IOErrorEmptyFile(IOError):
+    """Error due to empty file
+    """
+    pass
 
 
