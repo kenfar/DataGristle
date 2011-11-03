@@ -30,6 +30,7 @@ import sys
 import os
 import optparse
 import csv
+from __future__ import division
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------

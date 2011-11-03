@@ -18,6 +18,7 @@ import csv
 import collections
 import operator
 import fileinput
+from __future__ import division
 
 #--- gristle modules -------------------
 sys.path.append('../')  # allows running out of project structure

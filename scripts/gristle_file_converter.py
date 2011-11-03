@@ -11,6 +11,7 @@
 """
 
 #--- standard modules ------------------
+from __future__ import division
 import sys
 import optparse
 import csv

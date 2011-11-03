@@ -9,6 +9,7 @@
 """
 
 #--- standard modules ------------------
+from __future__ import division
 import sys
 import os
 import optparse

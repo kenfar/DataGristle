@@ -19,6 +19,7 @@ import os
 import optparse
 import csv
 import collections
+from __future__ import division
 #import pprint as pp
 
 #--- gristle modules -------------------
