@@ -10,6 +10,7 @@
 
     To do:
        - work with analyze_file to produce a special exception for empty files.
+       - improve msg if user provides no args - and tell about -h
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
@@ -81,7 +82,8 @@ def main():
             write_fields(outfile, new_cols, dialect.delimiter)
 
     fileinput.close()
-    outfile.close()
+    if opts.output != '-':
+        outfile.close()
 
     return 0
 
@@ -189,6 +191,7 @@ def write_fields(outfile, fields, delimiter):
     """
     rec = delimiter.join(fields)
     outfile.write(rec + '\n')
+         
 
 
 def get_opts_and_args():

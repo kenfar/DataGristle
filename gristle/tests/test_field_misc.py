@@ -76,7 +76,7 @@ class Test_get_field_freq(unittest.TestCase):
         os.remove(self.test1_fqfn)
 
     def test_misc_b01_truncation(self):
-        (freq, trunc_flag) = mod.get_field_freq(self.test1_fqfn, 
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
                                                 self.dialect,
                                                 field_number=0,
                                                 max_freq_size=4)
@@ -84,7 +84,7 @@ class Test_get_field_freq(unittest.TestCase):
         assert(trunc_flag is True)
 
     def test_misc_b02(self):
-        (freq, trunc_flag) = mod.get_field_freq(self.test1_fqfn, 
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
                                                 self.dialect,
                                                 field_number=0)
                                                 
@@ -92,7 +92,7 @@ class Test_get_field_freq(unittest.TestCase):
         assert(trunc_flag is False)
                               
     def test_misc_b03(self):
-        (freq, trunc_flag) = mod.get_field_freq(self.test1_fqfn, 
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
                                                 self.dialect,
                                                 field_number=2)
                                                 

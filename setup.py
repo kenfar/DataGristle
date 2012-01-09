@@ -2,9 +2,9 @@
 
 from setuptools import setup, find_packages
 
-version = "0.43"
+version = "0.44"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
-LONG_DESCRIPTION = open('README').read()
+LONG_DESCRIPTION = open('README.txt').read()
 
 setup(name             = 'gristle',
       version          = version,
@@ -39,6 +39,7 @@ setup(name             = 'gristle',
                       'scripts/gristle_scalar.py',
                       'scripts/gristle_slicer.py',
                       'scripts/gristle_viewer.py' ],
+      #install_requires     = ['appdirs']
       packages     = find_packages(),
       test_suite   = 'gristle.tests.__init__.py'
      )

@@ -10,6 +10,8 @@
     To do:
     - add more sophisticated query language and parsing
     - address issue with comparisons to strings
+    - improve msg if no args provided - also tell user about -h 
+    - capture & report to user on bad input
 
     Usage examples:
        cat ../data/*crime* | ./gristle_filter.py -c "0 == Washington " -d ','
@@ -161,7 +163,6 @@ def get_opts_and_args():
                 'if a filename is provided the program will override any '
                 'file of that name.')
     parser.add_option('-c', '--criteria',
-           default=':',
            help='inclusion criteria')
     parser.add_option('-C', '--excriteria',
            help='exclusion criteria')
@@ -184,6 +185,9 @@ def get_opts_and_args():
     parser.add_option('--recdelimiter')
 
     (opts, files) = parser.parse_args()
+
+    if (not opts.criteria and not opts.excriteria):
+        parser.error('Please provide either an inclusion or exclusion criteria')
 
     if files:
         if len(files) > 1 and not opts.delimiter:

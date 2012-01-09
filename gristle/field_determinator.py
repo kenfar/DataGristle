@@ -77,6 +77,7 @@ class FieldDeterminator(object):
         self.field_min           = {}  # all data
         self.field_max           = {}  # all data
         self.field_trunc         = {}  # all data
+        self.field_rows_invalid  = {}  # all data
 
         self.field_mean          = {}  # only for numeric data
         self.field_median        = {}  # only for numeric data
@@ -134,7 +135,8 @@ class FieldDeterminator(object):
                 max_items = max_freq_number
           
             (self.field_freqs[f_no],
-            self.field_trunc[f_no]) = miscer.get_field_freq(self.filename, 
+            self.field_trunc[f_no],
+            self.field_rows_invalid[f_no]) = miscer.get_field_freq(self.filename, 
                                                             self.dialect,
                                                             f_no, 
                                                             max_items)

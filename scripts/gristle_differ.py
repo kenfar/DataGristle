@@ -20,17 +20,19 @@
        - options to transform data prior to comparison: to change case, trim 
          spaces,
          etc
+       - improved msg if no args provided - tell about -h
+       - use a tuple for the key - so that it can be printed as separated cols
  
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
 """
 
 #--- standard modules ------------------
+from __future__ import division
 import sys
 import os
 import optparse
 import csv
-from __future__ import division
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------

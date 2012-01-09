@@ -35,6 +35,7 @@ def generate_test_file(delim, record_cnt):
            fields.append('foo')
         else:
            fields.append('bar')
+        #print delim.join(fields)
         fp.write(delim.join(fields)+'\n')
 
     fp.close()
@@ -88,8 +89,6 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        """ Should show proper handling of an empty file.   
-        """
         cmd = ['../gristle_filter.py',
                self.empty_fqfn       ,
                '-c', '0 == foo'      ]
@@ -100,6 +99,66 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
             fail('produced output when input was empty')
+
+
+    def test_multiple_empty_files(self):
+        cmd = ['../gristle_filter.py',
+               self.empty_fqfn       ,
+               self.empty_fqfn       ,
+               '-d'  '|'             ,
+               '-c', '0 == foo'      ]
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              close_fds=True)
+        p_output  = p.communicate()[0]
+        out_recs  = p_output[:-1].split('\n')
+        if not out_recs:
+            fail('produced output when input was empty')
+
+
+    def test_multiple_empty_and_full_files(self):
+        cmd = ['../gristle_filter.py',
+               self.empty_fqfn       ,
+               self.easy_fqfn        ,
+               '-d'  '|'             ,
+               '-c', '4 == bar'      ]
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              close_fds=True)
+        p_output  = p.communicate()[0]
+        out_recs  = p_output[:-1].split('\n')
+        assert(len(out_recs) == 90)
+        if not out_recs:
+            fail('produced output when input was empty')
+
+
+    def test_multiple_full_files(self):
+        cmd = ['../gristle_filter.py',
+               self.easy_fqfn        ,
+               self.easy_fqfn        ,
+               '-d'  '|'             ,
+               '-c', '4 == bar'      ]
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              close_fds=True)
+        p_output  = p.communicate()[0]
+        out_recs  = p_output[:-1].split('\n')
+        assert(len(out_recs) == 180)
+        if not out_recs:
+            fail('produced output when input was empty')
+
+
+
+    def test_empty_stdin(self):
+        cmd = "cat /dev/null | ../gristle_filter.py -c '0 == foo' -d '|'"
+        p   =  subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                shell=True).communicate()
+        p_output  = p[0]
+        out_recs  = p_output[:-1].split('\n')
+        if not out_recs:
+            fail('produced output when input was empty')
+
 
 
 

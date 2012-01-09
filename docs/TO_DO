@@ -34,20 +34,20 @@ Maturity by Tool:
 ==================================================================
 
 1.  data & metadata management
-    - gristle_determinator.py                  - 95%
+    - gristle_determinator.py                  - 100%
     - metadata database:		       - 0%
 
 2.  data transformation tools:
     - gristle_slicer.py                        - 100%
-    - gristle_file_converter.py                - 80%
-    - gristle_diff.py                          - 60%
+    - gristle_differ.py                        - 70%
+    - gristle_file_converter.py                - 60%
     - gristle_filter.py                        - 60%
     - gristle_scrubber.py                      - 0%
     - gristle_validator.py                     - 0%
 
 3.  data analysis tools:
     - gristle_freaker.py                       - 100%
-    - gristle_viewer.py                        - 80%
+    - gristle_viewer.py                        - 100%
     - gristle_scalar.py                        - 60%
     - gristle_histogramer.py                   - 0%
 

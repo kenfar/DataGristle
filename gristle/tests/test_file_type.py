@@ -6,6 +6,8 @@ import os
 import tempfile
 import random
 import unittest
+import atexit
+import shutil
 
 sys.path.append('../')
 import file_type  as mod
@@ -18,7 +20,6 @@ def suite():
     suite.addTest(unittest.makeSuite(TestInternals))
 
     return suite
-
 
 
 def generate_test_file1(delim, quoting, record_cnt):

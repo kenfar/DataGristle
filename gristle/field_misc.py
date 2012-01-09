@@ -10,6 +10,12 @@
       - get_min_length
     
     Todo:
+      - get_field_freq()  
+          - change get_field_rec to better handle files within inconsistent
+            number of fields
+      - get_max() & get_min():
+          - doesn't report to caller number of values rejected due to 
+            unknown or invalid values
 """
 from __future__ import division
 import collections
@@ -115,23 +121,27 @@ def get_field_freq(filename,
     """ Collects a frequency distribution for a single field by reading
         the file provided.
         Issues:
-        - does not check for rows of wrong number of fields
+        - has limited checking for wrong number of fields in rec
     """
     freq        = collections.defaultdict(int)
     rec_cnt     = 0
     truncated   = False
+    invalid_row_cnt = 0
 
     for fields in csv.reader(open(filename,'r'), dialect=dialect):
         rec_cnt += 1
         if rec_cnt == 1 and dialect.has_header:
             continue
-        freq[fields[field_number]] += 1
+        try:
+            freq[fields[field_number].strip()] += 1
+        except IndexError:
+            invalid_row_cnt += 1
         if len(freq) >= max_freq_size:
             print '      WARNING: freq dict is too large - will trunc'
             truncated = True
             break
         
-    return freq, truncated
+    return freq, truncated, invalid_row_cnt
 
 
 
@@ -143,21 +153,41 @@ def get_min(value_type, values):
           - value_type - one of integer, float, string, timestap
           - dictionary or list of string values
         Outputs:
-          - the single maximum value
+          - the single maximum value of the appropriate type
 
         Test Coverage:
           - complete via test harness
+ 
+        Issues:
+          - doesn't report to caller number of values rejected due to 
+            unknown or invalid values
     """
     assert(value_type in ['integer', 'float', 'string', 'timestamp', 
                           'unknown', None])
+    unknown_field_cnt = 0
+    invalid_field_cnt = 0
 
     # first handle types & unknowns:
-    if value_type == 'integer':
-        known_vals = [int(val) for val in values if not typer.is_unknown(val)]
-    elif value_type == 'float':
-        known_vals = [float(val) for val in values if not typer.is_unknown(val)]
-    else:
-        known_vals = [val for val in values if not typer.is_unknown(val)]
+    #if value_type == 'integer':
+    #    known_vals = [int(val) for val in values if not typer.is_unknown(val)]
+    #elif value_type == 'float':
+    #    known_vals = [float(val) for val in values if not typer.is_unknown(val)]
+    #else:
+    #    known_vals = [val for val in values if not typer.is_unknown(val)]
+    known_vals = []
+    for val in values:
+        if typer.is_unknown(val):
+            unknown_field_cnt += 1
+        else:
+            try:
+                if value_type == 'integer':
+                    known_vals.append(int(val))
+                elif value_type == 'float':
+                    known_vals.append(float(val))
+                else:
+                    known_vals.append(val)
+            except ValueError:
+                invalid_field_cnt += 1
 
     # next return the minimum value
     try:
@@ -178,20 +208,42 @@ def get_max(value_type, values):
           - value_type - one of integer, float, string, timestap
           - dictionary or list of string values
         Outputs:
-          - the single maximum value
+          - the single maximum value of the appropriate type
 
         Test Coverage:
           - complete via test harness
+
+        Issues:
+          - doesn't report to caller number of values rejected due to 
+            unknown or invalid values
     """
     assert(value_type in ['integer', 'float', 'string', 'timestamp', 
                           'unknown', None])
+    unknown_field_cnt = 0
+    invalid_field_cnt = 0
 
-    if value_type == 'integer':
-        known_vals = [int(val) for val in values if not typer.is_unknown(val)]
-    elif value_type == 'float':
-        known_vals = [float(val) for val in values if not typer.is_unknown(val)]
-    else:
-        known_vals = [val for val in values if not typer.is_unknown(val)]
+    #simpler, older, solution, but didn't support try,except code
+    #if value_type == 'integer':
+    #    known_vals = [int(val) for val in values if not typer.is_unknown(val)]
+    #elif value_type == 'float':
+    #    known_vals = [float(val) for val in values if not typer.is_unknown(val)]
+    #else:
+    #    known_vals = [val for val in values if not typer.is_unknown(val)]
+
+    known_vals = []
+    for val in values:
+        if typer.is_unknown(val):
+            unknown_field_cnt += 1
+        else:
+            try:
+                if value_type == 'integer':
+                    known_vals.append(int(val))
+                elif value_type == 'float':
+                    known_vals.append(float(val))
+                else:
+                    known_vals.append(val)
+            except ValueError:
+                invalid_field_cnt += 1
 
     try:
         if value_type in ['integer','float']:

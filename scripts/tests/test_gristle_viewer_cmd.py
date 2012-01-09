@@ -117,8 +117,6 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        """ Should show proper handling of an empty file.   
-        """
         cmd = ['../gristle_viewer.py',
                self.empty_fqfn       ,  
                '-o', self.out_fqfn   ,
@@ -132,6 +130,74 @@ class TestCommandLine(unittest.TestCase):
             out_recs.append(rec)
         assert(len(out_recs) == 0)
 
+
+    def test_empty_stdin(self):
+        cmd = "cat /dev/null | ../gristle_viewer.py -o %s -r 999 -d'|'" % (self.out_fqfn)
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              shell=True)
+        records   = p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+        assert(len(out_recs) == 0)
+
+
+    def test_full_stdin(self):
+        cmd = "cat %s | ../gristle_viewer.py -o %s -r 10 -d'|'" % (self.in_fqfn, self.out_fqfn)
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              shell=True)
+        records   = p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+        assert(len(out_recs) == 4)
+        assert(out_recs[0].strip().startswith('field_0'))
+        assert(out_recs[0].strip().endswith('10'))
+
+
+    def test_full_multiple_files(self):
+        cmd = "../gristle_viewer.py %s %s -o %s -r 10 -d'|'" % (self.in_fqfn, self.in_fqfn, self.out_fqfn)
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              shell=True)
+        records   = p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+     
+        assert(len(out_recs) == 4)
+        assert(out_recs[0].strip().startswith('field_0'))
+        assert(out_recs[0].strip().endswith('10'))
+
+
+    def test_full_multiple_empty_files(self):
+        cmd = "../gristle_viewer.py %s %s -o %s -r 10 -d'|'" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              shell=True)
+        records   = p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+     
+        assert(len(out_recs) == 0)
+
+
+    def test_full_multiple_empty_and_full_files(self):
+        cmd = "../gristle_viewer.py %s %s -o %s -r 10 -d'|'" % (self.empty_fqfn, self.in_fqfn, self.out_fqfn)
+        p =  subprocess.Popen(cmd,
+                              stdout=subprocess.PIPE,
+                              shell=True)
+        records   = p.communicate()[0]
+        out_recs  = []
+        for rec in fileinput.input(self.out_fqfn):
+            out_recs.append(rec)
+     
+        assert(len(out_recs) == 4)
+        assert(out_recs[0].strip().startswith('field_0'))
+        assert(out_recs[0].strip().endswith('10'))
 
 
 

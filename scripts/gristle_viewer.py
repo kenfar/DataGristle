@@ -13,10 +13,14 @@
            to allow navigation for stdin data & faster for files
        3.  confirm that record counting works identical for each situation
        4.  use header info when using stdin
+       5.  improve error if no args provided - recommend -h for help
+       6.  fix broken pipes in this program or others
+      
 """
 
 #--- standard modules ------------------
 from __future__ import division
+import os
 import sys
 import optparse
 import csv
@@ -213,11 +217,12 @@ def get_opts_and_args():
 
     if files:
         if len(files) > 1 and not opts.delimiter:
+            print 'missing delimiter - will abort'
             parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
     else:   # stdin
         if not opts.delimiter:
+            print 'missing delimiter - will abort'
             parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
-
 
     return opts, files
 

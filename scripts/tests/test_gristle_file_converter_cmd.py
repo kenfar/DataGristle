@@ -80,21 +80,14 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        """ Should show proper handling of an empty file.   
-        """
-        cmd = ['../gristle_file_converter.py',
-               self.empty_fqfn       ,
-               '-d', '|'             ,
-               '-D', ','             ]
+        cmd = "../gristle_file_converter.py %s -d'|' -D','" % self.empty_fqfn
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
-                              close_fds=True)
+                              shell=True)
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
             fail('produced output when input was empty')
-
-
 
 
 if __name__ == "__main__":

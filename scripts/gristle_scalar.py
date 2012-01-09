@@ -19,18 +19,19 @@
       - Add actions: countknown & countunknown
       - Add ability to process multiple columns simultaneously
       - Improve design of how actions run and how intermediate data is stored
+      - Improve msg if user provides no args and tell about -h
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011 Ken Farmer
 """
 
 #--- standard modules ------------------
+from __future__ import division
 import sys
 import optparse
 import csv
 import collections
 import fileinput
-from __future__ import division
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------

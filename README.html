@@ -1,0 +1,131 @@
+<p>Datagristle is a toolbox of tough and flexible data connectors and analyzers. <br />
+It's kind of an interactive mix between ETL and data analysis optimized for 
+rapid analysis and manipulation of a wide variety of data.</p>
+
+<p>It's neither an enterprise ETL tool, nor an enterprise analysis, reporting, 
+or data mining tool.  It's intended to be an easily-adopted tool for technical
+analysts that combines the most useful subset of data transformation and 
+analysis capabilities necessary to do 80% of the work.  Its open source python
+codebase allows it to be easily extended to with custom code to handle that
+always challenging last 20%.</p>
+
+<p>Current Status:  Strong support for easy analysis and simple transformations of
+csv files. </p>
+
+<h3>Next Steps:</h3>
+
+<ul>
+<li>attractive PDF output of gristle_determinator.py</li>
+<li>metadata database population</li>
+</ul>
+
+<h3>Its objectives include:</h3>
+
+<ul>
+<li>multi-platform (unix, linux, mac os, windows with effort) </li>
+<li>multi-language (primarily python)</li>
+<li>free - no cripple-licensing</li>
+<li>primary audience is programming data analysts - not non-technical analysts</li>
+<li>primary environment is command-line rather than windows, graphical desktop
+ or eclipse</li>
+<li>extensible</li>
+<li>allow a bi-directional iteration between ETL &amp; data analysis</li>
+<li>can quickly perform initial data analysis prior to longer-duration, deeper
+ analysis with heavier-weight tools.</li>
+</ul>
+
+<h3>Dependencies</h3>
+
+<ul>
+<li>Python 2.6</li>
+</ul>
+
+<h3>Mature Existing utilities:</h3>
+
+<ul>
+<li>gristle_determinator.py 
+<ul>
+<li>Identifies file formats, generates metadata, prints file analysis report</li>
+<li>This is the most mature - and also used by the other utilities so that 
+ you generally do not need to enter file structure info.</li>
+</ul></li>
+<li>gristle_freaker.py
+<ul>
+<li>Produces a frequency distribution of multiple columns from input file.</li>
+</ul></li>
+<li>gristle_slicer.py
+<ul>
+<li>Used to extract a subset of columns and rows out of an input file.</li>
+</ul></li>
+<li>gristle_viewer.py
+<ul>
+<li>Shows one record from a file at a time - formatted based on metadata. </li>
+</ul></li>
+</ul>
+
+<h3>Immature Existing utilities:</h3>
+
+<ul>
+<li>gristle_differ.py
+<ul>
+<li>Shows differences between two files</li>
+</ul></li>
+<li>gristle_file_converter.py
+<ul>
+<li>Converts a csv from one dialect to another.  Can handle multi-character
+ field delimiters as well as record delimiters.</li>
+</ul></li>
+<li>gristle_filter.py 
+<ul>
+<li>Applies simple filter logic to file.</li>
+</ul></li>
+<li>gristle_scalar.py
+<ul>
+<li>Performs scalar operations (min, max, avg, count unique, etc) on a file</li>
+</ul></li>
+</ul>
+
+<h3>Future utilities:</h3>
+
+<ul>
+<li>gristle_metadata.py 
+<ul>
+<li>Manages metadata - allows users to query, add, update, delete
+ file, field, transformation, reporting descriptions.</li>
+</ul></li>
+<li>gristle_generator
+<ul>
+<li>Generates test data based on gristle metadata</li>
+</ul></li>
+<li>gristle_validator 
+<ul>
+<li>Confirms validity of database and file structure and contents.</li>
+</ul></li>
+<li>gristle_file_joiner.py
+<ul>
+<li>joins two files on their common keys and produces a new file</li>
+</ul></li>
+<li>gristle_grouper.py
+<ul>
+<li>reads a file, aggregates on a given set of fields, produces a new file</li>
+</ul></li>
+<li>gristle_db_loader.py 
+<ul>
+<li>loads a file into a database</li>
+</ul></li>
+<li>gristle_db_extractor.py 
+<ul>
+<li>extracts data from a database into a file</li>
+</ul></li>
+<li>gristle_field_merge.py 
+<ul>
+<li>prints the matched values from multiple files side by side along with counts</li>
+</ul></li>
+</ul>
+
+<h3>Licensing</h3>
+
+<ul>
+<li>Gristle uses the BSD license - see the separate LICENSE file for further 
+ information</li>
+</ul>

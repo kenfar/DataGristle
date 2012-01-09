@@ -16,7 +16,6 @@
       - add histogram to automatically bucketize data
       - consistency metric
       - leverage list comprehensions more
-      - consider try/except in get_min() & get_max() int/float conversion
       - change returned data format to be based on field
 """
 from __future__ import division
