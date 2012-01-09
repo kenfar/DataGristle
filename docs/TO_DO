@@ -30,7 +30,7 @@ Longer-term things to do:
     
 
 
-Status
+Maturity by Tool:
 ==================================================================
 
 1.  data & metadata management
@@ -46,9 +46,8 @@ Status
     - gristle_validator.py                     - 0%
 
 3.  data analysis tools:
-    - gristle_freq.py                          - 80%
+    - gristle_freaker.py                       - 100%
     - gristle_viewer.py                        - 80%
     - gristle_scalar.py                        - 60%
-    - gristle_graphviz_generator.py            - 50%
     - gristle_histogramer.py                   - 0%
 
