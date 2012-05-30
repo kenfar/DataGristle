@@ -42,24 +42,6 @@ e.  rcfiles:
 
 
 ==================================================================================================
-3.  sqlite:
-==================================================================================================
-a.  which sqlite to use?  2.? comes with linux, but it's on 3.7 or something like that?
-b.  installation commands:
-	kenfar@glenda:~/projects/datagristle/data$ sudo apt-get install sqlite3
-	kenfar@glenda:~/projects/datagristle/data$ sudo apt-get install sqlite3-doc
-c.  sample command line commands:
-	kenfar@glenda:~/projects/datagristle/data$ sqlite3 test.db "insert into t1 (col1, col2) values('hello', 'goodbyte')"
-	kenfar@glenda:~/projects/datagristle/data$ sqlite3 test.db "select * from t1"
-d.  sample shell commands:
-	sqlite3 <database file>
-	sqlite> select * from sqlite_master;	
-d.  misc add-on software:
-	- csv to sqlite:
-		http://code.activestate.com/recipes/498130-create-sql-tables-from-csv-files/
-
-
-==================================================================================================
 4.  Markdown vs ReStructured Text
 ==================================================================================================
 a.  which to use?  markdown or restructured text?  
@@ -97,13 +79,12 @@ b.  what are the implications of installing other software with my setup?
 ==================================================================================================
 a.  how to merge
 b.  common commands:
-	- git add .				# adds all files
-	- git commit -a                         # commits all files
+	- git add .		                    # adds all files
+	- git commit -a                     # commits all files
 	- git commit -a -m "first update"	# commits all files (?)
-	- git commit foo.py			# commits just foo.py
-	- git status				# shows status of all files
-	- git push				# pushes updates to github
-
+	- git commit foo.py	               	# commits just foo.py
+	- git status				        # shows status of all files
+	- git push				            # pushes updates to github
 
 
 ==================================================================================================
@@ -121,3 +102,21 @@ a.  Best way to test script with a main()?
 b.  Best way to test setup?
 c.  Best way to test large volume characteristics?
 	- I'm creating unittest files ending in _SLOW.py that take 1+ minute to run.
+
+
+
+==================================================================================================
+9.  Terminator
+==================================================================================================
+Tabs
+	^tab	& shift-^-Tab 	- move between lower tabs
+	F11		              	- fullscreen
+	shift-^-pgup & pgdn	    - move big tabs left & right
+	alt-left & alt-right	- move between lower tabs 
+	maximize tab	     	- shift-ctrl-x
+	zoom in		     	    - shift-ctrl-+
+	zoom out		        - shift-ctrl-- 	(doesn't work)
+	zoom terminal		    - shift-ctrl-z		
+	ctrl-pgdn / pgup     	- next/prev tab
+	shift-ctrl-n / p     	- next/prev tab
+

@@ -1,14 +1,11 @@
 #!/usr/bin/env python
-#-------------------------------------------------------------------------------
-#  
-#  To do:
-#  1.  Add testing for stdin & stdout - but stdout can be hard because it has 
-#      interactive prompting.
-#  2.  Add testing for a recnum > last record in the file
-#
-#  See the file "LICENSE" for the full license governing this code. 
-#
-#-------------------------------------------------------------------------------
+""" To do:
+      1.  Add testing for stdin & stdout - but stdout can be hard because it has 
+          interactive prompting.
+      2.  Add testing for a recnum > last record in the file
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
+"""
 
 import sys
 import os

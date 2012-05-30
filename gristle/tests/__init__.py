@@ -9,6 +9,8 @@ import test_field_math
 import test_field_misc
 import test_field_type
 import test_file_type
+import test_metadata
+import test_simplesql
 
 def main():
 
@@ -18,6 +20,8 @@ def main():
    suite.addTest(test_field_misc.suite())
    suite.addTest(test_field_type.suite())
    suite.addTest(test_file_type.suite())
+   suite.addTest(test_metadata.suite())
+   suite.addTest(test_simplesql.suite())
    unittest.TextTestRunner(verbosity=2).run(suite)
 
 

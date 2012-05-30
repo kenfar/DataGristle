@@ -16,6 +16,9 @@
       - get_max() & get_min():
           - doesn't report to caller number of values rejected due to 
             unknown or invalid values
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
 """
 from __future__ import division
 import collections

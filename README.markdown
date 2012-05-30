@@ -9,7 +9,6 @@ analysis capabilities necessary to do 80% of the work.  Its open source python
 codebase allows it to be easily extended to with custom code to handle that
 always challenging last 20%.
 
-
 Current Status:  Strong support for easy analysis and simple transformations of
 csv files. 
 
@@ -33,7 +32,7 @@ csv files.
 
 ###Dependencies
 
-   * Python 2.6
+   * Python 2.6 or Python 2.7
 
 ###Mature Existing utilities:
 
@@ -59,6 +58,8 @@ csv files.
        - Applies simple filter logic to file.
    * gristle_scalar.py
        - Performs scalar operations (min, max, avg, count unique, etc) on a file
+   * gristle_validator.py
+       - Validates a file - currently just confirms number of fields for each row.
 
 ###Future utilities:
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 """ Purpose of this module is to manage user preferences
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
 """
 from __future__ import division
 import appdirs

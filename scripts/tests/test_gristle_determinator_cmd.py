@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-#  See the file "LICENSE" for the full license governing this code. 
 """ Tests gristle_determinator.py
     
     Contains a primary class: FileStructureFixtureManager
     Which is extended by six classes that override various methods or variables.
     This is a failed experiment - since the output isn't as informative as it 
     should be.  This should be redesigned.
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
 """
 
 import sys

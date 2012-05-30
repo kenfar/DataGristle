@@ -1,11 +1,21 @@
 ===============================================================================
-Version:	 0.44
+Version:	 0.45
 ===============================================================================
+
+===============================================================================
+Release Status
+===============================================================================
+    - test on python 2.7            - done
+    - run pylint                    - done
+    - test on python 2.6
+    - test automatically installing:
+        - sqlalchemy
+        - etc
 
 ===============================================================================
 Primary Changes To Do:
 ===============================================================================
-        - pypi
+    - pypi
 	- add appropriate precision to means, etc
 	- setup testing?
 
@@ -13,10 +23,28 @@ Primary Changes To Do:
 ===============================================================================
 Primary Changes:
 ===============================================================================
-        - general:
+    - general:
 		- Changed division to future 
 		- Added quite a bit of tests to test harnesses
-	- field_misc.py 
+    - gristle/metadata.py
+        - initial appearance
+        - added metadata library for the rest of the modules & scripts to store 
+          results within
+        - not yet integrated in a way that's useful however
+    - gristle/simplesql.py
+        - initial appearance
+        - added library to minimize SQL necessary for testing & simple queries
+    - gristle/preferences.py
+        - initial appearance
+        - added library to manage user configuration compliant with xdg spec
+    - scripts/gristle_metadata.py
+        - initial appearance
+        - add api layer to manually CRUD metadata
+    - scripts/gristle_validator.py
+        - initial appearance
+        - only provides ability to find records with invalid field number in 
+          this release
+	- gristle/field_misc.py 
 		- ignores some garbage data, returns counts of bad rows found
  		- .strip() values put into frequency distributions
         - field_determinator.py 
@@ -24,13 +52,13 @@ Primary Changes:
         - gristle_determinator.py
  		- added bad field count
 		- widened field value width
-	- gristle_file_converter.py
+	- scripts/gristle_file_converter.py
 		- cleaned up the code
 		- many misc improvements
         - gristle_freaker.py
                 - completely rewritten - added ability to handle multiple
                   columns & sampling, also added test harness.
-	- gristle_graphviz_generator.py
+	- scripts/gristle_graphviz_generator.py
 		- pulled out - it's just too immature
 
 ===============================================================================
@@ -38,104 +66,126 @@ Overall Testing status:
 ===============================================================================
 	- linux ubuntu 10.10 with python 2.6.6
 		- script unit tests
-                        - ?
+            - ?
 		- module unit tests
 			- ?
-	- linux ubuntu 11.04 with python 2.7
+	- linux ubuntu 12.04 with python 2.7
 		- script unit tests
-			- ?
+			- done
 		- gristle unit tests
-			- ?
+			- done (1 failing)
 		- setup tests
 			- ?
 	- mac os with python 2.5.4:
 		- script unit tests
-                        - ?
+            - ?
 		- module unit tests
 			- ?
 
 ===============================================================================
 Module status:
 ===============================================================================
-field_determinator.py
-	- test coverage:		-- 
+field_determinator.py           -- v0.45
+	- test coverage:		    -- 
         - unittest status:		-- 100%
-        - pylint status:		-- 100% (9.78)
+        - pylint status:		-- 10
 
-field_math.py
-	- test coverage:		-- ~50%
+field_math.py                   -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - pylint status:		-- 100% (9.42)
+        - pylint status:		-- 9.42
 
-field_misc.py
-	- test coverage:		-- ~50%
+field_misc.py                   -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - pylint status:		-- 100% (9.61)
+        - pylint status:		-- 9.69
 
-field_type.py
-	- test coverage:		-- ~50%
+field_type.py                   -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - pylint status:		-- 100% (9.86)
+        - pylint status:		-- 9.86
 
-file_type.py
-	- test coverage:		-- ~50%
+file_type.py                    -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - pylint status:		-- 100% (9.3)
+        - pylint status:		-- 9.44
 
+metadata.py                     -- v0.45
+    - test coverage:            -- 100%
+        - unittest status:      -- 100%
+        - pylint status:        -- 0.65
+    
+preferences.py                  -- v0.45
+    - test coverage:            -- 100%
+        - pylint status:        -- 7.50
+    
+simplesql.py                    -- v0.45
+    - test coverage:            -- 100%
+        - unittest status:      -- FAIL
+        - pylint status:        -- -2.28
+    
 
 ===============================================================================
 Script Test status:
 ===============================================================================
 
-gristle_determinator.py
-	- test coverage:		-- ~50%
+gristle_determinator.py         -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - manual test status:		-- 100%
-        - pylint status:		-- 100% (9.85)
+        - manual test status:   -- 100%
+        - pylint status:		-- 100% (9.85) 
 
-gristle_freaker.py
-	- test coverage:		-- ~95%
+gristle_freaker.py              -- v0.45
+	- test coverage:		    -- ~95%
         - unittest status:		-- 100%
-        - manual test status:		-- 100%
+        - manual test status:   -- 100%
+        - pylint status:		-- 100% (9.95)
+
+gristle_file_converter.py       -- v0.45
+	- test coverage:		    -- ~50%
+        - unittest status:		-- 100%
+        - manual test status:   -- 100%
         - pylint status:		-- 100% (10)
 
-gristle_file_converter.py
-	- test coverage:		-- ~50%
+gristle_slicer.py               -- v0.45
+	- test coverage:		    -- ~90%
         - unittest status:		-- 100%
-        - manual test status:		-- 100%
-        - pylint status:		-- 100% (10)
-
-gristle_slicer.py
-	- test coverage:		-- ~90%
-        - unittest status:		-- 100%
-        - manual test status:		-- 100%
+        - manual test status:   -- 100%
         - pylint status:		-- 100% (9.91)
 
-gristle_filter.py
-	- test coverage:		-- ~50%
+gristle_filter.py               -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - manual test status:		-- 100%
-        - pylint status:		-- 100% (9.86)
+        - manual test status:	-- 100%
+        - pylint status:		-- 100% (9.87)
 	
-gristle_viewer.py
-	- test coverage:		-- ~50%
+gristle_viewer.py               -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - manual test status:		-- 100%
-        - pylint status:		-- 100% (9.72)
+        - manual test status:	-- 100%
+        - pylint status:		-- 100% (9.63)
 
-gristle_differ.py
-	- test coverage:		-- ~50%
+gristle_differ.py               -- v0.45
+	- test coverage:		    -- ~50%
         - unittest status:		-- 100%
-        - manual test status:		-- 100%
-        - pylint status:		-- 100% (9.49)
+        - manual test status:	-- 100%
+        - pylint status:		-- 100% (9.77)
 
-gristle_scalar.py
-	- test coverage:		-- 0%
+gristle_scalar.py               -- v0.45
+	- test coverage:		    -- 0%
         - unittest status:		-- n/a
-        - manual test status:		-- 100%
-        - pylint status:		-- 100% (9.67)
+        - manual test status:	-- 100%
+        - pylint status:		-- 100% (9.75)
 
+gristle_metadata.py             -- v0.45
+    - test coverage:            -- ?%
+        - pylint status         -- 100% (9.48)
 
+gristle_validator.py            -- v0.45
+    - test coverage:            -- ?%
+        - pylint status         -- 100% (9.69)
+
+===============================================================================
 ===============================================================================
 Manual test cases:
    - these are gradually migrating into the test harnesses, but I'm tracking
@@ -143,53 +193,53 @@ Manual test cases:
 ===============================================================================
 
 1.  gristle_slicer.py			
-	- multi empty args			-- 100%
-	- empty file arg followed by full arg	-- 100%
-	- single empty filename arg		-- 100%
-	- file passed via stdin empty		-- in test-harness
+	- multi empty args			    -- 100%
+	- full arg after empty file arg -- 100%
+	- single empty filename arg	    -- 100%
+	- file passed via stdin empty	-- in test-harness
 
 2.  gristle_viewer.py			
-	- multi empty args			-- in test harness
-	- multi full args			-- in test harness
-	- empty arg followed by full arg	-- in test harness
+	- multi empty args			    -- in test harness
+	- multi full args			    -- in test harness
+	- full arg after empty file arg -- 100%
 	- single empty filename arg		-- in test harness
 	- single full filename arg		-- in test-harness
-	- file passed via stdin empty		-- in test-harness
-	- file passed via stdin full 		-- in test-harness
+	- file passed via stdin empty	-- in test-harness
+	- file passed via stdin full 	-- in test-harness
 
 3.  gristle_determinator.py			
-	- single empty filename arg:		-- 100%
+	- single empty filename arg:	-- 100%
 	- single full filename arg:		-- 100%
-	- file passed via stdin empty           -- 100%
+	- file passed via stdin empty   -- 100%
 
 4.  gristle_differ.py
 	- file1 or file2 empty			-- 100%
-	- both files empty			-- 100%
+	- both files empty			    -- 100%
 
 5.  gristle_freaker.py
 	- multi-empty filename args		-- in test-harness
-	- multi-full args			-- in test-harness
-	- empty arg followed by full arg:	-- in test-harness
-	- single empty filename arg:		-- in test-harness
-	- file passed via stdin empty		-- in test-harness
+	- multi-full args	     		-- in test-harness
+	- full arg after empty file arg -- 100%
+	- single empty filename arg		-- in test-harness
+	- file passed via stdin empty	-- in test-harness
 
 6.  gristle_scalar.py
 	- multiple empty file args		-- in test-harness
-	- multi-full args			-- in test-harness
-	- empty arg followed by full arg:	-- in test-harness
-	- stdin empty				-- in test-harness
-    	- single real file arg  		-- in test-harness
+	- multi-full args			    -- in test-harness
+	- full arg after empty file arg -- in test-harness
+	- stdin empty			     	-- in test-harness
+    	- single real file arg  	-- in test-harness
 	- single empty file arg			-- in test-harness
 
 7.  gristle_filter.py
-	- multi-empty args			-- in test-harness
-	- multi-full args			-- in test-harness
-	- empty arg followed by full arg:	-- in test-harness
-	- file passed via stdin empty		-- in test-harness
+	- multi-empty args			    -- in test-harness
+	- multi-full args			    -- in test-harness
+	- full arg after empty file arg -- in test-harness
+	- file passed via stdin empty	-- in test-harness
 
 8.  gristle_file_converter
-	- multi-empty args			-- FAIL (no multiple args)
-	- multi-full args			-- FAIL (no multiple args)
-	- empty arg followed by full arg:	-- FAIL (no multiple args)
-	- file passed via stdin empty		-- FAIL (no stdin)
+	- multi-empty args			    -- FAIL (no multiple args)
+	- multi-full args			    -- FAIL (no multiple args)
+	- full arg after empty file arg -- FAIL (no multiple args)
+	- file passed via stdin empty	-- FAIL (no stdin)
 	- single empty filename arg		-- in test harness

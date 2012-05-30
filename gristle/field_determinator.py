@@ -13,6 +13,9 @@
       - leverage list comprehensions more
       - consider try/except in get_min() & get_max() int/float conversion
       - change returned data format to be based on field
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
 """
 from __future__ import division
 #import pprint       as pp

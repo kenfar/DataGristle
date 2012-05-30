@@ -1,15 +1,20 @@
 #!/usr/bin/env python
-#----------------------------------------------------------------------------
-#  See the file "LICENSE" for the full license governing this code. 
-#  To do:
-#  1.  add tests for floats
-#----------------------------------------------------------------------------
+"""
+    To do:
+      1.  add tests for floats
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
+"""
 
 import sys
 import os
 import tempfile
 import random
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 sys.path.append('../')
 sys.path.append('../../')

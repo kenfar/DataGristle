@@ -1,11 +1,18 @@
 #!/usr/bin/env python
-#  See the file "LICENSE" for the full license governing this code. 
+"""
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
+"""
+
 
 import sys
 import os
 import tempfile
 import random
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 sys.path.append('../')
 import field_type  as mod

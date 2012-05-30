@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-#------------------------------------------------------------------------------
-#  To do:
-#  1.  test with multiple input files
-#
-#  See the file "LICENSE" for the full license governing this code. 
-#------------------------------------------------------------------------------
+""" To do:
+     1.  test with multiple input files
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
+"""
 
 import sys
 import os

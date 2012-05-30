@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-#  See the file "LICENSE" for the full license governing this code. 
+"""
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
+"""
+
 
 import sys
 import os
