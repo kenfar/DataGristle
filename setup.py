@@ -6,7 +6,7 @@ version = "0.45"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
 LONG_DESCRIPTION = open('README.markdown').read()
 
-setup(name             = 'gristle'         ,
+setup(name             = 'datagristle'     ,
       version          = version           ,
       description      = DESCRIPTION       ,
       long_description = LONG_DESCRIPTION  ,
