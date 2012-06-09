@@ -5,13 +5,12 @@
     Dependencies:
        - sqlalchemy (0.7 - though earlier versions will probably work)
        - envoy 
-       - sqlite3
        - appdirs 
 
     A secondary objective is to test out some modules I haven't used previously.
-    Because of this experimentation I have sometimes used a few different techniques 
-    (for example to run queries in sqlalchemy), and have included a considerable amount
-    of comments, documentation & test harnesses.
+    Because of this experimentation I have sometimes used a few different 
+    techniques (for example to run queries in sqlalchemy), and have included 
+    a considerable amount of comments, documentation & test harnesses.
 
     Basic Model:
        - schema
@@ -38,16 +37,14 @@
 """
 
 from __future__ import division
-import sqlite3
 import appdirs
 import os
-import sys
-from sqlalchemy import (exc, Table, Column, Integer, String, DATETIME, MetaData,  DateTime,
-                        UniqueConstraint, ForeignKeyConstraint, CheckConstraint, event,
-                        text, create_engine)
+from sqlalchemy import (Table, Column, Integer, String, MetaData, DATETIME,
+                        UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
+                        event, text, create_engine)
 import datetime
-from pprint import pprint
-import envoy
+#from pprint import pprint
+#import envoy
 import simplesql 
 
 
@@ -55,58 +52,7 @@ import simplesql
 def main():
     """ Only used for trivial testing
     """
-    md = GristleMetaData()
-
-    print md.schema_tools.lister()
-    print md.schema_tools._get_unique_constraints()
-    uk = md.schema_tools._get_unique_constraints()
-    print md.schema_tools.get_id(uk, schema_name='geoip',schema_desc='geoip_data1')
-    sys.exit(0)
-
-    print md.schema_tools.unnat_setter(id=1, schema_name='geoip',           schema_desc='geoip data1')
-    print md.schema_tools.unnat_setter(schema_name='states',          schema_desc='state data1')
-    print md.schema_tools.lister()
-    sys.exit(0)
-
-    print md.schema_tools.unnat_setter(schema_name='test1',           schema_desc='test data')
-
-    sys.exit(0)
-    md.struct_type_tools.setter(struct_type='collection', struct_type_desc='a set of fields')
-    md.struct_type_tools.setter(struct_type='field',      struct_type_desc='a single atomic cell of data')
-
-    #--- add collection ---
-    kv = {'parent_struct_name':'geolite_country2',
-          'struct_name':'geolite_country4',
-          'struct_desc':'free maxmind geoip feed',
-          'schema_name':'geoip',
-          'struct_type':'collection',
-          'field_type':None,
-          'field_len':None}
-    print md.struct_tools.setter(**kv) 
-    #assert(md.struct_tools.setter(**kv) == 1)
-
-    kv = {'struct_name':'hamlet_name',
-          'struct_desc':'n/a',
-          'schema_name':'geoip',
-          'struct_type':'field',
-          'parent_struct_name':'geolite_country2',
-          'field_type':'string',
-          'field_len': 40  }
-
-    # add new entry:
-    #assert(md.struct_tools.putter(**kv) == 1)
-    #md.struct_tools.lister()
-    #md.struct_tools.getter(struct_name='hamlet_name')
-
-    # update duplicate entry:
-    #kv['field_len'] = 100
-    #assert(md.struct_tools.putter(**kv) == 0)
-    #md.struct_tools.lister()
-    #md.struct_tools.getter(struct_name='hamlet_name')
-
-
-
-
+    return
 
 
 
@@ -148,7 +94,7 @@ class GristleMetaData(object):
         else:
             user_data_dir = db_dir
         if not os.path.exists(user_data_dir):
-            print 'data dir (%s) is missing - it will be created' % user_data_dir
+            print 'data dir (%s) missing - it will be created' % user_data_dir
             os.makedirs(user_data_dir)
 
         #class FKListener(PoolListener):
@@ -159,6 +105,7 @@ class GristleMetaData(object):
         self.db         = create_engine('sqlite:////%s' % self.fqdb_name, 
                                            logging_name='/tmp/gristle_sql.log')
         def _fk_pragma_on_connect(dbapi_con, con_record):
+            """ turns foreign key enforcement on"""
             dbapi_con.execute('pragma foreign_keys=ON')
 
         event.listen(self.db, 'connect', _fk_pragma_on_connect)
@@ -167,40 +114,6 @@ class GristleMetaData(object):
 
         self.metadata = MetaData(self.db)
         self.create_db_tables_declaratively()
-
-
-
-    #def create_db_tables_manually_with_shell(self):
-    #    """ This method only exists in order to demonstrate an alternative
-    #        method to build sqlalchemy objects using reflection.
-    #    """
-    #
-        #create_element_table = """ CREATE TABLE IF NOT EXISTS element ( 
-        #          element_name  NOT NULL, 
-        #          element_desc  NOT NULL, 
-        #          element_type  NOT NULL,
-        #          element_len   NOT NULL, 
-        #          CONSTRAINT element_pk  PRIMARY KEY (element_name), 
-        #          CONSTRAINT element_ck1 CHECK (element_len > 0)  )
-        #   """ % locals()
-        # note: envoy has a bug - so I need to put this list within a list:
-        #cmd =  [['sqlite3', self.fqdb_name, create_element_table]]
-        #r = envoy.run(cmd)
-        #print r.status_code
-        #print r.std_out
-        #print r.std_err
-
-        #--- view all table objects: ---
-        #s = envoy.run([['sqlite3', self.fqdb_name, 'select * from sqlite_master']])
-        #print s.std_out
-
-        #--- reflection method #1: ---
-        #self.element = Table('element', self.metadata, autoload=True, autoload_with=self.db)
-
-        #--- reflection method #2: ---
-        #self.metadata = MetaData(bind=self.db, reflect=True)
-        #self.element = self.metadata.tables['element']
-
 
 
     def create_db_tables_declaratively(self):
@@ -266,16 +179,21 @@ class GristleMetaData(object):
                   WHERE s.schema_name        = :schema_name               \
                     AND col.collection_name  = :collection_name           \
               """
-        s = text(sql)
-        result = self.db.execute(s, schema_name=schema_name, collection_name=collection_name)
+        select_sql = text(sql)
+        result = self.db.execute(select_sql, schema_name=schema_name, 
+                                 collection_name=collection_name)
         return result
 
 
 
 
 class SchemaTools(simplesql.TableTools):
+    """ Includes all methods for Schema table.
+    """   
 
     def table_create(self):
+        """ Creates the schema table
+        """
         #                UniqueConstraint(columns=['schema_name']),
         self.schema   = Table('schema'          ,
                         self.metadata           ,
@@ -293,102 +211,116 @@ class SchemaTools(simplesql.TableTools):
                         extend_existing=True    )
         self._table      = self.schema
         self._table_name = 'schema'
-        self._unique_constraints=['schema_name']
-        self.insert_defaulted = []
-        self.update_defaulted = []
+        self._unique_constraints = ['schema_name']
 
         return self.schema
 
 
 class ElementTools(simplesql.TableTools):
+    """ Inclues all methods for element table
+    """
 
     def table_create(self):
-        self.element = Table('element'                                                 ,
-                         self.metadata                                                 ,
-                         Column('element_name',       String(60),  nullable=False   ,
-                                                                   primary_key=True),
-                         Column('element_desc',       String(255), nullable=False)   ,
-                         Column('element_type',       String(10),  nullable=False)  ,
-                         Column('element_len' ,       Integer,     nullable=True)   ,
-                         CheckConstraint ('element_len > 0 ', name='element_ck1')      ,
-                         extend_existing=True )
+        """ Creates the 'element' table.
+        """
+        self.element = Table('element'                                      ,
+                       self.metadata                                        ,
+                       Column('element_name', String(60),  nullable=False   ,
+                                                           primary_key=True),
+                       Column('element_desc', String(255), nullable=False)  ,
+                       Column('element_type', String(10),  nullable=False)  ,
+                       Column('element_len' , Integer,     nullable=True)   ,
+                       CheckConstraint ('element_len > 0 ', 
+                                        name='element_ck1')    ,
+                       extend_existing=True )
 
         self._table      = self.element
         self._table_name = 'element'
-        self.insert_defaulted = []
-        self.update_defaulted = []
 
         return self._table
 
 
 class CollectionTools(simplesql.TableTools):
+    """ Includes all methods for collection table.
+    """
 
     def table_create(self):
+        """ Handles creation of collection table.
+        """
 
         self.collection = Table('collection',
-                         self.metadata,
-                         Column('collection_id'   , Integer       , nullable=False   , primary_key=True),
-                         Column('schema_id'       , Integer       , nullable=False  ),
-                         Column('collection_name' , String(40)    , nullable=False  ),
-                         Column('collection_desc' , String(256)   , nullable=False  ),
-                         UniqueConstraint('schema_id', 'collection_name', name='collection_uk1'),
-                         ForeignKeyConstraint(columns=['schema_id'], 
-                                              refcolumns=['schema.schema_id'],
-                                              name='collection_fk1') ,
-                         extend_existing=True )
+              self.metadata,
+              Column('collection_id'   , Integer       , nullable=False   , 
+                     primary_key=True),
+              Column('schema_id'       , Integer       , nullable=False  ),
+              Column('collection_name' , String(40)    , nullable=False  ),
+              Column('collection_desc' , String(256)   , nullable=False  ),
+              UniqueConstraint('schema_id', 'collection_name', 
+                               name='collection_uk1'),
+              ForeignKeyConstraint(columns=['schema_id'], 
+                                   refcolumns=['schema.schema_id'],
+                                   name='collection_fk1') ,
+                                   extend_existing=True )
         self._table      = self.collection
         self._table_name = 'collection'
-        self.insert_defaulted = []
-        self.update_defaulted = []
         return self._table
 
 
 
 
 class FieldTools(simplesql.TableTools):
+    """ Includes all methods used to work with field table
+    """
 
     def table_create(self):
+        """ Creates the 'field' table.
+        """
 
-        self.field     = Table('field',
-                         self.metadata,
-                         Column('field_id'        , Integer       , nullable=False   , primary_key=True),
-                         Column('collection_id'   , Integer       , nullable=False  ),
-                         Column('field_name'      , String(40)    , nullable=False  ),
-                         Column('field_desc'      , String(256)   , nullable=True   ),
-                         Column('field_order'     , Integer       , nullable=True   ),
-                         Column('field_type'      , String(10)    , nullable=True   ),
-                         Column('field_len'       , Integer       , nullable=True   ),
-                         Column('element_name'    , String(60)    , nullable=True   ),
-                         UniqueConstraint('collection_id', 'field_name', name='field_uk1'),
-                         ForeignKeyConstraint(columns=['collection_id'],
-                                              refcolumns=['collection.collection_id'],
-                                              name='field_fk1'),
-                         ForeignKeyConstraint(columns=['element_name'],
-                                              refcolumns=['element.element_name'],
-                                              name='field_fk2'),
-                         CheckConstraint('field_len > 0',
-                                         name='field_len_ck1'),
-                         CheckConstraint("field_type in ('string','int','date','time','timestamp')",
-                                         name='field_len_ck2'),
-                         CheckConstraint("( (element_name IS NULL AND field_type IS NOT NULL)     \
-                                           OR (element_name IS NOT NULL AND field_type IS NULL)   \
-                                          ) ",
-                                         name='field_ck3') ,
-                         CheckConstraint("  (field_type IS NULL AND field_len IS NULL)            \
-                                         OR (field_type  = 'string' AND field_len IS NOT NULL)    \
-                                         OR (field_type <> 'string' AND field_len IS NULL)  ",
-                                         name='field_ck4') ,
-                         extend_existing=True )
+        self.field = Table('field',
+            self.metadata,
+            Column('field_id'        , Integer     , nullable=False   ,
+                   primary_key=True),
+            Column('collection_id'   , Integer     , nullable=False  ),
+            Column('field_name'      , String(40)  , nullable=False  ),
+            Column('field_desc'      , String(256) , nullable=True   ),
+            Column('field_order'     , Integer     , nullable=True   ),
+            Column('field_type'      , String(10)  , nullable=True   ),
+            Column('field_len'       , Integer     , nullable=True   ),
+            Column('element_name'    , String(60)  , nullable=True   ),
+            UniqueConstraint('collection_id', 
+                   'field_name', 
+                   name='field_uk1'),
+            ForeignKeyConstraint(columns=['collection_id'],
+                   refcolumns=['collection.collection_id'],
+                   name='field_fk1'),
+            ForeignKeyConstraint(columns=['element_name'],
+                   refcolumns=['element.element_name'],
+                   name='field_fk2'),
+            CheckConstraint('field_len > 0',
+                   name='field_len_ck1'),
+            CheckConstraint("field_type in ('string','int','date','time','timestamp')",
+                   name='field_len_ck2'),
+            CheckConstraint("( (element_name IS NULL AND field_type IS NOT NULL) \
+                   OR (element_name IS NOT NULL AND field_type IS NULL) ) ",
+                   name='field_ck3') ,
+            CheckConstraint("  (field_type IS NULL AND field_len IS NULL)   \
+                   OR (field_type  = 'string' AND field_len IS NOT NULL)    \
+                   OR (field_type <> 'string' AND field_len IS NULL)  ",
+                   name='field_ck4') ,
+            extend_existing=True )
         self._table      = self.field
         self._table_name = 'field'
-        self.insert_defaulted = []
-        self.update_defaulted = []
+        self.instance    = None # assigned in InstanceTools
         return self._table
 
 
 class InstanceTools(simplesql.TableTools):
+    """ Includes all methods for working with 'instance' table.
+    """
 
     def table_create(self):
+        """ Creates the 'instance' table.
+        """
         self.instance = Table('instance' ,
              self.metadata           ,
              Column('instance_id'    ,
@@ -409,15 +341,17 @@ class InstanceTools(simplesql.TableTools):
 
         self._table      = self.instance
         self._table_name = 'instance'
-        self.insert_defaulted = []
-        self.update_defaulted = []
         return self._table
 
 
 
 class AnalysisProfileTools(simplesql.TableTools):
+    """ Includes all methods for the 'analysis_profile' table.
+    """
 
     def table_create(self):
+        """ Creates 'analysis_profile' table.
+        """
         self.analysis_profile = Table('analysis_profile' ,
              self.metadata           ,
              Column('analysis_profile_id'    ,
@@ -433,7 +367,8 @@ class AnalysisProfileTools(simplesql.TableTools):
              Column('analysis_profile_name'  ,
                     String(255)      ,
                     nullable=False  ),
-             UniqueConstraint('instance_id','collection_id','analysis_profile_name', 
+             UniqueConstraint('instance_id','collection_id',
+                              'analysis_profile_name', 
                               name='analysis_profile_k1'),
              ForeignKeyConstraint(columns=['instance_id'],
                                   refcolumns=['instance.instance_id'],
@@ -445,15 +380,17 @@ class AnalysisProfileTools(simplesql.TableTools):
 
         self._table      = self.analysis_profile
         self._table_name = 'analysis_profile'
-        self.insert_defaulted = []
-        self.update_defaulted = []
         return self._table
 
 
 
 class AnalysisTools(simplesql.TableTools):
+    """ Includes all methods for working with 'analysis' table.
+    """
 
     def table_create(self):
+        """ Creates the 'analysis' table.
+        """
         # issue: default relies on python - not database, so could be bypassed
         # by raw sql inserts.
         #            onupdate=datetime.datetime.now()   ,
@@ -481,25 +418,29 @@ class AnalysisTools(simplesql.TableTools):
                     String(20)       ,
                     nullable=False  ),
              UniqueConstraint('instance_id','analysis_timestamp', 
-                              name='analysis_uk1'),
+                    name='analysis_uk1'),
              ForeignKeyConstraint(columns=['instance_id'],
-                                  refcolumns=['instance.instance_id'],
-                                  name='analysis_fk1') ,
+                    refcolumns=['instance.instance_id'],
+                    name='analysis_fk1') ,
              ForeignKeyConstraint(columns=['analysis_profile_id'],
-                                  refcolumns=['analysis_profile.analysis_profile_id'],
-                                  name='analysis_fk2') ,
+                    refcolumns=['analysis_profile.analysis_profile_id'],
+                    name='analysis_fk2') ,
              extend_existing=True    )
 
         self._table      = self.analysis
         self._table_name = 'analysis'
-        self.insert_defaulted = ['analysis_timestamp']
-        self.update_defaulted = ['analysis_timestamp']
+        self.insert_defaulted.append('analysis_timestamp')
+        self.update_defaulted.append('analysis_timestamp')
         return self._table
 
 
 class CollectionAnalysisTools(simplesql.TableTools):
+    """ Includes all methods for the 'collection_analysis' table.
+    """
 
     def table_create(self):
+        """ Creates the 'collection_analysis' table.
+        """
         self.collection_analysis = Table('collection_analysis' ,
              self.metadata           ,
              Column('ca_id'          ,
@@ -522,26 +463,28 @@ class CollectionAnalysisTools(simplesql.TableTools):
                     Integer          ,
                     nullable=True   ),
              UniqueConstraint('analysis_id','collection_id', 
-                              name='collection_analysis_uk1'),
+                    name='collection_analysis_uk1'),
              ForeignKeyConstraint(columns=['analysis_id'],
-                                  refcolumns=['analysis.analysis_id'],
-                                  name='collection_analysis_fk1') ,
+                    refcolumns=['analysis.analysis_id'],
+                    name='collection_analysis_fk1') ,
              ForeignKeyConstraint(columns=['collection_id'],
-                                  refcolumns=['collection.collection_id'],
-                                  name='collection_analysis_fk2') ,
+                    refcolumns=['collection.collection_id'],
+                    name='collection_analysis_fk2') ,
              extend_existing=True    )
 
         self._table      = self.collection_analysis
         self._table_name = 'collection_analysis'
-        self.insert_defaulted = []
-        self.update_defaulted = []
         return self._table
 
 
 
 class FieldAnalysisTools(simplesql.TableTools):
+    """ Includes all methods for the 'field_analysis' table.
+    """
 
     def table_create(self):
+        """ Creates the 'field_analysis' table.
+        """
         self.field_analysis = Table('field_analysis' ,
              self.metadata           ,
              Column('fa_id'          ,
@@ -571,15 +514,17 @@ class FieldAnalysisTools(simplesql.TableTools):
 
         self._table      = self.field_analysis
         self._table_name = 'field_analysis'
-        self.insert_defaulted = []
-        self.update_defaulted = []
         return self._table
 
 
 
 class FieldAnalysisValueTools(simplesql.TableTools):
+    """ Includes all methods for the 'field_analysis' table.
+    """
 
     def table_create(self):
+        """ Creates the 'field_analysis' table.
+        """
         self.field_analysis_value = Table('field_analysis_value' ,
              self.metadata           ,
              Column('fav_id'         ,
@@ -604,13 +549,10 @@ class FieldAnalysisValueTools(simplesql.TableTools):
 
         self._table      = self.field_analysis_value
         self._table_name = 'field_analysis_value'
-        self.insert_defaulted = []
-        self.update_defaulted = []
         return self._table
 
 
 
 
 if __name__ == '__main__':
-   main()
-
+    main()

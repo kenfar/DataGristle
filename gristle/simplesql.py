@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-""" Purpose of this module is to provide a small set of simple common sql functions
+""" Purpose of this module is to provide a small set of simple common sql
+    functions
 
     Issues:
-       - Currently when the setter attempts to update a row with integrity violations
-         it fails to raise IntegrityError.  This violation is determined manually,
-         and IntegrityError is manually raised instead.
+       - Currently when the setter attempts to update a row with integrity
+         violations it fails to raise IntegrityError.  This violation is 
+         determined manually, and IntegrityError is manually raised instead.
 
     Dependencies:
        - sqlalchemy (0.7 - though earlier versions will probably work)
@@ -15,21 +16,24 @@
 """
 
 from __future__ import division
-import os
-import sys
-from sqlalchemy import (exc, update)
+from sqlalchemy import exc
 from sqlalchemy import UniqueConstraint
-from pprint import pprint
+#from pprint import pprint
 
 
 
 
 class TableTools(object):
-    """
+    """ Provides generic and simple tools for managing data within a table.
     """
 
     def __init__(self, metadata):
         self.metadata = metadata
+        self._table       = None         
+        self._table_name  = None        
+        self._unique_constraints = None 
+        self.insert_defaulted = []       # cols added here aren't inserted
+        self.update_defaulted = []       # cols added here aren't updated
 
 
     def deleter(self, **kw):
@@ -40,17 +44,18 @@ class TableTools(object):
             dangerous.
             Note - it may not delete anything if an insufficient unique
             key is provided.
+            Uses 'generative sql' to build up query.
         """
         try:
-            d = self._table.delete()
-            d = self._create_where(d, kw)
-            result = d.execute()
+            gener_sql = self._table.delete()
+            gener_sql = self._create_where(gener_sql, kw)
+            result = gener_sql.execute()
         except KeyError:
             # could mean row was not there
             # could mean that part of key was missing?
             return 0
 
-        assert(result.rowcount in [0,1])
+        assert(result.rowcount in [0, 1])
         return result.rowcount
 
 
@@ -58,12 +63,13 @@ class TableTools(object):
         """ Requires the key of the row
             Returns a single row if found, otherwise returns None
             Will only work on tables with primary keys.
+            Uses 'generative sql' to build up query.
         """
-        s      = self._table.select()
-        s      = self._create_where(s, kw)
-        result = s.execute()
-        rows   = result.fetchall()
-        assert(len(rows) in [0,1])
+        gener_sql = self._table.select()
+        gener_sql = self._create_where(gener_sql, kw)
+        result    = gener_sql.execute()
+        rows      = result.fetchall()
+        assert(len(rows) in [0, 1])
         try:
             return rows[0]
         except IndexError:   # no rows found
@@ -76,24 +82,26 @@ class TableTools(object):
             unique constraint.  
             Returns a single row if found, otherwise returns None
             No longer being used - but kept around just in case
+            Uses 'generative sql' to build up query.
         """
-        s      = self._table.select()
-        uk     = self._get_unique_constraints()
-        s      = self._create_where(s, kw)
-        result = s.execute()
-        rows   = result.fetchall()
+        gener_sql = self._table.select()
+        #uk       = self._get_unique_constraints()
+        gener_sql = self._create_where(gener_sql, kw)
+        result    = gener_sql.execute()
+        rows      = result.fetchall()
         try:
             return rows[0].id
         except AttributeError:  # no rows found
             return None
 
 
-    def lister(self, **kw):
+    #def lister(self, **kw):
+    def lister(self):
         """ Returns all rows for the table, not in any particular order.
         """
-        s      = self._table.select()
-        result = s.execute()
-        rows   = result.fetchall()
+        sel_sql  = self._table.select()
+        result   = sel_sql.execute()
+        rows     = result.fetchall()
         return rows
 
 
@@ -114,68 +122,78 @@ class TableTools(object):
 
         kw_insert = {}
         #broken code - not sure what it did exactly!
-        #for key in kw.keys():
-        #    if kw[key] not in self.insert_defaulted:
-        #        kw_insert[key] = kw[key]
+        for key in kw.keys():
+            if kw[key] not in self.insert_defaulted:
+                kw_insert[key] = kw[key]
 
         try:
-           i = self._table.insert()
-           result = i.execute(kw_insert)
-           #print kw_insert
-           if result.rowcount == 0:
-               raise KeyError                                # by missing column
-           else:
-               return  result.lastrowid
-        except exc.IntegrityError, e:
-           # possibly caused by violation of primary key constraint
-           # possibly caused by violation of check or fk key constraint
-           print 'insert exception'
-           print e
-           kw_update = {}
-           #   broken code - not sure what it does exactly
-           #for key in kw.keys():
-           #   if kw[key] not in self.update_defaulted:
-           #       kw_update[key] = kw[key]
-           u      = self._table.update()
-           u      = self._create_where(u, kw_update)
-           print kw_update
-           result = u.execute(kw_update)
-           if result.rowcount == 0:                          # seems that this is the only way to catch
-               print 'update exception'
-               print e                                       # might want to get rid of this
-               print result
-               raise exc.IntegrityError (u, kw_update, None) # usually constraint violations 
-           return 0
+            ins_sql = self._table.insert()
+            result = ins_sql.execute(kw_insert)
+            #print kw_insert
+            if result.rowcount == 0:
+                raise KeyError    # by missing column
+            else:
+                return  result.lastrowid
+        except exc.IntegrityError, except_detail:
+            # possibly caused by violation of primary key constraint
+            # possibly caused by violation of check or fk key constraint
+            # print 'insert exception'
+            # print e
+            kw_update = {}
+            #   broken code - not sure what it does exactly
+            for key in kw.keys():
+                if kw[key] not in self.update_defaulted:
+                    kw_update[key] = kw[key]
+            upd_sql      = self._table.update()
+            upd_sql      = self._create_where(upd_sql, kw_update)
+            #print kw_update
+            result = upd_sql.execute(kw_update)
+            if result.rowcount == 0:       # this is the only way to catch
+                print 'update exception'
+                print except_detail        # might want to get rid of this
+                print result
+                # usually constraint violations 
+                raise exc.IntegrityError (upd_sql, kw_update, None) 
+            return 0
 
 
 
 
-    def _create_where(self, sql, kw):
-        """ Creates where condition necessary to identify a single row based on primary
-            key or unique key.
+    def _create_where(self, sql, filter_col):
+        """ Creates where condition necessary to identify a single row based 
+            on primary key or unique key.
+            Arguments:
+               - sql = sqlalchemy sql object
+               - filter_col = column to be used for selecting a row
+            Returns:
+               - where condition string
         """
-        #print '\nprovided kw: ' +  ','.join(kw)
+        #print '\nprovided filter_col: ' +  ','.join(filter_col)
         #print self._table.primary_key
         where     = None
         technique = 'pk'
         for column in self._table.c:
-             if column.name in self._table.primary_key:
-                 if column.name not in kw:
-                     technique = 'uk'
+            if column.name in self._table.primary_key:
+                if column.name not in filter_col:
+                    technique = 'uk'
         #print technique
 
         if technique == 'pk':
             for column in self._table.c:
                 if column.name in self._table.primary_key:
-                    where = sql.where(self._table.c[column.name] == kw[column.name])
+                    where = sql.where(self._table.c[column.name] 
+                                      == filter_col[column.name])
         elif technique == 'uk':
             for constraint in self._get_unique_constraints():
-                #print '   constraint:   %s' %  constraint
-                #print '       syscat:   %s' %  self._table.c[constraint]
-                #print '       kw:       %s' %  ','.join(kw)
-                #print '       kw[sub]:  %s' %  kw[constraint]   # this line will not show up!
+                #print '   constraint:         %s' %  constraint
+                #print '     syscat:           %s' %  self._table.c[constraint]
+                #print '     filter_col:       %s' %  ','.join(filter_col)
+                #print '     filter_col[sub]:  %s' %  filter_col[constraint] 
                 #print 'Constraint:  %s' % constraint
-                where = sql.where(self._table.c[constraint] == kw[constraint])
+                #print 'constraint: %s' % self._table.c[constraint]
+                #print 'filter_col: %s' % filter_col[constraint]
+                where = sql.where(self._table.c[constraint] 
+                                  == filter_col[constraint])
             if where is None:
                 if not self._get_unique_constraints():
                     raise KeyError, 'no pk provided but table lacks a uk'
@@ -189,6 +207,8 @@ class TableTools(object):
 
 
     def _get_unique_constraints(self):
+        """ Returns list of constraints for instance table
+        """
         results = []
         for constraint in self._table.constraints:
             if isinstance(constraint, UniqueConstraint):

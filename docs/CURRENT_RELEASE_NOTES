@@ -86,29 +86,29 @@ Overall Testing status:
 Module status:
 ===============================================================================
 field_determinator.py           -- v0.45
-	- test coverage:		    -- 
-        - unittest status:		-- 100%
-        - pylint status:		-- 10
+	- test coverage:        -- 
+        - unittest status:	-- 100%
+        - pylint status:        -- 10
 
 field_math.py                   -- v0.45
-	- test coverage:		    -- ~50%
-        - unittest status:		-- 100%
-        - pylint status:		-- 9.42
+	- test coverage:        -- ~50%
+        - unittest status:	-- 100%
+        - pylint status:	-- 9.42
 
 field_misc.py                   -- v0.45
-	- test coverage:		    -- ~50%
-        - unittest status:		-- 100%
-        - pylint status:		-- 9.69
+	- test coverage:        -- ~50%
+        - unittest status:	-- 100%
+        - pylint status:	-- 9.69
 
 field_type.py                   -- v0.45
-	- test coverage:		    -- ~50%
-        - unittest status:		-- 100%
-        - pylint status:		-- 9.86
+	- test coverage:        -- ~50%
+        - unittest status:	-- 100%
+        - pylint status:	-- 9.86
 
 file_type.py                    -- v0.45
-	- test coverage:		    -- ~50%
-        - unittest status:		-- 100%
-        - pylint status:		-- 9.44
+	- test coverage:        -- ~50%
+        - unittest status:	-- 100%
+        - pylint status:	-- 9.44
 
 metadata.py                     -- v0.45
     - test coverage:            -- 100%
@@ -122,7 +122,7 @@ preferences.py                  -- v0.45
 simplesql.py                    -- v0.45
     - test coverage:            -- 100%
         - unittest status:      -- FAIL
-        - pylint status:        -- -2.28
+        - pylint status:        -- 10.0
     
 
 ===============================================================================
