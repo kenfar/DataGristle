@@ -39,16 +39,16 @@ def suite():
 class TestSurrogateKeyTable(unittest.TestCase):
 
     def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
+        self.tempdir       = tempfile.mkdtemp()
 
         self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
         self.db            = create_engine('sqlite:////%s' % self.fqdb_name,
                                            logging_name='/tmp/gristle_sql.log')
-        self.db.echo                = False
-        self.conn                   = self.db.connect()   # only needed by some statements
-        self.metadata               = MetaData(self.db)
-        self.person_tools           = PersonTools(self.metadata)
-        self.person                 = self.person_tools.table_create()
+        self.db.echo       = False
+        self.conn          = self.db.connect()   # only needed by some statements
+        self.metadata      = MetaData(self.db)
+        self.person_tools  = PersonTools(self.metadata)
+        self.person        = self.person_tools.table_create()
         self.metadata.create_all()
 
     def tearDown(self):
@@ -69,6 +69,7 @@ class TestSurrogateKeyTable(unittest.TestCase):
             self.assertIn(person.person_name, ['joe','bob','jim'])
 
     def test_setter_null_constraint_violation(self):
+        # is missing mandatory column 'person_desc'
         self.assertRaises(exc.IntegrityError, self.person_tools.setter, person_name='bob')
 
     def test_updating_without_id(self):
