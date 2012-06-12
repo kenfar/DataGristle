@@ -96,8 +96,14 @@ class TableTools(object):
 
 
     #def lister(self, **kw):
-    def lister(self):
+    def lister(self, **kw):
         """ Returns all rows for the table, not in any particular order.
+            Inputs:
+                - assumes some args, but ignores them
+                - these are only included because of the way that these functions
+                  are called.
+            Outputs:
+                - all rows & columns for table
         """
         sel_sql  = self._table.select()
         result   = sel_sql.execute()
@@ -140,7 +146,6 @@ class TableTools(object):
             # print 'insert exception'
             # print e
             kw_update = {}
-            #   broken code - not sure what it does exactly
             for key in kw.keys():
                 if kw[key] not in self.update_defaulted:
                     kw_update[key] = kw[key]

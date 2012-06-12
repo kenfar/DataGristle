@@ -298,7 +298,7 @@ class FieldTools(simplesql.TableTools):
                    name='field_fk2'),
             CheckConstraint('field_len > 0',
                    name='field_len_ck1'),
-            CheckConstraint("field_type in ('string','int','date','time','timestamp')",
+            CheckConstraint("field_type in ('string','int','date','time','timestamp','float')",
                    name='field_len_ck2'),
             CheckConstraint("( (element_name IS NULL AND field_type IS NOT NULL) \
                    OR (element_name IS NOT NULL AND field_type IS NULL) ) ",

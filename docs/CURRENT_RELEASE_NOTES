@@ -1,13 +1,13 @@
 ===============================================================================
-Version:	 0.45
+Version:	 0.46
 ===============================================================================
 
 ===============================================================================
 Release Status
 ===============================================================================
-    - test on python 2.7            - done
-    - run pylint                    - done
-    - test on python 2.6
+    - test on python 2.7            -
+    - run pylint                    -
+    - test on python 2.6            -
     - test automatically installing:
         - sqlalchemy
         - etc
@@ -15,7 +15,7 @@ Release Status
 ===============================================================================
 Primary Changes To Do:
 ===============================================================================
-    - pypi
+    - pypi                          -
 	- add appropriate precision to means, etc
 	- setup testing?
 
@@ -23,52 +23,20 @@ Primary Changes To Do:
 ===============================================================================
 Primary Changes:
 ===============================================================================
-    - general:
-		- Changed division to future 
-		- Added quite a bit of tests to test harnesses
     - gristle/metadata.py
-        - initial appearance
-        - added metadata library for the rest of the modules & scripts to store 
-          results within
-        - not yet integrated in a way that's useful however
+        - resolved pep8 issues   - done
+        - fixed minor errors     - done
     - gristle/simplesql.py
-        - initial appearance
-        - added library to minimize SQL necessary for testing & simple queries
-    - gristle/preferences.py
-        - initial appearance
-        - added library to manage user configuration compliant with xdg spec
-    - scripts/gristle_metadata.py
-        - initial appearance
-        - add api layer to manually CRUD metadata
-    - scripts/gristle_validator.py
-        - initial appearance
-        - only provides ability to find records with invalid field number in 
-          this release
-	- gristle/field_misc.py 
-		- ignores some garbage data, returns counts of bad rows found
- 		- .strip() values put into frequency distributions
-        - field_determinator.py 
-		- handles bad data counts from field_misc.py
-        - gristle_determinator.py
- 		- added bad field count
-		- widened field value width
-	- scripts/gristle_file_converter.py
-		- cleaned up the code
-		- many misc improvements
-        - gristle_freaker.py
-                - completely rewritten - added ability to handle multiple
-                  columns & sampling, also added test harness.
-	- scripts/gristle_graphviz_generator.py
-		- pulled out - it's just too immature
+        - resolved pep8 issues   - done
+        - fixed minor errors     - done
+    - script/gristle_metadata.py
+        - test with more data
+    - misc:
+        - improve documentation - 
 
 ===============================================================================
 Overall Testing status:
 ===============================================================================
-	- linux ubuntu 10.10 with python 2.6.6
-		- script unit tests
-            - ?
-		- module unit tests
-			- ?
 	- linux ubuntu 12.04 with python 2.7
 		- script unit tests
 			- done
@@ -76,53 +44,48 @@ Overall Testing status:
 			- done (1 failing)
 		- setup tests
 			- ?
-	- mac os with python 2.5.4:
-		- script unit tests
-            - ?
-		- module unit tests
-			- ?
 
 ===============================================================================
 Module status:
 ===============================================================================
-field_determinator.py           -- v0.45
+field_determinator.py       -- v0.45
 	- test coverage:        -- 
         - unittest status:	-- 100%
-        - pylint status:        -- 10
+        - pylint status:    -- 10
 
-field_math.py                   -- v0.45
+field_math.py               -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.42
 
-field_misc.py                   -- v0.45
+field_misc.py               -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.69
 
-field_type.py                   -- v0.45
+field_type.py               -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.86
 
-file_type.py                    -- v0.45
+file_type.py                -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.44
 
-metadata.py                     -- v0.45
-    - test coverage:            -- 100%
-        - unittest status:      -- 100%
-        - pylint status:        -- 0.65
+metadata.py                 -- v0.46
+    - test coverage:        -- 100%
+        - unittest status:  -- 100%
+        - pylint status:    -- 6.53
     
-preferences.py                  -- v0.45
-    - test coverage:            -- 100%
-        - pylint status:        -- 7.50
+preferences.py              -- v0.45
+    - test coverage:        -- 100%
+        - pylint status:    -- 7.50
     
-simplesql.py                    -- v0.45
-    - test coverage:            -- 100%
-        - unittest status:      -- FAIL
-        - pylint status:        -- 10.0
+simplesql.py                -- v0.46
+    - test coverage:        -- 100%
+        - unittest status:  -- 100%
+        - pylint status:    -- 10.0
     
 
 ===============================================================================
