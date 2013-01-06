@@ -1,0 +1,271 @@
+#!/usr/bin/env python
+""" Used to identify characteristics of a file
+    contains:
+      - main function
+      - get_opts_and_args function
+
+    To do:
+      - tell user about -h option on arg error
+
+    See the file "LICENSE" for the full license governing this code. 
+    Copyright 2011 Ken Farmer
+"""
+
+#--- standard modules ------------------
+from __future__ import division
+import sys
+import os
+import optparse
+
+#--- gristle modules -------------------
+#sys.path.insert(0, '../')     # allows running out of project structure
+#sys.path.insert(0,'../../')  # allows running out of project structure
+sys.path.append('../')     # allows running out of project structure
+sys.path.append('../../')  # allows running out of project structure
+
+import gristle.file_type           as file_type 
+import gristle.field_determinator  as field_determinator
+
+
+QUOTE_DICT = {}
+QUOTE_DICT[0] = 'QUOTE_MINIMAL'
+QUOTE_DICT[1] = 'QUOTE_ALL'
+QUOTE_DICT[2] = 'QUOTE_NONNUMERIC'
+QUOTE_DICT[3] = 'QUOTE_NONE'
+
+#import pprint as pp
+#from pprint import pprint as pp
+#pp(sys.path)
+
+
+#------------------------------------------------------------------------------
+# Command-line section 
+#------------------------------------------------------------------------------
+def main():
+    """ Allows users to directly call determinator from command line
+    """
+    (opts, files) = get_opts_and_args()
+
+    if opts.output:
+        outfile   = open(opts.output, 'w')
+    else:
+        outfile   = sys.stdout
+
+    my_file       = file_type.FileTyper(files[0],
+                                       opts.delimiter,
+                                       opts.recdelimiter,
+                                       opts.hasheader)
+    try:
+        my_file.analyze_file()
+    except file_type.IOErrorEmptyFile:
+        return 1
+
+    if not opts.silent:
+        print_file_info(my_file, outfile)
+
+    if opts.brief:
+        return 0
+
+    # Get Analysis on ALL Fields:
+    my_fields = field_determinator.FieldDeterminator(files[0],
+                                  my_file.format_type,
+                                  my_file.field_cnt,
+                                  my_file.has_header,
+                                  my_file.dialect,
+                                  my_file.delimiter,
+                                  opts.recdelimiter,
+                                  opts.verbose)
+    
+    if opts.column_type_overrides:
+        assert max(opts.column_type_overrides) < my_file.field_cnt,   \
+           "ERROR: column_type_override references non-existing column_number"
+
+    my_fields.analyze_fields(opts.column_number, 
+                             opts.column_type_overrides,
+                             opts.number)
+
+    if not opts.silent:
+        print_field_info(my_fields, opts.column_number, outfile) 
+
+    if opts.output:
+        outfile.close()
+
+    return 0     
+
+
+def print_file_info(my_file, outfile):
+    """ Prints information about the file structure
+    """
+    w = outfile.write
+    w('\n')
+    w('File Structure:\n')
+    w('  format type:       %s\n'     % my_file.format_type)
+    w('  field cnt:         %d\n'     % my_file.field_cnt)
+    w('  record cnt:        %d\n'     % my_file.record_cnt)
+    w('  has header:        %s\n'     % my_file.has_header)
+
+    w('  delimiter:         %-6s  \n' % my_file.delimiter)
+    w('  csv quoting:       %-6s  \n' % my_file.csv_quoting)
+    w('  skipinitialspace:  %r    \n' % my_file.dialect.skipinitialspace)
+    w('  quoting:           %-6s  \n' % QUOTE_DICT[my_file.dialect.quoting])
+    w('  doublequote:       %-6r  \n' % my_file.dialect.doublequote)
+    w('  quotechar:         %-6s  \n' % my_file.dialect.quotechar)
+    w('  lineterminator:    %r    \n' % my_file.dialect.lineterminator)
+    w('  escapechar:        %-6r  \n' % my_file.dialect.escapechar)
+    w('\n')
+
+def print_field_info(my_fields, column_number, outfile):
+    """ Prints information about each field within the file.
+    """
+    w = outfile.write
+    w('\n')
+    w('Fields Analysis Results: \n')
+    for sub in range(my_fields.field_cnt):
+        if column_number is not None \
+        and sub != column_number:
+            continue
+
+        w('\n')
+        w('      ------------------------------------------------------\n')
+        w('      Name:             %-20s \n' %  my_fields.field_names[sub])
+        w('      Field Number:     %-20s \n' %  sub)
+        w('      Wrong Field Cnt:  %-20s \n' %  my_fields.field_rows_invalid[sub])
+        if my_fields.field_trunc[sub]:
+            w('      Data Truncated: analysis will be partial\n')
+
+        w('      Type:             %-20s \n' %  my_fields.field_types[sub])
+        w('      Min:              %-20s \n' %  my_fields.field_min[sub])
+        w('      Max:              %-20s \n' %  my_fields.field_max[sub])
+        w('      Unique Values:    %-20d \n' %  len(my_fields.field_freqs[sub]))
+        w('      Known Values:     %-20d \n' %  len(my_fields.get_known_values(sub)))
+
+        if my_fields.field_types[sub] in ('integer','float'):
+            w('      Mean:             %-20s \n' % my_fields.field_mean[sub])
+            w('      Median:           %-20s \n' % my_fields.field_median[sub])
+            w('      Variance:         %-20s \n' % my_fields.variance[sub])
+            w('      Std Dev:          %-20s \n' % my_fields.stddev[sub])
+        elif my_fields.field_types[sub] == 'string':
+            w('      Case:             %-20s \n' %   my_fields.field_case[sub])
+            w('      Min Length:       %-20s \n' %   my_fields.field_min_length[sub])
+            w('      Max Length:       %-20s \n' %   my_fields.field_max_length[sub])
+            w('      Mean Length:      %-20.2f\n' %  my_fields.field_mean_length[sub])
+
+        #for key in my_fields.field_freqs[0]:
+        #    print 'key: %s           value: %s' % (key, my_fields.field_freqs[0][key])
+
+        key_sub = 0
+        val_sub = 1
+        if my_fields.field_freqs[sub] is not None:
+            sorted_list = my_fields.get_top_freq_values(sub, limit=10)
+            if sorted_list[key_sub][val_sub] == 1:
+                w('      Top Values not shown - all values are unique\n')
+            else:
+                w('      Top Values: \n')
+                for pair in sorted_list:
+                    w('         %-40s x %d occurrences\n' % \
+                          ( pair[key_sub], pair[val_sub]))
+    
+
+
+def get_opts_and_args():
+    """ gets opts & args and returns them
+        run program with -h or --help for command line args
+    """
+    use = ("%prog determines file structure then analyzes contents of each "
+           "column.\n"
+           "Once complete it then prints the results for the user\n"
+           "\n"
+           "Usage: %prog [file] [misc options]"
+           "\n")
+    parser = optparse.OptionParser(usage = use)
+    parser.add_option('-o', '--output',
+           help='Specify output file.  Default is stdout.')
+    parser.add_option('-q', '--quiet',
+           action='store_false',
+           dest='verbose',
+           default=True,
+           help='provides less detail')
+    parser.add_option('-v', '--verbose',
+           action='store_true',
+           dest='verbose',
+           default=True,
+           help='provides more detail')
+    parser.add_option('-s', '--silent',
+           action='store_true',
+           dest='silent',
+           default=False,
+           help='performs operation with no output')
+    parser.add_option('-b', '--brief',
+           action='store_true',
+           dest='brief',
+           default=False,
+           help='skips field-level analysis')
+    parser.add_option('-c', '--column',
+           type=int,
+           dest='column_number',
+           help=('Restrict analysis to a single column (field number)'
+                 ' - using a zero-offset'))
+    parser.add_option('-n', '--number',
+           type=int,
+           help='Specify a maximum number of entries for freq dictionary. '
+                 'This is applied separately to each column.  The default is'
+                 ' set at approximately 1 million entries. ')
+    parser.add_option('-d', '--delimiter',
+           help=('Specify a quoted field delimiter.'
+                 'This is essential for multi-column delimiters.'))
+    parser.add_option('--recdelimiter',
+           help='Specify a quoted end-of-record delimiter. ')
+    parser.add_option('--hasheader',
+           default=False,
+           action='store_true',
+           help='Indicates that there is a header in the file. ')
+    parser.add_option('-T', '--types',
+           type='string',
+           dest='column_types',
+           help=('Allows manual specification of field types: integer, float, '
+                 'string, timestamp. Use format: "colno:type, colno:type, '
+                 ' colno:type"'))
+
+    (opts, files) = parser.parse_args()
+
+    # validate opts
+    if len(files) == 0:
+        parser.error("no filename was provided")
+    elif len(files) > 1:
+        parser.error("multiple files not yet supported")
+    elif not os.path.exists(files[0]):
+        parser.error("filename %s could not be accessed" % files[0])
+
+    if opts.brief and opts.column_number:
+        parser.error('must not specify both brevity and column number')
+
+    if opts.silent:
+        opts.verbose = False
+
+    if (opts.number is not None 
+    and  opts.number < 1000):
+        parser.error('please specify a number between 1001 and 1000000000')
+
+    # set up column_type_overrides
+    opts.column_type_overrides = {}
+    if opts.column_types:
+        for col_type_pair in opts.column_types.split(','):
+            try:
+                (col_no, col_type) = col_type_pair.split(':')
+                try:
+                    int(col_no)
+                except ValueError:
+                    parser.error('invalid column number for types option')
+                if col_type not in ['integer', 'float', 'string', 'timestamp']:
+                    parser.error('invalid type for types option')
+            except ValueError:
+                parser.error('invalid format for types option')
+            opts.column_type_overrides[int(col_no)] = col_type
+
+    return opts, files
+
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
