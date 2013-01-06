@@ -38,6 +38,7 @@ csv files.
     ```pip install datagristle```
 
     ```easy_install datagristle```
+
    * Or download tarball from [pypi](http://pypi.python.org/pypi/datagristle)
 
 
