@@ -30,6 +30,17 @@ csv files.
    * can quickly perform initial data analysis prior to longer-duration, deeper
      analysis with heavier-weight tools.
 
+
+#Installation
+
+   * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
+
+    ```pip install datagristle```
+
+    ```easy_install datagristle```
+   * Or download tarball from [pypi](http://pypi.python.org/pypi/datagristle)
+
+
 #Dependencies
 
    * Python 2.6 or Python 2.7
