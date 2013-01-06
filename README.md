@@ -46,7 +46,7 @@ csv files.
 
    * Python 2.6 or Python 2.7
 
-#Mature Existing utilities:
+#Mature Utilities Provided in This Release:
 
    * gristle_determinator.py 
        - Identifies file formats, generates metadata, prints file analysis report
@@ -59,7 +59,7 @@ csv files.
    * gristle_viewer.py
        - Shows one record from a file at a time - formatted based on metadata. 
 
-#Immature Existing utilities:
+#Immature Utilities Provided in This Release:
 
    * gristle_differ.py
        - Shows differences between two files
