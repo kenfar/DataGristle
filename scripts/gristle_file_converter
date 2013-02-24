@@ -4,7 +4,7 @@
     field delimiters.
 
     See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011 Ken Farmer
+    Copyright 2011,2012,2013 Ken Farmer
 
     Example Usage:
     $ cat ../data/*crime* | ./gristle_file_converter.py colors.csv -d ',' -D '|' -o /tmp/colors.out

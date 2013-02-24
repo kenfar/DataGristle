@@ -24,7 +24,7 @@
        - use a tuple for the key - so that it can be printed as separated cols
  
     See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011 Ken Farmer
+    Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------

@@ -12,7 +12,7 @@
        - sqlite3
 
     See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011 Ken Farmer
+    Copyright 2011,2012,2013 Ken Farmer
 """
 
 from __future__ import division

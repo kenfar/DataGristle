@@ -99,3 +99,7 @@ csv files.
      information
 
 
+#Copyright
+
+   * Copyright 2011,2012,2013 Ken Farmer
+
