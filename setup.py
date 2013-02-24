@@ -2,9 +2,9 @@
 
 from setuptools import setup, find_packages
 
-version = "0.45"
+version = "0.46"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
-LONG_DESCRIPTION = open('README').read()
+LONG_DESCRIPTION = open('README.txt').read()
 
 setup(name             = 'datagristle'     ,
       version          = version           ,
@@ -30,15 +30,15 @@ setup(name             = 'datagristle'     ,
             'Topic :: Utilities'
             ],
       download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,
-      scripts      = ['scripts/gristle_determinator.py'  ,
-                      'scripts/gristle_differ.py'        ,
-                      'scripts/gristle_file_converter.py',
-                      'scripts/gristle_filter.py'        ,
-                      'scripts/gristle_freaker.py'       ,
-                      'scripts/gristle_scalar.py'        ,
-                      'scripts/gristle_slicer.py'        ,
-                      'scripts/gristle_validator.py'     ,
-                      'scripts/gristle_viewer.py'         ],
+      scripts      = ['scripts/gristle_determinator'  ,
+                      'scripts/gristle_differ'        ,
+                      'scripts/gristle_file_converter',
+                      'scripts/gristle_filter'        ,
+                      'scripts/gristle_freaker'       ,
+                      'scripts/gristle_scalar'        ,
+                      'scripts/gristle_slicer'        ,
+                      'scripts/gristle_validator'     ,
+                      'scripts/gristle_viewer'         ],
       install_requires     = ['appdirs    >= 1.1.0' ,
                               'sqlalchemy >= 0.7'   ,
                               'envoy      >= 0.0.2'  ],
