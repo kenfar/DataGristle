@@ -11,10 +11,8 @@ import random
 import unittest
 import subprocess
 from subprocess import PIPE, STDOUT, Popen
-
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_slicer  as mod
+import test_tools
+mod = test_tools.load_script('gristle_slicer')
 
 
 def suite():

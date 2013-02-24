@@ -13,9 +13,10 @@ import unittest
 import time
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_filter  as mod
+#might be necessary for testing later:
+#import test_tools
+#mod = test_tools.load_script('gristle_filter')
+
 
 
 def suite():
@@ -60,7 +61,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_easy_file(self):
 
-        cmd = ['../gristle_filter.py',
+        cmd = ['../gristle_filter',
                self.easy_fqfn, 
                '-c', '4 == foo']
         p = subprocess.Popen(cmd,
@@ -93,7 +94,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        cmd = ['../gristle_filter.py',
+        cmd = ['../gristle_filter'   ,
                self.empty_fqfn       ,
                '-c', '0 == foo'      ]
         p =  subprocess.Popen(cmd,
@@ -106,7 +107,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_multiple_empty_files(self):
-        cmd = ['../gristle_filter.py',
+        cmd = ['../gristle_filter'   ,
                self.empty_fqfn       ,
                self.empty_fqfn       ,
                '-d'  '|'             ,
@@ -121,7 +122,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_multiple_empty_and_full_files(self):
-        cmd = ['../gristle_filter.py',
+        cmd = ['../gristle_filter'   ,
                self.empty_fqfn       ,
                self.easy_fqfn        ,
                '-d'  '|'             ,
@@ -137,7 +138,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_multiple_full_files(self):
-        cmd = ['../gristle_filter.py',
+        cmd = ['../gristle_filter'   ,
                self.easy_fqfn        ,
                self.easy_fqfn        ,
                '-d'  '|'             ,
@@ -154,7 +155,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_stdin(self):
-        cmd = "cat /dev/null | ../gristle_filter.py -c '0 == foo' -d '|'"
+        cmd = "cat /dev/null | ../gristle_filter -c '0 == foo' -d '|'"
         p   =  subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 shell=True).communicate()

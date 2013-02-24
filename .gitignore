@@ -1,7 +1,10 @@
+bin
+build
+development_notes.txt
 dist
 dist/*
-build
-*.pyc
-obsolete
-development_notes.txt
 gristle.egg-info
+include
+lib
+obsolete
+*.pyc

@@ -10,11 +10,10 @@ import tempfile
 import random
 import unittest
 import csv
-
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_freaker  as mod
 from pprint import pprint as pp
+import test_tools
+mod = test_tools.load_script('gristle_freaker')
+
 
 
 gen_rec_number     = 10000000   # 10 million

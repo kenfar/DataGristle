@@ -15,9 +15,8 @@ import time
 import fileinput
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_scalar  as mod
+# might be necessary later if we want to call some internal functions:
+#import test_tools; mod = test_tools.load_script('gristle_scalar')
 
 
 def suite():
@@ -59,7 +58,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_easy_file(self):
-        cmd = '../gristle_scalar.py %s -o %s -c 0 -t integer -a max' % (self.easy_fqfn, self.out_fqfn)
+        cmd = '../gristle_scalar %s -o %s -c 0 -t integer -a max' % (self.easy_fqfn, self.out_fqfn)
 
         p = subprocess.Popen(cmd, 
                              stdin=subprocess.PIPE,
@@ -78,7 +77,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        cmd = '../gristle_scalar.py %s -o %s -c0 -t integer -a max' % (self.empty_fqfn, self.out_fqfn)
+        cmd = '../gristle_scalar %s -o %s -c0 -t integer -a max' % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -89,7 +88,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_multiple_empty_files(self):
-        cmd = "../gristle_scalar.py %s %s -o %s -c0 -t integer -a max -d'|'" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "../gristle_scalar %s %s -o %s -c0 -t integer -a max -d'|'" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -100,7 +99,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_multiple_full_files(self):
-        cmd = "../gristle_scalar.py %s %s -o %s -c0 -t integer -a max -d'|'" % (self.easy_fqfn, self.easy_fqfn, self.out_fqfn)
+        cmd = "../gristle_scalar %s %s -o %s -c0 -t integer -a max -d'|'" % (self.easy_fqfn, self.easy_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -116,7 +115,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_stdin_file(self):
-        cmd = "cat %s | ../gristle_scalar.py -o %s  -c 0 -t integer -a max -d'|'" % (self.empty_fqfn, self.out_fqfn)
+        cmd = "cat %s | ../gristle_scalar -o %s  -c 0 -t integer -a max -d'|'" % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,

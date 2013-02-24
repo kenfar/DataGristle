@@ -13,9 +13,9 @@ import unittest
 import time
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_file_converter  as mod
+#might be necessary for testing later:
+#import test_tools
+#mod = test_tools.load_script('gristle_file_converter')
 
 
 def suite():
@@ -54,7 +54,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_input_and_output_del(self):
 
-        cmd = ['../gristle_file_converter.py',
+        cmd = ['../gristle_file_converter',
                self.easy_fqfn, 
                '-d', '|',
                '-D', ',']
@@ -69,7 +69,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_output_del_only(self):
-        cmd = "../gristle_file_converter.py  %s -D ',' " % self.easy_fqfn
+        cmd = "../gristle_file_converter  %s -D ',' " % self.easy_fqfn
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -84,7 +84,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        cmd = "../gristle_file_converter.py %s -d'|' -D','" % self.empty_fqfn
+        cmd = "../gristle_file_converter %s -d'|' -D','" % self.empty_fqfn
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)

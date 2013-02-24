@@ -8,11 +8,10 @@ import random
 import unittest
 import csv
 import optparse
-
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_file_converter  as mod
 from pprint import pprint as pp
+import test_tools
+mod = test_tools.load_script('gristle_file_converter')
+
 
 
 def main():

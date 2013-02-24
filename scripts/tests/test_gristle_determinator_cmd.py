@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ Tests gristle_determinator.py
-    
+
     Contains a primary class: FileStructureFixtureManager
     Which is extended by six classes that override various methods or variables.
     This is a failed experiment - since the output isn't as informative as it 
@@ -19,9 +19,10 @@ import time
 import subprocess
 import fileinput
 
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_determinator  as mod
+#might be necessary for testing later:
+#import test_tools; mod = test_tools.load_script('gristle_determinator')
+
+
 
 def suite():
     suite = unittest.TestSuite()
@@ -128,7 +129,7 @@ class FileStructureFixtureManager(unittest.TestCase):
             except:
                print 'actual:    %s %s' % (actual[label].strip(), actual[value].strip())
                print 'objective: %s %s' % (objective[rownum][label], objective[rownum][value])
-               raise    
+               raise
 
     def broken_eval_field_struct(self, fix):
         # reads entire command output - skipping past file section and focusing
@@ -161,9 +162,6 @@ class FileStructureFixtureManager(unittest.TestCase):
         #print self.field_analysis_results
         print 'test harness is incomplete'
         sys.exit(0)
-        
-
-
         assert(p_recs[1].startswith('File Structure:'))
 
         objective = self.objective[fix]
@@ -184,7 +182,7 @@ class FileStructureFixtureManager(unittest.TestCase):
     def test_simple_file_counts(self):
         fix = 1
         fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator.py', fn, '-b' ]   # may need to be overridden
+        self.cmd = ['../gristle_determinator', fn, '-b' ]   # may need to be overridden
         #for rec in fileinput.input(fn):  print rec
         self._eval_file_struct(fix)
 
@@ -203,7 +201,7 @@ class FileStructureFixtureManager(unittest.TestCase):
     def broken_test_simple_field_counts(self):
         fix = 2
         fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator.py', fn, '-c', 0 ]   # may need to be overridden
+        self.cmd = ['../gristle_determinator', fn, '-c', 0 ]   # may need to be overridden
         #for rec in fileinput.input(fn):  print rec
         self._eval_field_struct(fix)
 
@@ -303,8 +301,7 @@ class TestFileStructureSingleCol(FileStructureFixtureManager):
     def broken_test_simple_field_counts(self):
         fix = 2
         fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator.py', fn, '-c', '1' ]   # may need to be overridden
-        self._eval_field_struct(fix)
+        self.cmd = ['../gristle_determinator', fn, '-c', '1' ]   # may need to be overridden
 
 
 if __name__ == "__main__":

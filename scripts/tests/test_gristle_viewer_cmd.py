@@ -16,9 +16,6 @@ import time
 import fileinput
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
-
 
 def suite():
     suite = unittest.TestSuite()
@@ -57,7 +54,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_easy_file(self):
 
-        cmd = ['../gristle_viewer.py',
+        cmd = ['../gristle_viewer',
                self.in_fqfn, 
                '-r', '10',
                '-o', self.out_fqfn ]
@@ -94,7 +91,7 @@ class TestCommandLine(unittest.TestCase):
                 - check for return code
         """
 
-        cmd = ['../gristle_viewer.py',
+        cmd = ['../gristle_viewer',
                self.in_fqfn, 
                '-r', '999',
                '-o', self.out_fqfn ]
@@ -114,7 +111,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        cmd = ['../gristle_viewer.py',
+        cmd = ['../gristle_viewer',
                self.empty_fqfn       ,  
                '-o', self.out_fqfn   ,
                '-r', '999'           ]
@@ -129,7 +126,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_stdin(self):
-        cmd = "cat /dev/null | ../gristle_viewer.py -o %s -r 999 -d'|'" % (self.out_fqfn)
+        cmd = "cat /dev/null | ../gristle_viewer -o %s -r 999 -d'|'" % (self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)
@@ -141,7 +138,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_full_stdin(self):
-        cmd = "cat %s | ../gristle_viewer.py -o %s -r 10 -d'|'" % (self.in_fqfn, self.out_fqfn)
+        cmd = "cat %s | ../gristle_viewer -o %s -r 10 -d'|'" % (self.in_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)
@@ -155,7 +152,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_full_multiple_files(self):
-        cmd = "../gristle_viewer.py %s %s -o %s -r 10 -d'|'" % (self.in_fqfn, self.in_fqfn, self.out_fqfn)
+        cmd = "../gristle_viewer %s %s -o %s -r 10 -d'|'" % (self.in_fqfn, self.in_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)
@@ -170,7 +167,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_full_multiple_empty_files(self):
-        cmd = "../gristle_viewer.py %s %s -o %s -r 10 -d'|'" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "../gristle_viewer %s %s -o %s -r 10 -d'|'" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)
@@ -183,7 +180,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_full_multiple_empty_and_full_files(self):
-        cmd = "../gristle_viewer.py %s %s -o %s -r 10 -d'|'" % (self.empty_fqfn, self.in_fqfn, self.out_fqfn)
+        cmd = "../gristle_viewer %s %s -o %s -r 10 -d'|'" % (self.empty_fqfn, self.in_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)

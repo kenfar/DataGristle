@@ -15,9 +15,9 @@ import time
 import fileinput
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_freaker  as mod
+#might be necessary for testing later:
+#import test_tools; mod = test_tools.load_script('gristle_freaker')
+
 
 
 def suite():
@@ -58,7 +58,7 @@ class TestCommandLine(unittest.TestCase):
         os.remove(self.out_fqfn)
 
     def test_empty_file(self):
-        cmd = '../gristle_freaker.py %s -o %s -c 0' % (self.empty_fqfn, self.out_fqfn)
+        cmd = '../gristle_freaker %s -o %s -c 0' % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -73,7 +73,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_stdin_file(self):
-        cmd = "cat %s | ../gristle_freaker.py -d '|' -o %s -c 0" % (self.empty_fqfn, self.out_fqfn)
+        cmd = "cat %s | ../gristle_freaker -d '|' -o %s -c 0" % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -88,7 +88,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_multiple_files(self):
-        cmd = "../gristle_freaker.py %s %s -d '|' -o %s -c 0" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "../gristle_freaker %s %s -d '|' -o %s -c 0" % (self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -103,7 +103,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_full_multiple_files(self):
-        cmd = "../gristle_freaker.py %s %s -d '|' -o %s -c 0" % (self.easy_fqfn, self.easy_fqfn, self.out_fqfn)
+        cmd = "../gristle_freaker %s %s -d '|' -o %s -c 0" % (self.easy_fqfn, self.easy_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -118,7 +118,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_and_full_multiple_files(self):
-        cmd = "../gristle_freaker.py %s %s -d '|' -o %s -c 0" % (self.empty_fqfn, self.easy_fqfn, self.out_fqfn)
+        cmd = "../gristle_freaker %s %s -d '|' -o %s -c 0" % (self.empty_fqfn, self.easy_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,

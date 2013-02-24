@@ -10,11 +10,11 @@ import tempfile
 import random
 import unittest
 import csv
-
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_freaker  as mod
 from pprint import pprint as pp
+import test_tools
+mod = test_tools.load_script('gristle_freaker')
+
+
 
 # shut off the printing of warnings & info statements from module
 old_stdout = sys.stdout

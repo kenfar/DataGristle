@@ -13,8 +13,10 @@ import unittest
 import time
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
+#might be necessary for testing later:
+#import test_tools
+#mod = test_tools.load_script('gristle_differ')
+
 
 
 def suite():
@@ -28,7 +30,7 @@ def suite():
 def generate_test_file(delim, rec_list):
     (fd, fqfn) = tempfile.mkstemp()
     fp = os.fdopen(fd,"w") 
- 
+
     for rec in rec_list:
         fp.write(delim.join(rec)+'\n')
 
@@ -57,7 +59,7 @@ class TestCommandLine(unittest.TestCase):
                        ['Wisconsin','13a','45b'] ]
         file2    = generate_test_file('|', file2_recs)
 
-        cmd = ['../gristle_differ.py',
+        cmd = ['../gristle_differ',
                '-1', file1,
                '-2', file2,
                '-k', '0',

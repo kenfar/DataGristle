@@ -15,9 +15,6 @@ import time
 import fileinput
 import subprocess
 
-sys.path.append('../')
-sys.path.append('../../')
-import gristle_slicer  as mod
 
 
 def suite():
@@ -60,7 +57,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_easy_file(self):
 
-        cmd = ['../gristle_slicer.py',
+        cmd = ['../gristle_slicer',
                self.easy_fqfn, 
                '-o', self.out_fqfn,
                '-c', ':',
@@ -86,7 +83,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_asking_for_too_much(self):
-        cmd = '../gristle_slicer.py  %s -o %s -r 10:200' % (self.easy_fqfn, self.out_fqfn)
+        cmd = '../gristle_slicer  %s -o %s -r 10:200' % (self.easy_fqfn, self.out_fqfn)
         try:
             p =  subprocess.Popen(cmd,
                                   stdin=subprocess.PIPE,
@@ -107,7 +104,7 @@ class TestCommandLine(unittest.TestCase):
     def test_empty_file(self):
         """ Should show proper handling of an empty file.   
         """
-        cmd = '../gristle_slicer.py %s -o %s -r 15:20' % (self.empty_fqfn, self.out_fqfn)
+        cmd = '../gristle_slicer %s -o %s -r 15:20' % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -124,7 +121,7 @@ class TestCommandLine(unittest.TestCase):
     def test_empty_stdin_file(self):
         """ Should show proper handling of an empty file.   
         """
-        cmd = "cat %s | ../gristle_slicer.py -d '|' -o %s -r 15:20" % (self.empty_fqfn, self.out_fqfn)
+        cmd = "cat %s | ../gristle_slicer -d '|' -o %s -r 15:20" % (self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,

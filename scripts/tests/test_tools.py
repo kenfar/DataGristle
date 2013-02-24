@@ -3,7 +3,9 @@
 """
 import imp
 import os
+import sys
 
+sys.dont_write_bytecode = True
 
 def load_script(script_name):
     """ loads a script in the parent directory as a module, and passes back
