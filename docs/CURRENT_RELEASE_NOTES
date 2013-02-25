@@ -1,70 +1,63 @@
 ===============================================================================
-Version:	 0.46
+Version:	 0.47
 Copyright 2011,2012,2013 Ken Farmer
 ===============================================================================
 
-===============================================================================
-Release Status
-===============================================================================
-    - test on python 2.7            -
-    - run pylint                    -
-    - test on python 2.6            -
-    - test automatically installing:
-        - sqlalchemy
-        - etc
 
 ===============================================================================
-Primary Changes To Do:
+Primary Functional Changes
 ===============================================================================
-    - pypi                          -
-	- add appropriate precision to means, etc
-	- setup testing?
+
 
 
 ===============================================================================
-Primary Changes:
+Primary Internal Changes
 ===============================================================================
-    - gristle/metadata.py
-        - resolved pep8 issues   - done
-        - fixed minor errors     - done
-    - gristle/simplesql.py
-        - resolved pep8 issues   - done
-        - fixed minor errors     - done
-    - script/gristle_metadata.py
-        - test with more data
-    - misc:
-        - improve documentation - 
+    - copyright
+    	- ensure every file has boilerplate
+    - licensing
+    	- ensure every file has boilerplate
+    - gristle_validator text
+    	- fix incorrect program help
+    - readme
+    	- 
+
+
 
 ===============================================================================
 Overall Testing status:
 ===============================================================================
-	- linux ubuntu 12.04 with python 2.7
-		- script unit tests
-			- done
-		- gristle unit tests
-			- done (1 failing)
-		- setup tests
-			- ?
+    - test on python 2.7            -
+    - test on python 2.6            -
+    - run pylint                    -
+    - check coverage                -
+    - test automatically installing:
+        - sqlalchemy
+	- envoy
+	- etc
+    - test pip install with vanilla environment
+    - test setup install with vanilla environment
+
 
 ===============================================================================
 Module status:
 ===============================================================================
-field_determinator.py       -- v0.45
+field_determinator.py           -- v0.45
 	- test coverage:        -- 
         - unittest status:	-- 100%
-        - pylint status:    -- 10
+        - pylint status:        -- 10
 
-field_math.py               -- v0.45
+field_math.py                   -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.42
 
-field_misc.py               -- v0.45
+field_misc.py                   -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.69
 
-field_type.py               -- v0.45
+field_type.py                   -- v0.45
 	- test coverage:        -- ~50%
         - unittest status:	-- 100%
         - pylint status:	-- 9.86

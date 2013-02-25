@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-""" Extracts subsets of input file based on user-specified columns and rows.
-    The input csv file can be piped into the program through stdin or identified
-    via a command line option.  The output will default to stdout, or redirected
-    to a filename via a command line option.
+""" Used to determine if a file format is valid.
 
-    The columns and rows are specified using python list slicing syntax -
-    so individual columns or rows can be listed as can ranges.   Inclusion
-    or exclusion logic can be used - and even combined.
+    When provided with a file name and field_cnt it will write out any records
+    with an incorrect number of fields.
 
     To do:
        - work with analyze_file to produce a special exception for empty files.
        - improve msg if user provides no args - and tell about -h
+       - extended to write out records with incorrect types, ranges, case, etc.
 
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
@@ -63,7 +60,7 @@ def main():
         # dialect parameters needed for stdin - since the normal code can't
         # analyze this data.
         dialect                = csv.Dialect
-        dialect.delimiter      = opts.delimiter       
+        dialect.delimiter      = opts.delimiter
         dialect.quoting        = opts.quoting
         dialect.quotechar      = opts.quotechar
         dialect.lineterminator = '\n'                 # naive assumption
@@ -95,16 +92,16 @@ def main():
 def write_fields(label, rec_cnt, outfile, fields, delimiter):
     """ Writes output to output destination.
         Input:
-            - list of fields to write
+            - record count
             - output object
+            - delimited list of fields in record
+            - delimiter
         Output:
-            - delimited output record written to stdout
-        To Do:
-            - write to output file
+            - delimited output record written to stdout or file
     """
     rec = label + delimiter + str(rec_cnt) + delimiter + delimiter.join(fields)
     outfile.write(rec + '\n')
-         
+
 
 
 def get_opts_and_args():
@@ -115,8 +112,8 @@ def get_opts_and_args():
             - opts dictionary
             - args dictionary 
     """
-    use = ("%prog is used to extract column and row subsets out of files "
-           "and write them out to stdout or a given filename: \n" 
+    use = ("%prog is used to validate the number of fields in a file. It"
+           "writes reject writes out to output file or stdout \n"
            " \n"
            "   %prog [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
