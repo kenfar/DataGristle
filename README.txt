@@ -34,12 +34,16 @@ csv files.
 #Installation
 
    * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
+    ```$ pip install datagristle```
+    ```$ easy_install datagristle```
 
-    ```pip install datagristle```
-
-    ```easy_install datagristle```
-
-   * Or download tarball from [pypi](http://pypi.python.org/pypi/datagristle)
+   * Or install manually from pypi:
+    ```$ mkdir ~\Downloads```
+    ```$ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.46.tar.gz```
+    ```$ tar -xvf easy_install datagristle```
+    ```$ cd ~\Downloads\datagristle-*```
+    ```$ python setup.py install```
+      
 
 
 #Dependencies
@@ -48,40 +52,40 @@ csv files.
 
 #Mature Utilities Provided in This Release:
 
-   * gristle_determinator.py 
+   * gristle_determinator
        - Identifies file formats, generates metadata, prints file analysis report
        - This is the most mature - and also used by the other utilities so that 
          you generally do not need to enter file structure info.
-   * gristle_freaker.py
+   * gristle_freaker
        - Produces a frequency distribution of multiple columns from input file.
-   * gristle_slicer.py
+   * gristle_slicer
        - Used to extract a subset of columns and rows out of an input file.
-   * gristle_viewer.py
+   * gristle_viewer
        - Shows one record from a file at a time - formatted based on metadata. 
 
 #Immature Utilities Provided in This Release:
 
-   * gristle_differ.py
+   * gristle_differ
        - Shows differences between two files
-   * gristle_file\_converter.py
+   * gristle_file\_converter
        - Converts a csv from one dialect to another.  Can handle multi-character
          field delimiters as well as record delimiters.
-   * gristle_filter.py 
+   * gristle_filter
        - Applies simple filter logic to file.
-   * gristle_scalar.py
+   * gristle_scalar
        - Performs scalar operations (min, max, avg, count unique, etc) on a file
-   * gristle_validator.py
+   * gristle_validator
        - Validates a file - currently just confirms number of fields for each row.
+   * gristle_metadata
+       - Manages metadata - allows users to query, add, update, delete
+         file, field, transformation, reporting descriptions.
+   * gristle_validator 
+       - Confirms validity of database and file structure and contents.
 
 #Future utilities:
 
-   * gristle_metadata.py 
-       - Manages metadata - allows users to query, add, update, delete
-         file, field, transformation, reporting descriptions.
    * gristle_generator
        - Generates test data based on gristle metadata
-   * gristle_validator 
-       - Confirms validity of database and file structure and contents.
    * gristle_file\_joiner.py
        - joins two files on their common keys and produces a new file
    * gristle_grouper.py
