@@ -40,7 +40,7 @@ csv files.
        $ easy_install datagristle
        ~~~
 
-   * Or install manually from pypi:
+   * Or install manually from [pypi](https://pypi.python.org/pypi/datagristle):
 
        ~~~
        $ mkdir ~\Downloads
@@ -69,7 +69,7 @@ csv files.
    * gristle_viewer
        - Shows one record from a file at a time - formatted based on metadata. 
 
-#Immature Utilities Provided in This Release:
+#Less Mature Utilities Provided in This Release:
 
    * gristle_differ
        - Shows differences between two files
