@@ -34,15 +34,15 @@ csv files.
 #Installation
 
    * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
-    ```$ pip install datagristle```
-    ```$ easy_install datagristle```
+    ```$ pip install datagristle
+       $ easy_install datagristle```
 
    * Or install manually from pypi:
-    ```$ mkdir ~\Downloads```
-    ```$ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.46.tar.gz```
-    ```$ tar -xvf easy_install datagristle```
-    ```$ cd ~\Downloads\datagristle-*```
-    ```$ python setup.py install```
+    ```$ mkdir ~\Downloads
+       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.46.tar.gz
+       $ tar -xvf easy_install datagristle
+       $ cd ~\Downloads\datagristle-*
+       $ python setup.py install```
       
 
 
