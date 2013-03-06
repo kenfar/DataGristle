@@ -11,15 +11,15 @@ import sys
 import os
 import tempfile
 import random
+from pprint import pprint
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-sys.path.append('../')
-sys.path.append('../../')
-import field_math  as mod
-from pprint import pprint
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.field_math  as mod
+
 
 def suite():
     suite = unittest.TestSuite()

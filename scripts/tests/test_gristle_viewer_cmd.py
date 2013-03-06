@@ -103,7 +103,7 @@ class TestCommandLine(unittest.TestCase):
         p_outrecs  = []
         for rec in fileinput.input(self.out_fqfn):
             p_outrecs.append(rec)
-        
+
         assert(len(p_stdout) == 1)
         assert(p_stdout[0] == 'No record found')
 
@@ -112,7 +112,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_empty_file(self):
         cmd = ['../gristle_viewer',
-               self.empty_fqfn       ,  
+               self.empty_fqfn       ,
                '-o', self.out_fqfn   ,
                '-r', '999'           ]
         p =  subprocess.Popen(cmd,
@@ -160,7 +160,7 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
-     
+
         assert(len(out_recs) == 4)
         assert(out_recs[0].strip().startswith('field_0'))
         assert(out_recs[0].strip().endswith('10'))
@@ -175,7 +175,7 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
-     
+
         assert(len(out_recs) == 0)
 
 
@@ -188,7 +188,7 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
-     
+
         assert(len(out_recs) == 4)
         assert(out_recs[0].strip().startswith('field_0'))
         assert(out_recs[0].strip().endswith('10'))

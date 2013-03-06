@@ -14,9 +14,9 @@ try:
 except ImportError:
     import unittest
 
-sys.path.append('../')
-sys.path.append('../../')
-import field_determinator  as mod
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.field_determinator  as mod
+
 
 
 def suite():
@@ -34,12 +34,12 @@ def generate_test_file(delim, record_cnt, quoting):
     """
     (fd, fqfn) = tempfile.mkstemp()
     fp = os.fdopen(fd,"w")
-    
+
     for i in range(record_cnt):
         fields = []
- 
+
         fields.append(str(i))                         # field 0: id_col
-  
+
         if i % 4 == 0:                                # field 1: very mixed col
            fields.append('A')
         elif i % 5 == 0:

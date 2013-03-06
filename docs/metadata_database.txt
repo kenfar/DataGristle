@@ -1,4 +1,6 @@
 Copyright 2011,2012,2013 Ken Farmer
+See the file "LICENSE" for the full license governing this code. 
+
 
 
 =================================================================================================

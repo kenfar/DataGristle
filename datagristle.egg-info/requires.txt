@@ -1,0 +1,5 @@
+appdirs    >= 1.1.0
+sqlalchemy >= 0.7
+envoy      >= 0.0.2
+pytester
+unittest2

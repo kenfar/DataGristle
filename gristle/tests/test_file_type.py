@@ -16,8 +16,9 @@ try:
 except ImportError:
     import unittest
 
-sys.path.append('../')
-import file_type  as mod
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.file_type  as mod
+
 
 
 def suite():

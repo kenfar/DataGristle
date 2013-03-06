@@ -14,8 +14,9 @@ try:
 except ImportError:
     import unittest
 
-sys.path.append('../')
-import field_type  as mod
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.field_type  as mod
+
 
 
 def suite():
@@ -41,18 +42,18 @@ class Test_is_integer(unittest.TestCase):
         pass
 
     def test_type_a01_is_integer(self):
-        assert(mod.is_integer('3')         is True)
-        assert(mod.is_integer('-3')        is True)
-        assert(mod.is_integer(3)           is True)
-        assert(mod.is_integer(-3)          is True)
-        assert(mod.is_integer('b')         is False)
-        assert(mod.is_integer('')          is False)
-        assert(mod.is_integer(' ')         is False)
-        assert(mod.is_integer('$3')        is False)
-        assert(mod.is_integer('4,333.22')  is False)
-        assert(mod.is_integer('33.22')     is False)
-        assert(mod.is_integer(3.3)         is False)
-        assert(mod.is_integer(None)        is False)
+        self.assertTrue(mod.is_integer('3'))
+        self.assertTrue(mod.is_integer('-3'))
+        self.assertTrue(mod.is_integer(3))
+        self.assertTrue(mod.is_integer(-3))
+        self.assertFalse(mod.is_integer('b'))
+        self.assertFalse(mod.is_integer(''))
+        self.assertFalse(mod.is_integer(' '))
+        self.assertFalse(mod.is_integer('$3'))
+        self.assertFalse(mod.is_integer('4,333.22'))
+        self.assertFalse(mod.is_integer('33.22'))
+        self.assertFalse(mod.is_integer(3.3))
+        self.assertFalse(mod.is_integer(None))
 
 
 class Test_is_float(unittest.TestCase):

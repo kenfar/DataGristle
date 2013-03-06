@@ -4,9 +4,6 @@
     Criteria is limited at this time to just a single column number,
     a simple operator and a literal value to compare to.
 
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
-
     To do:
     - add more sophisticated query language and parsing
     - address issue with comparisons to strings
@@ -17,6 +14,11 @@
        cat ../data/*crime* | ./gristle_filter.py -c "0 == Washington " -d ','
        cat ../data/*crime* | ./gristle_filter.py -c "0 == Washington " -d ','  -o /tmp/junk.dat
        ./gristle_filter.py -c "0 == Washington " -d ',' -f ../data/*crime*
+
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+       http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------

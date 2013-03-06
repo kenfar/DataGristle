@@ -1,4 +1,6 @@
 # Copyright 2011,2012,2013 Ken Farmer
+# See the file "LICENSE" for the full license governing this code. 
+#
 
 
 Very next things to do:
@@ -9,7 +11,7 @@ Very next things to do:
 	- add surrogate keys
     - command-line metadata manipulation
     - gui metadata manipulation
-    - gristle_determinator.py integration
+    - gristle_determinator integration
 
 
 Then the next things to do:
@@ -18,7 +20,6 @@ Then the next things to do:
     - Test with tab delimiters
     - Test more edge cases
     - Write integration testing instructions for each script
-    - test with python 2.7
 
 2.  New & Improved Tools:
     - Add more numeric analysis:  quartiles
@@ -30,13 +31,9 @@ Then the next things to do:
     - Review documentation
     - README in markdown
 
-4.  New & Improved Packaging:
-    - Review dist utils
-
 
 Longer-term things to do:
 ==================================================================
-1.  Virtualenv
 
     
 
@@ -46,7 +43,7 @@ Maturity by Tool:
 
 1.  data & metadata management
     - gristle_determinator.py                  - 100%
-    - metadata database:		               - 50%
+    - metadata database:		       - 50%
 
 2.  data transformation tools:
     - gristle_slicer.py                        - 100%

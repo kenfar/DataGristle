@@ -4,9 +4,6 @@
 
     Also allows simple navigation between records.
 
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
-
     To do:
        1.  check for recnum > number of records in input file
        2.  consider adding records up to some threshold to dictionary
@@ -15,6 +12,11 @@
        4.  use header info when using stdin
        5.  improve error if no args provided - recommend -h for help
        6.  fix broken pipes in this program or others
+
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+       http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------

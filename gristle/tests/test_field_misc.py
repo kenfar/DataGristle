@@ -14,9 +14,8 @@ try:
 except ImportError:
     import unittest
 
-sys.path.append('../')
-sys.path.append('../../')
-import field_misc  as mod
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.field_misc  as mod
 
 
 def suite():

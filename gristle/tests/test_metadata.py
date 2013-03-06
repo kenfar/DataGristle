@@ -11,10 +11,12 @@ from sqlalchemy import exc
 try:
     import unittest2 as unittest
 except ImportError:
+    print 'WARNING: metadata could not import unittest2'
     import unittest
 
-sys.path.append('../')
-import metadata  as mod
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.metadata  as mod
+
 
 #---------------------------------------------------------
 # test classes included here:

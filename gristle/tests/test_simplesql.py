@@ -16,8 +16,8 @@ from sqlalchemy import create_engine, MetaData, exc
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, CheckConstraint
 
-sys.path.append('../')
-import simplesql  
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import gristle.simplesql   as simplesql
 
 #---------------------------------------------------------
 # test classes included here:

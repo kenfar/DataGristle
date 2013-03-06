@@ -8,3 +8,6 @@ include
 lib
 obsolete
 *.pyc
+.coverage
+__pycache__
+.tox

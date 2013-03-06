@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 """ Creates a frequency distribution of values from a single column of the
     input file and prints this out in descending order.
-   
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
 
     To do:
     - add sampling method of random
     - improve error msg if no input provided - tell user about -h
+
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+       http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------

@@ -94,15 +94,15 @@ class FieldDeterminator(object):
 
         #--- public field frequency distributions - organized by field number
         #--- each dictionary has a collection within it:
-        self.field_freqs         = {}  # includes unknown values     
- 
+        self.field_freqs         = {}  # includes unknown values
+
         assert(has_header in [True, False])
         assert(0 < field_cnt < 1000)
 
 
-    def analyze_fields(self, 
-                       field_number=None, 
-                       field_types_overrides=None, 
+    def analyze_fields(self,
+                       field_number=None,
+                       field_types_overrides=None,
                        max_freq_number=None):
         """ Determines types, names, and characteristics of fields.
 
@@ -113,7 +113,7 @@ class FieldDeterminator(object):
                - populates public class structures
         """
         self.max_freq_number     = max_freq_number
-        
+
         if self.verbose:
             print 'Field Analysis Progress: '
 
@@ -123,9 +123,9 @@ class FieldDeterminator(object):
                     continue
 
             if self.verbose:
-                print '   Analyzing field: %d' % f_no 
+                print '   Analyzing field: %d' % f_no
 
-            self.field_names[f_no]   = miscer.get_field_names(self.filename, 
+            self.field_names[f_no]   = miscer.get_field_names(self.filename,
                                                               self.dialect,
                                                               f_no)
 
@@ -136,12 +136,12 @@ class FieldDeterminator(object):
                     max_items = MAX_FREQ_SINGLE_COL_DEFAULT
             else:
                 max_items = max_freq_number
-          
+
             (self.field_freqs[f_no],
             self.field_trunc[f_no],
-            self.field_rows_invalid[f_no]) = miscer.get_field_freq(self.filename, 
+            self.field_rows_invalid[f_no]) = miscer.get_field_freq(self.filename,
                                                             self.dialect,
-                                                            f_no, 
+                                                            f_no,
                                                             max_items)
 
             self.field_types[f_no]  = typer.get_field_type(self.field_freqs[f_no])

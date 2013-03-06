@@ -1,6 +1,0 @@
-
-1.  gristle_determinator:
-	- doesn't test field results
-
-
-

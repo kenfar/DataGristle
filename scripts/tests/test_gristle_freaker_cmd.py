@@ -15,6 +15,8 @@ import time
 import fileinput
 import subprocess
 
+sys.path.append('../')
+
 #might be necessary for testing later:
 #import test_tools; mod = test_tools.load_script('gristle_freaker')
 

@@ -41,7 +41,9 @@ setup(name             = 'datagristle'     ,
                       'scripts/gristle_viewer'         ],
       install_requires     = ['appdirs    >= 1.1.0' ,
                               'sqlalchemy >= 0.7'   ,
-                              'envoy      >= 0.0.2'  ],
+                              'envoy      >= 0.0.2' ,
+                              'pytester'            ,
+                              'unittest2'          ],
       packages     = find_packages(),
       test_suite   = 'gristle.tests.__init__.py'
      )

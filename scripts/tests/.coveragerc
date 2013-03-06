@@ -1,0 +1,12 @@
+# .coveragerc to control coverage.
+
+[run]
+include = ../../scripts/*
+omit = ./test_*
+omit = ./test_*
+       ./__init__.py
+
+[report]
+include = ../../scripts/*
+omit = ./test_*
+       ./__init__.py

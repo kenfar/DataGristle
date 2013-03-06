@@ -1,0 +1,8 @@
+# .coveragerc to control coverage.
+
+[run]
+
+[report]
+omit = ../../../lib/*
+       test_*
+       __init__.py

@@ -2,7 +2,6 @@
 
 import os
 import sys
-
 import unittest
 import test_field_determinator
 import test_field_math
@@ -26,6 +25,7 @@ def main():
 
 
 if __name__ == '__main__':
+   #print os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
    main()
 
