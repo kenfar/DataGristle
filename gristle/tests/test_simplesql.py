@@ -28,12 +28,13 @@ import gristle.simplesql   as simplesql
 #   Test_reports
 #---------------------------------------------------------
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestSurrogateKeyTable))
-    suite.addTest(unittest.makeSuite(TestNaturalKeyTable))
-    suite.addTest(unittest.makeSuite(TestSurrogateKeyCheckConstraintTable))
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(TestSurrogateKeyTable))
+#    suite.addTest(unittest.makeSuite(TestNaturalKeyTable))
+#    suite.addTest(unittest.makeSuite(TestSurrogateKeyCheckConstraintTable))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#    return suite
 
 
 class TestSurrogateKeyTable(unittest.TestCase):
@@ -319,9 +320,9 @@ class AnimalTools(simplesql.TableTools):
 
 
 
-if __name__ == "__main__":
-
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+#if __name__ == "__main__":
+    #runner = unittest.TextTestRunner(verbosity=2)
+    #runner.run(suite())
+#   unittest.main(suite())
  
 

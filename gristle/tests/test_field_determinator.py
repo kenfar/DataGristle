@@ -19,14 +19,14 @@ import gristle.field_determinator  as mod
 
 
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestQuotedCSV))
-    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
-    suite.addTest(unittest.makeSuite(TestOverrideFloatToString))
-    #unittest.TextTestRunner(verbosity=2).run(suite)
-
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(TestQuotedCSV))
+#    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
+#    suite.addTest(unittest.makeSuite(TestOverrideFloatToString))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#
+#    return suite
 
 
 def generate_test_file(delim, record_cnt, quoting):
@@ -244,7 +244,7 @@ class TestQuotedCSV(FileAndTestManager):
     def customSettings(self):
         self.quoting     = True
         self.overrides   = None
-  
+
 
 class TestNonQuotedCSV(FileAndTestManager):
     """ Test with Non-Quoted CSV File
@@ -260,14 +260,14 @@ class TestOverrideFloatToString(FileAndTestManager):
     def customSettings(self):
         self.quoting     = True
         self.overrides   = {5:'string'}
-  
+
     def test_deter_a05_field_5_extra_float(self):
         assert(self.MyFields.field_mean[self.float_col]               is None)
 
     def test_deter_a02_field_general_dictionaries(self):
-        assert(self.MyFields.field_min[self.float_col]          == '999.9')  
-        assert(self.MyFields.field_max[self.float_col]          == '999.9')  
-        assert(self.MyFields.field_types[self.float_col]        == 'string')  
+        assert(self.MyFields.field_min[self.float_col]          == '999.9')
+        assert(self.MyFields.field_max[self.float_col]          == '999.9')
+        assert(self.MyFields.field_types[self.float_col]        == 'string')
         assert(self.MyFields.field_trunc[self.float_col]        == False)
 
     def test_deter_a03_field_string_dictionaries(self):
@@ -280,9 +280,8 @@ class TestOverrideFloatToString(FileAndTestManager):
         assert(self.MyFields.field_mean[self.float_col]         is None)
 
 
-if __name__ == "__main__":
-    #unittest.main(suite())
-    unittest.main()
+#if __name__ == "__main__":
+#    unittest.main(suite())
 
 
 

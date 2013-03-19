@@ -27,14 +27,16 @@ import gristle.metadata  as mod
 #   Test_reports
 #---------------------------------------------------------
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestSchema))
-    suite.addTest(unittest.makeSuite(TestElement))
-    suite.addTest(unittest.makeSuite(TestCollection))
-    suite.addTest(unittest.makeSuite(TestField))
-    suite.addTest(unittest.makeSuite(TestReports))
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(TestSchema))
+#    suite.addTest(unittest.makeSuite(TestElement))
+#    suite.addTest(unittest.makeSuite(TestCollection))
+#    suite.addTest(unittest.makeSuite(TestField))
+#    suite.addTest(unittest.makeSuite(TestReports))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#
+#    return suite
 
 
 class TestSchema(unittest.TestCase):
@@ -398,9 +400,9 @@ def content_rpt(md):
 
 
 
-if __name__ == "__main__":
-
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite())
+#if __name__ == "__main__":
+    #runner = unittest.TextTestRunner(verbosity=2)
+    #runner.run(suite())
+#    unittest.main(suite())
  
 

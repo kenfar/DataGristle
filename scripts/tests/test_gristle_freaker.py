@@ -65,14 +65,14 @@ class Test_build_freq(unittest.TestCase):
 
        fp.close()
        return fqfn
-         
+
    def test_bf_01_multicol(self):
        sampling_method = 'non'
        sampling_rate   = None
        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
        assert(not truncated)
        assert(sum(field_freq.values()) == 1000)
-       assert(len(field_freq) == 8)               
+       assert(len(field_freq) == 8)
        for key in field_freq.keys():
            assert(key[0] in ['A1','A2','A3','A4'])
            assert(key[1] in ['B1','B2'])
@@ -337,10 +337,10 @@ class Test_ColumnLengthTracker(unittest.TestCase):
         assert(self.col_len.max_dict[0] == 1)          # reduced evenly
         assert(self.col_len.max_dict[1] == 1)          # reduced evenly
 
-        self.col_len.trunc_all_col_lengths(1)          
+        self.col_len.trunc_all_col_lengths(1)
         assert(self.col_len._get_tot_col_len() == 1)
-        
-    
+
+
 class Test_ColumnLengthTracker_2col(Test_ColumnLengthTracker):
 
     def setUp(self):
@@ -356,7 +356,8 @@ class Test_ColumnLengthTracker_1col(Test_ColumnLengthTracker):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(suite())
+
 
 
 

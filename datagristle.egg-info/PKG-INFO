@@ -44,63 +44,104 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
         
            * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
         
-            ```pip install datagristle```
+               ~~~
+               $ pip install datagristle
+               $ easy_install datagristle
+               ~~~
         
-            ```easy_install datagristle```
+           * Or install manually from [pypi](https://pypi.python.org/pypi/datagristle):
         
-           * Or download tarball from [pypi](http://pypi.python.org/pypi/datagristle)
-        
+               ~~~
+               $ mkdir ~\Downloads
+               $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.46.tar.gz
+               $ tar -xvf easy_install datagristle
+               $ cd ~\Downloads\datagristle-*
+               $ python setup.py install
+               ~~~
+              
         
         #Dependencies
         
            * Python 2.6 or Python 2.7
         
+        
         #Mature Utilities Provided in This Release:
         
-           * gristle_determinator.py 
+           * gristle_determinator
                - Identifies file formats, generates metadata, prints file analysis report
                - This is the most mature - and also used by the other utilities so that 
                  you generally do not need to enter file structure info.
-           * gristle_freaker.py
-               - Produces a frequency distribution of multiple columns from input file.
-           * gristle_slicer.py
+           * gristle_slicer
                - Used to extract a subset of columns and rows out of an input file.
-           * gristle_viewer.py
+           * gristle_freaker
+               - Produces a frequency distribution of multiple columns from input file.
+           * gristle_viewer
                - Shows one record from a file at a time - formatted based on metadata. 
         
-        #Immature Utilities Provided in This Release:
+        # gristle_slicer
+            Extracts subsets of input files based on user-specified columns and rows.
+            The input csv file can be piped into the program through stdin or identified
+            via a command line option.  The output will default to stdout, or redirected
+            to a filename via a command line option.
         
-           * gristle_differ.py
-               - Shows differences between two files
-           * gristle_file\_converter.py
-               - Converts a csv from one dialect to another.  Can handle multi-character
-                 field delimiters as well as record delimiters.
-           * gristle_filter.py 
-               - Applies simple filter logic to file.
-           * gristle_scalar.py
-               - Performs scalar operations (min, max, avg, count unique, etc) on a file
-           * gristle_validator.py
-               - Validates a file - currently just confirms number of fields for each row.
+            The columns and rows are specified using python list slicing syntax -
+            so individual columns or rows can be listed as can ranges.   Inclusion
+            or exclusion logic can be used - and even combined.
         
-        #Future utilities:
+            Examples:
+               $ gristle_slicer sample.csv
+                            Prints all rows and columns
+               $ gristle_slicer sample.csv -c":5, 10:15" -C 13
+                            Prints columns 0-4 and 10,11,12,14 for all records
+               $ gristle_slicer sample.csv -C:-1
+                            Prints all columns except for the last for all records
+               $ gristle_slicer sample.csv -c:5 -r-100
+                            Prints columns 0-4 for the last 100 records
+               $ gristle_slicer sample.csv -c:5 -r-100 -d'|' --quoting=quote_all
+                            Prints columns 0-4 for the last 100 records, csv
+                            dialect info (delimiter, quoting) provided manually)
+               $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
+                            Prints columns 0-4 for the last 100 records, csv
+                            dialect info (delimiter, quoting) provided manually)
+             
         
-           * gristle_metadata.py 
-               - Manages metadata - allows users to query, add, update, delete
-                 file, field, transformation, reporting descriptions.
-           * gristle_generator
-               - Generates test data based on gristle metadata
-           * gristle_validator 
-               - Confirms validity of database and file structure and contents.
-           * gristle_file\_joiner.py
-               - joins two files on their common keys and produces a new file
-           * gristle_grouper.py
-               - reads a file, aggregates on a given set of fields, produces a new file
-           * gristle_db\_loader.py 
-               - loads a file into a database
-           * gristle_db\_extractor.py 
-               - extracts data from a database into a file
-           * gristle_field\_merge.py 
-               - prints the matched values from multiple files side by side along with counts
+        # gristle_freaker
+            Creates a frequency distribution of values from columns of the input file
+            and prints it out in columns - the first being the unique key and the last 
+            being the count of occurances.
+        
+            
+            Examples:
+               $ gristle_freaker sample.csv -d '|'  -c 0
+                            Creates two columns from the input - the first with
+                            unique keys from column 0, the second with a count of
+                            how many times each exists.
+               $ gristle_freaker sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
+                            In addition to what was described in the first example, 
+                            this example adds sorting of the output by count ascending 
+                            and just prints the first 25 entries.
+               $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
+                            In addition to what was described in the first example,
+                            this example adds a sampling in which it only references
+                            every third record.
+               $ gristle_freaker sample.csv -d '|'  -c 0,1
+                            Creates three columns from the input - the first two
+                            with unique key combinations from columns 0 & 1, the 
+                            third with the number of times each combination exists.
+        
+        # gristle_viewer
+            Displays a single record of a file, one field per line, with field names 
+            displayed as labels to the left of the field values.  Also allows simple 
+            navigation between records.
+        
+            Examples:
+               $ gristle_viewer sample.csv -r 3 
+                            Presents the third record in the file with one field per line
+                            and field names from the header record as labels in the left
+                            column.
+                                   
+        
+        
         
         #Licensing
         

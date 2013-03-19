@@ -1,6 +1,25 @@
 #!/usr/bin/env python
-""" Creates a frequency distribution of values from a single column of the
-    input file and prints this out in descending order.
+""" Creates a frequency distribution of values from columns of the input file
+    and prints it out in columns - the first being the unique key and the last 
+    being the count of occurances.
+
+    Examples:
+       $ gristle_freaker sample.csv -d '|'  -c 0
+                             Creates two columns from the input - the first with
+                             unique keys from column 0, the second with a count of
+                             how many times each exists.
+       $ gristle_freaker sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
+                             In addition to what was described in the first example,
+                             this example adds sorting of the output by count ascending
+                             and just prints the first 25 entries.
+       $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval 
+                             In addition to what was described in the first example,
+                             this example adds a sampling in which it only references
+                             every third record. 
+       $ gristle_freaker sample.csv -d '|'  -c 0,1
+                             Creates three columns from the input - the first two
+                             with unique key combinations from columns 0 & 1, the
+                             third with the number of times each combination exists.
 
     To do:
     - add sampling method of random
@@ -20,10 +39,12 @@ import csv
 from collections import defaultdict
 import operator
 import fileinput
+import os
 
 #--- gristle modules -------------------
-sys.path.append('../')  # allows running out of project structure
-sys.path.append('../../')  # allows running out of project structure
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 try:
     import gristle.file_type            as file_type 
@@ -184,7 +205,7 @@ def build_freq(files, dialect, columns, number, sampling_method, sampling_rate):
                 print 'WARNING: freq dict is too large - will truncate'
                 break
     fileinput.close()
-    
+
     return field_freq, truncated
 
 
@@ -198,7 +219,7 @@ class ColumnLengthTracker(object):
 
     def add_val(self, col_num, value):
         """ Update tracked max length for a given column if the new value
-            is greater than the old value. 
+            is greater than the old value.
             Inputs:
                  - col_num:  is the position of the column within the key
                  - value:    is the actual column value
@@ -207,10 +228,10 @@ class ColumnLengthTracker(object):
         """
         if len(value) > self.max_dict[col_num]:
             self.max_dict[col_num] = len(value)
-   
+
     def add_all_values(self, freq_list):
-        """ Step through a dictionary in which the key is a tuple of 1-many 
-            parts, and the value is the count.  For each part of the key call 
+        """ Step through a dictionary in which the key is a tuple of 1-many
+            parts, and the value is the count.  For each part of the key call
             the add_val function to then store the max length.
         """
         for key_tup in freq_list:
@@ -218,7 +239,7 @@ class ColumnLengthTracker(object):
                 self.add_val(index, key)
 
     def trunc_all_col_lengths(self, maxkeylen):
-        """ Gradually reduces the length of columns, reducing the longest one 
+        """ Gradually reduces the length of columns, reducing the longest one
             before the shorter ones.
         """
         while (self._get_tot_col_len() - maxkeylen) > 0:
@@ -301,7 +322,7 @@ class CommandLineParser(object):
         self._validate_sampling()
         self._validate_misc()
         self._format_columns()
-             
+
 
     def _define_parsers(self):
         """ Define all cmdline parsers.

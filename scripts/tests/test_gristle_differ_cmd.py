@@ -13,15 +13,13 @@ import unittest
 import time
 import subprocess
 
-#might be necessary for testing later:
-#import test_tools
-#mod = test_tools.load_script('gristle_differ')
-
+script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestCommandLine))
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
     return suite
 
@@ -59,7 +57,7 @@ class TestCommandLine(unittest.TestCase):
                        ['Wisconsin','13a','45b'] ]
         file2    = generate_test_file('|', file2_recs)
 
-        cmd = ['../gristle_differ',
+        cmd = [os.path.join(script_path, 'gristle_differ'),
                '-1', file1,
                '-2', file2,
                '-k', '0',
@@ -116,5 +114,5 @@ class TestCommandLine(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(suite())
 

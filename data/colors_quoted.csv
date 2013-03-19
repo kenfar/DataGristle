@@ -1,29 +1,29 @@
-"color"  | "name"    | "location" _#_
-"blue"   | "bob"     | "az"     _#_
-"blue"   | "sue"     | "tx"     _#_
-"blue"   | "michele" | "mi"     _#_
-"blue"   | "jack"    | "ny"     _#_
-"blue"   | "jeff"    | "il"     _#_
-"green"  | "bob"     | "az"     _#_
-"green"  | "eric"    | "tx"     _#_
-"green"  | "joe"     | "ny"     _#_
-"yellow" | "arun"    | "ca"     _#_
-"yellow" | "sue"     | "tx"     _#_
-"yellow" | "beth"    | "fl"     _#_
-"red"    | "jeff"    | "il"     _#_
-"red"    | "michele" | "mi"     _#_
-"red"    | "ben"     | "ca"     _#_
-"purple" | "arun"    | "ca"     _#_
-"purple" | "beth"    | "fl"     _#_
-"gold"   | "lilian"  | "fl"     _#_
-"orange" | "kim"     | "ca"     _#_
-"violet" | "natalie" | "wa"     _#_
-"maroon" | "hunter"  | "ga"     _#_
-"brown"  | "hunter"  | "ga"     _#_
-"brown"  | "kim"     | "ca"     _#_
-"black"  | "sid"     | "ny"     _#_
-"black"  | "gary"    | "tx"     _#_
-"black"  | "bill"    | "pa"     _#_
-"pink"   | "adam"    | "mo"     _#_
-"pink"   | "rich"    | "al"     _#_
-"pink"   | "buck"    | "tx"     _#_
+"color"|"name"|"location"
+"blue"|"bob"|"az"     
+"blue"|"sue"|"tx"    
+"blue"|"michele"|"mi"   
+"blue"|"jack"|"ny"   
+"blue"|"jeff"|"il"   
+"green"|"bob"|"az"   
+"green"|"eric"|"tx"   
+"green"|"joe"|"ny"  
+"yellow"|"arun"|"ca" 
+"yellow"|"sue"|"tx"
+"yellow"|"beth"|"fl"     
+"red"|"jeff"|"il"     
+"red"|"michele"|"mi"     
+"red"|"ben"|"ca"     
+"purple"|"arun"|"ca"     
+"purple"|"beth"|"fl"     
+"gold"|"lilian"|"fl"     
+"orange"|"kim"|"ca"     
+"violet"|"natalie"|"wa"     
+"maroon"|"hunter"|"ga"     
+"brown"|"hunter"|"ga"     
+"brown"|"kim"|"ca"     
+"black"|"sid"|"ny"     
+"black"|"gary"|"tx"     
+"black"|"bill"|"pa"     
+"pink"|"adam"|"mo"     
+"pink"|"rich"|"al"     
+"pink"|"buck"|"tx"     

@@ -7,7 +7,9 @@ gristle.egg-info
 include
 lib
 obsolete
+.pytest.restart
 *.pyc
+.*.swp
 .coverage
 __pycache__
 .tox

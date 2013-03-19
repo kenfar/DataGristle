@@ -3,8 +3,6 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
-
-
 import sys
 import os
 import tempfile
@@ -20,14 +18,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import gristle.file_type  as mod
 
 
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestQuotedCSV))
-    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
-    suite.addTest(unittest.makeSuite(TestInternals))
-
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(TestFunctions))
+#    suite.addTest(unittest.makeSuite(TestQuotedCSV))
+#    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
+#    suite.addTest(unittest.makeSuite(TestInternals))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#    return suite
 
 
 def generate_test_file1(delim, quoting, record_cnt):
@@ -36,7 +34,7 @@ def generate_test_file1(delim, quoting, record_cnt):
     name_list = ['smith','jones','thompson','ritchie']
     role_list = ['pm','programmer','dba','sysadmin','qa','manager']
     proj_list = ['cads53','jefta','norma','us-cepa']
- 
+
     for i in range(record_cnt):
         name = random.choice(name_list)
         role = random.choice(role_list)
@@ -50,6 +48,7 @@ def generate_test_file1(delim, quoting, record_cnt):
 
     fp.close()
     return fqfn
+
 
 
 
@@ -119,6 +118,6 @@ class TestInternals(unittest.TestCase):
         assert(self.MyTest._get_format_type() == 'csv')
 
 
-if __name__ == "__main__":
-    unittest.main()
+#if __name__ == "__main__":
+#    unittest.main(suite())
 

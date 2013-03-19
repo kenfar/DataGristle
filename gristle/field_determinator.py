@@ -18,7 +18,7 @@
     Copyright 2011,2012,2013 Ken Farmer
 """
 from __future__ import division
-#import pprint       as pp
+from pprint import pprint
 
 import gristle.field_type   as typer
 import gristle.field_math   as mather
@@ -58,16 +58,14 @@ class FieldDeterminator(object):
                  field_cnt   ,
                  has_header  ,
                  dialect     ,
-                 delimiter   ,
-                 rec_delimiter=None,
+                 delimiter=None    ,  # deprecated
+                 rec_delimiter=None,  # deprecated
                  verbose=False):
         self.filename            = filename
         self.format_type         = format_type
         self.field_cnt           = field_cnt
         self.has_header          = has_header
         self.dialect             = dialect
-        self.delimiter           = delimiter
-        self.rec_delimiter       = rec_delimiter
         self.verbose             = verbose
         #pp.pprint(locals())
         self.max_freq_number     = None  # will be set in analyze_fields
@@ -118,7 +116,7 @@ class FieldDeterminator(object):
             print 'Field Analysis Progress: '
 
         for f_no in range(self.field_cnt):
-            if field_number is not None:
+            if field_number is not None:  # optional analysis of a single field
                 if f_no != field_number:
                     continue
 

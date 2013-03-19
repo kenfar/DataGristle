@@ -18,14 +18,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import gristle.field_misc  as mod
 
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(Test_get_case))
-    suite.addTest(unittest.makeSuite(Test_get_field_freq))
-    suite.addTest(unittest.makeSuite(TestGetFieldNames))
-    suite.addTest(unittest.makeSuite(TestMinAndMax))
-
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(Test_get_case))
+#    suite.addTest(unittest.makeSuite(Test_get_field_freq))
+#    suite.addTest(unittest.makeSuite(TestGetFieldNames))
+#    suite.addTest(unittest.makeSuite(TestMinAndMax))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#
+#    return suite
 
 
 
@@ -44,7 +45,7 @@ class Test_get_case(unittest.TestCase):
 
     def tearDown(self):
         pass
- 
+
     def test_misc_a01(self):
         assert(mod.get_case('string', self.test_u1) == 'upper')
         assert(mod.get_case('string', self.test_u2) == 'upper')
@@ -92,22 +93,16 @@ class Test_get_field_freq(unittest.TestCase):
         (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
                                                 self.dialect,
                                                 field_number=0)
-                                                
         assert(len(freq) == 200)
         assert(trunc_flag is False)
-                              
+
     def test_misc_b03(self):
         (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
                                                 self.dialect,
                                                 field_number=2)
-                                                
         assert(len(freq) == 1)  # should be 1 x '' x 200 occurances
         assert(trunc_flag is False)
-                              
 
-
-
-                              
 
 
 class TestGetFieldNames(unittest.TestCase):
@@ -251,10 +246,8 @@ class TestMinAndMax(unittest.TestCase):
 
 
 
-
-
-if __name__ == "__main__":
-    unittest.main()
+#if __name__ == "__main__":
+#    unittest.main(suite())
 
 
 

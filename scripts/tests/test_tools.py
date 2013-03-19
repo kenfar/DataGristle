@@ -26,3 +26,12 @@ def load_script(script_name):
     return mod
 
 
+def get_app_root():
+    """ returns the application root directory
+    """
+
+    test_dir    = os.path.dirname(os.path.realpath(__file__))
+    script_dir  = os.path.dirname(test_dir)
+    app_dir     = os.path.dirname(script_dir)
+    return app_dir
+

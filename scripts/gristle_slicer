@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" Extracts subsets of input file based on user-specified columns and rows.
+""" 
+    Extracts subsets of input files based on user-specified columns and rows.
     The input csv file can be piped into the program through stdin or identified
     via a command line option.  The output will default to stdout, or redirected
     to a filename via a command line option.
@@ -8,9 +9,64 @@
     so individual columns or rows can be listed as can ranges.   Inclusion
     or exclusion logic can be used - and even combined.
 
-    To do:
-       - work with analyze_file to produce a special exception for empty files.
-       - improve msg if user provides no args - and tell about -h
+    Supported slicing specification:
+    'NumberN, StartOffset:StopOffset' - The specification is a comma-
+                            delimited list of individual offsets or ranges.
+
+                            Offsets are based on zero, and if negative are
+                            measured from the end of the record or file with
+                            -1 being the final item.  There can be N number
+                            of individual offsets.
+
+                            Ranges are a pair of offsets separated by a colon.
+                            The first number indicates the starting offset, 
+                            and the second number indicates the stop offset +1.
+
+    Arguments:
+      -o, --output=<file>    Specify the output file.  The default is stdout.
+      -c, --columns=<spec>   Provide the column inclusion specification,
+                             Default is ':' which includes all columns.
+      -C, --excolumns=<spec> Provide the column exclusion specification.
+                             Default is None which excludes nothing.
+      -r, --records=<spec>   Provide the record inclusion specification.
+                             Default is ':' which includes all records.
+      -R, --exrecords=<spec> Provide the record exclusion specification.
+                             Default is None which excludes nothing.
+      -d, --delimiter=<del>  Provide a quoted single-character field delimiter.
+                             Typically useful if automatic csv dialect
+                             detection fails to correctly interpret file. Also
+                             required for STDIN input.  If provided then quoting
+                             should also be provided.
+      -q, --quoting=<qt>     Specify quoting behavior.  Typically used when
+                             automatic csv dialect detection fails or
+                             when processing data via stdin.  Values:
+                             - quote_all - all fields are quoted
+                             - quote_none - no fields are quoted.  This is the
+                               default used if the delimiter is overridden.
+                             - quote_minimal - only quoting of fields with
+                               special characters.
+                             - quote_nonnumeric - only quotes text fields.
+      -h, --help             Print help and exit.
+      --long-help            Print verbose help and exit.
+      --debug                Print debugging info
+
+    Examples:
+       $ gristle_slicer sample.csv
+                             Prints all rows and columns
+       $ gristle_slicer sample.csv -c":5, 10:15" -C 13
+                             Prints columns 0-4 and 10,11,12,14 for all records
+       $ gristle_slicer sample.csv -C:-1
+                             Prints all columns except for the last for all
+                             records
+       $ gristle_slicer sample.csv -c:5 -r-100:
+                             Prints columns 0-4 for the last 100 records
+       $ gristle_slicer sample.csv -c:5 -r-100 -d'|' --quoting=quote_all:
+                             Prints columns 0-4 for the last 100 records, csv
+                             dialect info (delimiter, quoting) provided manually)
+       $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all:
+                             Prints columns 0-4 for the last 100 records, csv
+                             dialect info (delimiter, quoting) provided manually)
+
 
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
@@ -18,70 +74,56 @@
     Copyright 2011,2012,2013 Ken Farmer
 """
 
+
 #--- standard modules ------------------
 from __future__ import division
 import sys
 import optparse
 import csv
 import fileinput
-#from pprint import pprint as pp
+import os
+from pprint import pprint
 
 #--- gristle modules -------------------
-sys.path.append('../')     # allows running from project structure
-sys.path.append('../../')  # allows running from project structure
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import gristle.file_type           as file_type 
+import gristle.location_slicer     as slicer
 
-SMALL_SIDE = 0
-LARGE_SIDE = 1
+debug = False
 
-#------------------------------------------------------------------------------
-# Command-line section 
-#------------------------------------------------------------------------------
 def main():
     """ runs all processes:
             - gets opts & args
-            - analyzes file to determine csv characteristics unless data is 
+            - analyzes file to determine csv characteristics unless data is
               provided via stdin
             - runs each input record through process_cols to get output
             - writes records
     """
-    (opts, files) = get_opts_and_args()
-    if len(files) == 1:
-        my_file                = file_type.FileTyper(files[0],
-                                            opts.delimiter   ,
-                                            opts.recdelimiter,
-                                            opts.hasheader)
-        try:
-            my_file.analyze_file()
-        except file_type.IOErrorEmptyFile:
-            return 1
+    global debug
+    (opts, files)   = get_opts_and_args()
+    debug           = opts.debug
 
-        dialect                = my_file.dialect
-    else:
-        # dialect parameters needed for stdin - since the normal code can't
-        # analyze this data.
-        dialect                = csv.Dialect
-        dialect.delimiter      = opts.delimiter       
-        dialect.quoting        = opts.quoting
-        dialect.quotechar      = opts.quotechar
-        dialect.lineterminator = '\n'                 # naive assumption
+    if files:
+        if not os.path.exists(files[0]):
+            print 'ERROR: file %s does not exist' % files[0]
+            sys.exit(1)
 
-    rec_cnt = -1
+    dialect         = get_input_file_info(files, opts)
+    outfile, csv_writer  = get_output_file_info(opts, dialect)
 
-    if opts.output == '-':
-        outfile = sys.stdout
-    else:
-        outfile = open(opts.output, "w")
+    (incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer) \
+       = setup_slicer(opts, files, dialect)
 
-    for cols in csv.reader(fileinput.input(files), dialect):
+    rec_cnt  = -1
+    for rec in csv.reader(fileinput.input(files), dialect):
         rec_cnt += 1
-        if not cols:
+        if not rec:
             break
-        new_cols = process_cols(rec_cnt, opts.records, opts.exrecords,
-                                cols, opts.columns, opts.excolumns)
-        if new_cols:
-            write_fields(outfile, new_cols, dialect.delimiter)
+        new_rec  = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
+                               rec, incl_col_slicer, excl_col_slicer)
+        if new_rec:
+            write_rec(csv_writer, new_rec, dialect.delimiter)
 
     fileinput.close()
     if opts.output != '-':
@@ -90,109 +132,185 @@ def main():
     return 0
 
 
-def process_cols(rec_number,
-                 incl_rec_spec, excl_rec_spec, 
-                 cols, 
-                 incl_col_spec, excl_col_spec):
-    """ Evaluates all the specifications against a record
-        from the input file.
+
+def get_input_file_info(input_files, opts):
+    """ Sets up input files based upon options and files.
+
+        Supports manual csv dialect creation - which is necessary
+        for stdin or when file_type gets confused about a file format.
+        Manual csv dialect creation is triggered by the existance of
+        a delimiter in opts.
+
+        Otherwise, it will attempt to use the automatic dialect
+        detection - which only works for files passed in as args,
+        which show up here as the input arg files.
+
+        Inputs:
+            - files
+            - opts
+        Returns:
+            - dialect
+    """
+    if opts.delimiter:
+        dialect                 = csv.Dialect
+        dialect.delimiter       = opts.delimiter
+        dialect.quoting         = file_type.get_quote_number(opts.quoting)
+        dialect.quotechar       = '"'
+        dialect.lineterminator  = '\n'
+    else:
+        assert(input_files)
+        my_file                 = file_type.FileTyper(input_files[0])
+        try:
+            dialect             = my_file.analyze_file()
+        except file_type.IOErrorEmptyFile:
+            return 1
+
+    if debug:
+        print '---- input dialect -----'
+        pprint(vars(dialect))
+
+    return dialect
+
+
+
+def get_output_file_info(opts, dialect):
+    """ Sets up output file based upon options:
+        Returns output file object
+    """
+    if opts.output == '-':
+        outfile = sys.stdout
+    else:
+        outfile = open(opts.output, "wb")
+
+    csv_writer = csv.writer(outfile, dialect=dialect)
+    return outfile, csv_writer
+
+
+
+def setup_slicer(opts, files, dialect):
+    """  Sets up the 4 slicer objects: inclusion & exclusion for
+         rec and column.
+
+         Then counts records and columns if negative slice references
+         exist and calls the spec adjuster.
+         Args:
+            - opts
+            - files
+            - dialect
+         Returns:
+            - incl_rec_slicer
+            - excl_rec_slicer
+            - incl_col_slicer
+            - excl_col_slicer
+    """
+    incl_rec_slicer = slicer.SpecProcessor(opts.records,   'incl_rec_spec')
+    excl_rec_slicer = slicer.SpecProcessor(opts.exrecords, 'excl_rec_spec')
+    incl_col_slicer = slicer.SpecProcessor(opts.columns,   'incl_col_spec')
+    excl_col_slicer = slicer.SpecProcessor(opts.excolumns, 'excl_col_spec')
+
+    rec_cnt = None
+    col_cnt = None
+    if incl_rec_slicer.has_negatives or excl_rec_slicer.has_negatives:
+        if not files and not opts.rec_count:
+            print 'negative record slicing with stdin requires record_count option'
+            return 2
+        else:
+            rec_cnt, col_cnt = get_file_counts(opts, files, dialect, rec=True)
+    incl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
+    excl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
+
+    if incl_col_slicer.has_negatives or excl_col_slicer.has_negatives:
+        if not files and not opts.column_count:
+            print 'negative column slicing with stdin requires column_count option'
+            return 2
+        elif not col_cnt:
+            dummy, col_cnt = get_file_counts(opts, files, dialect, col=True)
+    incl_col_slicer.spec_adjuster(loc_max=col_cnt)
+    excl_col_slicer.spec_adjuster(loc_max=col_cnt)
+
+    return incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer
+
+
+
+def get_file_counts(opts, files, dialect, rec=False, col=False):
+    """ Gets record and column counts for input files.
+        - Counts have an offset of 0
+        - if rec is True then it will read entire input file to get
+          record count, and return that plus the number of fields
+          based off the last record.
+        - if rec is False, then it will read just the first record to
+          get a field count.  And it will return None for rec count,
+          and the field count from the first record.
+    """
+    rec_cnt   = -1
+    for rec in csv.reader(fileinput.input(files), dialect):
+        rec_cnt  += 1
+        field_cnt = len(rec) -1
+        if not rec and rec_cnt > -1:
+            break
+    if rec:
+        return rec_cnt, field_cnt
+    else:
+        return None, field_cnt
+
+
+
+
+
+def process_rec(rec_number, incl_rec_slicer, excl_rec_slicer,
+                 rec, incl_col_slicer, excl_col_slicer):
+    """ Evaluates all the specifications against a single record
+        from the input file.  First it applies inclusion & exclusion
+        specifications against the record, then it applies inclusion
+        & exclusion specifications against each column.
         Input:
             - rec_number:      used for rec specs
             - incl_rec_spec
             - excl_rec_spec
-            - cols:            a list of all columns from the record
+            - rec:             a list of all columns from the record
             - incl_col_spec:   which columns to include
             - excl_col_spec:   which columns to exclude
         Output:
             - if the rec_number fails:  None
-            - if the rec_number passes: a list of the columns that passed
+            - if the rec_number passes: a list of the columns that qualified
     """
+    # minimal validation 
+    assert(int(rec_number) >= 0)
 
-    #pp(locals())
-
-    if not spec_evaluator(rec_number, incl_rec_spec):
+    # reject record if it isn't in the inclusion spec
+    if not incl_rec_slicer.spec_evaluator(rec_number):
         return None
-    elif spec_evaluator(rec_number, excl_rec_spec):
+
+    # reject record if it is in the exclusion spec
+    if excl_rec_slicer.spec_evaluator(rec_number):
         return None
 
-    output_cols = []
-    for col_number in range(len(cols)):
-        if not spec_evaluator(col_number, incl_col_spec):
+    output_rec = []
+    for col_number in range(len(rec)):
+        if not incl_col_slicer.spec_evaluator(col_number):
             continue
-        if spec_evaluator(col_number, excl_col_spec):
+        if excl_col_slicer.spec_evaluator(col_number):
             continue
-        output_cols.append(cols[col_number])
+        output_rec.append(rec[col_number])
 
-    return output_cols
-
-
-def spec_evaluator(value, spec_list):
-    """ Evaluates a number against a list of specifications.
-        Description:
-            - uses the python string slicing formats to specify
-              valid ranges (all offset from 0):
-              - 4, 5, 9 = values 4, 5, and 9 
-              - 1:3     = values 1 & 2 (end - 1)
-              - 5:      = values 5 to the end 
-              - :5      = values 0 to 4 (end - 1)
-              - :       = all values
-            - template:  spec, spec, spec:spec, spec, spec:spec
-            - example:   4,    8   , 10:14    , 21  , 48:55
-            - The above example is stored in a five-element spec-list
-        Input:
-            - value:  a column or record number
-            - spec_list: a list, can be None
-        Output:
-            - True if the number matches one of the specs
-            - False if the number does not match one of the specs
-            - False if the spec_list is empty
-        To do:
-            - support slice steps
-            - support negative numbers
-    """
-    if spec_list is None:
-        return False
-
-    int_value = int(value)
-    for spec in spec_list:
-        if ':' in spec:
-
-            if spec == ':':
-                return True
-
-            spec_parts = spec.split(':')
-            assert(len(spec_parts) <= 2)
-
-            if spec.endswith(':'):          
-                if int_value >= int(spec_parts[SMALL_SIDE]):
-                    return True
-            elif spec.startswith(':'):       
-                if int_value < int(spec_parts[LARGE_SIDE]):
-                    return True
-            else:
-                if (int(spec_parts[SMALL_SIDE]) 
-                    <= int_value 
-                    < int(spec_parts[LARGE_SIDE])):
-                    return True
-        elif int_value == int(spec):               
-            return True
-
-    return False
+    if output_rec:
+        return output_rec
+    else:
+        return None  # don't return empty list
 
 
 
-def write_fields(outfile, fields, delimiter):
-    """ Writes output to output destination.
+def write_rec(outfile, fields, delimiter):
+    """ Writes record to output object - using the same dialect as the input
+        file.
         Input:
             - list of fields to write
             - output object
+            - delimiter
         Output:
-            - delimited output record written to stdout
-        To Do:
-            - write to output file
+            - delimited output record written to output object
     """
-    rec = delimiter.join(fields)
-    outfile.write(rec + '\n')
+    outfile.writerow(fields)
 
 
 
@@ -202,15 +320,15 @@ def get_opts_and_args():
             - command line args & options
         Output:
             - opts dictionary
-            - args dictionary 
+            - args dictionary
     """
     use = ("%prog is used to extract column and row subsets out of files "
-           "and write them out to stdout or a given filename: \n" 
+           "and write them out to stdout or a given filename: \n"
            " \n"
            "   %prog [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-o', '--output', 
+    parser.add_option('-o', '--output',
            default='-',
            help='Specifies the output file.  The default is stdout.  Note that'
                 'if a filename is provided the program will override any '
@@ -235,30 +353,34 @@ def get_opts_and_args():
                  'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted single-column field delimiter. This may be'
-                 'determined automatically by the program.'))
-    parser.add_option('--quoting',
-           default=False,
-           help='Specify field quoting - generally only used for stdin data.'
-                '  The default is False.')
-    parser.add_option('--quotechar',
-           default='"',
-           help='Specify field quoting character - generally only used for '
-                'stdin data.  Default is double-quote')
-    parser.add_option('--recdelimiter',
-           help='Specify a quoted end-of-record delimiter. ')
-    parser.add_option('--hasheader',
+                 'determined automatically by the program in some cases.  But'
+                 ' stdin requires this to be provided, and automatic detection'
+                 ' can also sometimes get confused.  If you provide the delimiter'
+                 ' then you should also provide the quoting instruction.'))
+    parser.add_option('-q', '--quoting',
+           choices=('quote_all','quote_minimal','quite_nonnumeric','quote_none'),
+           default='quote_none',
+           help='Specify field quoting - used for stdin or when automatic detection '
+                'fails.   The default is quote_none')
+    parser.add_option('--long-help',
            default=False,
            action='store_true',
-           help='Indicate that there is a header in the file.')
+           help='Print more verbose help')
+    parser.add_option('--debug',
+           default=False,
+           action='store_true',
+           help='Print debugging info')
+
 
     (opts, files) = parser.parse_args()
 
-    if files:
-        if len(files) > 1 and not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
-    else:   # stdin
-        if not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    if opts.long_help:
+        print __doc__
+        sys.exit(0)
+
+    if not opts.delimiter:
+        if not files :
+            parser.error('Provide delimiter and quoting when piping data into program via stdin')
 
     def lister(arg_string):
         """ converts input commma-delimited string into a list

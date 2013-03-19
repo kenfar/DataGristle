@@ -15,9 +15,8 @@ import test_tools
 mod = test_tools.load_script('gristle_freaker')
 
 
-
 gen_rec_number     = 10000000   # 10 million
-print 'Number of records that will be generated: %d' % gen_rec_number
+#print 'Number of records that will be generated: %d' % gen_rec_number
 
 # shut off the printing of warnings & info statements from module
 old_stdout = sys.stdout
@@ -85,7 +84,7 @@ class Test_build_freq(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(suite())
 
 
 

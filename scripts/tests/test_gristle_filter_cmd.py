@@ -13,15 +13,13 @@ import unittest
 import time
 import subprocess
 
-#might be necessary for testing later:
-#import test_tools
-#mod = test_tools.load_script('gristle_filter')
-
+script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestCommandLine))
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
     return suite
 
@@ -61,7 +59,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_easy_file(self):
 
-        cmd = ['../gristle_filter',
+        cmd = [os.path.join(script_path, 'gristle_filter'),
                self.easy_fqfn, 
                '-c', '4 == foo']
         p = subprocess.Popen(cmd,
@@ -94,7 +92,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        cmd = ['../gristle_filter'   ,
+        cmd = [os.path.join(script_path, 'gristle_filter')   ,
                self.empty_fqfn       ,
                '-c', '0 == foo'      ]
         p =  subprocess.Popen(cmd,
@@ -103,11 +101,11 @@ class TestCommandLine(unittest.TestCase):
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            fail('produced output when input was empty')
+            self.fail('produced output when input was empty')
 
 
     def test_multiple_empty_files(self):
-        cmd = ['../gristle_filter'   ,
+        cmd = [os.path.join(script_path, 'gristle_filter')   ,
                self.empty_fqfn       ,
                self.empty_fqfn       ,
                '-d'  '|'             ,
@@ -118,11 +116,11 @@ class TestCommandLine(unittest.TestCase):
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            fail('produced output when input was empty')
+            self.fail('produced output when input was empty')
 
 
     def test_multiple_empty_and_full_files(self):
-        cmd = ['../gristle_filter'   ,
+        cmd = [os.path.join(script_path, 'gristle_filter')   ,
                self.empty_fqfn       ,
                self.easy_fqfn        ,
                '-d'  '|'             ,
@@ -134,11 +132,11 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = p_output[:-1].split('\n')
         assert(len(out_recs) == 90)
         if not out_recs:
-            fail('produced output when input was empty')
+            self.fail('produced output when input was empty')
 
 
     def test_multiple_full_files(self):
-        cmd = ['../gristle_filter'   ,
+        cmd = [os.path.join(script_path, 'gristle_filter')   ,
                self.easy_fqfn        ,
                self.easy_fqfn        ,
                '-d'  '|'             ,
@@ -150,23 +148,23 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = p_output[:-1].split('\n')
         assert(len(out_recs) == 180)
         if not out_recs:
-            fail('produced output when input was empty')
+            self.fail('produced output when input was empty')
 
 
 
     def test_empty_stdin(self):
-        cmd = "cat /dev/null | ../gristle_filter -c '0 == foo' -d '|'"
+        cmd = "cat /dev/null | %s -c '0 == foo' -d '|'" % (os.path.join(script_path, 'gristle_filter'))
         p   =  subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE,
                                 shell=True).communicate()
         p_output  = p[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            fail('produced output when input was empty')
+            self.fail('produced output when input was empty')
 
 
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(suite())
 

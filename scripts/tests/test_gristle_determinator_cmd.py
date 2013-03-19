@@ -9,7 +9,6 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
-
 import sys
 import os
 import tempfile
@@ -18,13 +17,14 @@ import unittest
 import time
 import subprocess
 import fileinput
+import envoy
+from pprint import pprint
 
-#might be necessary for testing later:
-#import test_tools; mod = test_tools.load_script('gristle_determinator')
 
-
+script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
 def suite():
+
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestFileStructure2))
     suite.addTest(unittest.makeSuite(TestFileStructure3))
@@ -39,12 +39,12 @@ def suite():
 
 def generate_test_file(delim, rec_list, quoted=False):
     (fd, fqfn) = tempfile.mkstemp()
-    fp = os.fdopen(fd,"w") 
- 
+    fp = os.fdopen(fd,"w")
+
     for rec in rec_list:
         if quoted:
             for i in range(len(rec)):
-                rec[i] = '"%s"' % rec[i] 
+                rec[i] = '"%s"' % rec[i]
         outrec = delim.join(rec)+'\n'
         fp.write(outrec)
 
@@ -73,17 +73,18 @@ class FileStructureFixtureManager(unittest.TestCase):
         # dictionary value is list that identifies value on each side of '=' in output
         # notes:
         #   - QUOTE_MINIMAL will generally be result rather than QUOTE_NONE - even if no quotes exist
+        #                            12:['lineterminator',   '%r' %  '\r\n' ] ,
         self.default_obj = { 2:['format type',      'csv']           ,
                              3:['field cnt',        '3']             ,
                              4:['record cnt',       '5']             ,
                              5:['has header',       'False']         ,
                              6:['delimiter',        '|']             ,
-                             7:['csv quoting',      'True']          ,  
+                             7:['csv quoting',      'False']         ,
                              8:['skipinitialspace', 'False']         ,
-                             9:['quoting',          'QUOTE_MINIMAL'] ,
+                             9:['quoting',          'QUOTE_NONE']    ,
                             10:['doublequote',      'False' ]        ,
                             11:['quotechar',        '"' ]            ,
-                            12:['lineterminator',   '%r' %  '\r\n' ] ,  
+                            12:['lineterminator',   '%r' %  '\n' ]   ,
                             13:['escapechar',       'None'         ] }
 
         # defines expected field analysis output:
@@ -111,99 +112,115 @@ class FileStructureFixtureManager(unittest.TestCase):
 
     def _eval_file_struct(self, fix):
 
-        p = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, close_fds=True)
-        p_output = p.communicate()[0]
-
-        p_recs   = p_output[:-1].split('\n')
-        assert(p_recs[1].startswith('File Structure:'))
+        r         = envoy.run(self.cmd)
+        p_recs    = r.std_out.split('\n')
+	del p_recs[0]
+        assert('File Structure:' in p_recs)
+        assert(p_recs[0].startswith('File Structure:'))
 
         objective = self.objective[fix]
         label     = self.label
         value     = self.value
 
+	#pprint(p_recs)
+	#pprint(objective)
+
         for rownum in objective.keys():
-            actual = p_recs[rownum].split(':')
+            actual = p_recs[rownum-1].split(':')
+	    #print actual
             try:
-               assert(actual[label].strip().startswith(objective[rownum][label]))
-               assert(actual[value].strip().startswith(objective[rownum][value]))
+               if not (actual[label].strip().startswith(objective[rownum][label])):
+	           print
+	           print '    Objective: %s' % objective
+		   print '    Actual:    %s' % actual
+		   self.fail('Incorrect label-actual:%s != objective: %s' % (actual[value], objective[rownum][value]))
+               if not (actual[value].strip().startswith(objective[rownum][value])):
+	           print
+	           print '    Objective: %s' % objective
+		   print '    Actual:    %s' % actual
+		   self.fail('Incorrect value for label: %s   actual: %s != objective: %s' % (actual[label],
+		             actual[value], objective[rownum][value]))
+               #assert(actual[value].strip().startswith(objective[rownum][value]))
             except:
                print 'actual:    %s %s' % (actual[label].strip(), actual[value].strip())
                print 'objective: %s %s' % (objective[rownum][label], objective[rownum][value])
                raise
 
-    def broken_eval_field_struct(self, fix):
-        # reads entire command output - skipping past file section and focusing
-        # on just the field bits
-
-        p = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, close_fds=True)
-        p_output = p.communicate()[0]
-
-        p_recs        = p_output[:-1].split('\n')
-        field_section = False
-        i             = 0
-        for rec in p_recs:      # work thru File Structure section
-            #print rec
-            if 'Fields Analysis Results:' in rec:
-                field_section  = True
-                i              = 1
-            if 'Top Values:' in rec:
-                field_section  = False
-            if not field_section:
-                continue
-            i  += 1            
-            if '----------------' in rec:
-                continue
-            if not rec:   
-                continue
-            if ':' in rec:
-                pair = rec.split(':')
-                self.field_analysis_results[pair[0].strip()] = pair[1].strip()
-                #print rec
-        #print self.field_analysis_results
-        print 'test harness is incomplete'
-        sys.exit(0)
-        assert(p_recs[1].startswith('File Structure:'))
-
-        objective = self.objective[fix]
-        label     = self.label
-        value     = self.value
-
-        for rownum in objective.keys():
-            actual = p_recs[rownum].split('=')
-            try:
-               assert(actual[label].strip().startswith(objective[rownum][label]))
-               assert(actual[value].strip().startswith(objective[rownum][value]))
-            except:
-               print 'actual:    %s %s' % (actual[label].strip(), actual[value].strip())
-               print 'objective: %s %s' % (objective[rownum][label], objective[rownum][value])
-               raise    
+#    def broken_eval_field_struct(self, fix):
+#        # reads entire command output - skipping past file section and focusing
+#        # on just the field bits
+#
+#        p = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, close_fds=True)
+#        p_output = p.communicate()[0]
+#
+#        p_recs        = p_output[:-1].split('\n')
+#        field_section = False
+#        i             = 0
+#        for rec in p_recs:      # work thru File Structure section
+#            #print rec
+#            if 'Fields Analysis Results:' in rec:
+#                field_section  = True
+#                i              = 1
+#            if 'Top Values:' in rec:
+#                field_section  = False
+#            if not field_section:
+#                continue
+#            i  += 1
+#            if '----------------' in rec:
+#                continue
+#            if not rec:
+#                continue
+#            if ':' in rec:
+#                pair = rec.split(':')
+#                self.field_analysis_results[pair[0].strip()] = pair[1].strip()
+#                #print rec
+#        #print self.field_analysis_results
+#        print 'test harness is incomplete'
+#        sys.exit(0)
+#        assert(p_recs[1].startswith('File Structure:'))
+#
+#        objective = self.objective[fix]
+#        label     = self.label
+#        value     = self.value
+#
+#        for rownum in objective.keys():
+#            actual = p_recs[rownum].split('=')
+#            try:
+#               assert(actual[label].strip().startswith(objective[rownum][label]))
+#               assert(actual[value].strip().startswith(objective[rownum][value]))
+#            except:
+#               print 'actual:    %s %s' % (actual[label].strip(), actual[value].strip())
+#               print 'objective: %s %s' % (objective[rownum][label], objective[rownum][value])
+#               raise
 
 
     def test_simple_file_counts(self):
         fix = 1
-        fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator', fn, '-b' ]   # may need to be overridden
-        #for rec in fileinput.input(fn):  print rec
+        fn  = self._create_fixture(fix)
+        #self.cmd = [os.path.join(script_path, 'gristle_determinator'), fn, '-b' ]   # may need to be overridden
+        self.cmd = '%s %s -b' % (os.path.join(script_path, 'gristle_determinator'), fn)   # may need to be overridden
+	print '-----------------------------------------------------------'
+	print self.cmd
         self._eval_file_struct(fix)
 
-    def test_empty_files(self):
-        # Test behavior with one or both files empty
-        pass
+    #def test_empty_files(self):
+    #    # Test behavior with one or both files empty
+    #    pass
 
-    def test_multi_column(self):
-        # Tests ability to specify multiple key or comparison columns
-        pass
+    #def test_multi_column(self):
+    #    # Tests ability to specify multiple key or comparison columns
+    #    pass
 
-    def test_dialect_overrides(self):
-        # Tests hasheader, delimiter, and recdelimiter args
-        pass
+    #def test_dialect_overrides(self):
+    #    # Tests hasheader, delimiter, and recdelimiter args
+    #    pass
 
-    def broken_test_simple_field_counts(self):
-        fix = 2
-        fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator', fn, '-c', 0 ]   # may need to be overridden
-        #for rec in fileinput.input(fn):  print rec
-        self._eval_field_struct(fix)
+    #def broken_test_simple_field_counts(self):
+    #    fix = 2
+    #    fn  = self._create_fixture(fix) 
+    #    self.cmd = [os.path.join(script_path, 'gristle_determinator'), fn, '-c', '0' ]   # may need to be overridden
+    #    #for rec in fileinput.input(fn):  print rec
+    #    self._eval_field_struct(fix)
 
 
 class TestFileStructure2(FileStructureFixtureManager):
@@ -211,9 +228,11 @@ class TestFileStructure2(FileStructureFixtureManager):
     def _create_fixture(self, fix):
 
         self.recs[fix]         = self.default_recs
-        self.filename[fix]     = generate_test_file('?', self.recs[fix])
+        self.filename[fix]     = generate_test_file('?', self.recs[fix], quoted=False)
         self.objective[fix]    = self.default_obj
-        self.objective[fix][6] = ['delimiter', '?']  
+        self.objective[fix][6] = ['delimiter', '?']
+        self.objective[fix][7] = ['csv quoting', 'False']
+        self.objective[fix][9] = ['quoting', 'QUOTE_NONE']
         return self.filename[fix]
 
     def test_simple_field_counts(self):
@@ -227,9 +246,11 @@ class TestFileStructure3(FileStructureFixtureManager):
     def _create_fixture(self, fix):
 
         self.recs[fix]         = self.default_recs
-        self.filename[fix]     = generate_test_file(',', self.recs[fix])
+        self.filename[fix]     = generate_test_file(',', self.recs[fix], quoted=False)
         self.objective[fix]    = self.default_obj
-        self.objective[fix][6] = ['delimiter', ',']  
+        self.objective[fix][6] = ['delimiter', ',']
+        self.objective[fix][7] = ['csv quoting', 'False']
+        self.objective[fix][9] = ['quoting', 'QUOTE_NONE']
         return self.filename[fix]
 
     def test_simple_field_counts(self):
@@ -246,7 +267,9 @@ class TestFileStructure4(FileStructureFixtureManager):
         self.recs[fix]         = self.default_recs
         self.filename[fix]     = generate_test_file('|', self.recs[fix], quoted=True)
         self.objective[fix]    = self.default_obj
-        self.objective[fix][6] = ['delimiter', '|']  
+        self.objective[fix][6] = ['delimiter', '|']
+        self.objective[fix][7] = ['csv quoting', 'True']
+        self.objective[fix][9] = ['quoting', 'QUOTE_ALL']
         return self.filename[fix]
 
     def test_simple_field_counts(self):
@@ -267,7 +290,9 @@ class TestFileStructure5(FileStructureFixtureManager):
         self.recs[fix]         = self.default_recs
         self.filename[fix]     = generate_test_file('|', self.recs[fix], quoted=True)
         self.objective[fix]    = self.default_obj
-        self.objective[fix][6] = ['delimiter', '|']  
+        self.objective[fix][6] = ['delimiter', '|']
+        self.objective[fix][7] = ['csv quoting', 'True']
+        self.objective[fix][9] = ['quoting', 'QUOTE_ALL']
         return self.filename[fix]
 
     def test_simple_field_counts(self):
@@ -279,8 +304,6 @@ class TestFileStructure5(FileStructureFixtureManager):
 class TestFileStructureSingleCol(FileStructureFixtureManager):
     """ Test a single empty column
     """
-    #print 'TestFileStrucutreSingleCol'
-
     def _create_fixture(self, fix):
 
         self.default_recs = [ ['Alabama','','18'],
@@ -292,16 +315,18 @@ class TestFileStructureSingleCol(FileStructureFixtureManager):
         self.recs[fix]         = self.default_recs
         self.filename[fix]     = generate_test_file('|', self.recs[fix], quoted=True)
         self.objective[fix]    = self.default_obj
-        self.objective[fix][6] = ['delimiter', '|']  
+        self.objective[fix][6] = ['delimiter', '|']
+        self.objective[fix][7] = ['csv quoting', 'True']
+        self.objective[fix][9] = ['quoting', 'QUOTE_ALL']
         return self.filename[fix]
 
-    def test_simple_file_counts(self):
-        pass
+#    def test_simple_file_counts(self):
+#        pass
 
-    def broken_test_simple_field_counts(self):
-        fix = 2
-        fn  = self._create_fixture(fix) 
-        self.cmd = ['../gristle_determinator', fn, '-c', '1' ]   # may need to be overridden
+#    def broken_test_simple_field_counts(self):
+#        fix = 2
+#        fn  = self._create_fixture(fix) 
+#        self.cmd = [os.path.join(script_path, 'gristle_determinator'), fn, '-c', '1' ]   # may need to be overridden
 
 
 if __name__ == "__main__":

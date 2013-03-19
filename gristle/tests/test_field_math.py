@@ -21,17 +21,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import gristle.field_math  as mod
 
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(Test_get_variance_and_stddev))
-    suite.addTest(unittest.makeSuite(TestGetDictMedian))
-    suite.addTest(unittest.makeSuite(Test_get_tuple_list))
-    suite.addTest(unittest.makeSuite(Test_get_numeric_tuple_list))
-    suite.addTest(unittest.makeSuite(Test_get_median_subs))
-    suite.addTest(unittest.makeSuite(Test_get_median_keys))
-    suite.addTest(unittest.makeSuite(TestGetMean))
-
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(Test_get_variance_and_stddev))
+#    suite.addTest(unittest.makeSuite(TestGetDictMedian))
+#    suite.addTest(unittest.makeSuite(Test_get_tuple_list))
+#    suite.addTest(unittest.makeSuite(Test_get_numeric_tuple_list))
+#    suite.addTest(unittest.makeSuite(Test_get_median_subs))
+#    suite.addTest(unittest.makeSuite(Test_get_median_keys))
+#    suite.addTest(unittest.makeSuite(TestGetMean))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#
+#    return suite
 
 
 class Test_get_variance_and_stddev(unittest.TestCase):
@@ -246,6 +247,6 @@ class Test_get_mean_length(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-    unittest.main()
+#if __name__ == "__main__":
+#    unittest.main(suite())
 

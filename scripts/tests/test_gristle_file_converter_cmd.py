@@ -13,22 +13,20 @@ import unittest
 import time
 import subprocess
 
-#might be necessary for testing later:
-#import test_tools
-#mod = test_tools.load_script('gristle_file_converter')
-
+script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestCommandLine))
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
     return suite
 
 
 def generate_test_file(delim, record_cnt):
     (fd, fqfn) = tempfile.mkstemp()
-    fp = os.fdopen(fd,"w") 
- 
+    fp = os.fdopen(fd,"w")
+
     for i in range(record_cnt):
         fields = []
         fields.append(str(i))
@@ -54,7 +52,7 @@ class TestCommandLine(unittest.TestCase):
 
     def test_input_and_output_del(self):
 
-        cmd = ['../gristle_file_converter',
+        cmd = [os.path.join(script_path, 'gristle_file_converter'),
                self.easy_fqfn, 
                '-d', '|',
                '-D', ',']
@@ -69,7 +67,7 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_output_del_only(self):
-        cmd = "../gristle_file_converter  %s -D ',' " % self.easy_fqfn
+        cmd = "%s  %s -D ',' " % (os.path.join(script_path, 'gristle_file_converter'), self.easy_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -84,16 +82,17 @@ class TestCommandLine(unittest.TestCase):
 
 
     def test_empty_file(self):
-        cmd = "../gristle_file_converter %s -d'|' -D','" % self.empty_fqfn
+        cmd = "%s  %s -d'|' -D ',' " % (os.path.join(script_path, 'gristle_file_converter'),
+                                        self.empty_fqfn)
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            fail('produced output when input was empty')
+            self.fail('produced output when input was empty')
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(suite())
 

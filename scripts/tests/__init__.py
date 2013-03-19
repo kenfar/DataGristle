@@ -13,9 +13,9 @@ import test_gristle_filter_cmd          as filter_cmd
 import test_gristle_freaker             as freaker
 import test_gristle_freaker_cmd         as freaker_cmd
 import test_gristle_slicer_cmd          as slicer_cmd
-import test_gristle_slicer              as slicer
 import test_gristle_viewer_cmd          as viewer_cmd
 import test_gristle_scalar_cmd          as scalar_cmd
+import test_gristle_file_converter_cmd  as conv_cmd
 import test_gristle_file_converter      as conv
 
 
@@ -31,12 +31,12 @@ def main():
     suite.addTest(scalar_cmd.suite())
     suite.addTest(slicer_cmd.suite())
     suite.addTest(viewer_cmd.suite())
-#   suite.addTest(conv.suite())  # this messes up the suite for some reason
+    suite.addTest(conv.suite())
+    suite.addTest(conv_cmd.suite())
     unittest.TextTestRunner(verbosity=2).run(suite)
 
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     main()
 
 

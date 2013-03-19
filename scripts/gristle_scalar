@@ -34,11 +34,13 @@ import optparse
 import csv
 import collections
 import fileinput
+import os
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------
-sys.path.append('../')     # allows running out of project structure
-sys.path.append('../../')  # allows running out of project structure test dir
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import gristle.file_type           as file_type 
 
 #--- global variables ------------------

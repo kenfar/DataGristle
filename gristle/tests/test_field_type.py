@@ -19,17 +19,18 @@ import gristle.field_type  as mod
 
 
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(Test_is_integer))
-    suite.addTest(unittest.makeSuite(Test_is_float))
-    suite.addTest(unittest.makeSuite(Test_is_string))
-    suite.addTest(unittest.makeSuite(Test_is_unknown))
-    suite.addTest(unittest.makeSuite(Test_is_timestamp))
-    suite.addTest(unittest.makeSuite(TestGetType))
-    suite.addTest(unittest.makeSuite(TestGetFieldType))
-
-    return suite
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(unittest.makeSuite(Test_is_integer))
+#    suite.addTest(unittest.makeSuite(Test_is_float))
+#    suite.addTest(unittest.makeSuite(Test_is_string))
+#    suite.addTest(unittest.makeSuite(Test_is_unknown))
+#    suite.addTest(unittest.makeSuite(Test_is_timestamp))
+#    suite.addTest(unittest.makeSuite(TestGetType))
+#    suite.addTest(unittest.makeSuite(TestGetFieldType))
+#    unittest.TextTestRunner(verbosity=2).run(suite)
+#
+#    return suite
 
 
 
@@ -263,7 +264,7 @@ class TestGetFieldType(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-    unittest.main()
+#if __name__ == "__main__":
+#    unittest.main(suite())
 
 

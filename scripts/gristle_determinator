@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 """ Used to identify characteristics of a file
-    contains:
-      - main function
-      - get_opts_and_args function
 
-    To do:
-      - tell user about -h option on arg error
 
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
@@ -20,20 +15,12 @@ import os
 import optparse
 
 #--- gristle modules -------------------
-#sys.path.insert(0, '../')     # allows running out of project structure
-#sys.path.insert(0,'../../')  # allows running out of project structure
-sys.path.append('../')     # allows running out of project structure
-sys.path.append('../../')  # allows running out of project structure
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gristle.file_type           as file_type 
+import gristle.file_type           as file_type
 import gristle.field_determinator  as field_determinator
 
-
-QUOTE_DICT = {}
-QUOTE_DICT[0] = 'QUOTE_MINIMAL'
-QUOTE_DICT[1] = 'QUOTE_ALL'
-QUOTE_DICT[2] = 'QUOTE_NONNUMERIC'
-QUOTE_DICT[3] = 'QUOTE_NONE'
 
 #import pprint as pp
 #from pprint import pprint as pp
@@ -72,27 +59,27 @@ def main():
     my_fields = field_determinator.FieldDeterminator(files[0],
                                   my_file.format_type,
                                   my_file.field_cnt,
-                                  my_file.has_header,
+                                  my_file.dialect.has_header,
                                   my_file.dialect,
-                                  my_file.delimiter,
+                                  my_file.dialect.delimiter,
                                   opts.recdelimiter,
                                   opts.verbose)
-    
+
     if opts.column_type_overrides:
         assert max(opts.column_type_overrides) < my_file.field_cnt,   \
            "ERROR: column_type_override references non-existing column_number"
 
-    my_fields.analyze_fields(opts.column_number, 
+    my_fields.analyze_fields(opts.column_number,
                              opts.column_type_overrides,
                              opts.number)
 
     if not opts.silent:
-        print_field_info(my_fields, opts.column_number, outfile) 
+        print_field_info(my_fields, opts.column_number, outfile)
 
     if opts.output:
         outfile.close()
 
-    return 0     
+    return 0
 
 
 def print_file_info(my_file, outfile):
@@ -104,12 +91,13 @@ def print_file_info(my_file, outfile):
     w('  format type:       %s\n'     % my_file.format_type)
     w('  field cnt:         %d\n'     % my_file.field_cnt)
     w('  record cnt:        %d\n'     % my_file.record_cnt)
-    w('  has header:        %s\n'     % my_file.has_header)
+    w('  has header:        %s\n'     % my_file.dialect.has_header)
 
-    w('  delimiter:         %-6s  \n' % my_file.delimiter)
+    w('  delimiter:         %-6s  \n' % my_file.dialect.delimiter)
     w('  csv quoting:       %-6s  \n' % my_file.csv_quoting)
     w('  skipinitialspace:  %r    \n' % my_file.dialect.skipinitialspace)
-    w('  quoting:           %-6s  \n' % QUOTE_DICT[my_file.dialect.quoting])
+    w('  quoting:           %-6s  \n' % file_type.get_quote_name(my_file.dialect.quoting))
+    ####w('  quoting:           %-6s  \n' % QUOTE_DICT[my_file.dialect.quoting])
     w('  doublequote:       %-6r  \n' % my_file.dialect.doublequote)
     w('  quotechar:         %-6s  \n' % my_file.dialect.quotechar)
     w('  lineterminator:    %r    \n' % my_file.dialect.lineterminator)
@@ -166,7 +154,7 @@ def print_field_info(my_fields, column_number, outfile):
                 for pair in sorted_list:
                     w('         %-40s x %d occurrences\n' % \
                           ( pair[key_sub], pair[val_sub]))
-    
+
 
 
 def get_opts_and_args():

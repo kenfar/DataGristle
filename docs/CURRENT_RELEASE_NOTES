@@ -20,11 +20,19 @@ Primary Internal Changes
 	- scripts/tests                                                 - done
 	- gristle                                                       - done
 	- gristle/tests                                                 - done
-	- docs                                                          - ?
+	- docs                                                          - done
+    - csv dialect handling
+        - substantial consistency improvements made to determinator,
+	  viewer, slicer, freaker as well as file_type library
+    - script tests
+        - minor improvements to determinator, viewer, slicer testing
+    - slicer
+        - major enhancements to slicer - to allow negative slices
     - gristle_validator text
         - fix incorrect program help and other comments
     - readme
         - resolve .txt vs .md vs .rst
+	- added descriptions to mature tools and usage examples
     - testing
         - added testing with tox and included tox.ini file
 	- added coverage usage and included .coveragerc files
@@ -35,7 +43,7 @@ Overall Testing status:
 ===============================================================================
     - test harness on python 2.7    - done
     - test harness on python 2.6    - done
-    - run pylint                    -
+    - run pylint                    - done
     - check coverage                - done
     - test automatically installing:
         - sqlalchemy
@@ -167,8 +175,6 @@ Manual test cases:
     - full arg after empty file arg --
     - single empty filename arg     -- in test harness
     - single full filename arg      -- in test-harness
-    - file passed via stdin empty   -- in test-harness
-    - file passed via stdin full    -- in test-harness
 
 3.  gristle_determinator.py         
     - single empty filename arg:    -- 

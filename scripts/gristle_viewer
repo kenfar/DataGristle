@@ -1,23 +1,48 @@
 #!/usr/bin/env python
-""" Display data a single record of a file, one field per line, with
-    field names displayed as labels to the left of the field values.
+""" Displays a single record of a file, one field per line, with field names
+    displayed as labels to the left of the field values.  Also allows simple
+    navigation between records.
 
-    Also allows simple navigation between records.
+    Arguments & Options:
+      <filename>            Can be more or more csv files.  Stdin is not supported.
+      -o, --output=<fn>     Specify the output file.  The default is stdout.
+      -r, --recnum=<int>    Specify the record number to display.  Starts with an offset of
+                            0, defaults to 1.
+      -d, --delimiter=<del> Specify a single-character field delimiter.  Typically
+                            useful if automatic csv dialect detection fails to correctly
+                            interpret file. If provided then quoting should also be provided.
+       -q, --quoting=<qt>   Specify quoting behavior.  Typically used when automatic
+                            csv dialect detection fails.  Values:
+                               - quote_all - all fields are quoted
+                               - quote_none - no fields are quoted.  This is the
+                                 default used if the delimiter is overridden.
+                               - quote_minimal - only quoting of fields with
+                                 special characters.
+                               - quote_nonnumeric - only quotes text fields.
+       -h, --help           Print help and exit.
+       --long-help          Print verbose help and exit.
 
-    To do:
-       1.  check for recnum > number of records in input file
-       2.  consider adding records up to some threshold to dictionary
-           to allow navigation for stdin data & faster for files
-       3.  confirm that record counting works identical for each situation
-       4.  use header info when using stdin
-       5.  improve error if no args provided - recommend -h for help
-       6.  fix broken pipes in this program or others
+    Examples:
+       $ gristle_viewer sample.csv -r 3
+                    Presents the third record in the file with one field per line
+                    and field names from the header record as labels in the left
+                    column.
+       $ gristle_viewer sample.csv -r 3  -d '|' -q quote_none
+                    In addition to what was described in the first example this
+                    adds explicit csv dialect overrides.
 
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
     Copyright 2011,2012,2013 Ken Farmer
 """
+#    To do:
+#       1.  check for recnum > number of records in input file
+#       2.  consider adding records up to some threshold to dictionary
+#           to speed navigation for files.
+#       3.  confirm that record counting works identical for each situation
+#       5.  improve error if no args provided - recommend -h for help
+#       6.  fix broken pipes in this program or others
 
 #--- standard modules ------------------
 from __future__ import division
@@ -26,68 +51,47 @@ import sys
 import optparse
 import csv
 import fileinput
-from pprint import pprint as pp
-
+from pprint import pprint 
 
 #--- gristle modules -------------------
-sys.path.append('../')     # allows running out of project structure
-sys.path.append('../../')  # allows running out of project structure
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import gristle.file_type           as file_type 
 import gristle.field_determinator  as field_determinator
 import gristle.field_type          as field_type
 
+debug = False
 
-#------------------------------------------------------------------------------
-# Command-line section 
-#------------------------------------------------------------------------------
 def main():
     """ Analyzes file then displays a single record and allows simple 
         navigation between records.
     """
     (opts, files) = get_opts_and_args()
 
+    if not os.path.exists(files[0]):
+        print 'ERROR: file %s does not exist' % files[0]
+        sys.exit(1)
     if len(files) == 1:
-        my_file                = file_type.FileTyper(files[0], opts.delimiter)
         try:
-            my_file.analyze_file()
-        except file_type.IOErrorEmptyFile:
-            return 1
-        my_fields              = field_determinator.FieldDeterminator(files[0],
-                                      my_file.format_type,
-                                      my_file.field_cnt,
-                                      my_file.has_header,
-                                      my_file.dialect,
-                                      opts.verbose)
-        try:
-            my_fields.analyze_fields()
-        except field_determinator.IOErrorEmptyFile:
-            return 1
+            if os.path.getsize(files[0]) == 0:
+                print 'ERROR: file %s is empty' % files[0]
+                sys.exit(1)
+        except OSError:
+            print 'ERROR: file %s has issues' % files[0]
+            sys.exit(1)
 
-        dialect                = my_file.dialect
-    else:
-        # Dialect parameters needed for stdin - since the normal code can't
-        # analyze this data & guess the csv properties.
-        my_fields              = None
-        dialect                = csv.Dialect
-        dialect.delimiter      = opts.delimiter
-        dialect.quoting        = opts.quoting
-        dialect.quotechar      = opts.quotechar
-        dialect.lineterminator = '\n'                 # naive assumption
+    dialect, my_fields    = get_input_file_info(files, opts)
 
     while True:
-        rec = get_rec(files, 
-                      opts.recnum, 
+        rec = get_rec(files,
+                      opts.recnum,
                       dialect)
         if rec is None:
             print 'No record found'
             return
 
         display_rec(rec, my_fields, opts.output)
-
-        # Need to end here if data came from stdin:
-        if not files:
-            break
 
         # Need to end here if data is being directed to a file - and not interactive
         if opts.output:
@@ -106,17 +110,60 @@ def main():
             opts.recnum = int(response)
         else:
             print 'Invalid response, please enter q, p, n, t, or a specific record number'
-        
+
         print response
 
-    return 0     
+    return 0
+
+
+
+def get_input_file_info(input_files, opts):
+    """ Gets information about csv dialect and field info from input files 
+        and user-supplied options.
+
+        Supports manual csv dialect creation - which is necessary
+        if the automatic dialect detects gets confused about a file format.
+        Manual csv dialect creation is triggered by the existance of
+        a delimiter in opts.
+
+        Otherwise, it will attempt to use the automatic dialect
+        detection - which only works for files passed in as args,
+        which show up here as the input arg files.
+
+        Inputs:
+            - files
+            - opts
+        Returns:
+            - dialect
+            - my_fields
+    """
+    assert(input_files)
+    my_file    = file_type.FileTyper(input_files[0],
+                                     delimiter=opts.delimiter,
+                                     quoting=file_type.get_quote_number(opts.quoting))
+    try:
+        dialect             = my_file.analyze_file()
+    except file_type.IOErrorEmptyFile:
+        return 1
+
+    if debug:
+        print '---- input dialect -----'
+        pprint(vars(dialect))
+
+    my_fields  = field_determinator.FieldDeterminator(input_files[0]      ,
+                                                      my_file.format_type ,
+                                                      my_file.field_cnt   ,
+                                                      dialect.has_header  ,
+                                                      dialect)
+    my_fields.analyze_fields()
+
+    return dialect, my_fields
 
 
 
 def display_rec(rec, my_fields, outfile_name):
     """ Displays a single record
     """
-
     # figure out label length for formatting:
     field_names = []
     if my_fields:
@@ -128,14 +175,14 @@ def display_rec(rec, my_fields, outfile_name):
         field_names = my_fields.field_names
     else:
         for sub in range(len(rec)):
-            field_names.append('field_%d' % sub)        
+            field_names.append('field_%d' % sub)
         min_format_len = 12
 
     if outfile_name:
         outfile = open(outfile_name, 'w')
     else:
         outfile = sys.stdout
-    
+
     # write in column order:
     for sub in range(len(rec)):
         outfile.write('%-*s  -  %-40s\n' % (min_format_len, field_names[sub], rec[sub]))
@@ -181,49 +228,39 @@ def get_opts_and_args():
             - command line args & options
         Output:
             - opts dictionary
-            - args dictionary 
+            - args dictionary
     """
     use = ("The %prog is used to view data one record at a time. \n"
            "   %prog  [file] -q -v -h --delimiter [value] "
            "--recnum [value] \n")
 
     parser = optparse.OptionParser(usage = use)
-    parser.add_option('-o', '--output', 
+    parser.add_option('-o', '--output',
            help='Specifies the output file, defaults to stdout.')
-    parser.add_option('-q', '--quiet',
-           action='store_false',
-           dest='verbose',
-           default=False,
-           help='provides less detail')
-    parser.add_option('-v', '--verbose',
-           action='store_true',
-           dest='verbose',
-           help='provides more detail')
     parser.add_option('-r', '--recnum',
            default=1,
            type=int,
            help='display this record number, start at 0, default to 1')
     parser.add_option('-d', '--delimiter',
            help='Specify a quoted field delimiter. ')
-    parser.add_option('--quoting',
+    parser.add_option('-q', '--quoting',
+           choices=('quote_all','quote_minimal','quite_nonnumeric','quote_none'),
+           default='quote_none',
+           help='Specify field quoting - used when automatic detection '
+                'fails.   The default is quote_none')
+    parser.add_option('--long-help',
            default=False,
-           help='Specify field quoting - generally only used for stdin data.'
-                '  The default is False.')
-    parser.add_option('--quotechar',
-           default='"',
-           help='Specify field quoting character - generally only used for '
-                'stdin data.  Default is double-quote')
+           action='store_true',
+           help='Print more verbose help')
 
     (opts, files) = parser.parse_args()
 
-    if files:
-        if len(files) > 1 and not opts.delimiter:
-            print 'missing delimiter - will abort'
-            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
-    else:   # stdin
-        if not opts.delimiter:
-            print 'missing delimiter - will abort'
-            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    if opts.long_help:
+        print __doc__
+        sys.exit(0)
+
+    if not files:
+        parser.error('Please provide the files to view as an argument')
 
     return opts, files
 
