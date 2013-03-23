@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = "0.46"
+version = "0.47"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
 LONG_DESCRIPTION = open('README.txt').read()
 
@@ -45,5 +45,4 @@ setup(name             = 'datagristle'     ,
                               'pytester'            ,
                               'unittest2'          ],
       packages     = find_packages(),
-      test_suite   = 'gristle.tests.__init__.py'
      )

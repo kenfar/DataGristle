@@ -3,12 +3,12 @@ build
 development_notes.txt
 dist
 dist/*
-gristle.egg-info
 include
 lib
 obsolete
 .pytest.restart
 *.pyc
+datagristle.egg-info
 .*.swp
 .coverage
 __pycache__

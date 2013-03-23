@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-""" Purpose of this module is to identify the mathematical characteristics of 
-    data.  All functions are intended to work on string data, but most are 
+""" Purpose of this module is to identify the mathematical characteristics of
+    data.  All functions are intended to work on string data, but most are
     limited to data that can be represented as integers or floats.
 
     Classes & Functions Include:
@@ -51,10 +51,10 @@ def get_mean_length(values):
     for value in values:
         if field_type.is_unknown(value):
             continue
-        try:                   
+        try:
             accum += len(value) * int(values[value])
             count += int(values[value])
-        except ValueError:    
+        except ValueError:
             pass                # usually 'unknown values', sometimes garbage
     try:
         return accum / count
@@ -85,12 +85,12 @@ def get_variance_and_stddev(values, mean=None):
         mean = get_mean(values)
 
     for value in values:
-        try:                    
+        try:
             accum += math.pow(mean - int(value), 2)  * int(values[value])
             count += int(values[value])
         except ValueError:      # catches dictionary with string
             pass                # usually 'unknown values', sometimes garbage
-          
+
     try:
         variance = accum / count
         stddev   = math.sqrt(variance)
@@ -116,22 +116,13 @@ def get_mean(values):
     accum   = 0
 
     for value in values:
-        #print value
-        try:                    
-            #accum += int(value) * int(values[value])
-            #count += int(values[value])
+        try:
             accum += float(value) * float(values[value])
             count += float(values[value])
-            #print accum
-            #print count
-            #print 'worked!'
         except ValueError:      # catches occasional garbage data
-            #print 'failed!'
-            pass                
-          
+            pass
+
     try:
-        #print 'final value: '
-        #print accum / count
         return accum / count
     except ZeroDivisionError:
         return None
@@ -150,7 +141,7 @@ class GetDictMedian(object):
     def run (self, values):
         """ calculates the median on a list or dictionary of numbers
         """
-     
+
         #---- catch empty inputs ------------------------------------------
         if not values:
             return None
@@ -178,7 +169,7 @@ class GetDictMedian(object):
 
         #--- avg mid 2 scores (will be identical for odd counts) ----------
         try:
-            self.median = (low_val + high_val) / 2   
+            self.median = (low_val + high_val) / 2
         except UnboundLocalError:   # empty input will have vals of None
             self.median = None
 
@@ -207,7 +198,7 @@ class GetDictMedian(object):
             except ValueError:
                 pass
         return numeric_list
-       
+
 
     def _get_tuple_list_count(self, tuple_list):
         """ Returns a count of the number of pairs in the tuple_list
@@ -216,10 +207,10 @@ class GetDictMedian(object):
         count = 0
         for pair in tuple_list:
             count += pair[1]
- 
+
         return count
 
-    def _get_median_subs(self, count):    
+    def _get_median_subs(self, count):
         """ Identifies 2 middle number out of a count
             Inputs:
               - count:    assumed to be the length of a list
@@ -231,8 +222,8 @@ class GetDictMedian(object):
         """
         if count <= 0:
             return 0, 0
- 
-        middle  = count // 2 
+
+        middle  = count // 2
         if count % 2 == 1:
             low_sub  = middle
             high_sub = middle
@@ -241,11 +232,11 @@ class GetDictMedian(object):
             high_sub = middle
 
         return low_sub, high_sub
-           
+
 
     def _get_median_keys(self, sorted_tuples, sub):
         """ Determines middle keys in a list of sorted tuples.
-            - Dependencies:  
+            - Dependencies:
                 - must be 2 items per tuple
                 - list must be sorted by first element of each tuple
                 - sub must be validated against list - and exist
