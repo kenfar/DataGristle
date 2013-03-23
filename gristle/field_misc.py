@@ -8,16 +8,16 @@
       - get_max
       - get_max_length
       - get_min_length
-    
+
     Todo:
-      - get_field_freq()  
+      - get_field_freq()
           - change get_field_rec to better handle files within inconsistent
             number of fields
       - get_max() & get_min():
-          - doesn't report to caller number of values rejected due to 
+          - doesn't report to caller number of values rejected due to
             unknown or invalid values
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
 from __future__ import division
@@ -31,7 +31,7 @@ import gristle.field_type as typer
 MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
 
 
-def get_field_names(filename, 
+def get_field_names(filename,
                     dialect,
                     col_number=None):
     """ Determines names of fields 
@@ -42,7 +42,7 @@ def get_field_names(filename,
     """
     reader = csv.reader(open(filename, 'r'), dialect=dialect)
     try:
-        field_names = reader.next()    
+        field_names = reader.next()
     except StopIteration:
         return None              # empty file
 
@@ -117,7 +117,7 @@ def get_case(field_type, values):
     return case
 
 
-def get_field_freq(filename, 
+def get_field_freq(filename,
                    dialect,
                    field_number,
                    max_freq_size=MAX_FREQ_SIZE_DEFAULT):
@@ -143,13 +143,13 @@ def get_field_freq(filename,
             print '      WARNING: freq dict is too large - will trunc'
             truncated = True
             break
-        
+
     return freq, truncated, invalid_row_cnt
 
 
 
 def get_min(value_type, values):
-    """ Returns the minimum value of the input.  Ignores unknown values, if 
+    """ Returns the minimum value of the input.  Ignores unknown values, if
         no values found besides unknown it will just return 'None'
 
         Inputs:
@@ -160,12 +160,12 @@ def get_min(value_type, values):
 
         Test Coverage:
           - complete via test harness
- 
+
         Issues:
-          - doesn't report to caller number of values rejected due to 
+          - doesn't report to caller number of values rejected due to
             unknown or invalid values
     """
-    assert(value_type in ['integer', 'float', 'string', 'timestamp', 
+    assert(value_type in ['integer', 'float', 'string', 'timestamp',
                           'unknown', None])
     unknown_field_cnt = 0
     invalid_field_cnt = 0
@@ -204,7 +204,7 @@ def get_min(value_type, values):
 
 
 def get_max(value_type, values):
-    """ Returns the maximum value of the input.  Ignores unknown values, if 
+    """ Returns the maximum value of the input.  Ignores unknown values, if
         no values found besides unknown it will just return 'None'
 
         Inputs:
@@ -217,10 +217,10 @@ def get_max(value_type, values):
           - complete via test harness
 
         Issues:
-          - doesn't report to caller number of values rejected due to 
+          - doesn't report to caller number of values rejected due to
             unknown or invalid values
     """
-    assert(value_type in ['integer', 'float', 'string', 'timestamp', 
+    assert(value_type in ['integer', 'float', 'string', 'timestamp',
                           'unknown', None])
     unknown_field_cnt = 0
     invalid_field_cnt = 0
