@@ -52,9 +52,9 @@ class FieldDeterminator(object):
           - self.field_trunc  - dictionary with fieldnumber key
     """
 
-    def __init__(self        , 
-                 filename    , 
-                 format_type , 
+    def __init__(self        ,
+                 filename    ,
+                 format_type ,
                  field_cnt   ,
                  has_header  ,
                  dialect     ,
@@ -170,7 +170,7 @@ class FieldDeterminator(object):
                 self.field_mean[f_no]   = mather.get_mean(self.field_freqs[f_no])
                 self.field_median[f_no] = mather.GetDictMedian().run(self.field_freqs[f_no])
                 (self.variance[f_no], self.stddev[f_no])   \
-                   =  mather.get_variance_and_stddev(self.field_freqs[f_no], 
+                   =  mather.get_variance_and_stddev(self.field_freqs[f_no],
                                                      self.field_mean[f_no])
             else:
                 self.field_mean[f_no]   = None
@@ -179,7 +179,7 @@ class FieldDeterminator(object):
                 self.stddev[f_no]       = None
 
     def get_known_values(self, fieldno):
-        """ returns a frequency-distribution dictionary that is the 
+        """ returns a frequency-distribution dictionary that is the
             self.field_freqs with unknown values removed.
         """
 
@@ -190,19 +190,19 @@ class FieldDeterminator(object):
     def get_top_freq_values(self,
                             fieldno,
                             limit=None):
-        """  Returns a list of highest-occuring field values along with their 
+        """  Returns a list of highest-occuring field values along with their
              frequency.
-             Args:   
+             Args:
                  - fieldno - is the number of the field, offset from zero
                  - limit - is an optional limit on the number of values to show
              Returns:
-                 - rev_sort_list, which is a list of lists.  
+                 - rev_sort_list, which is a list of lists.
                    - The inner list is the [field value, frequency]
                    - The outer list contains up to limit number of inner lists,
                      sorted by innerlist, frequency, descending.
-                   - For example, the following hypothetical results would be 
-                     returned for a field that describes the number of failing 
-                     schools by state with 
+                   - For example, the following hypothetical results would be
+                     returned for a field that describes the number of failing
+                     schools by state with
                      a limit of 3:
                         [['ca',120],
                          ['ny',89],
