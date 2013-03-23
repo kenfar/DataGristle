@@ -9,8 +9,8 @@
       is_integer() - determines if arg is an integer
       is_string()  - determines if arg is a string
     Todo:
-      - change get_types to consider whatever has 2 STDs 
-      - replace get_types freq length logic with something that says, if all 
+      - change get_types to consider whatever has 2 STDs
+      - replace get_types freq length logic with something that says, if all
         types are basically numeric, choose float
       - consistency metric
       - leverage list comprehensions more
@@ -76,7 +76,7 @@ def get_field_type(values):
         then consolidates that into a single output type.  This is used to 
         determine what type to convert an entire field into - often within
         a database.
-     
+
         Input 
          - a list or dictionary of strings
 
@@ -92,13 +92,13 @@ def get_field_type(values):
 
         Test Coverage:
           - complete via test harness
-    """  
+    """
     type_freq  = collections.defaultdict(int)
 
     # count occurances of each type:
     for key in values:
         i = _get_type(key)
-        if i != 'unknown':                  # NOTE: unknown is filtered out
+        if i != 'unknown':                   # NOTE: unknown is filtered out
             try:                             # values is a dict
                 type_freq[i] += values[key]
             except TypeError:                # values is a list
@@ -109,7 +109,7 @@ def get_field_type(values):
     result = _get_field_type_rule(type_list)
     if result:
         return result
-  
+
     # try probabilities:
     result = _get_field_type_probability(type_freq)
     if result:
@@ -158,8 +158,8 @@ def _get_field_type_rule(type_list):
         4. 2-3 item list of number types = float
         5. timestamps include epochs - which look like any integer or float.
            Because of this a mix of timestamps + floats/integers will be considered
-           a float or integer.  
-        Challenge is in handling data quality problems - like the documented 
+           a float or integer.
+        Challenge is in handling data quality problems - like the documented
         case in which a file with 8000 timestamps in the yyyy-mm-dd have 4 records
         with floats.   These floats should have been kicked out as garbage data -
         but if the timestamps were epochs then that would not be appropriate.
@@ -167,14 +167,14 @@ def _get_field_type_rule(type_list):
     assert('unknown' not in type_list)
 
     # floats with nothing to the right of the decimal point may be ints
-    float_set_2i     = set(['integer', 'float'])   
+    float_set_2i     = set(['integer', 'float'])
     # some floats fall into the timestamp epoch range:
-    float_set_2t     = set(['float', 'timestamp'])  
+    float_set_2t     = set(['float', 'timestamp'])
     # or a mix of the above two:
     float_set_3      = set(['integer', 'float', 'timestamp'])
     # some integers also fall into the timestamp epoch range:
-    integer_set_2t   = set(['integer', 'timestamp'])  
-    
+    integer_set_2t   = set(['integer', 'timestamp'])
+
     type_set  = set(type_list)
 
     if len(type_list) == 0:
@@ -215,7 +215,7 @@ def _get_field_type_probability(type_freq):
     for key in type_pct:
         if type_pct[key] >= 0.95:
             return key
-     
+
     # no clear winner, we can't be sure:
     return 'unknown'
 
@@ -341,7 +341,7 @@ def is_unknown(value):
         return False
     except TypeError:
         return False
-       
+
 
 def is_timestamp(time_str):
     """ Determine if arg is a timestamp and if so what format
@@ -360,7 +360,7 @@ def is_timestamp(time_str):
     non_date = (False, None, None)
     if len(time_str) > DATE_MAX_LEN:
         return non_date
-   
+
     try:
         float_str = float(time_str)
         if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:
