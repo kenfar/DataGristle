@@ -26,10 +26,7 @@ import metadata               as metadata
 def main():
     """ runs all processes:
             - gets opts & args
-            - analyzes file to determine csv characteristics unless data is 
-              provided via stdin
-            - runs each input record through process_cols to get output
-            - writes records
+            - runs command
     """
     args         = get_args()
     dargs        = vars(args)
@@ -39,7 +36,6 @@ def main():
     #func = getattr(my_md, '%s_tools.lister' % args.table)
     #func = getattr(schema_tools, lister)
 
-    #THE SOLUTION: 
     funcs = {'schema'              : my_md.schema_tools              ,
              'element'             : my_md.element_tools             ,
              'collection'          : my_md.collection_tools          ,

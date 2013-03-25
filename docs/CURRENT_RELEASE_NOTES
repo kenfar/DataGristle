@@ -1,5 +1,5 @@
 ===============================================================================
-Version:     0.47
+Version:     0.48
 Copyright 2011,2012,2013 Ken Farmer
 See the file "LICENSE" for the full license governing this code. 
 ===============================================================================
@@ -8,34 +8,16 @@ See the file "LICENSE" for the full license governing this code.
 ===============================================================================
 Primary Functional Changes
 ===============================================================================
-
+    - gristle_determinator
+        - now supports a 'parsable' output format - consisting of a five-field
+	  pipe-delimited, quoted-field csv file
 
 
 ===============================================================================
 Primary Internal Changes
 ===============================================================================
-    - copyright & licensing
-        - ensure every file has boilerplate                             - done
-	- scripts                                                       - done
-	- scripts/tests                                                 - done
-	- gristle                                                       - done
-	- gristle/tests                                                 - done
-	- docs                                                          - done
-    - csv dialect handling
-        - substantial consistency improvements made to determinator,
-	  viewer, slicer, freaker as well as file_type library
-    - script tests
-        - minor improvements to determinator, viewer, slicer testing
-    - slicer
-        - major enhancements to slicer - to allow negative slices
-    - gristle_validator text
-        - fix incorrect program help and other comments
-    - readme
-        - resolve .txt vs .md vs .rst
-	- added descriptions to mature tools and usage examples
-    - testing
-        - added testing with tox and included tox.ini file
-	- added coverage usage and included .coveragerc files
+    - gristle_determinator
+    	- completely rewritten test harness
 
 
 ===============================================================================
@@ -44,7 +26,7 @@ Overall Testing status:
     - test harness on python 2.7    - done
     - test harness on python 2.6    - done
     - run pylint                    - done
-    - check coverage                - done
+    - check coverage                - 
     - test automatically installing:
         - sqlalchemy
         - envoy
@@ -94,7 +76,12 @@ simplesql.py
     - test coverage:        -- 97%
     - unittest status:      --
     - pylint status:        -- 
-    
+
+location_slicer.py
+    - test coverage:        -- 13%
+    - unittest status:      --
+    - pylint status:        -- 8.76
+
 
 ===============================================================================
 Script Test status:
@@ -104,7 +91,7 @@ gristle_determinator
     - test coverage:        -- 0% +
     - unittest status:      --
     - manual test status:   --
-    - pylint status:        -- 9.85
+    - pylint status:        -- 7.34
 
 gristle_freaker
     - test coverage:        -- 66% +
@@ -167,7 +154,7 @@ Manual test cases:
     - multi empty args              -- 
     - full arg after empty file arg -- 
     - single empty filename arg     -- 
-    - file passed via stdin empty   -- in test-harness
+    - file passed via stdin empty   -- 
 
 2.  gristle_viewer.py           
     - multi empty args              -- in test harness

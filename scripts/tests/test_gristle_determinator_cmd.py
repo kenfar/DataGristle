@@ -3,10 +3,10 @@
 
     Contains a primary class: FileStructureFixtureManager
     Which is extended by six classes that override various methods or variables.
-    This is a failed experiment - since the output isn't as informative as it 
+    This is a failed experiment - since the output isn't as informative as it
     should be.  This should be redesigned.
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
 import sys
@@ -20,14 +20,16 @@ import fileinput
 import envoy
 import csv
 from pprint import pprint
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import gristle.file_type as file_type
-
-
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
+
 
 def main():
     test1 = Test_1()
     test1.test_file_info()
+    test1.test_field_info()
     test1.test_top_value_info()
 
 
@@ -58,7 +60,7 @@ class Test_1(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
-        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)  
+        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         assert(r.status_code == 0)
 
@@ -143,8 +145,6 @@ class Test_1(object):
         assert(self.field_struct['field_1']['top_values']['6']    == '2')
         assert(self.field_struct['field_1']['top_values']['8']    == '1')
         assert(self.field_struct['field_1']['top_values']['19']    == '1')
-
-
 
 
 if __name__ == '__main__':

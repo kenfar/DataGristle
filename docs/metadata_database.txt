@@ -17,7 +17,7 @@ There are several main components to this solution:
     - metadata for data dictionary
     - metadata for analysis
     - metadata for tranformation
-    - metadata APi
+    - metadata API
 
 
 
@@ -31,13 +31,13 @@ and elements, deployments or instances of these data structures, and inspection 
 - Schema architypes - 4 primary tables that describe schemas in a general way, but do not 
   get into deployment specifics.  This separation is intended to allow a single definition
   with multiple instances that are described separately.  These tables include:
-  - schema	- a set of structures - typically a database model, set of related csv
+  - schema      - a set of structures - typically a database model, set of related csv
                   files, possibly an xml document.
   - collection	- a hierarchical structure that consists of fields, collections of 
                   fields, and collections of collections of fields.   Could be 
                   used to describe a csv file, database table, etc.
   - field       - a single discrete field or column of data within a collectin.
-  - element	- an attribute that appears more than once in a schema or structure
+  - element     - an attribute that appears more than once in a schema or structure
                   can be defined once here and that definition reused anywhere it is 
                   referenced.
 
@@ -68,12 +68,12 @@ and used by other data_gristle tools.   It provides actual data characteristics 
 distributions, etc) for the basic metadata.
 
 - analysis results - 4 tables that contain the results of inspections.   These include:
-  - analysis		- One row for every inspection.  Primary key is inspect_id, also stores
+  - analysis            - One row for every inspection.  Primary key is inspect_id, also stores
                           timestamps, program involved, profile used, and return codes.
   - collection_analysis	- Every inspection will be of a schema & structure.  This table contains
-          		  any schema-level information that results from the inspection. 
+                          any schema-level information that results from the inspection. 
                           There might not be much since most data is about the structures.
-  - field_analysis	- Almost every inspection will involve file|table or field|column
+  - field_analysis      - Almost every inspection will involve file|table or field|column
                           level results.  These will all involve entries in this table.  Examples
                           include mean, median, type, case, etc.
   - field_analysis_value- This table stores frequency distribution results.

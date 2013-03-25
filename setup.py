@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = "0.47"
+version = "0.48"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
 LONG_DESCRIPTION = open('README.txt').read()
 

@@ -1,12 +1,12 @@
 Metadata-Version: 1.1
 Name: datagristle
-Version: 0.47
+Version: 0.48
 Summary: A toolbox and library of ETL & data analysis tools
 Home-page: http://github.com/kenfar/DataGristle
 Author: Ken Farmer
 Author-email: kenfar@gmail.com
 License: BSD
-Download-URL: http://github.com/downloads/kenfar/DataGristle/DataGristle-0.47.tar.gz
+Download-URL: http://github.com/downloads/kenfar/DataGristle/DataGristle-0.48.tar.gz
 Description: Datagristle is a toolbox of tough and flexible data connectors and analyzers.  
         It's kind of an interactive mix between ETL and data analysis optimized for 
         rapid analysis and manipulation of a wide variety of data.

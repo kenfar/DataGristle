@@ -29,9 +29,9 @@ class TableTools(object):
 
     def __init__(self, metadata):
         self.metadata = metadata
-        self._table       = None         
-        self._table_name  = None        
-        self._unique_constraints = None 
+        self._table       = None
+        self._table_name  = None
+        self._unique_constraints = None
         self.insert_defaulted = []       # cols added here aren't inserted
         self.update_defaulted = []       # cols added here aren't updated
 
@@ -78,8 +78,8 @@ class TableTools(object):
 
     def get_id(self, **kw):
         """ Requires the key of the row - for tables with a primary key
-            that is a surrogate key and a natural key defined within a 
-            unique constraint.  
+            that is a surrogate key and a natural key defined within a
+            unique constraint.
             Returns a single row if found, otherwise returns None
             No longer being used - but kept around just in case
             Uses 'generative sql' to build up query.

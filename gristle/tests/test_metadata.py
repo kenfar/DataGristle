@@ -153,7 +153,7 @@ class TestCollection(unittest.TestCase):
 
         self.assertEqual(self.md.collection_tools.deleter(collection_id=collection_id), 1)
 
-        
+
     def test_collection_deletion_by_uk(self):
         kva = {'schema_id'      : self.schema_id,
                'collection_name':'a',
@@ -316,9 +316,9 @@ class TestReports(unittest.TestCase):
 
         results = self.md.get_data_dictionary('geoip','geolite_country')
         for row in results:
-             self.assertEqual(row.schema_name, 'geoip')
-             self.assertEqual(row.schema_desc, 'geoip data')
-             self.assertEqual(row.collection_name, 'geolite_country')
+            self.assertEqual(row.schema_name, 'geoip')
+            self.assertEqual(row.schema_desc, 'geoip data')
+            self.assertEqual(row.collection_name, 'geolite_country')
 
 
 

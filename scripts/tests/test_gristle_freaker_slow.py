@@ -12,11 +12,12 @@ import unittest
 import csv
 from pprint import pprint as pp
 import test_tools
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 mod = test_tools.load_script('gristle_freaker')
 
 
-gen_rec_number     = 10000000   # 10 million
-#print 'Number of records that will be generated: %d' % gen_rec_number
+gen_rec_number     = 1000000   # 1 Million
 
 # shut off the printing of warnings & info statements from module
 old_stdout = sys.stdout
@@ -69,14 +70,14 @@ class Test_build_freq(unittest.TestCase):
 
        fp.close()
        return fqfn
-         
+
    def test_bf_01_multicol(self):
        sampling_method = 'non'
        sampling_rate   = None
        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
        assert(not truncated)
        assert(sum(field_freq.values()) == gen_rec_number)
-       assert(len(field_freq) == 8)               
+       assert(len(field_freq) == 8)
        for key in field_freq.keys():
            assert(key[0] in ['A1','A2','A3','A4'])
            assert(key[1] in ['B1','B2'])
