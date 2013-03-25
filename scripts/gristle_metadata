@@ -40,18 +40,20 @@ def main():
              'element'             : my_md.element_tools             ,
              'collection'          : my_md.collection_tools          ,
              'field'               : my_md.field_tools               ,
+             'field_value'         : my_md.field_value_tools         ,
              'instance'            : my_md.instance_tools            ,
              'analysis_profile'    : my_md.analysis_profile_tools    ,
              'analysis'            : my_md.analysis_tools            ,
              'collection_analysis' : my_md.collection_analysis_tools ,
              'field_analysis'      : my_md.field_analysis_tools      ,
-             'field_analysis_value': my_md.field_analysis_value_tools,
-             'rule'                : my_md.rule_tools                ,
-             'rule_analysis'       : my_md.rule_analysis_tools       }
+             'field_analysis_value': my_md.field_analysis_value_tools}
+    #         'rule'                : my_md.rule_tools                ,
+    #         'rule_analysis'       : my_md.rule_analysis_tools       }
     actions = {'list'    : 'lister',
                'get'     : 'getter',
                'set'     : 'setter',
                'del'     : 'deleter'}
+
 
     # eliminate any Nones so they don't confuse _create_where
     # alternatively change _create_where so that it checks for None pk/uks
@@ -99,11 +101,11 @@ def get_args():
             - command line args & options
         Output:
             - opts dictionary
-            - args dictionary 
+            - args dictionary
     """
-    table_choices=['schema', 'element', 'collection', 'field', 'rule', 
-                   'instance', 'analysis_profile', 
-                   'analysis', 'collection_analysis', 
+    table_choices=['schema', 'element', 'collection', 'field', 'field_value', 'rule',
+                   'instance', 'analysis_profile',
+                   'analysis', 'collection_analysis',
                    'field_analysis', 'field_analysis_value',
                    'rule_analysis']
     action_choices=['list', 'get', 'set','del']
@@ -173,6 +175,11 @@ def get_args():
            type=int)
     parser.add_argument('--field_order'    , '--fo',
            type=int)
+
+
+    parser.add_argument('--fv_value'       , '--fv')
+    parser.add_argument('--fv_desc'        , '--fvd')
+    parser.add_argument('--fv_issues'      , '--fvi')
 
 
     parser.add_argument('--rule_id'        , '--ri',
@@ -269,6 +276,11 @@ def prompt_user(args):
         args.field_type   = raw_input('field_type  [%s]: ' % args.field_type)
         args.field_len    = raw_input('field_len   [%s]: ' % args.field_len)
         args.field_order  = raw_input('field_order [%s]: ' % args.field_order)
+    elif args.table == 'field_value':
+        args.field_id     = raw_input('field_id    [%s]: ' % args.field_id)
+        args.fv_value     = raw_input('fv_value    [%s]: ' % args.fv_value)
+        args.fv_desc      = raw_input('fv_desc     [%s]: ' % args.fv_desc)
+        args.fv_issues    = raw_input('fv_issues   [%s]: ' % args.fv_issues)
     elif args.table == 'element':
         args.element_name = raw_input('element_name     [%s]: ' % args.element_name)
         args.element_desc = raw_input('element_desc     [%s]: ' % args.element_desc)

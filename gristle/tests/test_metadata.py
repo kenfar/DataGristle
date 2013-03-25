@@ -18,26 +18,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import gristle.metadata  as mod
 
 
-#---------------------------------------------------------
-# test classes included here:
-#   Test_schema
-#   Test_struct_type
-#   Test_struct
-#   Test_element
-#   Test_reports
-#---------------------------------------------------------
-
-#def suite():
-#    suite = unittest.TestSuite()
-#    suite.addTest(unittest.makeSuite(TestSchema))
-#    suite.addTest(unittest.makeSuite(TestElement))
-#    suite.addTest(unittest.makeSuite(TestCollection))
-#    suite.addTest(unittest.makeSuite(TestField))
-#    suite.addTest(unittest.makeSuite(TestReports))
-#    unittest.TextTestRunner(verbosity=2).run(suite)
-#
-#    return suite
-
 
 class TestSchema(unittest.TestCase):
 
@@ -397,12 +377,4 @@ def content_rpt(md):
     #    print '%s,  %-20.20s,  %-20.20s, %-10.10s, %-10.10s, %s ' % (row[0],row[3],row[1], row[2], row[4], row[5])
     #print
     #print os.path.join(self.tempdir, 'metadata.db')
-
-
-
-#if __name__ == "__main__":
-    #runner = unittest.TextTestRunner(verbosity=2)
-    #runner.run(suite())
-#    unittest.main(suite())
- 
 

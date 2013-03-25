@@ -134,6 +134,9 @@ class GristleMetaData(object):
         self.field_tools        = FieldTools(self.metadata)
         self.field              = self.field_tools.table_create()
 
+        self.field_value_tools  = FieldValueTools(self.metadata)
+        self.field_value        = self.field_value_tools.table_create()
+
         self.instance_tools     = InstanceTools(self.metadata)
         self.instance           = self.instance_tools.table_create()
 
@@ -153,7 +156,7 @@ class GristleMetaData(object):
         self.field_analysis_value       = self.field_analysis_value_tools.table_create()
 
         self.metadata.create_all()
- 
+
 
 
 
@@ -312,6 +315,33 @@ class FieldTools(simplesql.TableTools):
         self._table_name = 'field'
         self.instance    = None # assigned in InstanceTools
         return self._table
+
+
+class FieldValueTools(simplesql.TableTools):
+    """ Includes all methods used to work with the field value table
+    """
+
+    def table_create(self):
+        """ Creates the 'field_value' table.
+        """
+
+        self.field_value = Table('field_value',
+            self.metadata,
+            Column('field_id'        , Integer     , nullable=False  ),
+            Column('fv_value'        , String(256) , nullable=False  ),
+            Column('fv_desc'         , String(2048),                 ),
+            Column('fv_issues'       , String(2048),                 ),
+            UniqueConstraint('field_id',
+                   'fv_value',
+                   name='field_value_uk1'),
+            ForeignKeyConstraint(columns=['field_id'],
+                   refcolumns=['field.field_id'],
+                   name='field_value_fk1'),
+            extend_existing=True )
+        self._table      = self.field_value
+        self._table_name = 'field_value'
+        return self._table
+
 
 
 class InstanceTools(simplesql.TableTools):
