@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ Creates a frequency distribution of values from columns of the input file
-    and prints it out in columns - the first being the unique key and the last 
+    and prints it out in columns - the first being the unique key and the last
     being the count of occurances.
 
     Examples:
@@ -12,10 +12,10 @@
                              In addition to what was described in the first example,
                              this example adds sorting of the output by count ascending
                              and just prints the first 25 entries.
-       $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval 
+       $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
                              In addition to what was described in the first example,
                              this example adds a sampling in which it only references
-                             every third record. 
+                             every third record.
        $ gristle_freaker sample.csv -d '|'  -c 0,1
                              Creates three columns from the input - the first two
                              with unique key combinations from columns 0 & 1, the
@@ -47,7 +47,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 try:
-    import gristle.file_type            as file_type 
+    import gristle.file_type            as file_type
 except ImportError:
     pass   # can still do things the manual way
 
@@ -60,10 +60,10 @@ def main():
         - get cmdline options & determine dialect
         - build the freq distribution dictionary
         - calculate field lengths for write formatting
-        - sort frequency distribution 
+        - sort frequency distribution
         - write dictionary to output
     """
- 
+
     #----- initialize -----
     cmd_parser   = CommandLineParser()
     opts         = cmd_parser.opts
@@ -71,10 +71,10 @@ def main():
     dialect      = get_dialect(opts, files)
 
     #----- build the frequency distribution dictionary -----
-    field_freq, truncated = build_freq(files, 
-                                       dialect, 
-                                       opts.columns, 
-                                       opts.number,  
+    field_freq, truncated = build_freq(files,
+                                       dialect,
+                                       opts.columns,
+                                       opts.number,
                                        opts.sampling_method,
                                        opts.sampling_rate)
 
@@ -88,7 +88,7 @@ def main():
     sort_freq = freq_sorter(field_freq, opts.sortcol, revorder)
 
     #----- write sorted list to output -----
-    write_output(sort_freq, 
+    write_output(sort_freq,
                opts.output,
                col_len,
                opts.writelimit)
@@ -98,7 +98,7 @@ def main():
     if truncated:
         return 1
     else:
-        return 0     
+        return 0
 
 
 
@@ -134,7 +134,7 @@ def get_dialect(opts, files):
 
 def freq_sorter(field_freq, sortcol, revorder):
     """ Inputs:
-          - field_freq - a dictionary of tuples in which each tuple consists 
+          - field_freq - a dictionary of tuples in which each tuple consists
                          of two parts: a key tuple and value.
           - sortcol    - indicates which column to sort - either 0 or 1
           - revorder   - True indicates sorting in reverse order, False otherwise.
@@ -175,9 +175,9 @@ def build_freq(files, dialect, columns, number, sampling_method, sampling_rate):
             - number          - max number of entries in frequency distribution dictionary
             - sampling_method - non or interval
             - sampling_rate   - for interval method
-        Outputs: 
+        Outputs:
             - freq_dict       - freq distribution dict
-            - truncated       - True/False boolean that indicates if the dict was truncated 
+            - truncated       - True/False boolean that indicates if the dict was truncated
         Tested via test-harness
     """
     read_cnt   = 0
@@ -211,7 +211,7 @@ def build_freq(files, dialect, columns, number, sampling_method, sampling_rate):
 
 
 class ColumnLengthTracker(object):
-    """ Tracks the maximum key length for each column. 
+    """ Tracks the maximum key length for each column.
         Tested via test harness.
     """
     def __init__(self):
@@ -247,7 +247,7 @@ class ColumnLengthTracker(object):
             self.max_dict[max_key] -= 1
 
     def _get_tot_col_len(self):
-        """ Returns the total column length by adding together to the longest 
+        """ Returns the total column length by adding together to the longest
             column value of each column.
         """
         return sum(list(self.max_dict.values()))
@@ -257,8 +257,8 @@ class ColumnLengthTracker(object):
 
 def write_output(freq, output, col_len, write_limit):
     """ freq input - is a list of tuples, each tuple must consist of
-        two entries: key & count.   Each key is also a tuple. 
-                 [ (tup1), 
+        two entries: key & count.   Each key is also a tuple.
+                 [ (tup1),
                    (tup2) ]
         output - is the user-provided output filename
         col_len - is an object that has the max lengths of all columns
@@ -283,7 +283,7 @@ def write_output(freq, output, col_len, write_limit):
 
 def create_output_row(freq_tup, col_len):
     """ input:
-           - freq_tup - is a tuple consisting of two entries: key & count.   
+           - freq_tup - is a tuple consisting of two entries: key & count.
              Each key is also a tuple.  So it looks like this:
                   (('key1a', 'key1b', 'key1c'), 5   )
            - col_len - is an object that has the max lengths of all columns
@@ -303,8 +303,8 @@ def create_output_row(freq_tup, col_len):
 
 
 class CommandLineParser(object):
-    """ Manages all parsing, formating and validating of command line options 
-        and args.  
+    """ Manages all parsing, formating and validating of command line options
+        and args.
         Tested via test-harness.
     """
 
@@ -338,7 +338,6 @@ class CommandLineParser(object):
                     'Default is 10 million - expressed as 10000000.  This results '
                     'in approx 300 MBytes of memory used to store 10 million 20 byte'
                     'keys.')
-
 
         self.parser.add_option('--maxkeylen',
                default=50,
