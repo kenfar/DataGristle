@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-""" Purpose of this module is to manage the metadata database - creating tables as 
+""" Purpose of this module is to manage the metadata database - creating tables as
     necessary, and providing put, get, delete, and list methods for all tables.
 
     Dependencies:
        - sqlalchemy (0.7 - though earlier versions will probably work)
-       - envoy 
-       - appdirs 
+       - envoy
+       - appdirs
 
     A secondary objective is to test out some modules I haven't used previously.
-    Because of this experimentation I have sometimes used a few different 
-    techniques (for example to run queries in sqlalchemy), and have included 
+    Because of this experimentation I have sometimes used a few different
+    techniques (for example to run queries in sqlalchemy), and have included
     a considerable amount of comments, documentation & test harnesses.
 
     Basic Model:
@@ -19,7 +19,7 @@
        - element
 
     Extended Model (not yet built):
-       - instance_type 
+       - instance_type
        - schema_instance   - done
        - collection_instance
        - inspect_profile
@@ -32,7 +32,7 @@
        - add more attributes?
        - contemplate reuse
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
 
@@ -45,7 +45,7 @@ from sqlalchemy import (Table, Column, Integer, String, MetaData, DATETIME,
 import datetime
 #from pprint import pprint
 #import envoy
-import simplesql 
+import simplesql
 
 
 
@@ -59,7 +59,7 @@ def main():
 class GristleMetaData(object):
     """ Manages metadata for datagristle project.
 
-        Upon initialization it connects to an existing sqlite database in the 
+        Upon initialization it connects to an existing sqlite database in the
         standard xdg location, or builds one as necessary.  Finally, it builds
         table objects for internal reference.
 
@@ -102,7 +102,7 @@ class GristleMetaData(object):
         #        db_cursor = dbapi_con.execute('pragma foreign_keys=ON')
 
         self.fqdb_name  = os.path.join(user_data_dir, db_name)
-        self.db         = create_engine('sqlite:////%s' % self.fqdb_name, 
+        self.db         = create_engine('sqlite:////%s' % self.fqdb_name,
                                            logging_name='/tmp/gristle_sql.log')
         def _fk_pragma_on_connect(dbapi_con, con_record):
             """ turns foreign key enforcement on"""
@@ -118,7 +118,7 @@ class GristleMetaData(object):
 
     def create_db_tables_declaratively(self):
         """ Will create database and objects within the database if they do not
-            already exist.   Will not update them if they have otherwise 
+            already exist.   Will not update them if they have otherwise
             different from this configuration however.
         """
 
@@ -183,7 +183,7 @@ class GristleMetaData(object):
                     AND col.collection_name  = :collection_name           \
               """
         select_sql = text(sql)
-        result = self.db.execute(select_sql, schema_name=schema_name, 
+        result = self.db.execute(select_sql, schema_name=schema_name,
                                  collection_name=collection_name)
         return result
 
@@ -192,7 +192,7 @@ class GristleMetaData(object):
 
 class SchemaTools(simplesql.TableTools):
     """ Includes all methods for Schema table.
-    """   
+    """
 
     def table_create(self):
         """ Creates the schema table
@@ -233,7 +233,7 @@ class ElementTools(simplesql.TableTools):
                        Column('element_desc', String(255), nullable=False)  ,
                        Column('element_type', String(10),  nullable=False)  ,
                        Column('element_len' , Integer,     nullable=True)   ,
-                       CheckConstraint ('element_len > 0 ', 
+                       CheckConstraint ('element_len > 0 ',
                                         name='element_ck1')    ,
                        extend_existing=True )
 
@@ -253,14 +253,14 @@ class CollectionTools(simplesql.TableTools):
 
         self.collection = Table('collection',
               self.metadata,
-              Column('collection_id'   , Integer       , nullable=False   , 
+              Column('collection_id'   , Integer       , nullable=False   ,
                      primary_key=True),
               Column('schema_id'       , Integer       , nullable=False  ),
               Column('collection_name' , String(40)    , nullable=False  ),
               Column('collection_desc' , String(256)   , nullable=False  ),
-              UniqueConstraint('schema_id', 'collection_name', 
+              UniqueConstraint('schema_id', 'collection_name',
                                name='collection_uk1'),
-              ForeignKeyConstraint(columns=['schema_id'], 
+              ForeignKeyConstraint(columns=['schema_id'],
                                    refcolumns=['schema.schema_id'],
                                    name='collection_fk1') ,
                                    extend_existing=True )
@@ -290,8 +290,8 @@ class FieldTools(simplesql.TableTools):
             Column('field_type'      , String(10)  , nullable=True   ),
             Column('field_len'       , Integer     , nullable=True   ),
             Column('element_name'    , String(60)  , nullable=True   ),
-            UniqueConstraint('collection_id', 
-                   'field_name', 
+            UniqueConstraint('collection_id',
+                   'field_name',
                    name='field_uk1'),
             ForeignKeyConstraint(columns=['collection_id'],
                    refcolumns=['collection.collection_id'],
@@ -398,7 +398,7 @@ class AnalysisProfileTools(simplesql.TableTools):
                     String(255)      ,
                     nullable=False  ),
              UniqueConstraint('instance_id','collection_id',
-                              'analysis_profile_name', 
+                              'analysis_profile_name',
                               name='analysis_profile_k1'),
              ForeignKeyConstraint(columns=['instance_id'],
                                   refcolumns=['instance.instance_id'],
@@ -447,7 +447,7 @@ class AnalysisTools(simplesql.TableTools):
              Column('analysis_tool'  ,
                     String(20)       ,
                     nullable=False  ),
-             UniqueConstraint('instance_id','analysis_timestamp', 
+             UniqueConstraint('instance_id','analysis_timestamp',
                     name='analysis_uk1'),
              ForeignKeyConstraint(columns=['instance_id'],
                     refcolumns=['instance.instance_id'],
@@ -492,7 +492,7 @@ class CollectionAnalysisTools(simplesql.TableTools):
              Column('ca_rowcount'    ,
                     Integer          ,
                     nullable=True   ),
-             UniqueConstraint('analysis_id','collection_id', 
+             UniqueConstraint('analysis_id','collection_id',
                     name='collection_analysis_uk1'),
              ForeignKeyConstraint(columns=['analysis_id'],
                     refcolumns=['analysis.analysis_id'],
@@ -538,7 +538,7 @@ class FieldAnalysisTools(simplesql.TableTools):
              ForeignKeyConstraint(columns=['field_id']         ,
                                   refcolumns=['field.field_id'],
                                   name='field_analysis_fk2')   ,
-             CheckConstraint ("fa_case IN ('lower','upper','mixed','unk')", 
+             CheckConstraint ("fa_case IN ('lower','upper','mixed','unk')",
                               name='field_analysis_ck1')       ,
              extend_existing=True    )
 
