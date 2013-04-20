@@ -23,6 +23,7 @@
                             and the second number indicates the stop offset +1.
 
     Arguments:
+      --long-help            Print verbose help and exit.
       -o, --output=<file>    Specify the output file.  The default is stdout.
       -c, --columns=<spec>   Provide the column inclusion specification,
                              Default is ':' which includes all columns.
@@ -47,7 +48,6 @@
                                special characters.
                              - quote_nonnumeric - only quotes text fields.
       -h, --help             Print help and exit.
-      --long-help            Print verbose help and exit.
       --debug                Print debugging info
 
     Examples:

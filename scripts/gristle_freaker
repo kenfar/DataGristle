@@ -319,6 +319,10 @@ class CommandLineParser(object):
         self._define_parsers()
         self.opts, self.files = self.parser.parse_args()
 
+        if self.opts.long_help:
+            print __doc__
+            sys.exit(0)
+
         self._validate_sampling()
         self._validate_misc()
         self._format_columns()
@@ -327,6 +331,11 @@ class CommandLineParser(object):
     def _define_parsers(self):
         """ Define all cmdline parsers.
         """
+        self.parser.add_option('--long-help',
+               default=False,
+               action='store_true',
+               help='Print verbose help and exit.')
+
         self.parser.add_option('-c', '--columns',
                type='string',       # could be -c 1 or -c 3,10 or -c "15,20,21"
                help='one or many comma-separated column numbers to analyze')

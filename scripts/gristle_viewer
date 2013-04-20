@@ -5,6 +5,7 @@
 
     Arguments & Options:
       <filename>            Can be more or more csv files.  Stdin is not supported.
+       --long-help          Print verbose help and exit.
       -o, --output=<fn>     Specify the output file.  The default is stdout.
       -r, --recnum=<int>    Specify the record number to display.  Starts with an offset of
                             0, defaults to 1.
@@ -20,7 +21,6 @@
                                  special characters.
                                - quote_nonnumeric - only quotes text fields.
        -h, --help           Print help and exit.
-       --long-help          Print verbose help and exit.
 
     Examples:
        $ gristle_viewer sample.csv -r 3
