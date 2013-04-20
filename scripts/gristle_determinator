@@ -3,10 +3,6 @@
 gristle_determinator analyzes a file structure then analyzes contents of each column
 within the file.  Once complete it then prints the results for the user
 
-This source code is protected by the BSD license.  See the file "LICENSE"
-in the source code root directory for the full language or refer to it here:
-http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013 Ken Farmer
 
 Usage: gristle_determinator [file] [misc options]
 
@@ -184,6 +180,10 @@ $ ./gristle_determinator /etc/passwd  --outputformat parsable
 
 < remaining 5 fields of output truncated for brevity >
 
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------
