@@ -269,9 +269,7 @@ import gristle.file_type           as file_type
 import gristle.field_determinator  as field_determinator
 
 
-#import pprint as pp
 #from pprint import pprint as pp
-#pp(sys.path)
 
 
 #------------------------------------------------------------------------------
