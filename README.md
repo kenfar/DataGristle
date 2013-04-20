@@ -12,6 +12,9 @@ always challenging last 20%.
 Current Status:  Strong support for easy analysis and simple transformations of
 csv files. 
 
+More info is on the DataGristle wiki here: 
+   https://github.com/kenfar/DataGristle/wiki
+
 #Next Steps:  
 
    * attractive PDF output of gristle_determinator.py
