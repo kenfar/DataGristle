@@ -1,11 +1,257 @@
 #!/usr/bin/env python
-""" Used to identify characteristics of a file
+""" 
+gristle_determinator analyzes a file structure then analyzes contents of each column
+within the file.  Once complete it then prints the results for the user
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013 Ken Farmer
+
+Usage: gristle_determinator [file] [misc options]
+
+    Options:
+    -h, --help            show this help message and exit
+    -o OUTPUT, --output=OUTPUT
+                          Specify output file.  Default is stdout.
+    -q, --quiet           provides less detail
+    -v, --verbose         provides more detail
+    -s, --silent          performs operation with no output
+    -b, --brief           skips field-level analysis
+    -c COLUMN_NUMBER, --column=COLUMN_NUMBER
+                          Restrict analysis to a single column (field number) -
+                          using a zero-offset
+    -n NUMBER, --number=NUMBER
+                          Specify a maximum number of entries for freq
+                          dictionary. This is applied separately to each column.
+                          The default is set at approximately 1 million entries.
+    -d DELIMITER, --delimiter=DELIMITER
+                          Specify a quoted field delimiter.This is essential for
+                          multi-column delimiters.
+    --recdelimiter=RECDELIMITER
+                          Specify a quoted end-of-record delimiter.
+    --hasheader           Indicates that there is a header in the file.
+    -T COLUMN_TYPES, --types=COLUMN_TYPES
+                          Allows manual specification of field types: integer,
+                          float, string, timestamp. Use format: "colno:type,
+                          colno:type,  colno:type"
 
 
-    This source code is protected by the BSD license.  See the file "LICENSE"
-    in the source code root directory for the full language or refer to it here:
-    http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the delimiter and quoting info - but will let it figure these out itself.  There's no header - so it doesn't know the names of the fields, but otherwise is getting everything correct.
+
+$ gristle_determinator /etc/passwd
+
+File Structure:
+  format type:       csv
+  field cnt:         7
+  record cnt:        42
+  has header:        False
+  delimiter:         :
+  csv quoting:       False
+  skipinitialspace:  False
+  quoting:           QUOTE_NONE
+  doublequote:       False
+  quotechar:         "
+  lineterminator:    '\n'
+  escapechar:        None
+
+Field Analysis Progress:
+   Analyzing field: 0
+   Analyzing field: 1
+   Analyzing field: 2
+   Analyzing field: 3
+   Analyzing field: 4
+   Analyzing field: 5
+   Analyzing field: 6
+
+Fields Analysis Results:
+
+      ------------------------------------------------------
+      Name:             field_0
+      Field Number:     0
+      Wrong Field Cnt:  0
+      Type:             string
+      Min:              avahi
+      Max:              www-data
+      Unique Values:    42
+      Known Values:     42
+      Case:             lower
+      Min Length:       2
+      Max Length:       17
+      Mean Length:      6.55
+      Top Values not shown - all values are unique
+
+      ------------------------------------------------------
+      Name:             field_1
+      Field Number:     1
+      Wrong Field Cnt:  0
+      Type:             string
+      Min:              x
+      Max:              x
+      Unique Values:    1
+      Known Values:     1
+      Case:             lower
+      Min Length:       1
+      Max Length:       1
+      Mean Length:      1.00
+      Top Values:
+         x                                        x 42 occurrences
+
+      ------------------------------------------------------
+      Name:             field_2
+      Field Number:     2
+      Wrong Field Cnt:  0
+      Type:             integer
+      Min:              0
+      Max:              65534
+      Unique Values:    42
+      Known Values:     42
+      Mean:             1777.23809524
+      Median:           103.5
+      Variance:         99268886.3719
+      Std Dev:          9963.37725733
+      Top Values not shown - all values are unique
+
+      ------------------------------------------------------
+      Name:             field_3
+      Field Number:     3
+      Wrong Field Cnt:  0
+      Type:             integer
+      Min:              0
+      Max:              65534
+      Unique Values:    38
+      Known Values:     38
+      Mean:             6450.35714286
+      Median:           104.0
+      Variance:         367584156.087
+      Std Dev:          19172.4843483
+      Top Values:
+         65534                                    x 4 occurrences
+         7                                        x 2 occurrences
+         1000                                     x 1 occurrences
+         1001                                     x 1 occurrences
+         1002                                     x 1 occurrences
+         1003                                     x 1 occurrences
+         1004                                     x 1 occurrences
+         1005                                     x 1 occurrences
+         1006                                     x 1 occurrences
+         123                                      x 1 occurrences
+
+      ------------------------------------------------------
+      Name:             field_4
+      Field Number:     4
+      Wrong Field Cnt:  0
+      Type:             string
+      Min:              Avahi autoip daemon,,,
+      Max:              www-data
+      Unique Values:    37
+      Known Values:     36
+      Case:             mixed
+      Min Length:       2
+      Max Length:       34
+      Mean Length:      13.06
+      Top Values:
+                                                  x 6 occurrences
+         backup                                   x 1 occurrences
+         PulseAudio daemon,,,                     x 1 occurrences
+         www-data                                 x 1 occurrences
+         games                                    x 1 occurrences
+         root                                     x 1 occurrences
+         daemon                                   x 1 occurrences
+         man                                      x 1 occurrences
+         HPLIP system user,,,                     x 1 occurrences
+         testuser1,,,,                            x 1 occurrences
+
+      ------------------------------------------------------
+      Name:             field_5
+      Field Number:     5
+      Wrong Field Cnt:  0
+      Type:             string
+      Min:              /
+      Max:              /var/www
+      Unique Values:    39
+      Known Values:     39
+      Case:             mixed
+      Min Length:       1
+      Max Length:       26
+      Mean Length:      12.57
+      Top Values:
+         /bin                                     x 3 occurrences
+         /nonexistent                             x 2 occurrences
+         /home/pythontester1                      x 1 occurrences
+         /home/pythontester2                      x 1 occurrences
+         /var/run/hplip                           x 1 occurrences
+         /var/cache/man                           x 1 occurrences
+         /var/run/dbus                            x 1 occurrences
+         /dev                                     x 1 occurrences
+         /home/huckfinn                           x 1 occurrences
+         /var/backups                             x 1 occurrences
+
+      ------------------------------------------------------
+      Name:             field_6
+      Field Number:     6
+      Wrong Field Cnt:  0
+      Type:             string
+      Min:              /bin/bash
+      Max:              /usr/sbin/nologin
+      Unique Values:    5
+      Known Values:     5
+      Case:             lower
+      Min Length:       7
+      Max Length:       17
+      Mean Length:      8.67
+      Top Values:
+         /bin/sh                                  x 18 occurrences
+         /bin/false                               x 14 occurrences
+         /bin/bash                                x 8 occurrences
+         /bin/sync                                x 1 occurrences
+         /usr/sbin/nologin                        x 1 occurrences
+
+
+
+Example #2 - same as the first, but this time writing the output to the "parsable" output format.
+
+$ ./gristle_determinator /etc/passwd  --outputformat parsable
+
+"file_analysis_results"|"main"|"main"|"format_type"|"csv"
+"file_analysis_results"|"main"|"main"|"field_count"|"7"
+"file_analysis_results"|"main"|"main"|"record_count"|"42"
+"file_analysis_results"|"main"|"main"|"hasheader"|"False"
+"file_analysis_results"|"main"|"main"|"delimiter"|":"
+"file_analysis_results"|"main"|"main"|"csv_quoting"|"False"
+"file_analysis_results"|"main"|"main"|"skipinitialspace"|"False"
+"file_analysis_results"|"main"|"main"|"quoting"|"QUOTE_NONE"
+"file_analysis_results"|"main"|"main"|"doublequote"|"False"
+"file_analysis_results"|"main"|"main"|"escapechar"|"None"
+"field_analysis_results"|"field_0"|"main"|"name"|"field_0"
+"field_analysis_results"|"field_0"|"main"|"field_number"|"0"
+"field_analysis_results"|"field_0"|"main"|"wrong_field_cnt"|"0"
+"field_analysis_results"|"field_0"|"main"|"type"|"string"
+"field_analysis_results"|"field_0"|"main"|"min"|"avahi"
+"field_analysis_results"|"field_0"|"main"|"max"|"www-data"
+"field_analysis_results"|"field_0"|"main"|"unique_values"|"42"
+"field_analysis_results"|"field_0"|"main"|"known_values"|"42"
+"field_analysis_results"|"field_0"|"main"|"case"|"lower"
+"field_analysis_results"|"field_0"|"main"|"min_length"|"2"
+"field_analysis_results"|"field_0"|"main"|"max_length"|"17"
+"field_analysis_results"|"field_0"|"main"|"mean_length"|"6.54761904762"
+"field_analysis_results"|"field_0"|"top_values"|"top_values_not_shown"|" "
+"field_analysis_results"|"field_1"|"main"|"name"|"field_1"
+"field_analysis_results"|"field_1"|"main"|"field_number"|"1"
+"field_analysis_results"|"field_1"|"main"|"wrong_field_cnt"|"0"
+"field_analysis_results"|"field_1"|"main"|"type"|"string"
+"field_analysis_results"|"field_1"|"main"|"min"|"x"
+"field_analysis_results"|"field_1"|"main"|"max"|"x"
+"field_analysis_results"|"field_1"|"main"|"unique_values"|"1"
+"field_analysis_results"|"field_1"|"main"|"known_values"|"1"
+"field_analysis_results"|"field_1"|"main"|"case"|"lower"
+"field_analysis_results"|"field_1"|"main"|"min_length"|"1"
+"field_analysis_results"|"field_1"|"main"|"max_length"|"1"
+"field_analysis_results"|"field_1"|"main"|"mean_length"|"1.0"
+"field_analysis_results"|"field_1"|"top_values"|"x"|"42"
+
+< remaining 5 fields of output truncated for brevity >
+
 """
 
 #--- standard modules ------------------
@@ -29,7 +275,7 @@ import gristle.field_determinator  as field_determinator
 
 
 #------------------------------------------------------------------------------
-# Command-line section 
+# Command-line section
 #------------------------------------------------------------------------------
 def main():
     """ Allows users to directly call determinator from command line
@@ -85,7 +331,7 @@ def main():
 
 
 class OutputWriter(object):
-    """ 
+    """
         Parsable Format:
           [division]             | [section]    | [subsection] | [key]       | [value]
           file_structure         | main         | main         | format_type | csv
@@ -146,7 +392,7 @@ class OutputWriter(object):
         for sub in range(my_fields.field_cnt):
             self.section    = 'field_%d' % sub
             self.subsection = 'main'
-            if (column_number is not None 
+            if (column_number is not None
             and sub != column_number):
                 continue
             self.write_header()
@@ -225,61 +471,6 @@ class OutputWriter(object):
         return '"%s"' % val.lower().replace(' ', '_')
 
 
-#parsable fixes:
-# remove x 4 occurances
-# lower case everything
-# replace spaces with '_' in section, subsection
-# print more freq dist results
-# fix test harness!
-
-
-def print_field_info(my_fields, column_number, outfile):
-    """ Prints information about each field within the file.
-    """
-    #w = outfile.write
-    #write_header(outfile)
-    #write_header(outfile, 'Fields Analysis Results:')
-    #for sub in range(my_fields.field_cnt):
-    #    if column_number is not None \
-    #    and sub != column_number:
-    #        continue
-
-#        write_header(outfile)
-#        w('      ------------------------------------------------------\n')
-#        w('      Name:             %-20s \n' %  my_fields.field_names[sub])
-#        w('      Field Number:     %-20s \n' %  sub)
-#        w('      Wrong Field Cnt:  %-20s \n' %  my_fields.field_rows_invalid[sub])
-#        if my_fields.field_trunc[sub]:
-#            w('      Data Truncated: analysis will be partial\n')
-#
-#        w('      Type:             %-20s \n' %  my_fields.field_types[sub])
-#        w('      Min:              %-20s \n' %  my_fields.field_min[sub])
-#        w('      Max:              %-20s \n' %  my_fields.field_max[sub])
-#        w('      Unique Values:    %-20d \n' %  len(my_fields.field_freqs[sub]))
-#        w('      Known Values:     %-20d \n' %  len(my_fields.get_known_values(sub)))
-#
-#        if my_fields.field_types[sub] in ('integer','float'):
-#            w('      Mean:             %-20s \n' % my_fields.field_mean[sub])
-#            w('      Median:           %-20s \n' % my_fields.field_median[sub])
-#            w('      Variance:         %-20s \n' % my_fields.variance[sub])
-#            w('      Std Dev:          %-20s \n' % my_fields.stddev[sub])
-#        elif my_fields.field_types[sub] == 'string':
-#            w('      Case:             %-20s \n' %   my_fields.field_case[sub])
-#            w('      Min Length:       %-20s \n' %   my_fields.field_min_length[sub])
-#            w('      Max Length:       %-20s \n' %   my_fields.field_max_length[sub])
-#            w('      Mean Length:      %-20.2f\n' %  my_fields.field_mean_length[sub])
-
-#        key_sub = 0
-#        val_sub = 1
-#        if my_fields.field_freqs[sub] is not None:
-#            sorted_list = my_fields.get_top_freq_values(sub, limit=10)
-#            if sorted_list[key_sub][val_sub] == 1:
-#                w('      Top Values not shown - all values are unique\n')
-#            else:
-#                w('      Top Values: \n')
-#                for pair in sorted_list:
-#                    w('         %-40s x %d occurrences\n' % \
-#                          ( pair[key_sub], pair[val_sub]))
 
 
 
@@ -296,6 +487,10 @@ def get_opts_and_args():
     parser = optparse.OptionParser(usage = use)
     parser.add_option('-o', '--output',
            help='Specify output file.  Default is stdout.')
+    parser.add_option('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
     parser.add_option('--outputformat',
            choices=['readable','parsable'],
            default='readable',
@@ -338,6 +533,10 @@ def get_opts_and_args():
 
     (opts, files) = parser.parse_args()
 
+    if opts.long_help:
+        print __doc__
+        sys.exit(0)
+
     # validate opts
     if len(files) == 0:
         parser.error("no filename was provided")
@@ -349,7 +548,7 @@ def get_opts_and_args():
     if opts.brief and opts.column_number:
         parser.error('must not specify both brevity and column number')
 
-    if (opts.number is not None 
+    if (opts.number is not None
     and  opts.number < 1000):
         parser.error('please specify a number between 1001 and 1000000000')
 
