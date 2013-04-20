@@ -235,6 +235,10 @@ def get_opts_and_args():
            "--recnum [value] \n")
 
     parser = optparse.OptionParser(usage = use)
+    parser.add_option('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
     parser.add_option('-o', '--output',
            help='Specifies the output file, defaults to stdout.')
     parser.add_option('-r', '--recnum',
@@ -248,10 +252,6 @@ def get_opts_and_args():
            default='quote_none',
            help='Specify field quoting - used when automatic detection '
                 'fails.   The default is quote_none')
-    parser.add_option('--long-help',
-           default=False,
-           action='store_true',
-           help='Print more verbose help')
 
     (opts, files) = parser.parse_args()
 
