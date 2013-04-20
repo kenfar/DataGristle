@@ -328,6 +328,10 @@ def get_opts_and_args():
            "   %prog [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
 
+    parser.add_option('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
     parser.add_option('-o', '--output',
            default='-',
            help='Specifies the output file.  The default is stdout.  Note that'
@@ -362,10 +366,6 @@ def get_opts_and_args():
            default='quote_none',
            help='Specify field quoting - used for stdin or when automatic detection '
                 'fails.   The default is quote_none')
-    parser.add_option('--long-help',
-           default=False,
-           action='store_true',
-           help='Print more verbose help')
     parser.add_option('--debug',
            default=False,
            action='store_true',
