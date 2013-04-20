@@ -12,6 +12,7 @@ Usage: gristle_determinator [file] [misc options]
 
     Options:
     -h, --help            show this help message and exit
+    --long-help           show more verbose help
     -o OUTPUT, --output=OUTPUT
                           Specify output file.  Default is stdout.
     -q, --quiet           provides less detail
@@ -137,76 +138,7 @@ Fields Analysis Results:
          1006                                     x 1 occurrences
          123                                      x 1 occurrences
 
-      ------------------------------------------------------
-      Name:             field_4
-      Field Number:     4
-      Wrong Field Cnt:  0
-      Type:             string
-      Min:              Avahi autoip daemon,,,
-      Max:              www-data
-      Unique Values:    37
-      Known Values:     36
-      Case:             mixed
-      Min Length:       2
-      Max Length:       34
-      Mean Length:      13.06
-      Top Values:
-                                                  x 6 occurrences
-         backup                                   x 1 occurrences
-         PulseAudio daemon,,,                     x 1 occurrences
-         www-data                                 x 1 occurrences
-         games                                    x 1 occurrences
-         root                                     x 1 occurrences
-         daemon                                   x 1 occurrences
-         man                                      x 1 occurrences
-         HPLIP system user,,,                     x 1 occurrences
-         testuser1,,,,                            x 1 occurrences
-
-      ------------------------------------------------------
-      Name:             field_5
-      Field Number:     5
-      Wrong Field Cnt:  0
-      Type:             string
-      Min:              /
-      Max:              /var/www
-      Unique Values:    39
-      Known Values:     39
-      Case:             mixed
-      Min Length:       1
-      Max Length:       26
-      Mean Length:      12.57
-      Top Values:
-         /bin                                     x 3 occurrences
-         /nonexistent                             x 2 occurrences
-         /home/pythontester1                      x 1 occurrences
-         /home/pythontester2                      x 1 occurrences
-         /var/run/hplip                           x 1 occurrences
-         /var/cache/man                           x 1 occurrences
-         /var/run/dbus                            x 1 occurrences
-         /dev                                     x 1 occurrences
-         /home/huckfinn                           x 1 occurrences
-         /var/backups                             x 1 occurrences
-
-      ------------------------------------------------------
-      Name:             field_6
-      Field Number:     6
-      Wrong Field Cnt:  0
-      Type:             string
-      Min:              /bin/bash
-      Max:              /usr/sbin/nologin
-      Unique Values:    5
-      Known Values:     5
-      Case:             lower
-      Min Length:       7
-      Max Length:       17
-      Mean Length:      8.67
-      Top Values:
-         /bin/sh                                  x 18 occurrences
-         /bin/false                               x 14 occurrences
-         /bin/bash                                x 8 occurrences
-         /bin/sync                                x 1 occurrences
-         /usr/sbin/nologin                        x 1 occurrences
-
+      < remaining 3 fields of output truncated for brevity >
 
 
 Example #2 - same as the first, but this time writing the output to the "parsable" output format.
@@ -483,12 +415,12 @@ def get_opts_and_args():
            "Usage: %prog [file] [misc options]"
            "\n")
     parser = optparse.OptionParser(usage = use)
-    parser.add_option('-o', '--output',
-           help='Specify output file.  Default is stdout.')
     parser.add_option('--long-help',
            default=False,
            action='store_true',
            help='Print more verbose help')
+    parser.add_option('-o', '--output',
+           help='Specify output file.  Default is stdout.')
     parser.add_option('--outputformat',
            choices=['readable','parsable'],
            default='readable',
@@ -547,8 +479,8 @@ def get_opts_and_args():
         parser.error('must not specify both brevity and column number')
 
     if (opts.number is not None
-    and  opts.number < 1000):
-        parser.error('please specify a number between 1001 and 1000000000')
+    and  opts.number < 10):
+        parser.error('please specify a number between 10 and 1000000000')
 
     # set up column_type_overrides
     opts.column_type_overrides = {}
