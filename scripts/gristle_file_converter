@@ -145,9 +145,9 @@ class InFileHandler(object):
             return strip_fields
         else:
             return fields
- 
+
     def _strip_lineterminator(self, rec):
-        """ Removes the dialect-defined lineterminator from the end of the 
+        """ Removes the dialect-defined lineterminator from the end of the
             record if it exists.
             Returns the results.
         """
@@ -155,12 +155,12 @@ class InFileHandler(object):
             return rec[:-len(self.dialect.lineterminator)]
         else:
             return rec
-      
+
     def _strip_recdelimiter(self, rec):
         """ For input files with a dialect that defines a record delimiter it
             will ensure that only one delimiter exists, then return all data prior
             to it.
-            For input files without a dialect-defined record delimiter it 
+            For input files without a dialect-defined record delimiter it
             simply returns the record.
         """
         if self.dialect.recdelimiter:
