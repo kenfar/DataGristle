@@ -6,12 +6,12 @@
 Very next things to do:
 ==================================================================
 1.  Metadata
-    - sqlalchemy database layer
-	- add extended tables
-	- add surrogate keys
-    - command-line metadata manipulation
-    - gui metadata manipulation
-    - gristle_determinator integration
+    - sqlalchemy database layer                - done
+	- add extended tables                  - done
+	- add surrogate keys                   - done
+    - command-line metadata manipulation       - done
+    - gui metadata manipulation                - NEXT
+    - gristle_determinator integration         - done
 
 
 Then the next things to do:
@@ -43,7 +43,7 @@ Maturity by Tool:
 
 1.  data & metadata management
     - gristle_determinator.py                  - 100%
-    - metadata database:		       - 50%
+    - metadata database:		       - 75%
 
 2.  data transformation tools:
     - gristle_slicer.py                        - 100%
