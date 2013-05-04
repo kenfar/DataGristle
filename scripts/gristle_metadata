@@ -81,15 +81,6 @@ def main():
         for row in results:
             print row
 
-
-    #2 - WORKS:
-    #results = getattr(schema_tools, 'lister')(**dargs)
-    #print results
-    #7 - WORKS:
-    #funcs = {'schema': schema_tools.lister}
-    #print funcs['schema'](**dargs)
-
-
     return 0
 
 
