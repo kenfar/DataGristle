@@ -4,7 +4,6 @@
 
     Dependencies:
        - sqlalchemy (0.7 - though earlier versions will probably work)
-       - envoy
        - appdirs
 
     A secondary objective is to test out some modules I haven't used previously.
@@ -12,25 +11,22 @@
     techniques (for example to run queries in sqlalchemy), and have included
     a considerable amount of comments, documentation & test harnesses.
 
-    Basic Model:
+    Data Model - Data Dictionary Section
        - schema
        - collection
        - field
+       - field_value
        - element
 
-    Extended Model (not yet built):
-       - instance_type
-       - schema_instance   - done
-       - collection_instance
-       - inspect_profile
-       - schema_inspect
-       - inspect
-       - structure_inspect
-       - field_value
+    Data Model - Instance Section
+       - instance
+       - analysis_profile
 
-    To do:
-       - add more attributes?
-       - contemplate reuse
+    Data Model - Analysis Section
+       - analysis
+       - collection_analysis
+       - field_analysis
+       - field_analysis_value
 
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
@@ -39,20 +35,15 @@
 from __future__ import division
 import appdirs
 import os
-from sqlalchemy import (Table, Column, Integer, String, MetaData, DATETIME,
+from sqlalchemy import (Table, Column, Boolean, Integer, String, Float, 
+                        MetaData, DATETIME,
                         UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
                         event, text, create_engine)
 import datetime
 #from pprint import pprint
-#import envoy
 import simplesql
+import logging
 
-
-
-def main():
-    """ Only used for trivial testing
-    """
-    return
 
 
 
@@ -63,11 +54,8 @@ class GristleMetaData(object):
         standard xdg location, or builds one as necessary.  Finally, it builds
         table objects for internal reference.
 
-        Four tables are supported:
-             - schema
-             - element
-             - collection
-             - field
+        The 11 tables included describe data structures, instances, analysis
+        profiles and analysis results.
 
         Each of these tables supports these method types:
              - get  - given a key, will return all other attributes
@@ -89,6 +77,9 @@ class GristleMetaData(object):
     def __init__(self, db_dir=None, db_name='metadata.db'):
         """ Gets datagristle config, and creates db objects if necessary.
         """
+        logging.basicConfig(filename='/tmp/datagristle_metadata.log')
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+
         if db_dir is None:
             user_data_dir = appdirs.user_data_dir('datagristle')
         else:
@@ -97,23 +88,19 @@ class GristleMetaData(object):
             print 'data dir (%s) missing - it will be created' % user_data_dir
             os.makedirs(user_data_dir)
 
-        #class FKListener(PoolListener):
-        #    def connect(self, dbapi_con, con_record):
-        #        db_cursor = dbapi_con.execute('pragma foreign_keys=ON')
-
         self.fqdb_name  = os.path.join(user_data_dir, db_name)
-        self.db         = create_engine('sqlite:////%s' % self.fqdb_name,
-                                           logging_name='/tmp/gristle_sql.log')
+        self.engine     = create_engine('sqlite:////%s' % self.fqdb_name)
         def _fk_pragma_on_connect(dbapi_con, con_record):
             """ turns foreign key enforcement on"""
             dbapi_con.execute('pragma foreign_keys=ON')
 
-        event.listen(self.db, 'connect', _fk_pragma_on_connect)
+        event.listen(self.engine, 'connect', _fk_pragma_on_connect)
 
-        self.db.echo    = False
+        self.engine.echo    = False
 
-        self.metadata = MetaData(self.db)
+        self.metadata = MetaData(self.engine)
         self.create_db_tables_declaratively()
+
 
 
     def create_db_tables_declaratively(self):
@@ -122,37 +109,37 @@ class GristleMetaData(object):
             different from this configuration however.
         """
 
-        self.schema_tools       = SchemaTools(self.metadata)
+        self.schema_tools       = SchemaTools(self.metadata, self.engine)
         self.schema             = self.schema_tools.table_create()
 
-        self.element_tools      = ElementTools(self.metadata)
+        self.element_tools      = ElementTools(self.metadata, self.engine)
         self.element            = self.element_tools.table_create()
 
-        self.collection_tools   = CollectionTools(self.metadata)
+        self.collection_tools   = CollectionTools(self.metadata, self.engine)
         self.collection         = self.collection_tools.table_create()
 
-        self.field_tools        = FieldTools(self.metadata)
+        self.field_tools        = FieldTools(self.metadata, self.engine)
         self.field              = self.field_tools.table_create()
 
-        self.field_value_tools  = FieldValueTools(self.metadata)
+        self.field_value_tools  = FieldValueTools(self.metadata, self.engine)
         self.field_value        = self.field_value_tools.table_create()
 
-        self.instance_tools     = InstanceTools(self.metadata)
+        self.instance_tools     = InstanceTools(self.metadata, self.engine)
         self.instance           = self.instance_tools.table_create()
 
-        self.analysis_profile_tools     = AnalysisProfileTools(self.metadata)
+        self.analysis_profile_tools     = AnalysisProfileTools(self.metadata, self.engine)
         self.analysis_profile           = self.analysis_profile_tools.table_create()
 
-        self.analysis_tools             = AnalysisTools(self.metadata)
+        self.analysis_tools             = AnalysisTools(self.metadata, self.engine)
         self.analysis                   = self.analysis_tools.table_create()
 
-        self.collection_analysis_tools  = CollectionAnalysisTools(self.metadata)
+        self.collection_analysis_tools  = CollectionAnalysisTools(self.metadata, self.engine)
         self.collection_analysis        = self.collection_analysis_tools.table_create()
 
-        self.field_analysis_tools       = FieldAnalysisTools(self.metadata)
+        self.field_analysis_tools       = FieldAnalysisTools(self.metadata, self.engine)
         self.field_analysis             = self.field_analysis_tools.table_create()
 
-        self.field_analysis_value_tools = FieldAnalysisValueTools(self.metadata)
+        self.field_analysis_value_tools = FieldAnalysisValueTools(self.metadata, self.engine)
         self.field_analysis_value       = self.field_analysis_value_tools.table_create()
 
         self.metadata.create_all()
@@ -183,8 +170,8 @@ class GristleMetaData(object):
                     AND col.collection_name  = :collection_name           \
               """
         select_sql = text(sql)
-        result = self.db.execute(select_sql, schema_name=schema_name,
-                                 collection_name=collection_name)
+        result = self.engine.execute(select_sql, schema_name=schema_name,
+                                     collection_name=collection_name)
         return result
 
 
@@ -262,8 +249,9 @@ class CollectionTools(simplesql.TableTools):
                                name='collection_uk1'),
               ForeignKeyConstraint(columns=['schema_id'],
                                    refcolumns=['schema.schema_id'],
-                                   name='collection_fk1') ,
-                                   extend_existing=True )
+                                   name='collection_fk1',
+                                   ondelete='CASCADE'),
+              extend_existing=True)
         self._table      = self.collection
         self._table_name = 'collection'
         return self._table
@@ -295,10 +283,12 @@ class FieldTools(simplesql.TableTools):
                    name='field_uk1'),
             ForeignKeyConstraint(columns=['collection_id'],
                    refcolumns=['collection.collection_id'],
-                   name='field_fk1'),
+                   name='field_fk1',
+                   ondelete='CASCADE'),
             ForeignKeyConstraint(columns=['element_name'],
                    refcolumns=['element.element_name'],
-                   name='field_fk2'),
+                   name='field_fk2',
+                   ondelete='RESTRICT'),
             CheckConstraint('field_len > 0',
                    name='field_len_ck1'),
             CheckConstraint("field_type in ('string','int','date','time','timestamp','float')",
@@ -315,6 +305,43 @@ class FieldTools(simplesql.TableTools):
         self._table_name = 'field'
         self.instance    = None # assigned in InstanceTools
         return self._table
+
+    def get_field_id(self, collection_id, field_order=None, 
+                     field_name=None, field_type=None, field_len=None,
+                     field_desc=None):
+        """Get field_id if one exists, ir not doesn't exist then create it.
+           Return final id.
+           Is used by processes that can't use the getter - because they don't
+           have a pk or uk - in the first case implemented they've got collection_id
+           and a field_order or field_name.  For this first implementation we'll
+           assume field_order.
+        """
+        assert(field_order is not None or field_name)
+        sql = """ SELECT field_id               \
+                  FROM  field                   \
+                  WHERE collection_id  = :collection_id \
+                    AND field_order    = :field_order   \
+              """
+        select_sql = text(sql)
+        result = self.engine.execute(select_sql, 
+                                     collection_id=collection_id,
+                                     field_order=field_order)
+        rows   = result.fetchall()
+        try:
+            return rows[0].field_id
+        except IndexError:  # No rows found
+            if not field_name:
+               field_name = 'field%s' % field_order
+            if not field_desc:
+               field_desc = 'field%s' % field_order
+            return self.setter(collection_id=collection_id,
+                               field_order=field_order,
+                               field_name=field_name,
+                               field_type=field_type,
+                               field_len=field_len,
+                               field_desc=field_desc)
+
+
 
 
 class FieldValueTools(simplesql.TableTools):
@@ -336,7 +363,8 @@ class FieldValueTools(simplesql.TableTools):
                    name='field_value_uk1'),
             ForeignKeyConstraint(columns=['field_id'],
                    refcolumns=['field.field_id'],
-                   name='field_value_fk1'),
+                   name='field_value_fk1',
+                   ondelete='CASCADE'),
             extend_existing=True )
         self._table      = self.field_value
         self._table_name = 'field_value'
@@ -366,12 +394,33 @@ class InstanceTools(simplesql.TableTools):
              UniqueConstraint('schema_id','instance_name', name='instance_uk1'),
              ForeignKeyConstraint(columns=['schema_id'],
                                   refcolumns=['schema.schema_id'],
-                                  name='instance_fk1') ,
+                                  name='instance_fk1',
+                                  ondelete='CASCADE'),
              extend_existing=True    )
 
         self._table      = self.instance
         self._table_name = 'instance'
         return self._table
+
+    def get_instance_id(self, schema_id, instance_name='default'):
+        """Get instance_id if one exists, ir not doesn't exist then create it.
+           Return final instance_id.
+
+           Note that this code assumes that only a single instance exists for
+           a given schema.   This is only going to be true for the short-term.
+        """
+        sql = """ SELECT instance_id               \
+                  FROM instance                    \
+                  WHERE schema_id  = :schema_id    \
+              """
+        select_sql = text(sql)
+        result = self.engine.execute(select_sql, schema_id=schema_id)
+        rows   = result.fetchall()
+        try:
+            return rows[0].instance_id
+        except IndexError:  # No rows found
+            return self.setter(schema_id=schema_id,
+                                         instance_name=instance_name)
 
 
 
@@ -402,15 +451,42 @@ class AnalysisProfileTools(simplesql.TableTools):
                               name='analysis_profile_k1'),
              ForeignKeyConstraint(columns=['instance_id'],
                                   refcolumns=['instance.instance_id'],
-                                  name='analysis_profile_fk1') ,
+                                  name='analysis_profile_fk1',
+                                  ondelete='CASCADE'),
              ForeignKeyConstraint(columns=['collection_id'],
                                   refcolumns=['collection.collection_id'],
-                                  name='analysis_profile_fk1') ,
+                                  name='analysis_profile_fk1',
+                                  ondelete='CASCADE'),
              extend_existing=True    )
 
         self._table      = self.analysis_profile
         self._table_name = 'analysis_profile'
         return self._table
+
+
+    def get_analysis_profile_id(self, instance_id, collection_id, 
+                                analysis_profile_name='default'):
+        """Get analysis_profile_id if one exists, ir not doesn't exist then create it.
+           Return final id.
+
+           Note that this code assumes that only a single analysis_profile 
+           exists for a given schema.   This is only going to be true for the 
+           short-term.
+        """
+        sql = """ SELECT analysis_profile_id         \
+                  FROM analysis_profile              \
+                  WHERE instance_id  = :instance_id  \
+              """
+        select_sql = text(sql)
+        result = self.engine.execute(select_sql, instance_id=instance_id)
+        rows   = result.fetchall()
+        try:
+            return rows[0].analysis_profile_id
+        except IndexError:  # No rows found
+            return self.setter(instance_id=instance_id,
+                               collection_id=collection_id,
+                               analysis_profile_name=analysis_profile_name)
+
 
 
 
@@ -451,10 +527,12 @@ class AnalysisTools(simplesql.TableTools):
                     name='analysis_uk1'),
              ForeignKeyConstraint(columns=['instance_id'],
                     refcolumns=['instance.instance_id'],
-                    name='analysis_fk1') ,
+                    name='analysis_fk1',
+                    ondelete='CASCADE'),
              ForeignKeyConstraint(columns=['analysis_profile_id'],
                     refcolumns=['analysis_profile.analysis_profile_id'],
-                    name='analysis_fk2') ,
+                    name='analysis_fk2',
+                    ondelete='CASCADE'),
              extend_existing=True    )
 
         self._table      = self.analysis
@@ -489,17 +567,34 @@ class CollectionAnalysisTools(simplesql.TableTools):
              Column('ca_location'    ,
                     String(256)      ,
                     nullable=False  ),
-             Column('ca_rowcount'    ,
+             Column('ca_row_cnt'     ,
                     Integer          ,
+                    nullable=True   ),
+             Column('ca_field_cnt'   ,
+                    Integer          ,
+                    nullable=True   ),
+             Column('ca_delimiter'   ,
+                    String(10)       ,
+                    nullable=True   ),
+             Column('ca_hasheader'   ,
+                    Boolean          ,
+                    nullable=True   ),
+             Column('ca_quoting'     ,
+                    String(20)       ,
+                    nullable=True   ),
+             Column('ca_quote_char'  ,
+                    String(1)       ,
                     nullable=True   ),
              UniqueConstraint('analysis_id','collection_id',
                     name='collection_analysis_uk1'),
              ForeignKeyConstraint(columns=['analysis_id'],
                     refcolumns=['analysis.analysis_id'],
-                    name='collection_analysis_fk1') ,
+                    name='collection_analysis_fk1',
+                    ondelete='CASCADE'),
              ForeignKeyConstraint(columns=['collection_id'],
                     refcolumns=['collection.collection_id'],
-                    name='collection_analysis_fk2') ,
+                    name='collection_analysis_fk2',
+                    ondelete='CASCADE'),
              extend_existing=True    )
 
         self._table      = self.collection_analysis
@@ -527,6 +622,45 @@ class FieldAnalysisTools(simplesql.TableTools):
              Column('field_id'       ,
                     Integer          ,
                     nullable=False  ),
+             Column('fa_type'        ,
+                    String(10)       ,
+                    nullable=True   ),
+             Column('fa_unique_cnt'  ,
+                    Integer          ,
+                    nullable=True   ),
+             Column('fa_known_cnt'   ,
+                    Integer          ,
+                    nullable=True   ),
+             Column('fa_unknown_cnt' ,
+                    Integer          ,
+                    nullable=True   ),
+             Column('fa_min'         ,
+                    String(256)      ,
+                    nullable=True   ),
+             Column('fa_max'         ,
+                    String(256)      ,
+                    nullable=True   ),
+             Column('fa_mean'        ,
+                    Float            ,
+                    nullable=True   ),
+             Column('fa_median'      ,
+                    Float            ,
+                    nullable=True   ),
+             Column('fa_stddev'      ,
+                    Float            ,
+                    nullable=True   ),
+             Column('fa_variance'    ,
+                    Float            ,
+                    nullable=True   ),
+             Column('fa_min_len'     ,
+                    Integer          ,
+                    nullable=True   ),
+             Column('fa_max_len'     ,
+                    Integer          ,
+                    nullable=True   ),
+             Column('fa_mean_len'    ,
+                    Integer          ,
+                    nullable=True   ),
              Column('fa_case'        ,
                     String(10)       ,
                     nullable=True   ),
@@ -534,10 +668,12 @@ class FieldAnalysisTools(simplesql.TableTools):
                               name='field_analysis_uk1')       ,
              ForeignKeyConstraint(columns=['ca_id']            ,
                                   refcolumns=['collection_analysis.ca_id'],
-                                  name='field_analysis_fk1')   ,
+                                  name='field_analysis_fk1'    ,
+                                  ondelete='CASCADE'),
              ForeignKeyConstraint(columns=['field_id']         ,
                                   refcolumns=['field.field_id'],
-                                  name='field_analysis_fk2')   ,
+                                  name='field_analysis_fk2'    ,
+                                  ondelete='CASCADE'),
              CheckConstraint ("fa_case IN ('lower','upper','mixed','unk')",
                               name='field_analysis_ck1')       ,
              extend_existing=True    )
@@ -574,15 +710,11 @@ class FieldAnalysisValueTools(simplesql.TableTools):
                               name='field_analysis_value_uk1') ,
              ForeignKeyConstraint(columns=['fa_id']            ,
                                   refcolumns=['field_analysis.fa_id'],
-                                  name='field_analysis_value_fk1')   ,
+                                  name='field_analysis_value_fk1'    ,
+                                  ondelete='CASCADE'),
              extend_existing=True    )
 
         self._table      = self.field_analysis_value
         self._table_name = 'field_analysis_value'
         return self._table
 
-
-
-
-if __name__ == '__main__':
-    main()
