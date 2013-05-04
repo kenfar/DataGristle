@@ -192,6 +192,11 @@ import sys
 import os
 import optparse
 import errno
+import csv
+#from sqlalchemy import (Table, Column, Integer, String, MetaData, DATETIME,
+#                        UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
+#                        event, text, create_engine)
+import sqlalchemy
 
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox
@@ -199,6 +204,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import gristle.file_type           as file_type
 import gristle.field_determinator  as field_determinator
+import gristle.metadata            as metadata
 
 
 #from pprint import pprint as pp
@@ -211,10 +217,15 @@ def main():
     """ Allows users to directly call determinator from command line
     """
     (opts, files) = get_opts_and_args()
+    md_man        = None
 
     # turn off verbose if parsable output is going to stdout
     if opts.outputformat == 'parsable' and not opts.output:
-        opts.verbose = False
+        opts.verbose = False  # don't mix data and info
+
+    if opts.metadata:
+        md_man    = MetadataManager(opts.schema_id, opts.collection_id)
+
 
     out_writer    = OutputWriter(output_filename=opts.output,
                                  output_format=opts.outputformat)
@@ -222,14 +233,16 @@ def main():
     my_file       = file_type.FileTyper(files[0],
                                        opts.delimiter,
                                        opts.recdelimiter,
-                                       opts.hasheader)
+                                       opts.hasheader,
+                                       quoting=csv.QUOTE_MINIMAL)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
         return errno.ENODATA
 
     out_writer.write_file_results(my_file)
-    #print_file_info(my_file, outfile)
+    if opts.metadata:
+        md_man.write_file_results(my_file)
 
     if opts.brief:
         return 0
@@ -253,10 +266,123 @@ def main():
                              opts.number)
 
     out_writer.write_field_results(my_fields, opts.column_number)
+    if opts.metadata:
+        md_man.write_field_results(my_fields, opts.column_number)
 
     out_writer.terminate()
-
     return 0
+
+
+class MetadataManager(object):
+    def __init__(self, schema_id, collection_id):
+        self.schema_id           = schema_id
+        self.collection_id       = collection_id
+        self.instance_id         = None
+        self.analysis_profile_id = None
+        self.md                  = metadata.GristleMetaData()
+
+        if self.md.collection_tools.getter(collection_id=collection_id) is None:
+            print 'ERROR: schema_id / collection_id (%d / %d) does not exist' \
+                   % (schema_id, collection_id)
+            sys.exit(1)
+        else:
+            print self.md.collection_tools.getter(schema_id=schema_id,
+                                                  collection_id=collection_id)
+
+        self.instance_id = self.md.instance_tools.get_instance_id(self.schema_id)
+        self.analysis_profile_id = self.md.analysis_profile_tools.get_analysis_profile_id(\
+                                   self.instance_id, self.collection_id)
+
+
+        # blow away prior analysis, collection analysis, etc
+        # create new analysis record
+        self.analysis_id = self.md.analysis_tools.setter(instance_id=self.instance_id,
+                           analysis_profile_id=self.analysis_profile_id,
+                           analysis_tool='gristle_determinator')
+
+        #print 'schema_id:           %d' % schema_id
+        #print 'collection_id:       %d' % collection_id
+        #print 'instance_id:         %d' % self.instance_id
+        #print 'analysis_profile_id: %d' % self.analysis_profile_id
+        #print 'analysis_id:         %d' % self.analysis_id
+
+    def write_file_results(self, filetype):
+
+        self.ca_id = self.md.collection_analysis_tools.setter(analysis_id=self.analysis_id,
+                     collection_id=self.collection_id,
+                     ca_name='unknown',
+                     ca_location=filetype.fqfn,
+                     ca_row_cnt=filetype.record_cnt,
+                     ca_field_cnt=filetype.field_cnt,
+                     ca_delimiter=filetype.dialect.delimiter,
+                     ca_hasheader=filetype.dialect.has_header,
+                     ca_quoting=file_type.get_quote_name(filetype.dialect.quoting).lower(),
+                     ca_quote_char=filetype.dialect.quotechar)
+
+    def write_field_results(self, field_analysis, col_number):
+
+        for sub in range(field_analysis.field_cnt):
+            if (col_number is not None and sub != col_number):
+                continue
+            if field_analysis.field_types[sub] == 'integer':
+                field_type = 'int'
+            else:
+                field_type = field_analysis.field_types[sub]
+            if field_type == 'string':
+                field_len =  field_analysis.field_max_length[sub]
+            else:
+                field_len = None
+
+
+            field_id = self.md.field_tools.get_field_id(self.collection_id,
+                                                        field_order=sub,
+                                                        field_type=field_type,
+                                                        field_len=field_len,
+                                                        field_name=field_analysis.field_names[sub])
+
+            fa_case      = None
+            fa_min_len   = None
+            fa_max_len   = None
+            fa_mean_len  = None
+            fa_mean      = None
+            fa_median    = None
+            fa_stddev    = None
+            fa_variance  = None
+            if field_analysis.field_types[sub] in ('integer','float'):
+                fa_mean      = field_analysis.field_mean[sub]
+                fa_median    = field_analysis.field_median[sub]
+                fa_stddev    = field_analysis.stddev[sub]
+                fa_variance  = field_analysis.variance[sub]
+            elif field_analysis.field_types[sub] == 'string':
+                fa_case      = field_analysis.field_case[sub]
+                fa_min_len   = field_analysis.field_min_length[sub]
+                fa_max_len   = field_analysis.field_max_length[sub]
+                fa_mean_len  = field_analysis.field_mean_length[sub]
+
+            fa_id    = self.md.field_analysis_tools.setter(ca_id=self.ca_id,
+                        field_id=field_id,
+                        fa_type=field_analysis.field_types[sub],
+                        fa_unique_cnt=len(field_analysis.field_freqs[sub]),
+                        fa_known_cnt=len(field_analysis.get_known_values(sub)),
+                        fa_min=field_analysis.field_min[sub],
+                        fa_max=field_analysis.field_max[sub],
+                        fa_mean=fa_mean,
+                        fa_median=fa_median,
+                        fa_stddev=fa_stddev,
+                        fa_variance=fa_variance,
+                        fa_case=fa_case,
+                        fa_min_len=fa_min_len,
+                        fa_max_len=fa_max_len,
+                        fa_mean_len=fa_mean_len)
+
+
+
+            if field_analysis.field_freqs[sub] is not None:
+                sorted_list = field_analysis.get_top_freq_values(sub, limit=100)
+                for pair in sorted_list:
+                    fav_id = self.md.field_analysis_value_tools.setter(fa_id=fa_id,
+                                                                       fav_value=pair[0],
+                                                                       fav_count=pair[1])
 
 
 
@@ -273,7 +399,7 @@ class OutputWriter(object):
     def __init__(self, output_filename, output_format):
         self.output_filename = output_filename
         self.output_format   = output_format
-        assert(self.output_format in ['readable','parsable'])
+        assert(self.output_format in ['readable', 'parsable', 'metadata'])
 
         if self.output_filename:
             self.outfile   = open(self.output_filename, 'w')
@@ -286,6 +412,7 @@ class OutputWriter(object):
     def terminate(self):
         if self.outfile:
             self.outfile.close()
+
 
     def write_file_results(self, my_file):
         self.write_header()
@@ -352,6 +479,7 @@ class OutputWriter(object):
 
             self.write_field_freq(my_fields, sub)
 
+
     def write_field_freq(self, my_fields, col_no):
         key_sub = 0
         val_sub = 1
@@ -375,6 +503,7 @@ class OutputWriter(object):
             self.outfile.write('{1:<{2}}{0}\n'.format(val, '', indent))
         elif self.output_format == 'parsable':
             pass
+
 
     def write_string(self, key, value=' ', indent=0, key_width=20, use_repr=False):
         if (self.output_format == 'parsable'
@@ -422,7 +551,7 @@ def get_opts_and_args():
     parser.add_option('-o', '--output',
            help='Specify output file.  Default is stdout.')
     parser.add_option('--outputformat',
-           choices=['readable','parsable'],
+           choices=['readable', 'parsable', 'none'],
            default='readable',
            help='describe output format')
     parser.add_option('-v', '--verbose',
@@ -460,6 +589,20 @@ def get_opts_and_args():
            help=('Allows manual specification of field types: integer, float, '
                  'string, timestamp. Use format: "colno:type, colno:type, '
                  ' colno:type"'))
+    parser.add_option('--metadata',
+           default=False,
+           action='store_true',
+           help=('Indicates whether or not to write results into metadata database'))
+    parser.add_option('--schemaid',
+           type='int',
+           dest='schema_id',
+           help=('Used with metadata outputformat to identify structure '
+                 'set being analyzed.'))
+    parser.add_option('--collectionid',
+           type='int',
+           dest='collection_id',
+           help=('Used with metadata outputformat to identify structure '
+                 'being analyzed.'))
 
     (opts, files) = parser.parse_args()
 
@@ -481,6 +624,12 @@ def get_opts_and_args():
     if (opts.number is not None
     and  opts.number < 10):
         parser.error('please specify a number between 10 and 1000000000')
+
+    if ((opts.schema_id or opts.collection_id) and not opts.metadata):
+        parser.error('schemaid and collectionid are only for metadata')
+
+    if ((opts.schema_id is None or opts.collection_id is None) and opts.metadata):
+        parser.error('metadata requires schemaid and collectionid')
 
     # set up column_type_overrides
     opts.column_type_overrides = {}
