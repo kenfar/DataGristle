@@ -4,14 +4,14 @@
 
     Issues:
        - Currently when the setter attempts to update a row with integrity
-         violations it fails to raise IntegrityError.  This violation is 
+         violations it fails to raise IntegrityError.  This violation is
          determined manually, and IntegrityError is manually raised instead.
 
     Dependencies:
        - sqlalchemy (0.7 - though earlier versions will probably work)
        - sqlite3
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
 
@@ -27,8 +27,9 @@ class TableTools(object):
     """ Provides generic and simple tools for managing data within a table.
     """
 
-    def __init__(self, metadata):
+    def __init__(self, metadata, engine):
         self.metadata = metadata
+	self.engine   = engine
         self._table       = None
         self._table_name  = None
         self._unique_constraints = None
@@ -95,7 +96,6 @@ class TableTools(object):
             return None
 
 
-    #def lister(self, **kw):
     def lister(self, **kw):
         """ Returns all rows for the table, not in any particular order.
             Inputs:
@@ -157,15 +157,15 @@ class TableTools(object):
                 print 'update exception'
                 print except_detail        # might want to get rid of this
                 print result
-                # usually constraint violations 
-                raise exc.IntegrityError (upd_sql, kw_update, None) 
+                # usually constraint violations
+                raise exc.IntegrityError (upd_sql, kw_update, None)
             return 0
 
 
 
 
     def _create_where(self, sql, filter_col):
-        """ Creates where condition necessary to identify a single row based 
+        """ Creates where condition necessary to identify a single row based
             on primary key or unique key.
             Arguments:
                - sql = sqlalchemy sql object
@@ -186,18 +186,18 @@ class TableTools(object):
         if technique == 'pk':
             for column in self._table.c:
                 if column.name in self._table.primary_key:
-                    where = sql.where(self._table.c[column.name] 
+                    where = sql.where(self._table.c[column.name]
                                       == filter_col[column.name])
         elif technique == 'uk':
             for constraint in self._get_unique_constraints():
                 #print '   constraint:         %s' %  constraint
                 #print '     syscat:           %s' %  self._table.c[constraint]
                 #print '     filter_col:       %s' %  ','.join(filter_col)
-                #print '     filter_col[sub]:  %s' %  filter_col[constraint] 
+                #print '     filter_col[sub]:  %s' %  filter_col[constraint]
                 #print 'Constraint:  %s' % constraint
                 #print 'constraint: %s' % self._table.c[constraint]
                 #print 'filter_col: %s' % filter_col[constraint]
-                where = sql.where(self._table.c[constraint] 
+                where = sql.where(self._table.c[constraint]
                                   == filter_col[constraint])
             if where is None:
                 if not self._get_unique_constraints():
@@ -206,7 +206,7 @@ class TableTools(object):
                     raise KeyError, 'no pk or uk provided'
 
         if where is None:
-            raise KeyError 
+            raise KeyError
 
         return where
 
