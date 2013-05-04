@@ -48,7 +48,7 @@ class TestSurrogateKeyTable(unittest.TestCase):
         self.db.echo       = False
         self.conn          = self.db.connect()   # only needed by some statements
         self.metadata      = MetaData(self.db)
-        self.person_tools  = PersonTools(self.metadata)
+        self.person_tools  = PersonTools(self.metadata, self.db)
         self.person        = self.person_tools.table_create()
         self.metadata.create_all()
 
@@ -143,7 +143,7 @@ class TestNaturalKeyTable(unittest.TestCase):
         self.db.echo       = False
         self.conn          = self.db.connect()   # only needed by some statements
         self.metadata      = MetaData(self.db)
-        self.pet_tools     = PetTools(self.metadata)
+        self.pet_tools     = PetTools(self.metadata, self.db)
         self.pet           = self.pet_tools.table_create()
         self.metadata.create_all()
 
@@ -220,7 +220,7 @@ class TestSurrogateKeyCheckConstraintTable(unittest.TestCase):
         self.db.echo                = False
         self.conn                   = self.db.connect()   # only needed by some statements
         self.metadata               = MetaData(self.db)
-        self.animal_tools           = AnimalTools(self.metadata)
+        self.animal_tools           = AnimalTools(self.metadata, self.db)
         self.animal                 = self.animal_tools.table_create()
         self.metadata.create_all()
 

@@ -8,6 +8,7 @@ import sys
 import os
 import tempfile
 from sqlalchemy import exc
+import pytest
 try:
     import unittest2 as unittest
 except ImportError:
@@ -25,7 +26,6 @@ class TestSchema(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
         self.md      = mod.GristleMetaData(self.tempdir)
         self.schema_id, self.collection_id = create_basic_metadata(self.md)
-        #content_rpt(self.md)
 
     def tearDown(self):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
@@ -59,7 +59,8 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(len(self.md.schema_tools.lister()), 1)
         old_schema_rows = self.md.schema_tools.lister()
 
-        self.assertRaises(exc.IntegrityError, self.md.schema_tools.deleter, schema_name='geoip')
+        assert(self.md.schema_tools.deleter(schema_name='geoip') == 1) # delete 1 row
+        assert(self.md.schema_tools.deleter(schema_name='geoip') == 0) # no rows left
 
         # delete all fields for collection
         for field in  self.md.field_tools.lister():
@@ -102,6 +103,7 @@ class TestSchema(unittest.TestCase):
 
 
 
+#@pytest.mark.skipif("1 == 1")
 class TestCollection(unittest.TestCase):
 
     def setUp(self):
@@ -208,6 +210,7 @@ class TestCollection(unittest.TestCase):
         self.assertTrue(rowproxy_diff(old_rows, new_rows, expected_add_cnt=0, expected_del_cnt=0))
 
 
+#@pytest.mark.skipif("1 == 1")
 class TestField(unittest.TestCase):
 
     def setUp(self):
@@ -250,6 +253,7 @@ class TestField(unittest.TestCase):
 
 
 
+#@pytest.mark.skipif("1 == 1")
 class TestElement(unittest.TestCase):
 
     def setUp(self):
@@ -281,6 +285,7 @@ class TestElement(unittest.TestCase):
 
 
 
+#@pytest.mark.skipif("1 == 1")
 class TestReports(unittest.TestCase):
 
     def setUp(self):
@@ -356,25 +361,26 @@ def content_rpt(md):
     """ provides a report of what's left in the md.
         kinda useful for some diagnosis
     """
-    rpt = '''SELECT schema.schema_name,                      \
-                    struct.struct_name,                      \
-                    struct.struct_type,                      \
-                    struct.parent_struct_name,               \
-                    struct.field_type,                       \
-                    struct.field_len                         \
-             FROM schema   schema                            \
-                INNER JOIN struct struct                     \
-                  ON schema.schema_name = struct.schema_name \
-                INNER JOIN struct_type  stype                \
-                  ON struct.struct_type = stype.struct_type  \
+    rpt = '''SELECT s.schema_id,                             \
+                    s.schema_name,                           \
+                    c.collection_id,                         \
+                    c.collection_name,                       \
+                    f.field_id,                              \
+                    f.field_name,                            \
+                    f.field_order                            \
+             FROM schema   s                                 \
+                INNER JOIN collection c                      \
+                  ON s.schema_id = c.schema_id               \
+                INNER JOIN field      f                      \
+                  ON c.collection_id = f.collection_id       \
           ''' 
-    result = md.db.execute(rpt)
-    #print
+    result = md.engine.execute(rpt)
+    print
     #print 'final content report'
-    #print 
-    #print 'schema, struct_parent_name, struct_name, struct_type, field_type, field_len'
-    #for row in result:
-    #    print '%s,  %-20.20s,  %-20.20s, %-10.10s, %-10.10s, %s ' % (row[0],row[3],row[1], row[2], row[4], row[5])
-    #print
+    print
+    print '%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % ('sch_id', 'sch_name', 'coll_id', 'coll_name', 'field_id', 'field_name', 'field_ord')
+    for row in result:
+        print '%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % (row[0],row[1],row[2], row[3], row[4], row[5], row[6])
+    print
     #print os.path.join(self.tempdir, 'metadata.db')
-
+    #return result
