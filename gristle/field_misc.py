@@ -156,7 +156,7 @@ def get_min(value_type, values):
           - value_type - one of integer, float, string, timestap
           - dictionary or list of string values
         Outputs:
-          - the single maximum value of the appropriate type
+          - the single minimum value of the appropriate type
 
         Test Coverage:
           - complete via test harness
@@ -170,13 +170,6 @@ def get_min(value_type, values):
     unknown_field_cnt = 0
     invalid_field_cnt = 0
 
-    # first handle types & unknowns:
-    #if value_type == 'integer':
-    #    known_vals = [int(val) for val in values if not typer.is_unknown(val)]
-    #elif value_type == 'float':
-    #    known_vals = [float(val) for val in values if not typer.is_unknown(val)]
-    #else:
-    #    known_vals = [val for val in values if not typer.is_unknown(val)]
     known_vals = []
     for val in values:
         if typer.is_unknown(val):
@@ -280,7 +273,7 @@ def get_max_length(values):
 
 def get_min_length(values):
     """ Returns the minimum length value of the input.   If
-        no values found besides unknown it will just return 'None'
+        no values found besides unknown it will just return 999999
 
         Inputs:
           - dictionary or list of string values
