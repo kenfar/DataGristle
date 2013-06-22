@@ -161,20 +161,13 @@ def get_min(value_type, values):
         Test Coverage:
           - complete via test harness
 
-        Issues:
-          - doesn't report to caller number of values rejected due to
-            unknown or invalid values
     """
     assert(value_type in ['integer', 'float', 'string', 'timestamp',
                           'unknown', None])
-    unknown_field_cnt = 0
-    invalid_field_cnt = 0
 
     known_vals = []
     for val in values:
-        if typer.is_unknown(val):
-            unknown_field_cnt += 1
-        else:
+        if not typer.is_unknown(val):
             try:
                 if value_type == 'integer':
                     known_vals.append(int(val))
@@ -183,14 +176,11 @@ def get_min(value_type, values):
                 else:
                     known_vals.append(val)
             except ValueError:
-                invalid_field_cnt += 1
+                pass                       # ignore invalid values
 
     # next return the minimum value
     try:
-        if value_type in ['integer', 'float']:
-            return str(min(known_vals))
-        else:
-            return min(known_vals)
+        return str(min(known_vals))
     except ValueError:
         return None
 
@@ -209,28 +199,13 @@ def get_max(value_type, values):
         Test Coverage:
           - complete via test harness
 
-        Issues:
-          - doesn't report to caller number of values rejected due to
-            unknown or invalid values
     """
     assert(value_type in ['integer', 'float', 'string', 'timestamp',
                           'unknown', None])
-    unknown_field_cnt = 0
-    invalid_field_cnt = 0
-
-    #simpler, older, solution, but didn't support try,except code
-    #if value_type == 'integer':
-    #    known_vals = [int(val) for val in values if not typer.is_unknown(val)]
-    #elif value_type == 'float':
-    #    known_vals = [float(val) for val in values if not typer.is_unknown(val)]
-    #else:
-    #    known_vals = [val for val in values if not typer.is_unknown(val)]
 
     known_vals = []
     for val in values:
-        if typer.is_unknown(val):
-            unknown_field_cnt += 1
-        else:
+        if not typer.is_unknown(val):
             try:
                 if value_type == 'integer':
                     known_vals.append(int(val))
@@ -239,13 +214,10 @@ def get_max(value_type, values):
                 else:
                     known_vals.append(val)
             except ValueError:
-                invalid_field_cnt += 1
+                pass                       # ignore invalid values
 
     try:
-        if value_type in ['integer','float']:
-            return str(max(known_vals))
-        else:
-            return max(known_vals)
+        return str(max(known_vals))
     except ValueError:
         return None
 
