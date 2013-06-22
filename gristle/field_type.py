@@ -197,9 +197,7 @@ def _get_field_type_probability(type_freq):
     """ Determines type of field based on the type of the vast majority of
         values.
     """
-    total = 0
-    for key in type_freq:
-        total += type_freq[key]
+    total = sum(type_freq.itervalues())
 
     # if the sample-size is too small, then we can't be sure:
     if total < 10:
