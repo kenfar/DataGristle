@@ -112,10 +112,7 @@ def get_field_type(values):
 
     # try probabilities:
     result = _get_field_type_probability(type_freq)
-    if result:
-        return result
-    else:
-        return 'unknown'
+    return (result or 'unknown')
 
 
 
