@@ -85,9 +85,10 @@ import os
 from pprint import pprint
 
 #--- gristle modules -------------------
+# set up a custom path - just for running unittests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gristle.file_type           as file_type 
+import gristle.file_type           as file_type
 import gristle.location_slicer     as slicer
 
 debug = False
@@ -109,7 +110,7 @@ def main():
             print 'ERROR: file %s does not exist' % files[0]
             sys.exit(1)
 
-    dialect         = get_input_file_info(files, opts)
+    dialect              = get_input_file_info(files, opts)
     outfile, csv_writer  = get_output_file_info(opts, dialect)
 
     (incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer) \
@@ -123,7 +124,7 @@ def main():
         new_rec  = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
                                rec, incl_col_slicer, excl_col_slicer)
         if new_rec:
-            write_rec(csv_writer, new_rec, dialect.delimiter)
+            write_rec(csv_writer, new_rec)
 
     fileinput.close()
     if opts.output != '-':
@@ -215,7 +216,7 @@ def setup_slicer(opts, files, dialect):
             print 'negative record slicing with stdin requires record_count option'
             return 2
         else:
-            rec_cnt, col_cnt = get_file_counts(opts, files, dialect, rec=True)
+            rec_cnt, col_cnt = get_file_counts(files, dialect, rec=True)
     incl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
     excl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
 
@@ -224,7 +225,7 @@ def setup_slicer(opts, files, dialect):
             print 'negative column slicing with stdin requires column_count option'
             return 2
         elif not col_cnt:
-            dummy, col_cnt = get_file_counts(opts, files, dialect, col=True)
+            dummy, col_cnt = get_file_counts(files, dialect, col=True)
     incl_col_slicer.spec_adjuster(loc_max=col_cnt)
     excl_col_slicer.spec_adjuster(loc_max=col_cnt)
 
@@ -232,7 +233,7 @@ def setup_slicer(opts, files, dialect):
 
 
 
-def get_file_counts(opts, files, dialect, rec=False, col=False):
+def get_file_counts(files, dialect, rec=False, col=False):
     """ Gets record and column counts for input files.
         - Counts have an offset of 0
         - if rec is True then it will read entire input file to get
@@ -242,6 +243,7 @@ def get_file_counts(opts, files, dialect, rec=False, col=False):
           get a field count.  And it will return None for rec count,
           and the field count from the first record.
     """
+    assert(rec is True or col is True)
     rec_cnt   = -1
     for rec in csv.reader(fileinput.input(files), dialect):
         rec_cnt  += 1
@@ -250,8 +252,11 @@ def get_file_counts(opts, files, dialect, rec=False, col=False):
             break
     if rec:
         return rec_cnt, field_cnt
-    else:
+    elif col:
         return None, field_cnt
+    else:
+        print 'logic error in get_file_counts - '
+        sys.exit(1)
 
 
 
@@ -300,13 +305,12 @@ def process_rec(rec_number, incl_rec_slicer, excl_rec_slicer,
 
 
 
-def write_rec(outfile, fields, delimiter):
+def write_rec(outfile, fields):
     """ Writes record to output object - using the same dialect as the input
         file.
         Input:
-            - list of fields to write
             - output object
-            - delimiter
+            - list of fields to write
         Output:
             - delimited output record written to output object
     """
