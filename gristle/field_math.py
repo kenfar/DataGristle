@@ -45,17 +45,15 @@ def get_mean_length(values):
         Test Coverage:
           - complete via test harness
     """
-    count   = 0
     accum   = 0
-
+    count   = 0
     for value in values:
-        if field_type.is_unknown(value):
-            continue
-        try:
-            accum += len(value) * int(values[value])
-            count += int(values[value])
-        except ValueError:
-            pass                # usually 'unknown values', sometimes garbage
+        if not field_type.is_unknown(value):
+            try:
+                accum += len(value) * int(values[value])
+                count += int(values[value])
+            except ValueError:
+                pass                # usually 'unknown values', sometimes garbage
     try:
         return accum / count
     except ZeroDivisionError:
@@ -114,7 +112,6 @@ def get_mean(values):
     """
     count   = 0
     accum   = 0
-
     for value in values:
         try:
             accum += float(value) * float(values[value])
