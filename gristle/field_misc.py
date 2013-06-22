@@ -13,9 +13,6 @@
       - get_field_freq()
           - change get_field_rec to better handle files within inconsistent
             number of fields
-      - get_max() & get_min():
-          - doesn't report to caller number of values rejected due to
-            unknown or invalid values
 
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
@@ -46,7 +43,7 @@ def get_field_names(filename,
     except StopIteration:
         return None              # empty file
 
-    if col_number is None:      # it could be 0
+    if col_number is None:       # get names for all fields
         final_names = []
         for col_sub in range(len(field_names)):
             if dialect.has_header:
@@ -54,7 +51,7 @@ def get_field_names(filename,
             else:
                 final_names.append('field_%d' % col_sub)
         return final_names
-    else:
+    else:                        # get name for single field
         final_name = ''
         if dialect.has_header:
             final_name = field_names[col_number].strip()
