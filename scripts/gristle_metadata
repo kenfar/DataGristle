@@ -91,27 +91,26 @@ def get_args():
         Input:
             - command line args & options
         Output:
-            - opts dictionary
-            - args dictionary
+            - args namespace
     """
-    table_choices=['schema', 'element', 'collection', 'field', 'field_value', 'rule',
-                   'instance', 'analysis_profile',
-                   'analysis', 'collection_analysis',
-                   'field_analysis', 'field_analysis_value',
-                   'rule_analysis']
-    action_choices=['list', 'get', 'set','del']
-    type_choices=['string','int','date','time','timestamp','float']
+    table_choices = ['schema', 'element', 'collection', 'field', 'field_value', 'rule',
+                     'instance', 'analysis_profile',
+                     'analysis', 'collection_analysis',
+                     'field_analysis', 'field_analysis_value',
+                     'rule_analysis']
+    action_choices = ['list', 'get', 'set','del']
+    type_choices   = ['string', 'int', 'date', 'time', 'timestamp', 'float']
 
 
     use = ''' \n\
-       \n  gristle_metadata.py is used to provide command-line CRUD interaction\
+       \n  gristle_metadata is used to provide command-line CRUD interaction   \
             with the gristle metadata database.                                \
        \n                                                                      \
-       \n gristle_metadata.py -t [table] -a [action] [misc options]            \
+       \n gristle_metadata -t [table] -a [action] [misc options]               \
        \n   where tables could be any of [schema, collection, field, etc]      \
-       \n     and actions could be any of [list, get, set, del]. \
-       \n     ...                                                            \
-       \n                                                                    \
+       \n     and actions could be any of [list, get, set, del].               \
+       \n     ...                                                              \
+       \n                                                                      \
        '''
 
     parser  = argparse.ArgumentParser(description=use, 
