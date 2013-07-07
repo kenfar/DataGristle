@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = "0.49"
+version = "0.50"
 DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
 LONG_DESCRIPTION = open('README.txt').read()
 
@@ -35,6 +35,8 @@ setup(name             = 'datagristle'     ,
                       'scripts/gristle_file_converter',
                       'scripts/gristle_filter'        ,
                       'scripts/gristle_freaker'       ,
+                      'scripts/gristle_metadata'      ,
+                      'scripts/gristle_md_reporter'   ,
                       'scripts/gristle_scalar'        ,
                       'scripts/gristle_slicer'        ,
                       'scripts/gristle_validator'     ,
