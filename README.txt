@@ -248,7 +248,7 @@ More info is on the DataGristle wiki here:
                     Allows the user to input a row into the element table and 
                     prompts the user for all fields necessary.
                            
-#gristle_metadata and gristle_md_reporter
+#gristle_md_reporter
     Gristle_md_reporter allows the user to create data dictionary reports that
     combine information about the collection and fields along with field value
     descriptions and frequencies.

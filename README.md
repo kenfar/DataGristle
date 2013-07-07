@@ -270,7 +270,7 @@ Examples:
                 prompts the user for all fields necessary.
 </code></pre>
 
-<h1>gristle<em>metadata and gristle</em>md_reporter</h1>
+<h1>gristle<em>md</em>reporter</h1>
 
 <pre><code>Gristle_md_reporter allows the user to create data dictionary reports that
 combine information about the collection and fields along with field value
