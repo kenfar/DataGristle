@@ -22,9 +22,7 @@ import argparse
 import os
 from pprint import pprint as pp
 
-from sqlalchemy import (Boolean, Integer, String, Float,
-                        MetaData, DATETIME,
-                        event, text)
+from sqlalchemy import (text)
 
 
 #--- gristle modules -------------------
