@@ -19,6 +19,7 @@
 from __future__ import division
 import sys
 import argparse
+import os
 from pprint import pprint as pp
 
 from sqlalchemy import (Boolean, Integer, String, Float,
@@ -27,12 +28,11 @@ from sqlalchemy import (Boolean, Integer, String, Float,
 
 
 #--- gristle modules -------------------
-sys.path.append('../')         # allows running from project structure
-sys.path.append('../../')      # allows running from project structure
-sys.path.append('../gristle')  # allows running from project structure
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from common import (coalesce, ifprint)
-import metadata               as metadata
+from gristle.common import (coalesce, ifprint)
+import gristle.metadata               as metadata
 
 
 
@@ -284,10 +284,13 @@ def get_args():
 
     parser  = argparse.ArgumentParser(description=use,
                                       formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('--long-help',
+           default=False,
+           action='store_true',
+           help='Print verbose help and exit.')
 
     parser.add_argument('--report', '-r',
            choices=['dd','datadictionary'],
-           required=True,
            help='Report to be produced'),
 
     parser.add_argument('--schema_id'      , '--si',
@@ -302,9 +305,13 @@ def get_args():
 
     args = parser.parse_args()
 
-    if args.report == 'dd':
-        if args.collection_id is None:
-            parser.error('collection_id must be provided for dd report')
+    if args.long_help:
+        print __doc__
+        sys.exit(0)
+    elif not args.report:
+        parser.error('Report must be provided')
+    elif args.report == 'dd' and args.collection_id is None:
+        parser.error('collection_id must be provided for dd report')
 
     return args
 
