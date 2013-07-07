@@ -9,8 +9,8 @@ analysis capabilities necessary to do 80% of the work.  Its open source python
 codebase allows it to be easily extended to with custom code to handle that
 always challenging last 20%.
 
-Current Status:  Strong support for easy analysis and simple transformations of
-csv files. 
+Current Status:  Strong support for easy analysis, simple transformations of
+csv files, and ability to create data dictionaries.
 
 More info is on the DataGristle wiki here: 
    https://github.com/kenfar/DataGristle/wiki
@@ -48,7 +48,7 @@ More info is on the DataGristle wiki here:
 
        ~~~
        $ mkdir ~\Downloads
-       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.46.tar.gz
+       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.50.tar.gz
        $ tar -xvf easy_install datagristle
        $ cd ~\Downloads\datagristle-*
        $ python setup.py install
@@ -235,6 +235,33 @@ More info is on the DataGristle wiki here:
             Top Values: 
                 -888                                     x 62 occurrences
                 0                                        x 37 occurrences
+
+#gristle_metadata
+    Gristle_metadata provides a command-line interface to the metadata database.
+    It's mostly useful for scripts, but also useful for occasional direct
+    command-line access to the metadata.
+
+    Examples:
+       $ gristle_metadata --table schema --action list
+                    Prints a list of all rows for the schema table.
+       $ gristle_metadata --table element --action put --prompt
+                    Allows the user to input a row into the element table and 
+                    prompts the user for all fields necessary.
+                           
+#gristle_metadata and gristle_md_reporter
+    Gristle_md_reporter allows the user to create data dictionary reports that
+    combine information about the collection and fields along with field value
+    descriptions and frequencies.
+
+    Examples:
+       $ gristle_md_reporter --report datadictionary --collection_id 2
+                    Prints a data dictionary report of collection_id 2.
+       $ gristle_md_reporter --report datadictionary --collection_name presidents
+                    Prints a data dictionary report of the president collection.
+       $ gristle_md_reporter --report datadictionary --collection_id 2 --field_id 3
+                    Prints a data dictionary report of the president collection,
+                    only shows field-level information for field_id 3.
+
 
 
 #Licensing
