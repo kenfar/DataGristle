@@ -10,19 +10,16 @@
 #--- standard modules ------------------
 from __future__ import division
 import sys
+import os
 import argparse
 #from pprint import pprint as pp
 
 #--- gristle modules -------------------
-sys.path.append('../')     # allows running from project structure
-sys.path.append('../../')  # allows running from project structure
-sys.path.append('../gristle')  # allows running from project structure
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import gristle.metadata               as metadata
 
-import metadata               as metadata
 
-#------------------------------------------------------------------------------
-# Command-line section 
-#------------------------------------------------------------------------------
 def main():
     """ runs all processes:
             - gets opts & args
@@ -119,18 +116,18 @@ def get_args():
 
     parser.add_argument('--table', '-t',
            choices=table_choices,
-           required=True,
            help='table to perform action upon')
     parser.add_argument('--action', '-a',
            choices=action_choices,
-           required=True,
            help='action to perform upon table')
     parser.add_argument('--prompt', '-p',
            action='store_true',
            default=False,
            help='causes program to prompt for each field')
-
-
+    parser.add_argument('--long-help',
+           default=False,
+           action='store_true',
+           help='Print verbose help and exit.')
 
     parser.add_argument('--schema_id'   , '--si',
            help='id of schema')
@@ -138,7 +135,6 @@ def get_args():
            help='name of schema')
     parser.add_argument('--schema_desc' , '--sd',
            help='description of schema')
-
 
     parser.add_argument('--element_name', '--en')
     parser.add_argument('--element_desc', '--ed')
@@ -149,12 +145,10 @@ def get_args():
            help='element length',
            type=int)
 
-
     parser.add_argument('--collection_id'  , '--ci',
            type=int)
     parser.add_argument('--collection_name', '--cn')
     parser.add_argument('--collection_desc', '--cd')
-
 
     parser.add_argument('--field_id'       , '--fi')
     parser.add_argument('--field_name'     , '--fn')
@@ -166,28 +160,23 @@ def get_args():
     parser.add_argument('--field_order'    , '--fo',
            type=int)
 
-
     parser.add_argument('--fv_value'       , '--fv')
     parser.add_argument('--fv_desc'        , '--fvd')
     parser.add_argument('--fv_issues'      , '--fvi')
-
 
     parser.add_argument('--rule_id'        , '--ri',
            type=int)
     parser.add_argument('--rule_name'      , '--rn')
     parser.add_argument('--rule_desc'      , '--rd')
 
-
     parser.add_argument('--instance_id'       , '--ii',
            type=int)
     parser.add_argument('--instance_name'     , '--in')
     parser.add_argument('--instance_location' , '--il')
 
-
     parser.add_argument('--analysis_profile_id'    , '--api',
            type=int)
     parser.add_argument('--analysis_profile_name'  , '--apn')
-
 
     parser.add_argument('--analysis_id'         , '--ai',
            type=int)
@@ -196,7 +185,6 @@ def get_args():
     parser.add_argument('--analysis_timestamp'  ,
            help='generally set by tool')
 
-
     parser.add_argument('--ca_id'               , '--cai',
            type=int)
     parser.add_argument('--ca_name'             , '--can')
@@ -204,18 +192,15 @@ def get_args():
     parser.add_argument('--ca_rowcount'         , '--car',
            type=int)
 
-
     parser.add_argument('--fa_id'               , '--fai',
            type=int)
     parser.add_argument('--fa_case'             , '--fac')
-
 
     parser.add_argument('--fav_id'              , '--favi',
            type=int)
     parser.add_argument('--fav_value'           , '--favv')
     parser.add_argument('--fav_count'           , '--favc',
            type=int)
-
 
     parser.add_argument('--ra_id'               , '--rai',
            type=int)
@@ -229,6 +214,14 @@ def get_args():
     #       default='unk')  - from ca_location
 
     args = parser.parse_args()
+
+    if args.long_help:
+        print __doc__
+        sys.exit(0)
+    elif not args.table:
+        parser.error('Table must be provided')
+    elif not args.action:
+        parser.error('Action must be provided')
 
     if args.prompt:
         if args.action != 'list':
