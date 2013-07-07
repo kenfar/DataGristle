@@ -139,11 +139,11 @@ gristle_scalar
 
 gristle_metadata.py       
     - test coverage:        -- 0% +
-    - pylint status         -- 9.39
+    - pylint status         -- 9.63
 
 gristle_md_reporter.py       
     - test coverage:        -- 0% +
-    - pylint status         -- 
+    - pylint status         -- 9.55
 
 gristle_validator
     - test coverage:        -- 0% +
