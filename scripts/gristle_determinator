@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-""" 
-gristle_determinator analyzes a file structure then analyzes contents of each column
-within the file.  Once complete it then prints the results for the user
+"""
+Gristle_determinator analyzes a file structure then analyzes contents of each column
+within the file.  Once complete it then prints the results for the user.
 
 
 Usage: gristle_determinator [file] [misc options]
@@ -11,7 +11,7 @@ Usage: gristle_determinator [file] [misc options]
     --long-help           show more verbose help
     -o OUTPUT, --output=OUTPUT
                           Specify output file.  Default is stdout.
-    --outputformat        Choices include: readable, parsable, none with a 
+    --outputformat        Choices include: readable, parsable, none with a
                           default of readable.
     -q, --quiet           provides less detail
     -v, --verbose         provides more detail
@@ -308,11 +308,6 @@ class MetadataManager(object):
                            analysis_profile_id=self.analysis_profile_id,
                            analysis_tool='gristle_determinator')
 
-        #print 'schema_id:           %d' % schema_id
-        #print 'collection_id:       %d' % collection_id
-        #print 'instance_id:         %d' % self.instance_id
-        #print 'analysis_profile_id: %d' % self.analysis_profile_id
-        #print 'analysis_id:         %d' % self.analysis_id
 
     def write_file_results(self, filetype):
 
@@ -382,8 +377,6 @@ class MetadataManager(object):
                         fa_min_len=fa_min_len,
                         fa_max_len=fa_max_len,
                         fa_mean_len=fa_mean_len)
-
-
 
             if field_analysis.field_freqs[sub] is not None:
                 sorted_list = field_analysis.get_top_freq_values(sub, limit=100)
