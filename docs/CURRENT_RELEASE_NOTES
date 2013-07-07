@@ -1,5 +1,5 @@
 ===============================================================================
-Version:     0.49
+Version:     0.51
 Copyright 2011,2012,2013 Ken Farmer
 See the file "LICENSE" for the full license governing this code. 
 ===============================================================================
@@ -8,14 +8,18 @@ See the file "LICENSE" for the full license governing this code.
 ===============================================================================
 Primary Functional Changes
 ===============================================================================
-    - gristle_determinator
-        - added --long-help option
-        - added interface to metadata to allow results to be stored in db
+    - gristle_metadata
+        - added long-help
+	- improved pathing
+    - gristle_md_reporter
+    	- initial add 
 
 
 ===============================================================================
 Primary Internal Changes
 ===============================================================================
+    - metadata
+        - added views
 
 
 ===============================================================================
@@ -136,6 +140,10 @@ gristle_scalar
 gristle_metadata.py       
     - test coverage:        -- 0% +
     - pylint status         -- 9.39
+
+gristle_md_reporter.py       
+    - test coverage:        -- 0% +
+    - pylint status         -- 
 
 gristle_validator
     - test coverage:        -- 0% +
