@@ -27,6 +27,9 @@
        - collection_analysis
        - field_analysis
        - field_analysis_value
+      
+    Reporting Views
+       - rpt_collection_analysis_v
 
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
@@ -40,7 +43,7 @@ from sqlalchemy import (Table, Column, Boolean, Integer, String, Float,
                         UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
                         event, text, create_engine)
 import datetime
-#from pprint import pprint
+from pprint import pprint as pp
 import simplesql
 import logging
 
@@ -99,6 +102,16 @@ class GristleMetaData(object):
         self.engine.echo    = False
 
         self.metadata = MetaData(self.engine)
+
+        #-------------------------------------------------------------------
+        # This explicit connection was not initially needed - originally all
+        # work was performed through implicit connections.  But the need to 
+        # run methods like:
+        #    existing_views = engine.dialect.get_view_names(connect)
+        # requires the explicit connection.
+        #-------------------------------------------------------------------
+        self.connect  = self.engine.connect()
+
         self.create_db_tables_declaratively()
 
 
@@ -141,8 +154,11 @@ class GristleMetaData(object):
 
         self.field_analysis_value_tools = FieldAnalysisValueTools(self.metadata, self.engine)
         self.field_analysis_value       = self.field_analysis_value_tools.table_create()
-
+ 
         self.metadata.create_all()
+ 
+        # we can't easily create views with sqlalchemy - so do that manually:
+        create_views(self.engine, self.connect)
 
 
 
@@ -717,4 +733,112 @@ class FieldAnalysisValueTools(simplesql.TableTools):
         self._table      = self.field_analysis_value
         self._table_name = 'field_analysis_value'
         return self._table
+
+
+
+def create_views(engine, connect):
+    """ Creates all views.
+        Each view function that it calls is responsible for checking
+        whether or not it already exists.
+    """
+
+    create_view_rpt_collection_analysis_v(engine, connect)
+    create_view_rpt_field_analysis_v(engine, connect)
+
+    
+
+def create_view_rpt_collection_analysis_v(engine, connection):
+    """ Creates this view - if it doesn't already exist.
+        
+        This view will join schema, collection, instance, analysis, and 
+        collection_analysis tables together.  It will usually produce more 
+        rows that the user wants - since a given schema may have multiple 
+        instances and multiple analysis may be performed.  For this reason
+        it is anticipated that it will typically be restricted by both
+        instance id or name and analysis id or timestamp.
+    """
+
+    sql = """ CREATE VIEW rpt_collection_analysis_v AS \
+              SELECT s.schema_id,          \
+                     s.schema_name,        \
+                     c.collection_id,      \
+                     c.collection_name,    \
+                     i.instance_id,        \
+                     i.instance_name,      \
+                     a.analysis_id,        \
+                     a.analysis_timestamp, \
+                     ca.ca_id,             \
+                     ca.ca_name,           \
+                     ca.ca_location,       \
+                     ca.ca_row_cnt,        \
+                     ca.ca_field_cnt,      \
+                     ca.ca_delimiter,      \
+                     ca.ca_hasheader,      \
+                     ca.ca_quoting,        \
+                     ca.ca_quote_char      \
+              FROM schema  s                               \
+                  INNER JOIN collection c                  \
+                     ON s.schema_id = c.schema_id          \
+                  INNER JOIN instance i                    \
+                     ON s.schema_id = i.schema_id          \
+                  INNER JOIN analysis a                    \
+                     ON i.instance_id = a.instance_id      \
+                  INNER JOIN collection_analysis  ca       \
+                     ON a.analysis_id = ca.analysis_id     \
+                    AND c.collection_id = ca.collection_id \
+          """
+    existing_views = engine.dialect.get_view_names(connection)
+    if 'rpt_collection_analysis_v' not in existing_views:
+        create_sql = text(sql)
+        result     = engine.execute(create_sql)
+
+
+
+def create_view_rpt_field_analysis_v(engine, connection):
+    """ Creates this view - if it doesn't already exist.
+        
+        This view will join collection, field, collection_analysis and
+        field_analysis tables together.   It will usually produce more 
+        rows than the user wants - since a given collection may have
+        multiple analysis rows.  For this reason it is anticipated that 
+        it will typically be restricted by connection_analysis.ca_id or
+        connection_analysis.analysis_id.
+    """
+
+    sql = """ CREATE VIEW rpt_field_analysis_v AS \
+              SELECT c.collection_id,      \
+                     ca.analysis_id,       \
+                     ca.ca_id,             \
+                     f.field_id,           \
+                     f.field_name,         \
+                     f.field_type,         \
+                     f.field_order,        \
+                     f.field_len,          \
+                     fa.fa_type,           \
+                     fa.fa_unique_cnt,     \
+                     fa.fa_known_cnt,      \
+                     fa.fa_unknown_cnt,    \
+                     fa.fa_min,            \
+                     fa.fa_max,            \
+                     fa.fa_mean,           \
+                     fa.fa_median,         \
+                     fa.fa_stddev,         \
+                     fa.fa_variance,       \
+                     fa.fa_min_len,        \
+                     fa.fa_max_len,        \
+                     fa.fa_mean_len,       \
+                     fa.fa_case            \
+              FROM collection c                            \
+                  INNER JOIN collection_analysis ca        \
+                     ON c.collection_id = ca.collection_id \
+                  INNER JOIN field f                       \
+                     ON c.collection_id = f.collection_id  \
+                  INNER JOIN field_analysis fa             \
+                     ON f.field_id = fa.field_id           \
+          """
+    existing_views = engine.dialect.get_view_names(connection)
+    if 'rpt_field_analysis_v' not in existing_views:
+        create_sql = text(sql)
+        result     = engine.execute(create_sql)
+
 
