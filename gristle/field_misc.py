@@ -114,6 +114,7 @@ def get_case(field_type, values):
     return case
 
 
+
 def get_field_freq(filename,
                    dialect,
                    field_number,
