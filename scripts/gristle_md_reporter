@@ -1,0 +1,316 @@
+#!/usr/bin/env python
+""" Command line metadata reporting tool - used to provide various reports, in
+    various formats of data within the metadata database.
+
+    Currently some of this functionality is redundant with the gristle
+    determinator:
+       - determinator:  populates metadata and reports on current analysis job
+       - md_reporter:   reports on metadata database, is intended for steady
+                        enhancemnts - adding PDF outputs.
+
+
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+       http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011,2012,2013 Ken Farmer
+"""
+
+#--- standard modules ------------------
+from __future__ import division
+import sys
+import argparse
+from pprint import pprint as pp
+
+from sqlalchemy import (Boolean, Integer, String, Float,
+                        MetaData, DATETIME,
+                        event, text)
+
+
+#--- gristle modules -------------------
+sys.path.append('../')         # allows running from project structure
+sys.path.append('../../')      # allows running from project structure
+sys.path.append('../gristle')  # allows running from project structure
+
+from common import (coalesce, ifprint)
+import metadata               as metadata
+
+
+
+def main():
+    """ runs all processes:
+            - gets opts & args
+            - runs command
+    """
+    args         = get_args()
+    dargs        = vars(args)
+    my_md        = metadata.GristleMetaData()
+
+    reports = {'datadictionary'    : rpt_datadict ,
+               'dd'                : rpt_datadict }
+
+    # eliminate any Nones so they don't confuse _create_where
+    # alternatively change _create_where so that it checks for None pk/uks
+    for key in dargs.keys():
+        if dargs[key] is None:
+            dargs.pop(key)
+    dargs['md'] = my_md
+
+    # get a pointer to the function:
+    function = reports['dd']
+
+    # run the function:
+    result = function(**dargs)
+    if result:
+        return 0
+    else:
+        return 1
+
+
+
+def rpt_datadict(**kwargs):
+    """ Prints a data dictionary report.
+        It returns a boolean indicating the success or failure of the rpt.
+    """
+    if 'analysis_id' not in kwargs:
+        kwargs['analysis_id'] = get_analysis_id(kwargs['md'],
+                                                kwargs['collection_id'])
+    if not rpt_collection_analysis(**kwargs):
+       return False
+
+    rpt_field_analysis(**kwargs)
+    return True
+
+
+
+def rpt_collection_analysis(**kwargs):
+    """Print information about a collection.
+    """
+
+    # next get collection_analysis data:
+    sql = """ SELECT *                                       \
+              FROM rpt_collection_analysis_v                 \
+              WHERE collection_id  = :collection_id          \
+                AND analysis_id    = :analysis_id            \
+          """
+    select_sql = text(sql)
+    result     = kwargs['md'].engine.execute(select_sql,
+                                             collection_id=kwargs['collection_id'],
+                                             analysis_id=kwargs['analysis_id'])
+    coll_rows  = result.fetchall()
+    if len(coll_rows) == 0:
+        print 'Error: no collection found'
+        return False
+    else:
+        print
+        print '================= Schema and Collection Info ====================='
+        for row in coll_rows:
+            print 'schema_id:                %d' % row.schema_id
+            print 'schema_name:              %s' % row.schema_name
+            print 'collection_id:            %d' % row.collection_id
+            print 'collection_name:          %s' % row.collection_name
+            print 'instance_id:              %d' % row.instance_id
+            print 'instance_name:            %s' % row.instance_name
+            print 'analysis_id:              %d' % row.analysis_id
+            print 'analysis_timestamp:       %s' % row.analysis_timestamp
+            print 'ca_id:                    %d' % row.ca_id
+            print 'ca_name:                  %s' % row.ca_name
+            print 'ca_location:              %s' % row.ca_location
+            print 'ca_row_cnt:               %d' % row.ca_row_cnt
+            print 'ca_delimiter:             %s' % row.ca_delimiter
+            print 'ca_hasheader:             %s' % row.ca_hasheader
+            print 'ca_quoting:               %s' % row.ca_quoting
+            print 'ca_quote_char:            %s' % row.ca_quote_char
+        return True
+
+
+
+
+def rpt_field_analysis(**kwargs):
+    """Prints field-level information.
+    """
+
+    #-----  format and run query ------------------
+    sql2 = """ SELECT *                                       \
+               FROM rpt_field_analysis_v                      \
+               WHERE collection_id  = :collection_id          \
+                 AND analysis_id    = :analysis_id            \
+          """
+    if 'field_id' in kwargs:
+        sql2 += " AND field_id = :field_id "
+        select_sql = text(sql2)
+        result     = kwargs['md'].engine.execute(select_sql,
+                                                 collection_id=kwargs['collection_id'],
+                                                 analysis_id=kwargs['analysis_id'],
+                                                 field_id=kwargs['field_id'])
+    elif 'field_name' in kwargs:
+        sql2 += " AND field_name = :field_name "
+        select_sql = text(sql2)
+        result     = kwargs['md'].engine.execute(select_sql,
+                                                 collection_id=kwargs['collection_id'],
+                                                 analysis_id=kwargs['analysis_id'],
+                                                 field_name=kwargs['field_name'])
+    else:
+        select_sql = text(sql2)
+        result     = kwargs['md'].engine.execute(select_sql,
+                                                 collection_id=kwargs['collection_id'],
+                                                 analysis_id=kwargs['analysis_id'])
+    fa_rows  = result.fetchall()
+
+    print
+    print '================= Field Info ====================='
+    for row in fa_rows:
+        print
+        print '    ================= field_id: %s =====================' % row.field_id
+        print '    field_name:           %s' % row.field_name
+        print '    field_type:           %s' % row.field_type
+        print '    field_order:          %s' % row.field_order
+        ifprint(row.field_len, '    field_len:            %d', row.field_len)
+        ifprint(row.fa_type,   '    fa_type:              %s', row.fa_type)
+        ifprint(row.fa_unique_cnt,   '    fa_unique_cnt:        %d', row.fa_unique_cnt)
+        ifprint(row.fa_known_cnt,    '    fa_known_cnt:         %d', row.fa_known_cnt)
+        ifprint(row.fa_unknown_cnt,  '    fa_unknown_cnt:       %d', row.fa_unknown_cnt)
+        ifprint(row.fa_min,          '    fa_min:               %s', row.fa_min)
+        ifprint(row.fa_max,          '    fa_max:               %s', row.fa_max)
+        ifprint(row.fa_mean,         '    fa_mean:              %s', row.fa_mean)
+        ifprint(row.fa_median,       '    fa_median:            %s', row.fa_median)
+        ifprint(row.fa_stddev,       '    fa_stddev:            %s', row.fa_stddev)
+        ifprint(row.fa_variance,     '    fa_variance:          %s', row.fa_variance)
+        ifprint(row.fa_min_len,      '    fa_min_len:           %s', row.fa_min_len)
+        ifprint(row.fa_max_len,      '    fa_max_len:           %s', row.fa_max_len)
+        ifprint(row.fa_mean_len,     '    fa_mean_len:          %s', row.fa_mean_len)
+        ifprint(row.fa_case,         '    fa_case:              %s', row.fa_case)
+
+        kwargs['field_id'] = row.field_id
+        rpt_field_value(**kwargs)
+        rpt_field_freq(**kwargs)
+
+
+
+def rpt_field_value(**kwargs):
+    """ Prints field value descriptions.
+    """
+    fv_sql = """ SELECT *                                       \
+                 FROM field_value fv                            \
+                 WHERE field_id       = :field_id               \
+             """
+    select_sql = text(fv_sql)
+    result     = kwargs['md'].engine.execute(select_sql,
+                                             field_id=kwargs['field_id'])
+    fv_rows  = result.fetchall()
+    if len(fv_rows):
+        print
+        print '        --------------- Field Values ---------------'
+        row_cnt = 0
+        for row in fv_rows:
+            row_cnt += 1
+            if row_cnt > 200:
+                break
+            ifprint(row.fv_value,  '        %-20.20s             %s',
+                    row.fv_value, row.fv_desc)
+
+
+
+def rpt_field_freq(**kwargs):
+    """ Prints field value frequencies.
+    """
+    fv_sql = """ SELECT fav.fav_value,                          \
+                        fav.fav_count                           \
+                 FROM field_analysis fa                         \
+                    INNER JOIN field_analysis_value fav         \
+                       ON fa.fa_id = fav.fa_id                  \
+                 WHERE fa.field_id    = :field_id               \
+                 ORDER BY fav.fav_count DESC                    \
+             """
+    select_sql = text(fv_sql)
+    result     = kwargs['md'].engine.execute(select_sql,
+                                             field_id=kwargs['field_id'])
+    fav_rows  = result.fetchall()
+    if len(fav_rows):
+        print
+        print '        --------------- Value Counts ---------------'
+        row_cnt = 0
+        for row in fav_rows:
+            row_cnt += 1
+            if row_cnt > 200:
+                break
+            ifprint(row.fav_value,  '        %-20.20s             %d', 
+                    row.fav_value, row.fav_count)
+
+
+
+
+def get_analysis_id(md, collection_id):
+    """ Currently returns max analysis_id.
+        In the future it may return the analysis id associated
+        with analysis time or name or schema id or name or
+        instance id or name.
+    """
+
+    sql = """ SELECT MAX(anal.analysis_id) as analysis_id  \
+              FROM schema                 sch              \
+                 INNER JOIN collection    coll             \
+                    ON sch.schema_id = coll.schema_id      \
+                 INNER JOIN instance      inst             \
+                    ON sch.schema_id = inst.schema_id      \
+                 INNER JOIN analysis      anal             \
+                    ON inst.instance_id = anal.instance_id \
+              WHERE collection_id  = :collection_id        \
+          """
+    select_sql  = text(sql)
+    result      = md.engine.execute(select_sql, collection_id=collection_id)
+    anal_rows   = result.fetchall()
+    try:
+        return anal_rows[0].analysis_id
+    except IndexError:  # no rows found
+        return None
+
+
+
+def get_args():
+    """ gets opts & args and returns them
+        Input:
+            - command line args & options
+        Output:
+            - args namespace
+    """
+
+    use = ''' \n\
+       \n gristle_md_reporter is used to provide command-line reporting        \
+            with the gristle metadata database.                                \
+       \n                                                                      \
+       \n gristle_md_reporter -r [report]                                      \
+       \n                                                                      \
+       '''
+
+    parser  = argparse.ArgumentParser(description=use,
+                                      formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('--report', '-r',
+           choices=['dd','datadictionary'],
+           required=True,
+           help='Report to be produced'),
+
+    parser.add_argument('--schema_id'      , '--si',
+           help='id of schema')
+    parser.add_argument('--schema_name'    , '--sn')
+    parser.add_argument('--collection_id'  , '--ci',
+           type=int)
+    parser.add_argument('--collection_name', '--cn')
+    parser.add_argument('--field_id'       , '--fi',
+           type=int)
+    parser.add_argument('--field_name'     , '--fn')
+
+    args = parser.parse_args()
+
+    if args.report == 'dd':
+        if args.collection_id is None:
+            parser.error('collection_id must be provided for dd report')
+
+    return args
+
+
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
