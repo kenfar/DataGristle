@@ -7,10 +7,7 @@
 import sys
 import os
 import tempfile
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import pytest
 
 from sqlalchemy import create_engine, MetaData, exc
 from sqlalchemy import Table, Column, Integer, String
@@ -28,18 +25,10 @@ import gristle.simplesql   as simplesql
 #   Test_reports
 #---------------------------------------------------------
 
-#def suite():
-#    suite = unittest.TestSuite()
-#    suite.addTest(unittest.makeSuite(TestSurrogateKeyTable))
-#    suite.addTest(unittest.makeSuite(TestNaturalKeyTable))
-#    suite.addTest(unittest.makeSuite(TestSurrogateKeyCheckConstraintTable))
-#    unittest.TextTestRunner(verbosity=2).run(suite)
-#    return suite
 
+class TestSurrogateKeyTable(object):
 
-class TestSurrogateKeyTable(unittest.TestCase):
-
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir       = tempfile.mkdtemp()
 
         self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
@@ -52,7 +41,7 @@ class TestSurrogateKeyTable(unittest.TestCase):
         self.person        = self.person_tools.table_create()
         self.metadata.create_all()
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
@@ -61,60 +50,62 @@ class TestSurrogateKeyTable(unittest.TestCase):
         self.person_tools.setter(person_name='joe', person_desc='personal desc')
         self.person_tools.setter(person_name='jim', person_desc='good bowler')
         people = self.person_tools.lister()
-        self.assertEqual(len(people), 3)
+        assert len(people) == 3
         for person in people:
-            self.assertEqual(len(person), 3)
-            self.assertGreater(person.id, 0)
-            self.assertLess(person.id, 4)
-            self.assertIn(person.person_name, ['joe','bob','jim'])
-            self.assertIn(person.person_name, ['joe','bob','jim'])
+            assert len(person) == 3
+            assert person.id > 0
+            assert person.id < 4
+            assert person.person_name in ['joe','bob','jim']
+            assert person.person_name in ['joe','bob','jim']
 
     def test_setter_null_constraint_violation(self):
         # is missing mandatory column 'person_desc'
-        self.assertRaises(exc.IntegrityError, self.person_tools.setter, person_name='bob')
+        with pytest.raises(exc.IntegrityError):
+             self.person_tools.setter(person_name='bob')
 
     def test_updating_without_id(self):
-        self.assertEqual(len(self.person_tools.lister()), 0)
+        assert len(self.person_tools.lister()) == 0
         self.person_tools.setter(person_name='bob', person_desc='should result in insert')
-        self.assertEqual(len(self.person_tools.lister()), 1)
+        assert len(self.person_tools.lister()) == 1
         self.person_tools.setter(person_name='bob', person_desc='should result in update')
-        self.assertEqual(len(self.person_tools.lister()), 1)
+        assert len(self.person_tools.lister()) == 1
         for person in self.person_tools.lister():
-            self.assertEqual(person.person_desc, 'should result in update')
+            assert person.person_desc == 'should result in update'
 
     def test_updating_with_id(self):
-        self.assertEqual(len(self.person_tools.lister()), 0)
+        assert len(self.person_tools.lister()) == 0
         self.person_tools.setter(person_name='bob', person_desc='should result in insert')
-        self.assertEqual(len(self.person_tools.lister()), 1)
+        assert len(self.person_tools.lister()) == 1
         self.person_tools.setter(id=1, person_desc='still just update')
-        self.assertEqual(len(self.person_tools.lister()), 1)
+        assert len(self.person_tools.lister()) == 1
         for person in self.person_tools.lister():
-            self.assertEqual(person.person_name, 'bob')
-            self.assertEqual(person.person_desc, 'still just update')
+            assert person.person_name == 'bob'
+            assert person.person_desc == 'still just update'
 
     def test_get_unique_constraints(self):
         constraints = self.person_tools._get_unique_constraints()
-        self.assertEqual(len(constraints),1)
-        self.assertEqual(constraints[0],'person_name')
+        assert len(constraints) == 1
+        assert constraints[0] == 'person_name'
 
     def test_get_id(self):
         self.person_tools.setter(person_name='bob', person_desc='personal desc')
         self.person_tools.setter(person_name='joe', person_desc='personal desc')
         self.person_tools.setter(person_name='jim', person_desc='good bowler')
-        self.assertEqual(len(self.person_tools.lister()), 3)
+        assert len(self.person_tools.lister()) == 3
 
-        self.assertEqual(self.person_tools.get_id(person_name='bob'), 1)
-        self.assertEqual(self.person_tools.get_id(person_name='joe'), 2)
-        self.assertEqual(self.person_tools.get_id(person_name='jim'), 3)
+        assert self.person_tools.get_id(person_name='bob') == 1
+        assert self.person_tools.get_id(person_name='joe') == 2
+        assert self.person_tools.get_id(person_name='jim') == 3
 
     def test_getter(self):
         self.person_tools.setter(person_name='bob', person_desc='personal desc')
         self.person_tools.setter(person_name='joe', person_desc='personal desc')
         self.person_tools.setter(person_name='jim', person_desc='good bowler')
-        self.assertEqual(len(self.person_tools.lister()), 3)
-        self.assertEqual(self.person_tools.getter(id=1).person_name, 'bob')
-        self.assertEqual(self.person_tools.getter(person_name='joe').id, 2)
-        self.assertRaises(KeyError, self.person_tools.getter, person_desc='good bowler')
+        assert len(self.person_tools.lister()) == 3
+        assert self.person_tools.getter(id=1).person_name == 'bob'
+        assert self.person_tools.getter(person_name='joe').id == 2
+        with pytest.raises(KeyError):
+            self.person_tools.getter(person_desc='good bowler')
 
     def test_deleter(self):
         # deleter should always return 0 or 1 - will not raise exception
@@ -122,19 +113,19 @@ class TestSurrogateKeyTable(unittest.TestCase):
         self.person_tools.setter(person_name='bob', person_desc='good sleeper')
         self.person_tools.setter(person_name='joe', person_desc='good dribbler')
         self.person_tools.setter(person_name='jim', person_desc='good catcher')
-        self.assertEqual(len(self.person_tools.lister()), 3)
-        self.assertEqual(self.person_tools.deleter(person_name='jim'), 1)
-        self.assertEqual(self.person_tools.deleter(person_name='maximillion'), 0)
-        self.assertEqual(self.person_tools.deleter(pet_desc='good bowler'),0)
-        self.assertEqual(self.person_tools.deleter(person_desc='good sleeper'),0)
-        self.assertEqual(self.person_tools.deleter(id=1), 1)
+        assert len(self.person_tools.lister()) == 3
+        assert self.person_tools.deleter(person_name='jim') == 1
+        assert self.person_tools.deleter(person_name='maximillion') == 0
+        assert self.person_tools.deleter(pet_desc='good bowler') == 0
+        assert self.person_tools.deleter(person_desc='good sleeper') == 0
+        assert self.person_tools.deleter(id=1) == 1
 
 
 
 
-class TestNaturalKeyTable(unittest.TestCase):
+class TestNaturalKeyTable(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
 
         self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
@@ -147,7 +138,7 @@ class TestNaturalKeyTable(unittest.TestCase):
         self.pet           = self.pet_tools.table_create()
         self.metadata.create_all()
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
@@ -156,43 +147,47 @@ class TestNaturalKeyTable(unittest.TestCase):
         self.pet_tools.setter(pet_name='ralf', pet_desc='dribbler')
         self.pet_tools.setter(pet_name='gina', pet_desc='catcher')
         pets = self.pet_tools.lister()
-        self.assertEqual(len(pets), 3)
+        assert len(pets) == 3
         for pet in pets:
-            self.assertEqual(len(pet), 2)
-            self.assertIn(pet.pet_name, ['fido','ralf','gina'])
+            assert len(pet) == 2
+            assert pet.pet_name in ['fido','ralf','gina']
 
     def test_updating_without_id(self):
-        self.assertEqual(len(self.pet_tools.lister()), 0)
+        assert len(self.pet_tools.lister()) == 0
         self.pet_tools.setter(pet_name='gina', pet_desc='good catcher')
-        self.assertEqual(len(self.pet_tools.lister()), 1)
+        assert len(self.pet_tools.lister()) == 1
         self.pet_tools.setter(pet_name='gina', pet_desc='very compulsive')
-        self.assertEqual(len(self.pet_tools.lister()), 1)
+        assert len(self.pet_tools.lister()) == 1
         for pet in self.pet_tools.lister():
-            self.assertEqual(pet.pet_desc, 'very compulsive')
+            assert pet.pet_desc == 'very compulsive'
 
     def test_updating_without_pk_or_uk(self):
-        self.assertRaises(KeyError, self.pet_tools.setter, pet_desc='very compulsive')
+        with pytest.raises(KeyError):
+           self.pet_tools.setter(pet_desc='very compulsive')
 
     def test_get_unique_constraints(self):
         # there are no constraints - it should return an empty list
         constraints = self.pet_tools._get_unique_constraints()
-        self.assertEqual(len(constraints),0)
+        assert len(constraints) == 0
 
     def test_get_id(self):
         # there's no id - it should return None
         self.pet_tools.setter(pet_name='fido', pet_desc='foo')
-        self.assertEqual(len(self.pet_tools.lister()), 1)
-        self.assertIsNone(self.pet_tools.get_id(pet_name='fido'))
+        assert len(self.pet_tools.lister()) == 1
+        assert self.pet_tools.get_id(pet_name='fido') is None
 
     def test_getter(self):
         self.pet_tools.setter(pet_name='fido', pet_desc='good sleeper')
         self.pet_tools.setter(pet_name='ralf', pet_desc='good dribbler')
         self.pet_tools.setter(pet_name='gina', pet_desc='good catcher')
-        self.assertEqual(len(self.pet_tools.lister()), 3)
-        self.assertEqual(self.pet_tools.getter(pet_name='ralf').pet_desc, 'good dribbler')
-        self.assertRaises(KeyError, self.pet_tools.getter, person_desc='good bowler')
-        self.assertRaises(KeyError, self.pet_tools.getter, pet_desc='good bowler')
-        self.assertRaises(KeyError, self.pet_tools.getter, id=1)
+        assert len(self.pet_tools.lister()) == 3
+        assert self.pet_tools.getter(pet_name='ralf').pet_desc == 'good dribbler'
+        with pytest.raises(KeyError):
+            self.pet_tools.getter(person_desc='good bowler')
+        with pytest.raises(KeyError):
+            self.pet_tools.getter(pet_desc='good bowler')
+        with pytest.raises(KeyError):
+            self.pet_tools.getter(id=1)
 
     def test_deleter(self):
         # deleter should always return 0 or 1 - will not raise exception
@@ -200,18 +195,18 @@ class TestNaturalKeyTable(unittest.TestCase):
         self.pet_tools.setter(pet_name='fido', pet_desc='good sleeper')
         self.pet_tools.setter(pet_name='ralf', pet_desc='good dribbler')
         self.pet_tools.setter(pet_name='gina', pet_desc='good catcher')
-        self.assertEqual(len(self.pet_tools.lister()), 3)
-        self.assertEqual(self.pet_tools.deleter(pet_name='ralf'), 1)
-        self.assertEqual(self.pet_tools.deleter(pet_name='maximillion'), 0)
-        self.assertEqual(self.pet_tools.deleter(person_desc='good bowler'),0)
-        self.assertEqual(self.pet_tools.deleter(pet_desc='good sleeper'),0)
-        self.assertEqual(self.pet_tools.deleter(id=1), 0)
+        assert len(self.pet_tools.lister()) == 3
+        assert self.pet_tools.deleter(pet_name='ralf') == 1
+        assert self.pet_tools.deleter(pet_name='maximillion') == 0
+        assert self.pet_tools.deleter(person_desc='good bowler') == 0
+        assert self.pet_tools.deleter(pet_desc='good sleeper') == 0
+        assert self.pet_tools.deleter(id=1) == 0
 
 
 
-class TestSurrogateKeyCheckConstraintTable(unittest.TestCase):
+class TestSurrogateKeyCheckConstraintTable(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
 
         self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
@@ -224,25 +219,24 @@ class TestSurrogateKeyCheckConstraintTable(unittest.TestCase):
         self.animal                 = self.animal_tools.table_create()
         self.metadata.create_all()
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
     def test_setter_and_null_constraint(self):
         # constraint violation - not null on animal_age
-        self.assertRaises(exc.IntegrityError, self.animal_tools.setter, animal_name='dog', animal_desc='smelly')
+        with pytest.raises(exc.IntegrityError):
+           self.animal_tools.setter(animal_name='dog', animal_desc='smelly')
 
     def test_setter_and_check_constraint(self):
         # first confirm it works:
-        self.assertEqual(self.animal_tools.setter(animal_name='cat', 
-                                                  animal_desc='pees on carpet',
-                                                  animal_age=9), 1)
+        assert self.animal_tools.setter(animal_name='cat',
+                                        animal_desc='pees on carpet',
+                                        animal_age=9) == 1
 
         # constraint violation - check on animal_age
-        self.assertRaises(exc.IntegrityError, self.animal_tools.setter, 
-                                              animal_name='dog', 
-                                              animal_desc='smelly',
-                                              animal_age=999)
+        with pytest.raises(exc.IntegrityError):
+            self.animal_tools.setter(animal_name='dog', animal_desc='smelly', animal_age=999)
 
 
 
@@ -273,7 +267,7 @@ class PersonTools(simplesql.TableTools):
 
 
 class PetTools(simplesql.TableTools):
-    """ Uses a primary key on the natural key of the table - 
+    """ Uses a primary key on the natural key of the table -
         no separate surrogate key.
     """
 
@@ -294,7 +288,7 @@ class PetTools(simplesql.TableTools):
 
 
 class AnimalTools(simplesql.TableTools):
-    """ Uses a primary key on the natural key of the table - 
+    """ Uses a primary key on the natural key of the table -
         no separate surrogate key.
     """
 
