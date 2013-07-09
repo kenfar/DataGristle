@@ -9,23 +9,11 @@ import tempfile
 import random
 import atexit
 import shutil
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import gristle.file_type  as mod
 
-
-#def suite():
-#    suite = unittest.TestSuite()
-#    suite.addTest(unittest.makeSuite(TestFunctions))
-#    suite.addTest(unittest.makeSuite(TestQuotedCSV))
-#    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
-#    suite.addTest(unittest.makeSuite(TestInternals))
-#    unittest.TextTestRunner(verbosity=2).run(suite)
-#    return suite
 
 
 def generate_test_file1(delim, quoting, record_cnt):
@@ -52,9 +40,9 @@ def generate_test_file1(delim, quoting, record_cnt):
 
 
 
-class TestQuotedCSV(unittest.TestCase):
+class TestQuotedCSV(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.record_cnt = 100
         self.delimiter     = '|'
         self.quoting       = True
@@ -64,20 +52,20 @@ class TestQuotedCSV(unittest.TestCase):
         self.MyTest        = mod.FileTyper(self.test1_fqfn)
         self.MyTest.analyze_file()
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
     def test_file_a01_Misc(self):
-        assert(self.MyTest.record_cnt == self.record_cnt)
-        assert(self.MyTest.field_cnt == 4)
-        assert(self.MyTest.format_type == 'csv')
-        assert(self.MyTest.dialect.delimiter == self.delimiter)
-        assert(self.MyTest.csv_quoting == self.quoting)
+        assert self.MyTest.record_cnt == self.record_cnt
+        assert self.MyTest.field_cnt == 4
+        assert self.MyTest.format_type == 'csv'
+        assert self.MyTest.dialect.delimiter == self.delimiter
+        assert self.MyTest.csv_quoting == self.quoting
 
 
-class TestNonQuotedCSV(unittest.TestCase):
+class TestNonQuotedCSV(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.record_cnt = 100
         self.delimiter     = '|'
         self.quoting       = True
@@ -86,20 +74,20 @@ class TestNonQuotedCSV(unittest.TestCase):
         self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
     def test_file_b01_Misc(self):
-        assert(self.MyTest.record_cnt == self.record_cnt)
-        assert(self.MyTest.field_cnt == 4)
-        assert(self.MyTest.format_type == 'csv')
-        assert(self.MyTest.dialect.delimiter == self.delimiter)
-        assert(self.MyTest.csv_quoting == self.quoting)
+        assert self.MyTest.record_cnt == self.record_cnt
+        assert self.MyTest.field_cnt == 4
+        assert self.MyTest.format_type == 'csv'
+        assert self.MyTest.dialect.delimiter == self.delimiter
+        assert self.MyTest.csv_quoting == self.quoting
 
 
-class TestInternals(unittest.TestCase):
+class TestInternals(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.record_cnt = 100
         self.delimiter     = '|'
         self.quoting       = False
@@ -108,16 +96,14 @@ class TestInternals(unittest.TestCase):
         self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
     def test_file_c01_RecordNumber(self):
-        assert(self.MyTest._count_records() == self.record_cnt)
+        assert self.MyTest._count_records() == self.record_cnt
 
     def test_file_c02_FormatType(self):
-        assert(self.MyTest._get_format_type() == 'csv')
+        assert self.MyTest._get_format_type() == 'csv'
 
 
-#if __name__ == "__main__":
-#    unittest.main(suite())
 
