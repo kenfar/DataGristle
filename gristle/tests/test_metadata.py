@@ -9,58 +9,53 @@ import os
 import tempfile
 from sqlalchemy import exc
 import pytest
-try:
-    import unittest2 as unittest
-except ImportError:
-    print 'WARNING: metadata could not import unittest2'
-    import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import gristle.metadata  as mod
 
 
 
-class TestSchema(unittest.TestCase):
+class TestSchema(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
         self.md      = mod.GristleMetaData(self.tempdir)
         self.schema_id, self.collection_id = create_basic_metadata(self.md)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
     def test_schema_contents(self):
         row  = self.md.schema_tools.getter(schema_name='geoip')
-        self.assertEqual(len(row), 3)  # 1 row with 3 columns
-        self.assertEqual(row.schema_name, 'geoip')
-        self.assertEqual(row.schema_desc, 'geoip data')
+        assert len(row) == 3  # 1 row with 3 columns
+        assert row.schema_name == 'geoip'
+        assert row.schema_desc == 'geoip data'
 
     def test_schema_selecting_nonexistent_row(self):
-        self.assertIsNone(self.md.schema_tools.getter(schema_name='bogusgeoip'))
+        assert self.md.schema_tools.getter(schema_name='bogusgeoip') is None
 
     def test_schema_upsert(self):
         #old_schema_rows = self.md.schema_tools.lister()
         # add new entry:
-        self.assertIsNot(self.md.schema_tools.setter(schema_name='uniq-schema',schema_desc='insert result'), 0)
-        self.assertEqual(len(self.md.schema_tools.lister()), 2)  # init row + just added row
-        self.assertEqual(self.md.schema_tools.getter(schema_name='uniq-schema').schema_desc, 'insert result')
+        assert self.md.schema_tools.setter(schema_name='uniq-schema',schema_desc='insert result') != 0
+        assert len(self.md.schema_tools.lister()) == 2  # init row + just added row
+        assert self.md.schema_tools.getter(schema_name='uniq-schema').schema_desc == 'insert result'
 
         # update duplicate entry:
-        self.assertEqual(self.md.schema_tools.setter(schema_name='uniq-schema',schema_desc='update result'), 0)
-        self.assertEqual(len(self.md.schema_tools.lister()), 2)  # no changes since last check
-        self.assertEqual(self.md.schema_tools.getter(schema_name='uniq-schema').schema_desc, 'update result')
+        assert self.md.schema_tools.setter(schema_name='uniq-schema',schema_desc='update result') == 0
+        assert len(self.md.schema_tools.lister()) == 2  # no changes since last check
+        assert self.md.schema_tools.getter(schema_name='uniq-schema').schema_desc == 'update result'
 
         new_schema_rows = self.md.schema_tools.lister()
-        #self.assertTrue(rowproxy_diff(old_schema_rows, new_schema_rows, expected_add_cnt=1, expected_del_cnt=0))
+        #assert rowproxy_diff(old_schema_rows, new_schema_rows, expected_add_cnt=1, expected_del_cnt=0)
 
     def test_schema_list_and_delete(self):
-        self.assertEqual(len(self.md.schema_tools.lister()), 1)
+        assert len(self.md.schema_tools.lister()) == 1
         old_schema_rows = self.md.schema_tools.lister()
 
-        assert(self.md.schema_tools.deleter(schema_name='geoip') == 1) # delete 1 row
-        assert(self.md.schema_tools.deleter(schema_name='geoip') == 0) # no rows left
+        assert self.md.schema_tools.deleter(schema_name='geoip') == 1 # delete 1 row
+        assert self.md.schema_tools.deleter(schema_name='geoip') == 0 # no rows left
 
         # delete all fields for collection
         for field in  self.md.field_tools.lister():
@@ -70,8 +65,8 @@ class TestSchema(unittest.TestCase):
         # delete all collections for schema
         for collection in self.md.collection_tools.lister():
             if collection.schema_id == self.schema_id:
-                self.assertEqual(self.md.collection_tools.deleter(schema_id=self.schema_id,
-                                                               collection_id=collection.collection_id), 1)
+                assert self.md.collection_tools.deleter(schema_id=self.schema_id,
+                                                        collection_id=collection.collection_id) == 1
         # delete all elements for schema
         for element in  self.md.element_tools.lister():
             self.md.element_tools.deleter(element_name=element.element_name)
@@ -80,10 +75,10 @@ class TestSchema(unittest.TestCase):
         self.md.schema_tools.deleter(schema_id=self.schema_id)
 
         # confirm all deletes again:
-        self.assertEqual(len(self.md.element_tools.lister()),   0)
-        self.assertEqual(len(self.md.field_tools.lister()),     0)
-        self.assertEqual(len(self.md.collection_tools.lister()),0)
-        self.assertEqual(len(self.md.schema_tools.lister()),    0)
+        assert len(self.md.element_tools.lister())    == 0
+        assert len(self.md.field_tools.lister())      == 0
+        assert len(self.md.collection_tools.lister()) == 0
+        assert len(self.md.schema_tools.lister())     == 0
 
 
     def test_schema_bad_delete(self):
@@ -91,9 +86,9 @@ class TestSchema(unittest.TestCase):
         #  need to research how that works
         old_schema_rows = self.md.schema_tools.lister()
 
-        self.assertEqual(len(self.md.schema_tools.lister()), 1)
-        self.assertEqual(self.md.schema_tools.deleter(schema_name='foobarky'), 0)
-        self.assertEqual(len(self.md.schema_tools.lister()), 1)
+        assert len(self.md.schema_tools.lister()) == 1
+        assert self.md.schema_tools.deleter(schema_name='foobarky') == 0
+        assert len(self.md.schema_tools.lister()) == 1
 
         new_schema_rows = self.md.schema_tools.lister()
         if old_schema_rows != new_schema_rows:
@@ -104,36 +99,36 @@ class TestSchema(unittest.TestCase):
 
 
 #@pytest.mark.skipif("1 == 1")
-class TestCollection(unittest.TestCase):
+class TestCollection(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
         self.md      = mod.GristleMetaData(self.tempdir)
         self.schema_id, self.collection_id = create_basic_metadata(self.md)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
     def test_collection_row_count(self):
-        self.assertEqual(len(self.md.collection_tools.lister()), 1)
+        assert len(self.md.collection_tools.lister()) == 1
 
     def test_collection_get(self):
-        self.assertEqual(len(self.md.collection_tools.getter(schema_id=self.schema_id,
-                                                             collection_name='geolite_country')), 4)
+        assert len(self.md.collection_tools.getter(schema_id=self.schema_id,
+                                                   collection_name='geolite_country')) == 4
 
     def test_collection_select_nonexisting_row(self):
-        self.assertIsNone(self.md.collection_tools.getter(schema_id=self.schema_id,
-                                                          collection_name='blahFooBar'))
+        assert self.md.collection_tools.getter(schema_id=self.schema_id,
+                                               collection_name='blahFooBar') is None
 
     def test_collection_deletion_by_pk(self):
         kva = {'schema_id'      : self.schema_id,
                'collection_name':'a',
                'collection_desc':'a1'}
         collection_id = self.md.collection_tools.setter(**kva)
-        self.assertIsNot(collection_id, 0)
+        assert collection_id != 0
 
-        self.assertEqual(self.md.collection_tools.deleter(collection_id=collection_id), 1)
+        assert self.md.collection_tools.deleter(collection_id=collection_id) == 1
 
 
     def test_collection_deletion_by_uk(self):
@@ -141,18 +136,18 @@ class TestCollection(unittest.TestCase):
                'collection_name':'a',
                'collection_desc':'a1'}
         collection_id = self.md.collection_tools.setter(**kva)
-        self.assertIsNot(collection_id, 0)
-        self.assertEqual(self.md.collection_tools.deleter(schema_id=self.schema_id,
-                                                          collection_name='a'), 1)
+        assert collection_id != 0
+        assert self.md.collection_tools.deleter(schema_id=self.schema_id,
+                                                collection_name='a') == 1
 
     def test_collection_deletion_by_partial_uk(self):
         kva = {'schema_id'      : self.schema_id,
                'collection_name':'a',
                'collection_desc':'a1'}
         collection_id = self.md.collection_tools.setter(**kva)
-        self.assertIsNot(collection_id, 0)
+        assert collection_id != 0
         #print '\ndeletion by partial_uk'
-        self.assertEqual(self.md.collection_tools.deleter(collection_name='a'), 0)
+        assert self.md.collection_tools.deleter(collection_name='a') == 0
 
 
 
@@ -167,29 +162,29 @@ class TestCollection(unittest.TestCase):
                'collection_desc':'b1'}
 
         # add new entries:
-        self.assertIsNot(self.md.collection_tools.setter(**kva), 0)
-        self.assertIsNot(self.md.collection_tools.setter(**kvb), 0)
-        self.assertEqual(len(self.md.collection_tools.lister()), 3)  # init row + just added row
-        self.assertEqual(self.md.collection_tools.getter(schema_id=self.schema_id,
-                                                         collection_name='b').collection_desc, 'b1')
-        self.assertEqual(self.md.collection_tools.getter(**kva).collection_desc, 'a1')
+        assert self.md.collection_tools.setter(**kva) != 0
+        assert self.md.collection_tools.setter(**kvb) != 0
+        assert len(self.md.collection_tools.lister()) == 3  # init row + just added row
+        assert self.md.collection_tools.getter(schema_id=self.schema_id,
+                                               collection_name='b').collection_desc == 'b1'
+        assert self.md.collection_tools.getter(**kva).collection_desc == 'a1'
 
         # update duplicate entry:
         kvb['collection_desc'] = 'b2'
-        self.assertEqual(self.md.collection_tools.setter(**kvb), 0)
-        self.assertEqual(len(self.md.collection_tools.lister()), 3)  # no changes since last check
-        self.assertEqual(self.md.collection_tools.getter(**kvb).collection_desc, 'b2')
+        assert self.md.collection_tools.setter(**kvb) == 0
+        assert len(self.md.collection_tools.lister()) == 3  # no changes since last check
+        assert self.md.collection_tools.getter(**kvb).collection_desc == 'b2'
 
         kvb['collection_desc'] = 'b3'
-        self.assertEqual(self.md.collection_tools.setter(**kvb), 0)
+        assert self.md.collection_tools.setter(**kvb) == 0
         # should be no additions:
-        self.assertEqual(len(self.md.collection_tools.lister()), 3)
+        assert len(self.md.collection_tools.lister()) == 3
         # should be changed:
-        self.assertEqual(self.md.collection_tools.getter(schema_id=self.schema_id,
-                                                         collection_name='b').collection_desc, 'b3')
+        assert self.md.collection_tools.getter(schema_id=self.schema_id,
+                                               collection_name='b').collection_desc == 'b3'
         # should be no changes to other rows:
-        self.assertEqual(self.md.collection_tools.getter(schema_id=self.schema_id,
-                                                         collection_name='a').collection_desc, 'a1') 
+        assert self.md.collection_tools.getter(schema_id=self.schema_id,
+                                               collection_name='a').collection_desc == 'a1'
 
     def test_collection_insert_rejects(self):
 
@@ -202,66 +197,70 @@ class TestCollection(unittest.TestCase):
         # remove key attribute - should fail
         kv2 = kv.copy()
         kv2.pop('schema_id')
-        self.assertRaises(KeyError, self.md.collection_tools.setter, **kv2)
-        self.assertEqual(len(self.md.collection_tools.lister()), orig_rowcount)  # init rows only
+        with pytest.raises(KeyError):
+	   self.md.collection_tools.setter(**kv2)
+        assert len(self.md.collection_tools.lister()) == orig_rowcount  # init rows only
 
         # confirm no unintended consequences:
         new_rows = self.md.collection_tools.lister()
-        self.assertTrue(rowproxy_diff(old_rows, new_rows, expected_add_cnt=0, expected_del_cnt=0))
+        assert rowproxy_diff(old_rows, new_rows, expected_add_cnt=0, expected_del_cnt=0)
 
 
 #@pytest.mark.skipif("1 == 1")
-class TestField(unittest.TestCase):
+class TestField(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
         self.md      = mod.GristleMetaData(self.tempdir)
         self.schema_id, self.collection_id = create_basic_metadata(self.md)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
     def test_field_row_count(self):
-        self.assertEqual(len(self.md.field_tools.lister()), 6)
+        assert len(self.md.field_tools.lister()) == 6
 
     def test_field_get(self):
-        self.assertEqual(len(self.md.field_tools.getter(schema_id=self.schema_id,
-                                                        collection_id=self.collection_id,
-                                                        field_name='field-a')), 8)
+        assert len(self.md.field_tools.getter(schema_id=self.schema_id,
+                                              collection_id=self.collection_id,
+                                              field_name='field-a')) == 8
 
     def test_field_select_nonexisting_row(self):
-        self.assertIsNone(self.md.field_tools.getter(schema_id=self.schema_id,
-                                                     collection_id=self.collection_id,
-                                                     field_name='blahFooBar'))
+        print 'kenstuff:'
+        assert self.md.field_tools.getter(schema_id=self.schema_id, 
+	                                  collection_id=self.collection_id,
+	                                  field_name='blahFooBar') is None
 
     def test_field_select_missing_collection_id(self):
-        self.assertRaises(KeyError, self.md.field_tools.getter,schema_id=self.schema_id,
-                                                               field_name='blahFooBar')
+        with pytest.raises(KeyError):
+	    self.md.field_tools.getter(schema_id=self.schema_id,
+                                       field_name='blahFooBar')
 
     def test_field_update_with_invalid_element(self):
         field_keys = ['collection_id', 'field_name','field_desc', 'field_type', 'field_len','element_name']
 
         val_list   = [self.collection_id, 'field-z', 'field-a-desc','string',15  , None]
         kv         = dict(zip(field_keys, val_list))
-        self.assertGreater(self.md.field_tools.setter(**kv), 0)
-        self.assertEqual(self.md.field_tools.setter(**kv), 0)
+        assert self.md.field_tools.setter(**kv) > 0
+        assert self.md.field_tools.setter(**kv) == 0
 
         val_list   = [self.collection_id, 'field-z', 'field-a-desc','string', 15, 'bad_name']
         kv         = dict(zip(field_keys, val_list))
-        self.assertRaises(exc.IntegrityError, self.md.field_tools.setter, **kv)
+        with pytest.raises(exc.IntegrityError):
+	   self.md.field_tools.setter(**kv)
 
 
 
 #@pytest.mark.skipif("1 == 1")
-class TestElement(unittest.TestCase):
+class TestElement(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
         self.md      = mod.GristleMetaData(self.tempdir)
         create_basic_metadata(self.md)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
@@ -273,27 +272,27 @@ class TestElement(unittest.TestCase):
               'element_len': 40  }
 
         # add new entry:
-        self.assertIsNot(self.md.element_tools.setter(**kv), 0)
-        self.assertEqual(len(self.md.element_tools.lister()), 2)  # init + new row
-        self.assertEqual(self.md.element_tools.getter(element_name='cntry_name').element_len, 40)
+        assert self.md.element_tools.setter(**kv) != 0
+        assert len(self.md.element_tools.lister()) == 2  # init + new row
+        assert self.md.element_tools.getter(element_name='cntry_name').element_len == 40
 
         # update duplicate entry:
         kv['element_len'] = 100
-        self.assertEqual(self.md.element_tools.setter(**kv), 0)
-        self.assertEqual(len(self.md.element_tools.lister()), 2)  # no changes since last check
-        self.assertEqual(self.md.element_tools.getter(element_name='cntry_name').element_len, 100)
+        assert self.md.element_tools.setter(**kv) == 0
+        assert len(self.md.element_tools.lister()) == 2  # no changes since last check
+        assert self.md.element_tools.getter(element_name='cntry_name').element_len == 100
 
 
 
 #@pytest.mark.skipif("1 == 1")
-class TestReports(unittest.TestCase):
+class TestReports(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
         self.md      = mod.GristleMetaData(self.tempdir)
         create_basic_metadata(self.md)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
 
@@ -301,9 +300,9 @@ class TestReports(unittest.TestCase):
 
         results = self.md.get_data_dictionary('geoip','geolite_country')
         for row in results:
-            self.assertEqual(row.schema_name, 'geoip')
-            self.assertEqual(row.schema_desc, 'geoip data')
-            self.assertEqual(row.collection_name, 'geolite_country')
+            assert row.schema_name == 'geoip'
+            assert row.schema_desc == 'geoip data'
+            assert row.collection_name == 'geolite_country'
 
 
 
@@ -322,14 +321,14 @@ def create_basic_metadata(md):
           'element_type':'string',
           'element_len': 2 }
     md.element_tools.setter(**kv)
-    assert(md.element_tools.getter(element_name='cntry_2byte').element_len == 2)
+    assert md.element_tools.getter(element_name='cntry_2byte').element_len == 2
 
     #--- add collection ---
     keys = ['schema_id','collection_name','collection_desc']
     v    = [schema_id, 'geolite_country','free maxmind geoip feed']
     kv = dict(zip(keys, v))
     collection_id = md.collection_tools.setter(**kv) 
-    assert(collection_id > 0)
+    assert collection_id > 0
 
     #--- add each field ---
     field_keys = ['collection_id', 'field_name','field_desc', 'field_type', 'field_len','element_name']
@@ -341,7 +340,7 @@ def create_basic_metadata(md):
                 [collection_id, 'field-f', 'field-f-desc','string',40  , None ]]
     for row in val_list:
         kv = dict(zip(field_keys, row))
-        assert(md.field_tools.setter(**kv) > 0)
+        assert md.field_tools.setter(**kv) > 0
 
     return schema_id, collection_id
 
