@@ -9,24 +9,11 @@ import os
 import tempfile
 import random
 import csv
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import gristle.field_determinator  as mod
 
-
-
-#def suite():
-#    suite = unittest.TestSuite()
-#    suite.addTest(unittest.makeSuite(TestQuotedCSV))
-#    suite.addTest(unittest.makeSuite(TestNonQuotedCSV))
-#    suite.addTest(unittest.makeSuite(TestOverrideFloatToString))
-#    unittest.TextTestRunner(verbosity=2).run(suite)
-#
-#    return suite
 
 
 def generate_test_file(delim, record_cnt, quoting):
@@ -65,7 +52,7 @@ def generate_test_file(delim, record_cnt, quoting):
 
 
 
-class FileAndTestManager(unittest.TestCase):
+class FileAndTestManager(object):
     """ Generic Test Class
     """
 
@@ -76,12 +63,12 @@ class FileAndTestManager(unittest.TestCase):
         print self.MyFields.field_freqs[field_no]
 
     def customSettings(self):
-        """ gets run from setUp()
+        """ gets run from setup_method()
         """
         self.quoting                  = False
         self.overrides                = None
 
-    def setUp(self):
+    def setup_method(self, method):
    
         self.customSettings()
 
@@ -119,123 +106,123 @@ class FileAndTestManager(unittest.TestCase):
         self.MyFields.analyze_fields(None, self.overrides)
         #self.print_field(self.float_col)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
 
     def test_deter_a01_field_freq(self):
 
         # there are 100 unique values for this column
-        assert(len(self.MyFields.get_known_values(self.id_col)) == 100)
+        assert len(self.MyFields.get_known_values(self.id_col)) == 100
 
         # there are about 5 values for this column, show just 2
-        assert(len(self.MyFields.get_top_freq_values(fieldno=1, limit=2)) == 2)
+        assert len(self.MyFields.get_top_freq_values(fieldno=1, limit=2)) == 2
 
         # there is only one value for these columns:
-        assert(len(self.MyFields.get_top_freq_values(fieldno=3, limit=2)) == 1)
-        assert(len(self.MyFields.get_top_freq_values(fieldno=5, limit=2)) == 1)
-        assert(len(self.MyFields.get_top_freq_values(fieldno=6, limit=2)) == 1)
+        assert len(self.MyFields.get_top_freq_values(fieldno=3, limit=2)) == 1
+        assert len(self.MyFields.get_top_freq_values(fieldno=5, limit=2)) == 1
+        assert len(self.MyFields.get_top_freq_values(fieldno=6, limit=2)) == 1
 
         # this is an empty field - it should show up as a single value with 
         # occurance of 100
-        assert(len(self.MyFields.get_top_freq_values(fieldno=4, limit=2)) == 1)
+        assert len(self.MyFields.get_top_freq_values(fieldno=4, limit=2)) == 1
 
         # given a large file (> 15 entries) E becomes the most common value
-        assert(self.MyFields.get_top_freq_values(fieldno=1, limit=1)[0][0] == 'E')
+        assert self.MyFields.get_top_freq_values(fieldno=1, limit=1)[0][0] == 'E'
 
         # check actual values coming back:
-        assert(self.MyFields.get_top_freq_values(fieldno=5, limit=1)[0][0] == '999.9')
-        assert(self.MyFields.get_top_freq_values(fieldno=6, limit=1)[0][0] == 'aaa')
+        assert self.MyFields.get_top_freq_values(fieldno=5, limit=1)[0][0] == '999.9'
+        assert self.MyFields.get_top_freq_values(fieldno=6, limit=1)[0][0] == 'aaa'
 
 
     def test_deter_a02_field_general_dictionaries(self):
-        assert(self.MyFields.field_min[self.id_col]             == '0')
-        assert(self.MyFields.field_min[self.very_mixed_col]     == 'A')
-        assert(self.MyFields.field_min[self.lower_col]          == 'bbbbb')
-        assert(self.MyFields.field_min[self.empty_col]          is None)
-        assert(self.MyFields.field_min[self.float_col]          == '999.9')  
-        assert(self.MyFields.field_min[self.string_col]         == 'aaa')  
+        assert self.MyFields.field_min[self.id_col]             == '0'
+        assert self.MyFields.field_min[self.very_mixed_col]     == 'A'
+        assert self.MyFields.field_min[self.lower_col]          == 'bbbbb'
+        assert self.MyFields.field_min[self.empty_col]          is None
+        assert self.MyFields.field_min[self.float_col]          == '999.9'
+        assert self.MyFields.field_min[self.string_col]         == 'aaa'
 
-        assert(self.MyFields.field_max[self.id_col]             == '99')
-        assert(self.MyFields.field_max[self.very_mixed_col]     == 'd')   # lower d is after uppers
-        assert(self.MyFields.field_max[self.lower_col]          == 'bbbbb')
-        assert(self.MyFields.field_max[self.empty_col]          is None)
-        assert(self.MyFields.field_max[self.float_col]          == '999.9')  
-        assert(self.MyFields.field_max[self.string_col]         == 'aaa')  
+        assert self.MyFields.field_max[self.id_col]             == '99'
+        assert self.MyFields.field_max[self.very_mixed_col]     == 'd'   # lower d is after uppers
+        assert self.MyFields.field_max[self.lower_col]          == 'bbbbb'
+        assert self.MyFields.field_max[self.empty_col]          is None
+        assert self.MyFields.field_max[self.float_col]          == '999.9'
+        assert self.MyFields.field_max[self.string_col]         == 'aaa'
 
-        assert(self.MyFields.field_types[self.id_col]           == 'integer')
-        assert(self.MyFields.field_types[self.very_mixed_col]   == 'string')
-        assert(self.MyFields.field_types[self.empty_col]        == 'unknown')
-        assert(self.MyFields.field_types[self.float_col]        == 'float')  
-        assert(self.MyFields.field_types[self.string_col]       == 'string')  
+        assert self.MyFields.field_types[self.id_col]           == 'integer'
+        assert self.MyFields.field_types[self.very_mixed_col]   == 'string'
+        assert self.MyFields.field_types[self.empty_col]        == 'unknown'
+        assert self.MyFields.field_types[self.float_col]        == 'float'
+        assert self.MyFields.field_types[self.string_col]       == 'string'
 
-        assert(self.MyFields.field_trunc[self.id_col]           is False)
-        assert(self.MyFields.field_trunc[self.very_mixed_col]   is False)
-        assert(self.MyFields.field_trunc[self.empty_col]        is False)
-        assert(self.MyFields.field_trunc[self.float_col]        is False)
-        assert(self.MyFields.field_trunc[self.string_col]       is False)
+        assert self.MyFields.field_trunc[self.id_col]           is False
+        assert self.MyFields.field_trunc[self.very_mixed_col]   is False
+        assert self.MyFields.field_trunc[self.empty_col]        is False
+        assert self.MyFields.field_trunc[self.float_col]        is False
+        assert self.MyFields.field_trunc[self.string_col]       is False
 
 
     def test_deter_a03_field_string_dictionaries(self):
-        assert(self.MyFields.field_case[self.id_col]                 is None)
-        assert(self.MyFields.field_case[self.very_mixed_col]         == 'mixed')
-        assert(self.MyFields.field_case[self.lower_col]              == 'lower')
-        assert(self.MyFields.field_case[self.upper_col]              == 'upper')
-        assert(self.MyFields.field_case[self.empty_col]              is None)
-        assert(self.MyFields.field_case[self.float_col]              is None)
-        assert(self.MyFields.field_case[self.string_col]             == 'lower')
+        assert self.MyFields.field_case[self.id_col]                 is None
+        assert self.MyFields.field_case[self.very_mixed_col]         == 'mixed'
+        assert self.MyFields.field_case[self.lower_col]              == 'lower'
+        assert self.MyFields.field_case[self.upper_col]              == 'upper'
+        assert self.MyFields.field_case[self.empty_col]              is None
+        assert self.MyFields.field_case[self.float_col]              is None
+        assert self.MyFields.field_case[self.string_col]             == 'lower'
 
-        assert(self.MyFields.field_max_length[self.id_col]           is None)
-        assert(self.MyFields.field_max_length[self.upper_col]        == 3)
-        assert(self.MyFields.field_max_length[self.empty_col]        is None)
-        assert(self.MyFields.field_max_length[self.float_col]        is None)
-        assert(self.MyFields.field_max_length[self.string_col]       == 3)
+        assert self.MyFields.field_max_length[self.id_col]           is None
+        assert self.MyFields.field_max_length[self.upper_col]        == 3
+        assert self.MyFields.field_max_length[self.empty_col]        is None
+        assert self.MyFields.field_max_length[self.float_col]        is None
+        assert self.MyFields.field_max_length[self.string_col]       == 3
 
-        assert(self.MyFields.field_min_length[self.id_col]           is None)
-        assert(self.MyFields.field_min_length[self.upper_col]        == 3)
-        assert(self.MyFields.field_min_length[self.empty_col]        is None)
-        assert(self.MyFields.field_min_length[self.float_col]        is None)
-        assert(self.MyFields.field_min_length[self.string_col]       == 3)
+        assert self.MyFields.field_min_length[self.id_col]           is None
+        assert self.MyFields.field_min_length[self.upper_col]        == 3
+        assert self.MyFields.field_min_length[self.empty_col]        is None
+        assert self.MyFields.field_min_length[self.float_col]        is None
+        assert self.MyFields.field_min_length[self.string_col]       == 3
 
-        assert(self.MyFields.field_mean_length[self.id_col]          is None)
-        assert(self.MyFields.field_mean_length[self.upper_col]       == 3)
-        assert(self.MyFields.field_mean_length[self.empty_col]       is None)
-        assert(self.MyFields.field_mean_length[self.float_col]       is None)
-        assert(self.MyFields.field_mean_length[self.string_col]      == 3)
+        assert self.MyFields.field_mean_length[self.id_col]          is None
+        assert self.MyFields.field_mean_length[self.upper_col]       == 3
+        assert self.MyFields.field_mean_length[self.empty_col]       is None
+        assert self.MyFields.field_mean_length[self.float_col]       is None
+        assert self.MyFields.field_mean_length[self.string_col]      == 3
 
 
     def test_deter_a04_field_numeric_dictionaries(self):
-        assert(self.MyFields.field_mean[self.id_col]                  is not None)
-        assert(self.MyFields.field_mean[self.very_mixed_col]          is None)
-        assert(self.MyFields.field_mean[self.empty_col]               is None)
-        assert(self.MyFields.field_mean[self.float_col]         is not None)
-        assert(self.MyFields.field_mean[self.string_col]        is None)
+        assert self.MyFields.field_mean[self.id_col]
+        assert self.MyFields.field_mean[self.very_mixed_col]    is None
+        assert self.MyFields.field_mean[self.empty_col]         is None
+        assert self.MyFields.field_mean[self.float_col]
+        assert self.MyFields.field_mean[self.string_col]        is None
 
-        assert(self.MyFields.field_median[self.id_col]                is not None)
-        assert(self.MyFields.field_median[self.very_mixed_col]        is None)
-        assert(self.MyFields.field_median[self.empty_col]             is None)
-        assert(self.MyFields.field_median[self.string_col]      is None)
+        assert self.MyFields.field_median[self.id_col]
+        assert self.MyFields.field_median[self.very_mixed_col]  is None
+        assert self.MyFields.field_median[self.empty_col]       is None
+        assert self.MyFields.field_median[self.string_col]      is None
 
-        assert(self.MyFields.variance[self.id_col]                    is not None)
-        assert(self.MyFields.variance[self.very_mixed_col]            is None)
-        assert(self.MyFields.variance[self.empty_col]                 is None)
-        assert(self.MyFields.variance[self.string_col]          is None)
+        assert self.MyFields.variance[self.id_col]
+        assert self.MyFields.variance[self.very_mixed_col]      is None
+        assert self.MyFields.variance[self.empty_col]           is None
+        assert self.MyFields.variance[self.string_col]          is None
 
-        assert(self.MyFields.stddev[self.id_col]                      is not None)
-        assert(self.MyFields.stddev[self.very_mixed_col]              is None)
-        assert(self.MyFields.stddev[self.empty_col]                   is None)
-        assert(self.MyFields.stddev[self.string_col]            is None)
+        assert self.MyFields.stddev[self.id_col]
+        assert self.MyFields.stddev[self.very_mixed_col]        is None
+        assert self.MyFields.stddev[self.empty_col]             is None
+        assert self.MyFields.stddev[self.string_col]            is None
 
 
     def test_deter_a05_field_5_extra_float(self):
         """ 
         """
         ####print self.MyFields.get_top_freq_values(fieldno=5, limit=10)
-        assert(self.MyFields.field_mean[self.float_col]               is not None)
+        assert self.MyFields.field_mean[self.float_col]               is not None
 
     def test_deter_a06_field_6_extra_string(self):
-        assert(self.MyFields.field_mean[self.string_col]  is None)
-        assert(self.MyFields.field_mean[self.string_col]  is None)
+        assert self.MyFields.field_mean[self.string_col]  is None
+        assert self.MyFields.field_mean[self.string_col]  is None
 
 
 class TestQuotedCSV(FileAndTestManager):
@@ -262,26 +249,22 @@ class TestOverrideFloatToString(FileAndTestManager):
         self.overrides   = {5:'string'}
 
     def test_deter_a05_field_5_extra_float(self):
-        assert(self.MyFields.field_mean[self.float_col]               is None)
+        assert self.MyFields.field_mean[self.float_col]               is None
 
     def test_deter_a02_field_general_dictionaries(self):
-        assert(self.MyFields.field_min[self.float_col]          == '999.9')
-        assert(self.MyFields.field_max[self.float_col]          == '999.9')
-        assert(self.MyFields.field_types[self.float_col]        == 'string')
-        assert(self.MyFields.field_trunc[self.float_col]        == False)
+        assert self.MyFields.field_min[self.float_col]          == '999.9'
+        assert self.MyFields.field_max[self.float_col]          == '999.9'
+        assert self.MyFields.field_types[self.float_col]        == 'string'
+        assert self.MyFields.field_trunc[self.float_col]        == False
 
     def test_deter_a03_field_string_dictionaries(self):
-        assert(self.MyFields.field_case[self.float_col]         is not None)
-        assert(self.MyFields.field_max_length[self.float_col]   is not None)
-        assert(self.MyFields.field_min_length[self.float_col]   is not None)
-        assert(self.MyFields.field_mean_length[self.float_col]  is not None)
+        assert self.MyFields.field_case[self.float_col]         is not None
+        assert self.MyFields.field_max_length[self.float_col]   is not None
+        assert self.MyFields.field_min_length[self.float_col]   is not None
+        assert self.MyFields.field_mean_length[self.float_col]  is not None
 
     def test_deter_a04_field_numeric_dictionaries(self):
-        assert(self.MyFields.field_mean[self.float_col]         is None)
-
-
-#if __name__ == "__main__":
-#    unittest.main(suite())
+        assert self.MyFields.field_mean[self.float_col]         is None
 
 
 
