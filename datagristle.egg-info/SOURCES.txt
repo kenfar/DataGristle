@@ -29,6 +29,8 @@ scripts/gristle_differ
 scripts/gristle_file_converter
 scripts/gristle_filter
 scripts/gristle_freaker
+scripts/gristle_md_reporter
+scripts/gristle_metadata
 scripts/gristle_scalar
 scripts/gristle_slicer
 scripts/gristle_validator

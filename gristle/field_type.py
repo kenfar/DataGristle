@@ -161,7 +161,7 @@ def _get_field_type_rule(type_list):
         with floats.   These floats should have been kicked out as garbage data -
         but if the timestamps were epochs then that would not be appropriate.
     """
-    assert('unknown' not in type_list)
+    assert 'unknown' not in type_list
 
     # floats with nothing to the right of the decimal point may be ints
     float_set_2i     = set(['integer', 'float'])

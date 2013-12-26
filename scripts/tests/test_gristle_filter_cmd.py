@@ -9,19 +9,12 @@ import sys
 import os
 import tempfile
 import random
-import unittest
 import time
 import subprocess
+import pytest
 
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestCommandLine))
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-    return suite
 
 
 def generate_test_file(delim, record_cnt):
@@ -46,13 +39,13 @@ def generate_test_file(delim, record_cnt):
 
 
 
-class TestCommandLine(unittest.TestCase):
+class TestCommandLine(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
         self.empty_fqfn    = generate_test_file(delim='|', record_cnt=0)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.easy_fqfn)
         os.remove(self.empty_fqfn)
 
@@ -60,34 +53,34 @@ class TestCommandLine(unittest.TestCase):
     def test_easy_file(self):
 
         cmd = [os.path.join(script_path, 'gristle_filter'),
-               self.easy_fqfn, 
+               self.easy_fqfn,
                '-c', '4 == foo']
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
                              close_fds=True)
         p_output = p.communicate()[0]
         p_recs   = p_output[:-1].split('\n')
-   
-        assert(len(p_recs) == 10)
+
+        assert len(p_recs) == 10
         for rec in p_recs:
             fields = rec.split('|')
-            assert(0 <= int(fields[0]) <= 9)
-            assert(fields[1] == 'A')
-            assert(fields[2] == 'B')
-            assert(fields[3] == 'C')
-            assert(fields[4] == 'foo')
+            assert 0 <= int(fields[0]) <= 9
+            assert fields[1] == 'A'
+            assert fields[2] == 'B'
+            assert fields[3] == 'C'
+            assert fields[4] == 'foo'
 
-        #assert(p_recs[0].strip().startswith('field_0'))
-        #assert(p_recs[0].strip().endswith('9'))
+        #assert p_recs[0].strip().startswith('field_0')
+        #assert p_recs[0].strip().endswith('9')
 
-        #assert(p_recs[1].strip().startswith('field_1'))
-        #assert(p_recs[1].strip().endswith('A'))
+        #assert p_recs[1].strip().startswith('field_1')
+        #assert p_recs[1].strip().endswith('A')
 
-        #assert(p_recs[2].strip().startswith('field_2'))
-        #assert(p_recs[2].strip().endswith('B'))
+        #assert p_recs[2].strip().startswith('field_2')
+        #assert p_recs[2].strip().endswith('B')
 
-        #assert(p_recs[3].strip().startswith('field_3'))
-        #assert(p_recs[3].strip().endswith('C'))
+        #assert p_recs[3].strip().startswith('field_3')
+        #assert p_recs[3].strip().endswith('C')
 
 
 
@@ -101,7 +94,7 @@ class TestCommandLine(unittest.TestCase):
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            self.fail('produced output when input was empty')
+            pytest.fail('produced output when input was empty')
 
 
     def test_multiple_empty_files(self):
@@ -116,7 +109,7 @@ class TestCommandLine(unittest.TestCase):
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            self.fail('produced output when input was empty')
+            pytest.fail('produced output when input was empty')
 
 
     def test_multiple_empty_and_full_files(self):
@@ -130,9 +123,9 @@ class TestCommandLine(unittest.TestCase):
                               close_fds=True)
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
-        assert(len(out_recs) == 90)
+        assert len(out_recs) == 90
         if not out_recs:
-            self.fail('produced output when input was empty')
+            pytest.fail('produced output when input was empty')
 
 
     def test_multiple_full_files(self):
@@ -146,9 +139,9 @@ class TestCommandLine(unittest.TestCase):
                               close_fds=True)
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
-        assert(len(out_recs) == 180)
+        assert len(out_recs) == 180
         if not out_recs:
-            self.fail('produced output when input was empty')
+            pytest.fail('produced output when input was empty')
 
 
 
@@ -161,10 +154,4 @@ class TestCommandLine(unittest.TestCase):
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
             self.fail('produced output when input was empty')
-
-
-
-
-if __name__ == "__main__":
-    unittest.main(suite())
 

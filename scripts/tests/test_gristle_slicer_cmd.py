@@ -10,11 +10,11 @@ import sys
 import os
 import tempfile
 import random
-import unittest
 import time
 import fileinput
 import subprocess
 import envoy
+import pytest
 
 #--- gristle modules -------------------
 import test_tools
@@ -27,33 +27,22 @@ sys.path.insert(0, test_tools.get_app_root())
 import gristle.common  as comm
 
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(Test7x7File))
-    suite.addTest(unittest.makeSuite(TestEmptyFile))
-    suite.addTest(unittest.makeSuite(TestCSVDialects))
-    unittest.TextTestRunner(verbosity=2).run(suite)
 
-    return suite
+class Test7x7File(object):
 
-
-
-
-class Test7x7File(unittest.TestCase):
-
-    def setUp(self):
+    def setup_method(self, method):
 
         self.std_7x7_fqfn       = self._generate_7x7_file()
         (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestSlice7x7Out_')
 
-    def tearDown(self): 
+    def teardown_method(self, method):
         os.remove(self.std_7x7_fqfn)
         os.remove(self.out_fqfn)
 
     def _generate_7x7_file(self):
         (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicer7x7In_')
 
-        fp = os.fdopen(fd,"w") 
+        fp = os.fdopen(fd,"w")
         fp.write('0-0|0-1|0-2|0-3|0-4|0-5|0-6\n')
         fp.write('1-0|1-1|1-2|1-3|1-4|1-5|1-6\n')
         fp.write('2-0|2-1|2-2|2-3|2-4|2-5|2-6\n')
@@ -66,7 +55,7 @@ class Test7x7File(unittest.TestCase):
         return fqfn
 
 
-    def runner(self, incl_rec_spec=None, excl_rec_spec=None, 
+    def runner(self, incl_rec_spec=None, excl_rec_spec=None,
                      incl_col_spec=None, excl_col_spec=None,
                      options=None):
 
@@ -93,6 +82,7 @@ class Test7x7File(unittest.TestCase):
         p_recs = []
         for rec in fileinput.input(self.out_fqfn):
             p_recs.append(rec[:-1])
+        fileinput.close()
 
         return p_recs
 
@@ -109,7 +99,7 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner(None, None, None, None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_first_row(self):
 
@@ -118,7 +108,7 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r 0', None, None, None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_first_col(self):
 
@@ -133,7 +123,7 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner(None, None, '-c 0', None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_first_cell(self):
 
@@ -142,7 +132,7 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r 0', None, '-c 0', None,
                              options='''--delimiter='|' --quoting=quote_none ''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_first_4rows(self):
 
@@ -154,7 +144,7 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r :4', None, None, None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_first_4rows_except_2nd(self):
 
@@ -165,7 +155,7 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r :4', '-R 1', None, None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_four_corner_cells(self):
 
@@ -175,11 +165,11 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r 0,-1', None, '-c 0,-1', None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
         actual = self.runner('-r 0,-1', None, None, '-C 1:-1',
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_the_middle(self):
 
@@ -192,11 +182,11 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r 1:-1', None, '-c 1:-1', None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
         actual = self.runner(None, '-R 0,-1', None, '-C 0,-1',
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_rows3and5_and_cols_2456(self):
 
@@ -206,11 +196,11 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r 2:5', '-R 3', '-c 2,4:7', None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
         actual = self.runner('-r 2,4', None, '-c 2,4,5,6', None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
     def test_select_asking_for_too_much(self):
 
@@ -219,70 +209,73 @@ class Test7x7File(unittest.TestCase):
 
         actual = self.runner('-r 0', None, '-c 0:100', None,
                              options='''--delimiter='|' --quoting=quote_none''')
-        self.assertEqual(valid, actual)
+        assert valid == actual
 
 
 
-class TestEmptyFile(unittest.TestCase):
+class TestEmptyFile(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.empty_fqfn         = self._generate_empty_file()
         (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestSliceEmptyOut_')
 
-    def tearDown(self): 
+    def teardown_method(self, method):
         os.remove(self.empty_fqfn)
         os.remove(self.out_fqfn)
 
     def _generate_empty_file(self):
         (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicerEmptyIn_')
-        fp = os.fdopen(fd,"w") 
+        fp = os.fdopen(fd,"w")
         fp.close()
         return fqfn
 
     def test_empty_file(self):
-        """ Should show proper handling of an empty file.   
+        """ Should show proper handling of an empty file.
         """
         cmd = '%s %s -o %s -r 15:20' % (fq_pgm, self.empty_fqfn, self.out_fqfn)
         r = envoy.run(cmd)
-        self.assertEqual(r.status_code, 0)
+        assert r.status_code == 0
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
-        self.assertEqual(len(out_recs), 0)
+        fileinput.close()
+        assert len(out_recs) == 0
 
     def test_empty_stdin(self):
-        """ Should show proper handling of an empty file.   
+        """ Should show proper handling of an empty file.
         """
         cmd = "cat %s | %s -d '|' -o %s -r 15:20" % (self.empty_fqfn, fq_pgm, self.out_fqfn)
         r = envoy.run(cmd)
-        self.assertEqual(r.status_code, 0)
+        assert r.status_code == 0
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
-        self.assertEqual(len(out_recs), 0)
+        fileinput.close()
+        assert len(out_recs) == 0
 
     def test_negative_offset_with_empty_stdin(self):
         """ Should return error since stdin can't have negative offsets
         """
         cmd = "cat %s | %s -d '|' -o %s -r -1:" % (self.empty_fqfn, fq_pgm, self.out_fqfn)
         r = envoy.run(cmd)
-        self.assertEqual(r.status_code, 1)
+        assert r.status_code == 1
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
-        self.assertEqual(len(out_recs), 0)
+        fileinput.close()
+        assert len(out_recs) == 0
 
 
 
-class TestCSVDialects(unittest.TestCase):
+class TestCSVDialects(object):
 
-    def setUp(self):
+    def setup_method(self, method):
 
         self.nq_fqfn       = self._generate_nonquoted_file()
         self.q_fqfn        = self._generate_quoted_file()
         (dummy, self.out_fqfn) = tempfile.mkstemp(prefix='TestSlice4x4Out_')
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.nq_fqfn)
         os.remove(self.q_fqfn)
         os.remove(self.out_fqfn)
@@ -313,7 +306,7 @@ class TestCSVDialects(unittest.TestCase):
                      options=None,
                      runtype='arg'):
 
-        assert(runtype in ['arg','stdin'])
+        assert runtype in ['arg','stdin']
 
         if quoted_file:
             in_fqfn = self.q_fqfn
@@ -334,6 +327,7 @@ class TestCSVDialects(unittest.TestCase):
             recs = []
             for rec in fileinput.input(self.out_fqfn):
                 recs.append(rec[:-1])
+            fileinput.close()
             return r.status_code, recs
 
 
@@ -368,14 +362,14 @@ class TestCSVDialects(unittest.TestCase):
         rc, actual = self.runner('-r 0', None, '-c 0', None,
                                  quoted_file=False,
                                  runtype='arg')
-        self.assertEqual(valid, actual)
-        self.assertEqual(rc, 0)
+        assert valid == actual
+        assert rc == 0
 
         rc, actual = self.runner('-r 0', None, '-c 0', None,
                                  quoted_file=False,
                                  runtype='stdin')
         # must fail because it's missing delimiter info for stdin
-        self.assertEqual(rc, 2)
+        assert rc == 2
 
 
         #-------- non-quoted input, non-quoted processing with delimiter and quoting override:
@@ -384,14 +378,14 @@ class TestCSVDialects(unittest.TestCase):
         rc, actual = self.runner('-r 0', None, '-c 0', None, quoted_file=False,
                                  options='''--delimiter='|' --quoting=quote_none ''' ,
                                  runtype='arg')
-        self.assertEqual(valid, actual)
-        self.assertEqual(rc, 0)
+        assert valid == actual
+        assert rc == 0
 
         rc, actual = self.runner('-r 0', None, '-c 0', None, quoted_file=False,
                                  options='''--delimiter='|' --quoting=quote_none ''' ,
                                  runtype='stdin')
-        self.assertEqual(valid, actual)
-        self.assertEqual(rc, 0)
+        assert valid == actual
+        assert rc == 0
 
         #--------------- quoted input, quoted processing with delimiter and quoting override:
         valid = []
@@ -399,40 +393,23 @@ class TestCSVDialects(unittest.TestCase):
         rc, actual = self.runner('-r 0', None, '-c 0', None, quoted_file=True,
                                  options='''--delimiter='|' --quoting=quote_all''',
                                  runtype='arg')
-        self.assertEqual(valid, actual)
-        self.assertEqual(rc, 0)
+        assert valid == actual
+        assert rc == 0
 
         rc, actual = self.runner('-r 0', None, '-c 0', None, quoted_file=True,
                                  options='''--delimiter='|' --quoting=quote_all''',
                                  runtype='stdin')
-        self.assertEqual(valid, actual)
-        self.assertEqual(rc, 0)
+        assert valid == actual
+        assert rc == 0
+
 
         #---------------- quoted input, quoted processing:
         valid = []
         valid.append('"0a0"')
         rc, actual = self.runner('-r 0', None, '-c 0', None, quoted_file=True,
                                  runtype='arg')
-        self.assertEqual(valid, actual)
-        self.assertEqual(rc, 0)
-
-
-if __name__ == "__main__":
-    unittest.main(suite())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        assert valid == actual
+        assert rc == 0
 
 
 

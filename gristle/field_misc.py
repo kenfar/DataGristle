@@ -160,8 +160,7 @@ def get_min(value_type, values):
           - complete via test harness
 
     """
-    assert(value_type in ['integer', 'float', 'string', 'timestamp',
-                          'unknown', None])
+    assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
 
     known_vals = []
     for val in values:
@@ -198,8 +197,7 @@ def get_max(value_type, values):
           - complete via test harness
 
     """
-    assert(value_type in ['integer', 'float', 'string', 'timestamp',
-                          'unknown', None])
+    assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
 
     known_vals = []
     for val in values:

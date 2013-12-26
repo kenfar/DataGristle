@@ -332,7 +332,7 @@ class FieldTools(simplesql.TableTools):
            and a field_order or field_name.  For this first implementation we'll
            assume field_order.
         """
-        assert(field_order is not None or field_name)
+        assert field_order is not None or field_name
         sql = """ SELECT field_id               \
                   FROM  field                   \
                   WHERE collection_id  = :collection_id \

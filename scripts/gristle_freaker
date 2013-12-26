@@ -20,6 +20,10 @@
                              Creates three columns from the input - the first two
                              with unique key combinations from columns 0 & 1, the
                              third with the number of times each combination exists.
+       $ gristle_freaker sample.csv -d '|'  -c -1
+                             Creates two columns from the input - all columns combined
+                             into a key, then a second with the number of times each
+                             combination exists.
 
     To do:
     - add sampling method of random
@@ -40,6 +44,11 @@ from collections import defaultdict
 import operator
 import fileinput
 import os
+
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox
@@ -93,8 +102,6 @@ def main():
                col_len,
                opts.writelimit)
 
-    fileinput.close()
-
     if truncated:
         return 1
     else:
@@ -142,8 +149,8 @@ def freq_sorter(field_freq, sortcol, revorder):
           - a list of tuples
         Tested via test harness
     """
-    assert(revorder in [True, False])
-    assert(sortcol in [0, 1])
+    assert revorder in [True, False]
+    assert sortcol in [0, 1]
     sort_freq = sorted(field_freq.iteritems(),
                        key=operator.itemgetter(sortcol),
                        reverse=revorder)
@@ -151,19 +158,22 @@ def freq_sorter(field_freq, sortcol, revorder):
 
 
 
-def create_key(fields, columns):
+def create_key(field_list, required_field_indexes):
     """ input:
-          - fields  - a single record in the form of a list of fields
-          - columns - identifies which fields to put into output key
+          - field_list  - a single record in the form of a list of fields
+          - requird_fields - identifies which fields to put into output key
         output:
-          - the output key in tuple format.
+          - the required fields from field_list in tuple format.
         Tested via test-harness.
     """
-    concat_key = []
-    for key in columns:
-        concat_key.append(fields[key].strip())
 
-    return tuple(concat_key)
+    if (len(required_field_indexes) == 1 and required_field_indexes[0] == -1):
+        return tuple(field_list)
+    else:
+        key = []
+        for field_idx in required_field_indexes:
+                key.append(field_list[field_idx].strip())
+        return tuple(key)
 
 
 
@@ -180,6 +190,7 @@ def build_freq(files, dialect, columns, number, sampling_method, sampling_rate):
             - truncated       - True/False boolean that indicates if the dict was truncated
         Tested via test-harness
     """
+
     read_cnt   = 0
     freq_cnt   = 0
     field_freq = {}
@@ -188,8 +199,7 @@ def build_freq(files, dialect, columns, number, sampling_method, sampling_rate):
         if not fields:
             break
         read_cnt += 1
-        if (read_cnt == 1
-        and dialect.hasheader):
+        if (read_cnt == 1 and dialect.hasheader):
             continue
         if sampling_method == 'interval':
             if read_cnt % sampling_rate != 0:
@@ -212,6 +222,8 @@ def build_freq(files, dialect, columns, number, sampling_method, sampling_rate):
 
 class ColumnLengthTracker(object):
     """ Tracks the maximum key length for each column.
+        This is useful later when printing columns - in order to keep them
+        of consistent widths for each record.
         Tested via test harness.
     """
     def __init__(self):
@@ -338,7 +350,8 @@ class CommandLineParser(object):
 
         self.parser.add_option('-c', '--columns',
                type='string',       # could be -c 1 or -c 3,10 or -c "15,20,21"
-               help='one or many comma-separated column numbers to analyze')
+               default = '-1',
+               help='One or many comma-separated column numbers to analyze.  Default is -1 - which analyzes all cols.')
 
         self.parser.add_option('-n', '--number',
                type=int,
@@ -450,9 +463,8 @@ class CommandLineParser(object):
         """
         if self.opts.number < 1000:
             self.parser.error('Please provided a value between 1001 and 1000000000 for number')
-        if not self.opts.columns:
+        if self.opts.columns is None:
             self.parser.error('Please identify the columns to analyze')
-
         if self.files:
             if len(self.files) > 1 and not self.opts.delimiter:
                 self.parser.error('Please provide delimiter when piping data into program '

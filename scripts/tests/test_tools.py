@@ -35,3 +35,32 @@ def get_app_root():
     app_dir     = os.path.dirname(script_dir)
     return app_dir
 
+
+def myprinter(label, value):
+      print '%-20.20s:   %s' % (label, value)
+
+
+def myfileprinter(label, fn, max_recs=20):
+      print '%-20.20s ' % fn
+      row_cnt = 0
+      for row in fileinput.input(fn):
+          if max_recs and max_recs <= row_cnt:
+              break
+          else:
+              print row[:-1]
+              row_cnt += 1
+      fileinput.close()
+
+def get_names_dict(*args):
+      id2name = dict((id(val), key) for key, val in
+                     inspect.stack()[1][0].f_locals.items())
+      return dict((id2name[id(a)], a) for a in args)
+
+
+def print_whoami():
+    name = sys._getframe(1).f_code.co_name
+    file = sys._getframe(1).f_code.co_filename
+    line = sys._getframe(1).f_lineno
+    print 'Function: %s in file: %s at line: %d' % (name, file, line)
+
+

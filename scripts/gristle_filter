@@ -34,6 +34,10 @@ import os
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 
 import gristle.file_type           as file_type 
 
@@ -120,9 +124,9 @@ def spec_evaluator(rec, spec):
     """
     if spec:
         tokens = spec.split()
-        assert(len(tokens) == 3)
-        assert(tokens[1] in ['=','==','>','=>','>=','>','<','<=','=<','!='])
-        assert(0 <= int(tokens[0]) < 200)
+        assert len(tokens) == 3
+        assert tokens[1] in ['=','==','>','=>','>=','>','<','<=','=<','!=']
+        assert 0 <= int(tokens[0]) < 200
         query = "'%s' %s '%s'" % (rec[int(tokens[0])].strip(), tokens[1], tokens[2])
         if eval(query):
             return True

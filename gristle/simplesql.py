@@ -56,7 +56,7 @@ class TableTools(object):
             # could mean that part of key was missing?
             return 0
 
-        assert(result.rowcount in [0, 1])
+        assert result.rowcount in [0, 1]
         return result.rowcount
 
 
@@ -70,7 +70,7 @@ class TableTools(object):
         gener_sql = self._create_where(gener_sql, kw)
         result    = gener_sql.execute()
         rows      = result.fetchall()
-        assert(len(rows) in [0, 1])
+        assert len(rows) in [0, 1]
         try:
             return rows[0]
         except IndexError:   # no rows found

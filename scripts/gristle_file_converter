@@ -24,6 +24,11 @@ import optparse
 import csv
 import os
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
+
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -111,7 +116,7 @@ class InFileHandler(object):
             Parsing the record and splitting it into a list of fields is handled
             automatically by the CSV module, or manually if necessary.
         """
-        assert(self.eof is False)
+        assert self.eof is False
         if self.dialect.auto:
             try:
                 in_rec = self.reader.next()

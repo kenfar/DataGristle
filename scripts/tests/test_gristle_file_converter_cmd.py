@@ -9,18 +9,12 @@ import sys
 import os
 import tempfile
 import random
-import unittest
 import time
 import subprocess
+import pytest
 
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestCommandLine))
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-    return suite
 
 
 def generate_test_file(delim, record_cnt):
@@ -40,20 +34,20 @@ def generate_test_file(delim, record_cnt):
 
 
 
-class TestCommandLine(unittest.TestCase):
+class TestCommandLine(object):
 
-    def setUp(self):
+    def setup_method(self, method):
         self.easy_fqfn     = generate_test_file(delim='|', record_cnt=100)
         self.empty_fqfn    = generate_test_file(delim='|', record_cnt=0)
 
-    def tearDown(self):
+    def teardown_method(self, method):
         os.remove(self.easy_fqfn)
         os.remove(self.empty_fqfn)
 
     def test_input_and_output_del(self):
 
         cmd = [os.path.join(script_path, 'gristle_file_converter'),
-               self.easy_fqfn, 
+               self.easy_fqfn,
                '-d', '|',
                '-D', ',']
         p = subprocess.Popen(cmd,
@@ -62,8 +56,8 @@ class TestCommandLine(unittest.TestCase):
         p_output = p.communicate()[0]
         p_recs   = p_output[:-1].split('\n')
         for rec in p_recs:
-            assert(rec.count(',') == 3)
-        assert(len(p_recs) == 100)
+            assert rec.count(',') == 3
+        assert len(p_recs) == 100
 
 
     def test_output_del_only(self):
@@ -77,8 +71,8 @@ class TestCommandLine(unittest.TestCase):
         p_output = p.communicate()[0]
         p_recs   = p_output[:-1].split('\n')
         for rec in p_recs:
-            assert(rec.count(',') == 3)
-        assert(len(p_recs) == 100)
+            assert rec.count(',') == 3
+        assert len(p_recs) == 100
 
 
     def test_empty_file(self):
@@ -90,9 +84,5 @@ class TestCommandLine(unittest.TestCase):
         p_output  = p.communicate()[0]
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
-            self.fail('produced output when input was empty')
-
-
-if __name__ == "__main__":
-    unittest.main(suite())
+            pytest.fail('produced output when input was empty')
 

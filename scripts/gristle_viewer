@@ -53,6 +53,10 @@ import csv
 import fileinput
 from pprint import pprint 
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -137,7 +141,7 @@ def get_input_file_info(input_files, opts):
             - dialect
             - my_fields
     """
-    assert(input_files)
+    assert input_files
     my_file    = file_type.FileTyper(input_files[0],
                                      delimiter=opts.delimiter,
                                      quoting=file_type.get_quote_number(opts.quoting))

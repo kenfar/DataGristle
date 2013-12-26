@@ -94,8 +94,8 @@ class FieldDeterminator(object):
         #--- each dictionary has a collection within it:
         self.field_freqs         = {}  # includes unknown values
 
-        assert(has_header in [True, False])
-        assert(0 < field_cnt < 1000)
+        assert has_header in [True, False]
+        assert 0 < field_cnt < 1000
 
 
     def analyze_fields(self,

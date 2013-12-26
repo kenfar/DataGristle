@@ -24,6 +24,10 @@ from pprint import pprint as pp
 
 from sqlalchemy import (text)
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox

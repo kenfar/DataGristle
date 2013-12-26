@@ -4,69 +4,66 @@
    Copyright 2011,2012,2013 Ken Farmer
 """
 
-
 import sys
 import os
 import tempfile
 import random
-import unittest
 import csv
 import optparse
+import pytest
 from pprint import pprint as pp
 import test_tools
+
 mod = test_tools.load_script('gristle_file_converter')
 
 
-def suite():
-
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestOptsAndArgs))
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-    return suite
 
 
-
-
-class TestOptsAndArgs(unittest.TestCase):
+class TestOptsAndArgs(object):
 
    def _run_check(self, sysarg, expected_result):
        sys.argv       = sysarg
        cmd_parser     = None
        opts           = None
        files          = None
-       try:
-           cmd_parser = mod.CommandLineParser()
-           opts       = cmd_parser.opts
-           files      = cmd_parser.files
-       except SystemExit:
-           if expected_result != 'SystemExit':
-               self.fail('unexpected SystemExit exception thrown')
-       except:
-           if expected_result != 'except':
-               self.fail('unexpected exception thrown')
-       else:
-           if expected_result != 'pass':
-               self.fail('expected exception not thrown')
+       if expected_result == 'SystemExit':
+           with pytest.raises(SystemExit):
+               cmd_parser = mod.CommandLineParser()
+               opts       = cmd_parser.opts
+               files      = cmd_parser.files
+       elif expected_result == 'except':
+           with pytest.raises(Exception):
+               cmd_parser = mod.CommandLineParser()
+               opts       = cmd_parser.opts
+               files      = cmd_parser.files
+       elif expected_result == 'pass':
+           try:
+               cmd_parser = mod.CommandLineParser()
+               opts       = cmd_parser.opts
+               files      = cmd_parser.files
+           except:
+               pytest.fail('cmd had exception - when none was expected')
+
        return cmd_parser, opts, files
+
 
 
    def test_goaa_happy_path(self):
        parser, opts, files = self._run_check(['../gristle_file_converter.py', 'census.csv', '-d', ',', '-D', '|'], 'pass')
 
-       self.assertTrue(opts.output           is None)
-       self.assertTrue(opts.recdelimiter     is None)
-       self.assertTrue(opts.delimiter        == ',')
-       self.assertTrue(opts.out_delimiter    == '|')
-       self.assertTrue(opts.recdelimiter     is None)
-       self.assertTrue(opts.out_recdelimiter is None)
-       self.assertTrue(opts.quoting          is False)
-       self.assertTrue(opts.out_quoting      is False)
-       self.assertTrue(opts.quotechar        == '"')
-       self.assertTrue(opts.hasheader        is False)
-       self.assertTrue(opts.out_hasheader    is False)
-       self.assertTrue(opts.stripfields      is False)
-       self.assertTrue(opts.verbose          is True)
+       assert opts.output           is None
+       assert opts.recdelimiter     is None
+       assert opts.delimiter        == ','
+       assert opts.out_delimiter    == '|'
+       assert opts.recdelimiter     is None
+       assert opts.out_recdelimiter is None
+       assert opts.quoting          is False
+       assert opts.out_quoting      is False
+       assert opts.quotechar        == '"'
+       assert opts.hasheader        is False
+       assert opts.out_hasheader    is False
+       assert opts.stripfields      is False
+       assert opts.verbose          is True
 
        self._run_check(['../gristle_file_converter.py', 'census4.csv', '-D', '|'], 'pass')
        self._run_check(['../gristle_file_converter.py', 'census5.csv', '-d',',','-D', '|'], 'pass')
@@ -85,8 +82,6 @@ class TestOptsAndArgs(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-    unittest.main(suite())
 
 
 

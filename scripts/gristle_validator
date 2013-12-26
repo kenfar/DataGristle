@@ -24,6 +24,10 @@ import fileinput
 import collections
 #from pprint import pprint as pp
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 #--- gristle modules -------------------
 sys.path.append('../')     # allows running from project structure
 sys.path.append('../../')  # allows running from project structure

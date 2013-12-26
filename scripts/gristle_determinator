@@ -206,6 +206,10 @@ import csv
 #                        event, text, create_engine)
 import sqlalchemy
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -213,6 +217,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import gristle.file_type           as file_type
 import gristle.field_determinator  as field_determinator
 import gristle.metadata            as metadata
+
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL) 
 
 
 #from pprint import pprint as pp
@@ -400,7 +408,7 @@ class OutputWriter(object):
     def __init__(self, output_filename, output_format):
         self.output_filename = output_filename
         self.output_format   = output_format
-        assert(self.output_format in ['readable', 'parsable', 'metadata'])
+        assert self.output_format in ['readable', 'parsable', 'metadata']
 
         if self.output_filename:
             self.outfile   = open(self.output_filename, 'w')

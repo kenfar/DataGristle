@@ -230,6 +230,4 @@ class Test_get_mean_length(object):
 
 
 
-#if __name__ == "__main__":
-#    unittest.main(suite())
 

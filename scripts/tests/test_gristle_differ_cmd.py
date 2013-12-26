@@ -9,19 +9,12 @@ import sys
 import os
 import tempfile
 import random
-import unittest
 import time
 import subprocess
+import pytest
 
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
-
-def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestCommandLine))
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-    return suite
 
 
 
@@ -37,7 +30,7 @@ def generate_test_file(delim, rec_list):
 
 
 
-class TestCommandLine(unittest.TestCase):
+class TestCommandLine(object):
 
 
     def test_easy_files(self):
@@ -71,11 +64,11 @@ class TestCommandLine(unittest.TestCase):
         for rec in p_recs:
             fields = rec.split(':')
             if fields[0].strip().startswith('In file1'):
-                assert(fields[1].strip() == 'Alaska')
+                assert fields[1].strip() == 'Alaska'
             if fields[0].strip().startswith('In file2'):
-                assert(fields[1].strip() == 'Wisconsin')
+                assert fields[1].strip() == 'Wisconsin'
             if fields[0].strip().startswith('In both'):
-                assert(fields[1].strip() == 'Arkansas')
+                assert fields[1].strip() == 'Arkansas'
 
         os.remove(file1)
         os.remove(file2)
@@ -110,9 +103,4 @@ class TestCommandLine(unittest.TestCase):
         """
         pass
 
-
-
-
-if __name__ == "__main__":
-    unittest.main(suite())
 
