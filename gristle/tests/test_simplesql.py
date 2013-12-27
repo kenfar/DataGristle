@@ -60,8 +60,10 @@ class TestSurrogateKeyTable(object):
 
     def test_setter_null_constraint_violation(self):
         # is missing mandatory column 'person_desc'
+        # pylint: disable=E1101
         with pytest.raises(exc.IntegrityError):
              self.person_tools.setter(person_name='bob')
+        # pylint: enable=E1101
 
     def test_updating_without_id(self):
         assert len(self.person_tools.lister()) == 0
@@ -104,8 +106,10 @@ class TestSurrogateKeyTable(object):
         assert len(self.person_tools.lister()) == 3
         assert self.person_tools.getter(id=1).person_name == 'bob'
         assert self.person_tools.getter(person_name='joe').id == 2
+        # pylint: disable=E1101
         with pytest.raises(KeyError):
             self.person_tools.getter(person_desc='good bowler')
+        # pylint: enable=E1101
 
     def test_deleter(self):
         # deleter should always return 0 or 1 - will not raise exception
@@ -162,8 +166,10 @@ class TestNaturalKeyTable(object):
             assert pet.pet_desc == 'very compulsive'
 
     def test_updating_without_pk_or_uk(self):
+        # pylint: disable=E1101
         with pytest.raises(KeyError):
            self.pet_tools.setter(pet_desc='very compulsive')
+        # pylint: enable=E1101
 
     def test_get_unique_constraints(self):
         # there are no constraints - it should return an empty list
@@ -182,12 +188,14 @@ class TestNaturalKeyTable(object):
         self.pet_tools.setter(pet_name='gina', pet_desc='good catcher')
         assert len(self.pet_tools.lister()) == 3
         assert self.pet_tools.getter(pet_name='ralf').pet_desc == 'good dribbler'
+        # pylint: disable=E1101
         with pytest.raises(KeyError):
             self.pet_tools.getter(person_desc='good bowler')
         with pytest.raises(KeyError):
             self.pet_tools.getter(pet_desc='good bowler')
         with pytest.raises(KeyError):
             self.pet_tools.getter(id=1)
+        # pylint: enable=E1101
 
     def test_deleter(self):
         # deleter should always return 0 or 1 - will not raise exception
@@ -225,8 +233,10 @@ class TestSurrogateKeyCheckConstraintTable(object):
 
     def test_setter_and_null_constraint(self):
         # constraint violation - not null on animal_age
+        # pylint: disable=E1101
         with pytest.raises(exc.IntegrityError):
            self.animal_tools.setter(animal_name='dog', animal_desc='smelly')
+        # pylint: enable=E1101
 
     def test_setter_and_check_constraint(self):
         # first confirm it works:
@@ -235,8 +245,10 @@ class TestSurrogateKeyCheckConstraintTable(object):
                                         animal_age=9) == 1
 
         # constraint violation - check on animal_age
+        # pylint: disable=E1101
         with pytest.raises(exc.IntegrityError):
             self.animal_tools.setter(animal_name='dog', animal_desc='smelly', animal_age=999)
+        # pylint: enable=E1101
 
 
 
