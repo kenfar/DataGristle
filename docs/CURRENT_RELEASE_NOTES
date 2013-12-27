@@ -15,6 +15,19 @@ Primary Functional Changes
         - added defaulting behavior for fieldcnt - if nothing is provided it 
 	  will use the number of fields in the first rec.
 
+===============================================================================
+Primary Defects Fixed
+===============================================================================
+    - in general
+    	- added fileinput.close() to a variety of files, mostly test scripts,
+	  which has eliminated a number of tox testing errors.
+    - gristle_viewer
+    	- added code to handle csv files with inconsistent number of fields
+	  which previously caused it to crash.
+    - gristle_slicer
+        - added code to print human-friendly info if it crashes due to 
+	  inconsistent csv structure.
+
 
 ===============================================================================
 Primary Internal Changes
@@ -23,9 +36,8 @@ Primary Internal Changes
         - converted from unittest to pytest
 	- eliminated IO bug which caused errors if they were piped to another
 	  program that then closed the file connection - like head or tail.
-    - in general
-    	- added fileinput.close() to a variety of files, mostly test scripts,
-	  which has eliminated a number of tox testing errors.
+    - added support for test coverage reporting
+    - added support for Travis-CI
 
 
 
