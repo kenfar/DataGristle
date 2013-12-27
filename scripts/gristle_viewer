@@ -115,8 +115,6 @@ def main():
         else:
             print 'Invalid response, please enter q, p, n, t, or a specific record number'
 
-        print response
-
     return 0
 
 
@@ -189,7 +187,10 @@ def display_rec(rec, my_fields, outfile_name):
 
     # write in column order:
     for sub in range(len(rec)):
-        outfile.write('%-*s  -  %-40s\n' % (min_format_len, field_names[sub], rec[sub]))
+        try:
+            outfile.write('%-*s  -  %-40s\n' % (min_format_len, field_names[sub], rec[sub]))
+        except KeyError:
+            outfile.write('*** Missing Field - possibly due to csv parsing issues ***\n')
 
     # don't close stdout
     if outfile_name:
