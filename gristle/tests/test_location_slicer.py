@@ -45,10 +45,13 @@ class TestIsNegativeSpec(object):
 
 class TestSpecProcessorValidator(object):
     def test_spec_validation(self):
+
+        # pylint: disable=E1101
         with pytest.raises(ValueError):
             mod.SpecProcessor( '3', 'bad spec')
         with pytest.raises(ValueError):
             mod.SpecProcessor( '3', 'bad spec')
+        # pylint: enable=E1101
 
     def test_negative_check(self):
         # check simplest spec
@@ -74,6 +77,7 @@ class TestSpecProcessorValidator(object):
         assert sp5._spec_validator(['3:8'])
         assert sp5._spec_validator([':'])
         assert sp5._spec_validator(['3:5','7','10:',':',':19'])
+        # pylint: disable=E1101
         with pytest.raises(ValueError):
             sp5._spec_validator([''])
         with pytest.raises(ValueError):
@@ -88,6 +92,7 @@ class TestSpecProcessorValidator(object):
             sp5._spec_validator(['5:1'])
         with pytest.raises(ValueError):
             sp5._spec_validator(['1:10:20'])
+        # pylint: enable=E1101
 
 
 
