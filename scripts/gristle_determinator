@@ -201,9 +201,6 @@ import os
 import optparse
 import errno
 import csv
-#from sqlalchemy import (Table, Column, Integer, String, MetaData, DATETIME,
-#                        UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
-#                        event, text, create_engine)
 import sqlalchemy
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
@@ -222,6 +219,8 @@ import gristle.metadata            as metadata
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL) 
 
+# pylint is confused on some inheritance issues
+# pylint: disable=E1101 
 
 #from pprint import pprint as pp
 
