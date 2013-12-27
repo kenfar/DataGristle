@@ -323,11 +323,14 @@ def write_rec(outfile, fields):
         outfile.writerow(fields)
     except csv.Error as e:
         print 'ERROR from csv module'
-        print 'This could be a problem with dirty data'
-        print dir(e)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
+        print 'This could be a problem with dirty data.  Consider providing'
+              ' quoting and delimiter manually or inspecting file with'
+              ' gristle validator.'
+        print
+        #print dir(e)
+        #exc_type, exc_obj, exc_tb = sys.exc_info()
+        #fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        #print(exc_type, fname, exc_tb.tb_lineno)
         raise
 
 
@@ -374,7 +377,7 @@ def get_opts_and_args():
                  'record numbers and colon-separated pairs of record start & '
                  'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
-           help=('Specify a quoted single-column field delimiter. This may be'
+           help=('Specify a quoted single-column field delimiter. This may be '
                  'determined automatically by the program in some cases.  But'
                  ' stdin requires this to be provided, and automatic detection'
                  ' can also sometimes get confused.  If you provide the delimiter'
