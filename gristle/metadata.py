@@ -27,7 +27,7 @@
        - collection_analysis
        - field_analysis
        - field_analysis_value
-      
+
     Reporting Views
        - rpt_collection_analysis_v
 
@@ -38,7 +38,7 @@
 from __future__ import division
 import appdirs
 import os
-from sqlalchemy import (Table, Column, Boolean, Integer, String, Float, 
+from sqlalchemy import (Table, Column, Boolean, Integer, String, Float,
                         MetaData, DATETIME,
                         UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
                         event, text, create_engine)
@@ -322,7 +322,7 @@ class FieldTools(simplesql.TableTools):
         self.instance    = None # assigned in InstanceTools
         return self._table
 
-    def get_field_id(self, collection_id, field_order=None, 
+    def get_field_id(self, collection_id, field_order=None,
                      field_name=None, field_type=None, field_len=None,
                      field_desc=None):
         """Get field_id if one exists, ir not doesn't exist then create it.
@@ -339,7 +339,7 @@ class FieldTools(simplesql.TableTools):
                     AND field_order    = :field_order   \
               """
         select_sql = text(sql)
-        result = self.engine.execute(select_sql, 
+        result = self.engine.execute(select_sql,
                                      collection_id=collection_id,
                                      field_order=field_order)
         rows   = result.fetchall()
