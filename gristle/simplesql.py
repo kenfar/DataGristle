@@ -29,7 +29,7 @@ class TableTools(object):
 
     def __init__(self, metadata, engine):
         self.metadata = metadata
-	self.engine   = engine
+        self.engine   = engine
         self._table       = None
         self._table_name  = None
         self._unique_constraints = None
