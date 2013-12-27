@@ -1,5 +1,5 @@
 ===============================================================================
-Version:     0.51
+Version:     0.52
 Copyright 2011,2012,2013 Ken Farmer
 See the file "LICENSE" for the full license governing this code. 
 ===============================================================================
@@ -8,18 +8,25 @@ See the file "LICENSE" for the full license governing this code.
 ===============================================================================
 Primary Functional Changes
 ===============================================================================
-    - gristle_metadata
-        - added long-help
-	- improved pathing
-    - gristle_md_reporter
-    	- initial add 
+    - gristle_freaker
+    	- added new default for command line arg 'columns' of -1 - which causes
+	  it to include all columns in the frequency distribution.
+    - gristle_validator
+        - added defaulting behavior for fieldcnt - if nothing is provided it 
+	  will use the number of fields in the first rec.
 
 
 ===============================================================================
 Primary Internal Changes
 ===============================================================================
-    - metadata
-        - added views
+    - scripts in general
+        - converted from unittest to pytest
+	- eliminated IO bug which caused errors if they were piped to another
+	  program that then closed the file connection - like head or tail.
+    - in general
+    	- added fileinput.close() to a variety of files, mostly test scripts,
+	  which has eliminated a number of tox testing errors.
+
 
 
 ===============================================================================
@@ -27,8 +34,8 @@ Overall Testing status:
 ===============================================================================
     - test harness on python 2.7    - done
     - test harness on python 2.6    - done
-    - run pylint                    - 
-    - check coverage                - 
+    - run pylint                    - done
+    - check coverage                - done
     - test automatically installing:
         - sqlalchemy
         - envoy
@@ -41,12 +48,12 @@ Overall Testing status:
 Module status:
 ===============================================================================
 field_determinator.py
-    - test coverage:        -- 94%
+    - test coverage:        -- 93%
     - unittest status:      -- 
     - pylint status:        --
 
 field_math.py
-    - test coverage:        -- 92%
+    - test coverage:        -- 95%
     - unittest status:      -- 
     - pylint status:        -- 
 
@@ -56,17 +63,17 @@ field_misc.py
     - pylint status:        -- 
 
 field_type.py
-    - test coverage:        -- 93%
+    - test coverage:        -- 94%
     - unittest status:      -- 
     - pylint status:        -- 
 
 file_type.py
-    - test coverage:        -- 79%
+    - test coverage:        -- 78%
     - unittest status:      -- 
     - pylint status:        -- 
 
 metadata.py              
-    - test coverage:        -- 96%
+    - test coverage:        -- 82%
     - unittest status:      -- 
     - pylint status:        -- 
     
@@ -80,7 +87,7 @@ simplesql.py
     - pylint status:        -- 
 
 location_slicer.py
-    - test coverage:        -- 13%
+    - test coverage:        -- 96%
     - unittest status:      --
     - pylint status:        -- 8.76
 
@@ -90,64 +97,64 @@ Script Test status:
 ===============================================================================
 
 gristle_determinator
-    - test coverage:        -- 0% +
+    - test coverage:        -- 64% 
     - unittest status:      --
     - manual test status:   --
-    - pylint status:        -- 7.34
+    - pylint status:        -- 8.50
 
 gristle_freaker
-    - test coverage:        -- 66% +
+    - test coverage:        -- 82% 
+    - unittest status:      -- 
+    - manual test status:   -- 
+    - pylint status:        -- 9.84
+
+gristle_file_converter.py     
+    - test coverage:        -- 67% 
     - unittest status:      -- 
     - manual test status:   -- 
     - pylint status:        -- 9.95
 
-gristle_file_converter.py     
-    - test coverage:        -- 16% +
-    - unittest status:      -- 
-    - manual test status:   -- 
-    - pylint status:        -- 10.00
-
 gristle_slicer
-    - test coverage:        -- 16% +
+    - test coverage:        -- 83% 
     - unittest status:      --
     - manual test status:   --
-    - pylint status:        -- 9.91
+    - pylint status:        -- 9.68
 
 gristle_filter
-    - test coverage:        -- 0% +
+    - test coverage:        -- 92%
     - unittest status:      -- 
     - manual test status:   -- 
-    - pylint status:        -- 9.87
+    - pylint status:        -- 9.74
     
 gristle_viewer
-    - test coverage:        -- 0% +
+    - test coverage:        -- 76% 
     - unittest status:      -- 
     - manual test status:   -- 
-    - pylint status:        -- 9.63
+    - pylint status:        -- 9.64
 
 gristle_differ
-    - test coverage:        -- 0% +
+    - test coverage:        -- 80%
     - unittest status:      -- 
     - manual test status:   -- 
-    - pylint status:        -- 9.77
+    - pylint status:        -- 9.40
 
 gristle_scalar
-    - test coverage:        -- 0% +
+    - test coverage:        -- 64% 
     - unittest status:      -- 
     - manual test status:   -- 
-    - pylint status:        -- 9.75
+    - pylint status:        -- 9.68
 
 gristle_metadata.py       
-    - test coverage:        -- 0% +
-    - pylint status         -- 9.63
+    - test coverage:        -- 
+    - pylint status         -- 9.27
 
 gristle_md_reporter.py       
-    - test coverage:        -- 0% +
-    - pylint status         -- 9.55
+    - test coverage:        -- 
+    - pylint status         -- 9.18
 
 gristle_validator
-    - test coverage:        -- 0% +
-    - pylint status         -- 9.69
+    - test coverage:        -- 
+    - pylint status         -- 9.55
 
 
 ===============================================================================
