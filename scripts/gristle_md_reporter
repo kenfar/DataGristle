@@ -33,7 +33,8 @@ signal(SIGPIPE,SIG_DFL)
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gristle.common import (coalesce, ifprint)
+from gristle.common import coalesce
+from gristle.common import ifprint    # pylint: disable=E0611
 import gristle.metadata               as metadata
 
 
