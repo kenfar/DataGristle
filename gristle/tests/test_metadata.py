@@ -92,8 +92,9 @@ class TestSchema(object):
 
         new_schema_rows = self.md.schema_tools.lister()
         if old_schema_rows != new_schema_rows:
-            #print 'failed!'
-            self.fail()
+            # pylint: disable=E1101
+            pytest.fail('Bad delete should have failed - but actually changed rows')
+            # pylint: enable=E1101
 
 
 
@@ -197,9 +198,11 @@ class TestCollection(object):
         # remove key attribute - should fail
         kv2 = kv.copy()
         kv2.pop('schema_id')
+        # pylint: disable=E1101
         with pytest.raises(KeyError):
-	   self.md.collection_tools.setter(**kv2)
+            self.md.collection_tools.setter(**kv2)
         assert len(self.md.collection_tools.lister()) == orig_rowcount  # init rows only
+        # pylint: enable=E1101
 
         # confirm no unintended consequences:
         new_rows = self.md.collection_tools.lister()
@@ -229,13 +232,14 @@ class TestField(object):
     def test_field_select_nonexisting_row(self):
         print 'kenstuff:'
         assert self.md.field_tools.getter(schema_id=self.schema_id, 
-	                                  collection_id=self.collection_id,
-	                                  field_name='blahFooBar') is None
+                                      collection_id=self.collection_id,
+                                      field_name='blahFooBar') is None
 
     def test_field_select_missing_collection_id(self):
+        # pylint: disable=E1101
         with pytest.raises(KeyError):
-	    self.md.field_tools.getter(schema_id=self.schema_id,
-                                       field_name='blahFooBar')
+            self.md.field_tools.getter(schema_id=self.schema_id, field_name='blahFooBar')
+        # pylint: enable=E1101
 
     def test_field_update_with_invalid_element(self):
         field_keys = ['collection_id', 'field_name','field_desc', 'field_type', 'field_len','element_name']
@@ -247,8 +251,10 @@ class TestField(object):
 
         val_list   = [self.collection_id, 'field-z', 'field-a-desc','string', 15, 'bad_name']
         kv         = dict(zip(field_keys, val_list))
+        # pylint: disable=E1101
         with pytest.raises(exc.IntegrityError):
-	   self.md.field_tools.setter(**kv)
+            self.md.field_tools.setter(**kv)
+        # pylint: enable=E1101
 
 
 
