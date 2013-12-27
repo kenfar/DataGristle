@@ -322,11 +322,11 @@ def write_rec(outfile, fields):
     try:
         outfile.writerow(fields)
     except csv.Error as e:
-        print 'ERROR from csv module'
-        print 'This could be a problem with dirty data.  Consider providing'
+        print('ERROR from csv module')
+        print('This could be a problem with dirty data.  Consider providing'
               ' quoting and delimiter manually or inspecting file with'
-              ' gristle validator.'
-        print
+              ' gristle validator.')
+        print()
         #print dir(e)
         #exc_type, exc_obj, exc_tb = sys.exc_info()
         #fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
