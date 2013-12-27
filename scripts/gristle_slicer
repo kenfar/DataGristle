@@ -129,7 +129,7 @@ def main():
         new_rec  = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
                                rec, incl_col_slicer, excl_col_slicer)
         if new_rec:
-            write_rec(csv_writer, new_rec)
+            write_rec(csv_writer, new_rec, rec_cnt)
 
     fileinput.close()
     if opts.output != '-':
@@ -310,7 +310,7 @@ def process_rec(rec_number, incl_rec_slicer, excl_rec_slicer,
 
 
 
-def write_rec(outfile, fields):
+def write_rec(outfile, fields, row_cnt):
     """ Writes record to output object - using the same dialect as the input
         file.
         Input:
@@ -322,15 +322,13 @@ def write_rec(outfile, fields):
     try:
         outfile.writerow(fields)
     except csv.Error as e:
+        print
         print('ERROR from csv module')
         print('This could be a problem with dirty data.  Consider providing'
               ' quoting and delimiter manually or inspecting file with'
-              ' gristle validator.')
-        print()
-        #print dir(e)
-        #exc_type, exc_obj, exc_tb = sys.exc_info()
-        #fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        #print(exc_type, fname, exc_tb.tb_lineno)
+              ' gristle_validator.')
+        print('Error encountered on input row: %d (offset from 0)' % row_cnt)
+        print
         raise
 
 
