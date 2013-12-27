@@ -82,6 +82,8 @@ def main():
         rec_cnt += 1
         if not rec:
             break
+        if opts.fieldcnt is None:
+           opts.fieldcnt = len(rec)
         if len(rec) != opts.fieldcnt:
            bad_field_cnt[len(rec)] += 1
            write_fields('field_cnt-%d' % len(rec), rec_cnt, outfile, rec, dialect.delimiter)
@@ -118,8 +120,9 @@ def get_opts_and_args():
             - opts dictionary
             - args dictionary 
     """
-    use = ("%prog is used to validate the number of fields in a file. It"
-           "writes reject writes out to output file or stdout \n"
+    use = ("%prog is used to validate the number of fields in a file. It "
+           "writes records with a fieldcnt other than provided to output "
+           "file or stdout \n"
            " \n"
            "   %prog [file] [misc options]")
     parser = optparse.OptionParser(usage = use)
@@ -131,7 +134,8 @@ def get_opts_and_args():
                 'file of that name.')
     parser.add_option('-f', '--fieldcnt',
            type=int,
-           help=('Specify the number of fields in the record'))
+           help=('Specify the number of fields in the record.  If not provided'
+                 ' it will default to number of fields on first record'))
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted single-column field delimiter. This may be'
                  'determined automatically by the program.'))
