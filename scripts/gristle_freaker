@@ -6,36 +6,41 @@
     Examples:
        $ gristle_freaker sample.csv -d '|'  -c 0
                              Creates two columns from the input - the first with
-                             unique keys from column 0, the second with a count of
-                             how many times each exists.
-       $ gristle_freaker sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
-                             In addition to what was described in the first example,
-                             this example adds sorting of the output by count ascending
-                             and just prints the first 25 entries.
-       $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
-                             In addition to what was described in the first example,
-                             this example adds a sampling in which it only references
-                             every third record.
+                             unique keys from column 0, the second with a count
+                             of how many times each exists.
+       $ gristle_freaker sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward
+         --writelimit 25
+                             In addition to what was described in the first
+                             example, this example adds sorting of the output
+                             by count ascending and just prints the first 25
+                             entries.
+       $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3
+         --sampling_method interval
+                             In addition to what was described in the first
+                             example, this example adds a sampling in which it
+                             only references every third record.
        $ gristle_freaker sample.csv -d '|'  -c 0,1
-                             Creates three columns from the input - the first two
-                             with unique key combinations from columns 0 & 1, the
-                             third with the number of times each combination exists.
-       $ gristle_freaker sample.csv -d '|'  -c -1
-                             Creates two columns from the input - the first with
-                             unique keys from the last column of the file (negative
-                             numbers wrap), then a second with the number of times each
-                             exists.
-       $ gristle_freaker sample.csv -d '|'  --columntype all
-                             Creates two columns from the input - all columns combined
-                             into a key, then a second with the number of times each
+                             Creates three columns from the input - the first
+                             two with unique key combinations from columns 0
+                             & 1, the third with the number of times each
                              combination exists.
+       $ gristle_freaker sample.csv -d '|'  -c -1
+                             Creates two columns from the input - the first
+                             with unique keys from the last column of the file
+                             (negative numbers wrap), then a second with the
+                             number of times each exists.
+       $ gristle_freaker sample.csv -d '|'  --columntype all
+                             Creates two columns from the input - all columns
+                             combined into a key, then a second with the number
+                             of times each combination exists.
        $ gristle_freaker sample.csv -d '|'  --columntype each
-                             Unless all other examples, this one performs a separate
-                             analysis for every single column of the file.  Each
-                             analysis produces three columns from the input - the
-                             first is a column number, second is a unique value from
-                             the column, and the third is the number of times that
-                             value appeared.   This output is repeated for each column.
+                             Unless all other examples, this one performs a
+                             separate analysis for every single column of the
+                             file.  Each analysis produces three columns from
+                             the input - the first is a column number, second
+                             is a unique value from the column, and the third
+                             is the number of times that value appeared.
+                             This output is repeated for each column.
 
     To do:
     - add sampling method of random
@@ -59,13 +64,15 @@ import os
 import errno
 from pprint import pprint as pp      # just used for debugging
 
-#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+# Ignore SIG_PIPE and don't throw exceptions on it... 
+# (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
 
 #--- gristle modules -------------------
-# lets get pathing set for running code out of project structure & testing it via tox
+# lets get pathing set for running code out of project structure 
+# & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import gristle.file_type            as file_type
 
@@ -169,7 +176,7 @@ def get_dialect(opts, files):
             dialect.lineterminator = '\n'                 # naive assumption
         else:
             dialect                = my_file.dialect
-            dialect.hasheader      = opts.hasheader       # shouldn't be necessary
+            dialect.hasheader      = opts.hasheader       # shouldn't be needed
     else:
         # dialect parameters needed for stdin - since the normal code can't
         # analyze this data.
@@ -188,8 +195,8 @@ def get_dialect(opts, files):
 
 class ColFreaker(object):
 
-    def __init__(self, files, dialect, col_type, number, sampling_method, sampling_rate,
-                 sort_order, sort_col, max_key_len):
+    def __init__(self, files, dialect, col_type, number, sampling_method,
+                 sampling_rate, sort_order, sort_col, max_key_len):
         self.files           = files
         self.dialect         = dialect
         self.col_type        = col_type
@@ -212,7 +219,8 @@ class ColFreaker(object):
 
         #----- sort the field_freq ------
         revorder = (True if self.sort_order == 'reverse' else False)
-        self.sort_freq = self._dict_sorter(self.field_freq, self.sort_col, revorder)
+        self.sort_freq = self._dict_sorter(self.field_freq, self.sort_col,
+                                           revorder)
 
         #----- calculate field lengths for output formmating -----
         self.col_len = ColumnLengthTracker()
@@ -507,7 +515,8 @@ class CommandLineParser(object):
 
         self.parser.add_option('-o', '--output',
                default='-',
-               help="Specifies the output file, defaults to stdout indicated by '-'.")
+               help="Specifies the output file, defaults to stdout indicated by"
+                    " '-'.")
 
         self.parser.add_option('-q', '--quiet',
                action='store_false',
@@ -522,16 +531,16 @@ class CommandLineParser(object):
                help='provides more detail')
 
         self.parser.add_option('-d', '--delimiter',
-               help=('Specify a quoted single-column field delimiter. This may be'
-                     'determined automatically by the program - unless you pipe the'
-                     'data in.'))
+               help=('Specify a quoted single-column field delimiter. This may '
+                     'be determined automatically by the program - unless you '
+                     'pipe the data in.'))
 
         self.parser.add_option('--quoting',
                default=False,
                #choices=[True,False],
                action='store_true',
-               help='Specify field quoting - generally only used for stdin data.'
-                    '  The default is False.')
+               help='Specify field quoting - generally only used for stdin '
+                    'data.  The default is False.')
 
         self.parser.add_option('--quotechar',
                default='"',
@@ -562,8 +571,9 @@ class CommandLineParser(object):
             try:
                 valid.append(int(arg))
             except ValueError:
-                self.parser.error('Columns must consist only of comma-separated integers'
-                                 ' that refer to column offsets in source file')
+                self.parser.error('Columns must consist only of comma-separated'
+                                  ' integers that refer to column offsets in'
+                                  ' source file')
         self.opts.columns   = valid
 
 
@@ -572,23 +582,28 @@ class CommandLineParser(object):
         """
         if (self.opts.columns is not None
             and self.opts.col_type != 'specified'):
-            self.parser.error('Columns can only be specified for columntype != specified.')
+            self.parser.error('Columns can only be specified for columntype '
+                              '!= specified.')
         elif (self.opts.columns is None
             and self.opts.col_type == 'specified'):
-            self.parser.error("Columns must be provided for columntype of 'specified'.")
+            self.parser.error("Columns must be provided for columntype of "
+                              "'specified'.")
 
         if self.opts.number < 1000:
-            self.parser.error('Please provided a value between 1001 and 1000000000 for number')
+            self.parser.error('Please provided a value between 1001 and '
+                              '1000000000 for number')
 
         if self.files:
             if len(self.files) > 1 and not self.opts.delimiter:
-                self.parser.error('Please provide delimiter when piping data into program '
-                             'via stdin or reading multiple input files')
+                self.parser.error('Please provide delimiter when piping data '
+                                  'into program via stdin or reading multiple '
+                                  'input files')
         else:   # stdin
             if not self.opts.delimiter:
-                self.parser.error('Please provide delimiter when piping data into program'
-                             ' via stdin or reading multiple input files')
-        if self.opts.sortcol not in [0,1]:
+                self.parser.error('Please provide delimiter when piping data '
+                                  'into program via stdin or reading multiple '
+                                  'input files')
+        if self.opts.sortcol not in [0, 1]:
             self.parser.error('Please provide a sortcol value of 0 or 1')
 
         if 1 > self.opts.maxkeylen > 500:
@@ -600,13 +615,15 @@ class CommandLineParser(object):
         """
         if self.opts.sampling_method == 'non':
             if self.opts.sampling_rate:
-                self.parser.error('Sampling_rate must be left to default if sampling_method is "non"')
+                self.parser.error('Sampling_rate must be left to default if '
+                                  'sampling_method is "non"')
         elif self.opts.sampling_method == 'interval':
             if self.opts.sampling_rate:
                 if self.opts.sampling_rate != int(self.opts.sampling_rate):
-                    self.parser.error('Inverval sampling rate must be an integer')
+                    self.parser.error('Inverval sampling rate must be an int')
             else:
-                self.parser.error('Integer sampling_rate must be provided if sampling_method == "interval"')
+                self.parser.error('Integer sampling_rate must be provided if '
+                                  'sampling_method == "interval"')
 
 
 
