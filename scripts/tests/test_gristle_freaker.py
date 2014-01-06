@@ -25,6 +25,39 @@ null       = open(os.devnull, 'wb')
 sys.stdout = sys.stderr = null
 
 
+def generate_col_freaker_dependencies():
+    dialect                = csv.Dialect
+    dialect.delimiter      = '|'
+    dialect.quoting        = True
+    dialect.quotechar      = '"'
+    dialect.hasheader      = False
+    dialect.lineterminator = '\n'
+    files                  = []
+    files.append(generate_test_file(dialect.delimiter, 1000))
+    columns                = [1, 2]
+    number                 = 1000
+    col_type               = 'specified'
+    sampling_method        = 'non'
+    sampling_rate          = None
+    number                 = 4
+    max_key_len            = 50
+    return files, dialect, col_type, number, sampling_method, sampling_rate, columns, max_key_len
+
+
+def generate_test_file(delim, record_cnt):
+    (fd, fqfn) = tempfile.mkstemp(prefix='FreakerTestIn_')
+    fp = os.fdopen(fd,"w")
+
+    for i in range(record_cnt):
+        fields = []
+        fields.append(str(i))
+        fields.append(random.choice(('A1','A2','A3','A4')))
+        fields.append(random.choice(('B1','B2')))
+        fp.write(delim.join(fields)+'\n')
+
+    fp.close()
+    return fqfn
+
 
 
 class Test_build_freq(object):
@@ -37,67 +70,71 @@ class Test_build_freq(object):
         self.dialect.hasheader      = False
         self.dialect.lineterminator = '\n'
         self.files                  = []
-        self.files.append(self.generate_test_file(self.dialect.delimiter, 1000))
-        self.columns                = [1,2]
+        self.files.append(generate_test_file(self.dialect.delimiter, 1000))
+        self.columns                = [1, 2]
+        self.col_type               = 'specified'
         self.number                 = 1000
-
-    def generate_test_file(self, delim, record_cnt):
-        (fd, fqfn) = tempfile.mkstemp(prefix='FreakerTestIn_')
-        fp = os.fdopen(fd,"w")
-
-        cnt = 0
-        for i in range(record_cnt):
-            cnt += 1
-            fields = []
-            fields.append(str(i))
-            fields.append(random.choice(('A1','A2','A3','A4')))
-            fields.append(random.choice(('B1','B2')))
-            fp.write(delim.join(fields)+'\n')
-
-        fp.close()
-        return fqfn
+        self.sampling_method        = 'non'
+        self.sampling_rate          = None
+        self.sortorder              = 'reverse'
+        self.sortcol                = 1
+        self.max_key_len            = 50
 
     def test_bf_01_multicol(self):
-        sampling_method = 'non'
-        sampling_rate   = None
-        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
-        assert not truncated
-        assert sum(field_freq.values()) == 1000
-        assert len(field_freq) == 8
-        for key in field_freq.keys():
+        col_freak = mod.ColFreaker(self.files, self.dialect, self.col_type,
+                                   self.number,
+                                   self.sampling_method, self.sampling_rate,
+                                   self.sortorder, self.sortcol,
+                                   self.max_key_len)
+        col_freak.build_freq(self.columns)
+        assert not col_freak.truncated
+        assert sum(col_freak.field_freq.values()) == 1000
+        assert len(col_freak.field_freq) == 8  # four A* * two B*
+        for key in col_freak.field_freq.keys():
             assert key[0] in ['A1','A2','A3','A4']
             assert key[1] in ['B1','B2']
 
     def test_bf_02_multicol_and_truncation(self):
-        sampling_method = 'non'
-        sampling_rate   = None
         self.number     = 4
-        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
-        assert truncated
-        assert len(field_freq) == 4  # it's possible (but extremely unlikely) that there could be fewer entries
-        for key in field_freq.keys():
+        col_freak = mod.ColFreaker(self.files, self.dialect, self.col_type,
+                                   self.number,
+                                   self.sampling_method, self.sampling_rate,
+                                   self.sortorder, self.sortcol,
+                                   self.max_key_len)
+        col_freak.build_freq(self.columns)
+        assert col_freak.truncated
+        assert len(col_freak.field_freq) == 4  # it's possible (but extremely unlikely) that there could be fewer entries
+        for key in col_freak.field_freq.keys():
             assert key[0] in ['A1','A2','A3','A4']
             assert key[1] in ['B1','B2']
 
     def test_bf_03_single_col(self):
-        sampling_method = 'non'
-        sampling_rate   = None
         self.columns    = [1]
-        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
-        assert not truncated
-        assert sum(field_freq.values()) == 1000
-        assert len(field_freq) == 4  # it's possible (but extremely unlikely) that there could be fewer entries
-        for key in field_freq.keys():
+        col_freak = mod.ColFreaker(self.files, self.dialect, self.col_type,
+                                   self.number,
+                                   self.sampling_method, self.sampling_rate,
+                                   self.sortorder, self.sortcol,
+                                   self.max_key_len)
+        col_freak.build_freq(self.columns)
+        assert not col_freak.truncated
+        assert sum(col_freak.field_freq.values()) == 1000
+        assert len(col_freak.field_freq) == 4  # it's possible (but extremely unlikely) that there could be fewer entries
+        for key in col_freak.field_freq.keys():
             assert key[0] in ['A1','A2','A3','A4']
 
     def test_bf_03_interval_sampling(self):
-        sampling_method = 'interval'
-        sampling_rate   = 10
-        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
-        assert not truncated
-        assert sum(field_freq.values()) == 100
-        assert len(field_freq) == 8  # it's possible (but unlikely) that there could be fewer entries
-        for key in field_freq.keys():
+        self.sampling_method = 'interval'
+        self.sampling_rate   = 10
+        col_freak = mod.ColFreaker(self.files, self.dialect, self.col_type,
+                                   self.number,
+                                   self.sampling_method, self.sampling_rate,
+                                   self.sortorder, self.sortcol,
+                                   self.max_key_len)
+        col_freak.build_freq(self.columns)
+        assert not col_freak.truncated
+        assert sum(col_freak.field_freq.values()) == 100
+        assert len(col_freak.field_freq) == 8  # it's possible (but unlikely) that there could be fewer entries
+        for key in col_freak.field_freq.keys():
             assert key[0] in ['A1','A2','A3','A4']
             assert key[1] in ['B1','B2']
 
@@ -106,7 +143,7 @@ class Test_build_freq(object):
 class Test_get_opts_and_args(object):
 
     def test_goaa_happy_path(self):
-        sys.argv = ['../gristle_freaker.py', 'census.csv', '-c', '1']
+        sys.argv = ['../gristle_freaker', 'census.csv', '-c', '1']
         cmd_parser = mod.CommandLineParser()
         opts       = cmd_parser.opts
         files      = cmd_parser.files
@@ -123,7 +160,7 @@ class Test_get_opts_and_args(object):
         assert opts.sortorder  == 'reverse'
 
     def test_goaa_check_invalid_columns(self):
-        sys.argv = ['../gristle_freaker.py', 'census.csv', '-c', 'd']
+        sys.argv = ['../gristle_freaker', 'census.csv', '-c', 'd']
         try:
             cmd_parser = mod.CommandLineParser()
             opts       = cmd_parser.opts
@@ -136,7 +173,7 @@ class Test_get_opts_and_args(object):
             pytest.fail('expected exception not thrown')
 
     def test_goaa_check_invalid_maxkenlen(self):
-        sys.argv = ['../gristle_freaker.py', 'census.csv', '--maxkeylen', 'blah']
+        sys.argv = ['../gristle_freaker', 'census.csv', '--maxkeylen', 'blah']
         try:
             cmd_parser = mod.CommandLineParser()
             opts       = cmd_parser.opts
@@ -149,7 +186,7 @@ class Test_get_opts_and_args(object):
             pytest.fail('expected exception not thrown')
 
     def test_goaa_check_valid_maxkenlen(self):
-        sys.argv = ['../gristle_freaker.py', 'census.csv', '-c', '0', '--maxkeylen', '50']
+        sys.argv = ['../gristle_freaker', 'census.csv', '-c', '0', '--maxkeylen', '50']
 
         try:
             cmd_parser = mod.CommandLineParser()
@@ -165,23 +202,46 @@ class Test_get_opts_and_args(object):
             raise
 
 
-class Test_freq_sorter(object):
+class Test_dict_sorter(object):
+
+    def setup_method(self, method):
+        self.dialect                = csv.Dialect
+        self.dialect.delimiter      = '|'
+        self.dialect.quoting        = True
+        self.dialect.quotechar      = '"'
+        self.dialect.hasheader      = False
+        self.dialect.lineterminator = '\n'
+        self.files                  = []
+        self.files.append(generate_test_file(self.dialect.delimiter, 1))
+        self.columns                = [1, 2]
+        self.col_type               = 'specified'
+        self.number                 = 1000
+        self.sampling_method        = 'non'
+        self.sampling_rate          = None
+        self.sortorder              = 'reverse'
+        self.sortcol                = 1
+        self.max_key_len            = 50
+        self.col_freak = mod.ColFreaker(self.files, self.dialect, self.col_type,
+                                   self.number,
+                                   self.sampling_method, self.sampling_rate,
+                                   self.sortorder, self.sortcol,
+                                   self.max_key_len)
 
     def test_fs_01_multi_key(self):
         field_freq = {}
-        field_freq[('a1','a2','a3')] = 2
-        field_freq[('k1','k2','k3')] = 3
-        field_freq[('c1','c2','c3')] = 4
-        out_freq = mod.freq_sorter(field_freq, sortcol=1, revorder=True)
+        field_freq[('a1', 'a2', 'a3')] = 2
+        field_freq[('k1', 'k2', 'k3')] = 3
+        field_freq[('c1', 'c2', 'c3')] = 4
+        out_freq = self.col_freak._dict_sorter(field_freq, sortcol=1, revorder=True)
         assert out_freq[0][1] == 4
 
-        out_freq = mod.freq_sorter(field_freq, sortcol=1, revorder=False)
+        out_freq = self.col_freak._dict_sorter(field_freq, sortcol=1, revorder=False)
         assert out_freq[0][1] == 2
 
-        out_freq = mod.freq_sorter(field_freq, sortcol=0, revorder=True)
+        out_freq = self.col_freak._dict_sorter(field_freq, sortcol=0, revorder=True)
         assert out_freq[0][1] == 3
 
-        out_freq = mod.freq_sorter(field_freq, sortcol=0, revorder=False)
+        out_freq = self.col_freak._dict_sorter(field_freq, sortcol=0, revorder=False)
         assert out_freq[0][1] == 2
 
     def test_fs_02_single_key(self):
@@ -189,12 +249,12 @@ class Test_freq_sorter(object):
         field_freq[('a1',)] = 2
         field_freq[('k1',)] = 3
         field_freq[('c1',)] = 4
-        out_freq = mod.freq_sorter(field_freq, sortcol=1, revorder=True)
+        out_freq = self.col_freak._dict_sorter(field_freq, sortcol=1, revorder=True)
         assert out_freq[0][1] == 4
 
     def test_fs_03_empty_file(self):
         field_freq = {}
-        out_freq = mod.freq_sorter(field_freq, sortcol=1, revorder=True)
+        out_freq = self.col_freak._dict_sorter(field_freq, sortcol=1, revorder=True)
         #print out_freq
         assert out_freq == []
 
@@ -212,10 +272,13 @@ class Test_create_output_row(object):
         self.col_len.add_val(0, self.in1)
         self.col_len.add_val(1, self.in2)
         self.col_len.add_val(2, self.in3)
+        self.key_label = ''
 
     def test_cor_01_parts(self):
 
-        self.out_row = mod.create_output_row(self.freq_tup, self.col_len)
+        self.out_row = mod.create_output_row(self.freq_tup,
+                                             self.col_len,
+                                             self.key_label)
         parts   = self.out_row[:-1].split('-')
         assert self.in1 == parts[0].strip()
         assert self.in2 == parts[1].strip()
@@ -224,7 +287,9 @@ class Test_create_output_row(object):
 
     def test_cor_02_lengths(self):
 
-        self.out_row = mod.create_output_row(self.freq_tup, self.col_len)
+        self.out_row = mod.create_output_row(self.freq_tup,
+                                             self.col_len,
+                                             self.key_label)
         parts   = self.out_row[:-1].split('-')
         assert len(parts[0]) == len(self.in1) + 3
         assert len(parts[1]) == len(self.in2) + 4
@@ -234,7 +299,9 @@ class Test_create_output_row(object):
     def test_cor_03_trunc_lengths(self):
 
         self.col_len.trunc_all_col_lengths(3)
-        self.out_row = mod.create_output_row(self.freq_tup, self.col_len)
+        self.out_row = mod.create_output_row(self.freq_tup,
+                                             self.col_len,
+                                             self.key_label)
         parts   = self.out_row[:-1].split('-')
         assert len(parts[0]) == 1 + 3
         assert len(parts[1]) == 1 + 4
@@ -243,18 +310,34 @@ class Test_create_output_row(object):
 
 
 
+
+
 class Test_create_key(object):
 
+    def setup_method(self, method):
+        (files, dialect, col_type, number, sampling_method, sampling_rate,
+         columns, max_key_len) = generate_col_freaker_dependencies()
+        sortorder              = 'reverse'
+        sortcol                = 1
+
+        self.col_freak = mod.ColFreaker(files, dialect, col_type,
+                                        number, sampling_method, sampling_rate,
+                                        sortorder, sortcol,
+                                        max_key_len)
+
+    def test_fs_01_multi_key(self):
+        field_freq = {}
+
     def test_ck_01(self):
-        fields  = ['a','b','c','d','e','f']
-        columns = [0,2]
-        key_tup = mod.create_key(fields, columns)
+        fields  = ['a', 'b', 'c', 'd', 'e', 'f']
+        columns = [0, 2]
+        key_tup = self.col_freak._create_key(fields, columns)
         assert key_tup == ('a','c')
 
     def test_ck_02(self):
-        fields  = ['a','b','c','d','e','f']
+        fields  = ['a', 'b', 'c', 'd', 'e', 'f']
         columns = [0]
-        key_tup = mod.create_key(fields, columns)
+        key_tup = self.col_freak._create_key(fields, columns)
         assert key_tup == ('a',)
 
 
@@ -292,25 +375,29 @@ class Test_ColumnLengthTracker(object):
         self.col_len.add_val(0,'')
         assert self.col_len.max_dict[0] == 0
 
-    def test_clt_04_add_freq_dict(self):
+    def test_clt_04_add_freq_list(self):
         # note: only tests a single column
         # dictionary key is a tuple, value is a count of occurances.  The value
         # doesn't actually matter for this test.
-        freq = {}
+        freq = []
 
         self.col_len.add_all_values(freq)
         assert self.col_len.max_dict[0] == 0
 
-        freq[('a',)]   = 0
-        freq[('bb',)]  = 0
-        freq[('ccc',)] = 0
+        entry = (('a',),0)
+        freq.append(entry)
+        entry = (('bb',),0)
+        freq.append(entry)
+        entry = (('ccc',),0)
+        freq.append(entry)
 
         self.col_len.add_all_values(freq)
         assert self.col_len.max_dict[0] == 3
 
     def test_clt_05_trunc_lengths(self):
-        freq = {}
-        freq[('a'*20,'b'*10,)]  = 0
+        freq = []
+        entry = (('a'*20,'b'*10,), 0)
+        freq.append(entry)
         self.col_len.add_all_values(freq)
 
         self.col_len.trunc_all_col_lengths(30)         # orig len
