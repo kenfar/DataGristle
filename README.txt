@@ -123,6 +123,22 @@ More info is on the DataGristle wiki here:
                     Creates three columns from the input - the first two
                     with unique key combinations from columns 0 & 1, the 
                     third with the number of times each combination exists.
+       $ gristle_freaker sample.csv -d '|'  -c -1
+                    Creates two columns from the input - the first with unique
+                    keys from the last column of the file (negative numbers 
+                    wrap), then a second with the number of times each exists.
+       $ gristle_freaker sample.csv -d '|'  --columntype all
+                    Creates two columns from the input - all columns combined
+                    into a key, then a second with the number of times each
+                    combination exists.
+       $ gristle_freaker sample.csv -d '|'  --columntype each
+                    Unlike the other examples, this one performs a separate
+                    analysis for every single column of the file.  Each analysis
+                    produces three columns from the input - the first is a 
+                    column number, second is a unique value from the column, 
+                    and the third is the number of times that value appeared.  
+                    This output is repeated for each column.
+
 
 #gristle_viewer
     Displays a single record of a file, one field per line, with field names 
