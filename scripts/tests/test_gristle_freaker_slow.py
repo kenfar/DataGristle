@@ -31,6 +31,40 @@ sys.stdout = sys.stderr = null
 # create test plan
 # create cmd test program
 
+def generate_col_freaker_dependencies():
+    dialect                = csv.Dialect
+    dialect.delimiter      = '|'
+    dialect.quoting        = True
+    dialect.quotechar      = '"'
+    dialect.hasheader      = False
+    dialect.lineterminator = '\n'
+    files                  = []
+    files.append(generate_test_file(dialect.delimiter, 1000))
+    columns                = [1, 2]
+    number                 = 1000
+    col_type               = 'specified'
+    sampling_method        = 'non'
+    sampling_rate          = None
+    number                 = 4
+    return files, dialect, col_type, number, sampling_method, sampling_rate, columns
+
+
+def generate_test_file(delim, record_cnt):
+    (fd, fqfn) = tempfile.mkstemp(prefix='FreakerTestIn_')
+    fp = os.fdopen(fd,"w")
+
+    for i in range(record_cnt):
+        fields = []
+        fields.append(str(i))
+        fields.append(random.choice(('A1','A2','A3','A4')))
+        fields.append(random.choice(('B1','B2')))
+        fp.write(delim.join(fields)+'\n')
+
+    fp.close()
+    return fqfn
+
+
+
 
 class Test_build_freq(object):
 
@@ -42,34 +76,26 @@ class Test_build_freq(object):
         self.dialect.hasheader      = False
         self.dialect.lineterminator = '\n'
         self.files                  = []
-        self.files.append(self.generate_test_file(self.dialect.delimiter, gen_rec_number))
+        self.files.append(generate_test_file(self.dialect.delimiter, gen_rec_number))
         self.columns                = [1,2]
         self.number                 = gen_rec_number
 
-    def generate_test_file(self, delim, record_cnt):
-        (fd, fqfn) = tempfile.mkstemp(prefix='FreakerTestIn_')
-        fp = os.fdopen(fd,"w")
-
-        cnt = 0
-        for i in range(record_cnt):
-            cnt += 1
-            fields = []
-            fields.append(str(i))
-            fields.append(random.choice(('A1','A2','A3','A4')))
-            fields.append(random.choice(('B1','B2')))
-            fp.write(delim.join(fields)+'\n')
-
-        fp.close()
-        return fqfn
-
     def test_bf_01_multicol(self):
+        col_type        = 'specified'
         sampling_method = 'non'
         sampling_rate   = None
-        field_freq, truncated = mod.build_freq(self.files, self.dialect, self.columns, self.number, sampling_method, sampling_rate)
-        assert not truncated
-        assert sum(field_freq.values()) == gen_rec_number
-        assert len(field_freq) == 8
-        for key in field_freq.keys():
+        sortorder       = 'reverse'
+        sortcol         = 1
+        maxkeylen       = 50
+        col_freak = mod.ColFreaker(self.files, self.dialect, col_type,
+                                   self.number,
+                                   sampling_method, sampling_rate,
+                                   sortorder, sortcol, maxkeylen)
+        col_freak.build_freq(self.columns)
+        assert not col_freak.truncated
+        assert sum(col_freak.field_freq.values()) == gen_rec_number
+        assert len(col_freak.field_freq) == 8
+        for key in col_freak.field_freq.keys():
             assert key[0] in ['A1','A2','A3','A4']
             assert key[1] in ['B1','B2']
 
