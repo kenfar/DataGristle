@@ -1,18 +1,41 @@
 #!/usr/bin/env python
-""" Command line metadata reporting tool - used to provide various reports, in
-    various formats of data within the metadata database.
+"""
+Command line metadata reporting tool - used to provide various reports, in
+various formats of data within the metadata database.
 
-    Currently some of this functionality is redundant with the gristle
-    determinator:
-       - determinator:  populates metadata and reports on current analysis job
-       - md_reporter:   reports on metadata database, is intended for steady
-                        enhancemnts - adding PDF outputs.
+Currently some of this functionality is redundant with the gristle
+determinator:
+   - determinator:  populates metadata and reports on current analysis job
+   - md_reporter:   reports on metadata database, is intended for steady
+                    enhancemnts - eventually adding PDF outputs.
 
+usage: gristle_md_reporter [-h] [--long-help] [--report {dd,datadictionary}]
+                           [--schema_id SCHEMA_ID] [--schema_name SCHEMA_NAME]
+                           [--collection_id COLLECTION_ID]
+                           [--collection_name COLLECTION_NAME]
+                           [--field_id FIELD_ID] [--field_name FIELD_NAME]
 
-    This source code is protected by the BSD license.  See the file "LICENSE"
-    in the source code root directory for the full language or refer to it here:
-       http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+required arguments:
+  --report, -r {dd,datadictionary} - Report to be produced:
+                - dd and datadictionary are synonyms
+                - required options:  collection_id
+                - output: a data dictionary for the collection_id
+
+optional arguments (some may be required, depending on report):
+  -h, --help            show this help message and exit
+  --long-help           Print verbose help and exit.
+  --schema_id SCHEMA_ID, --si SCHEMA_ID
+                        id of schema
+  --schema_name SCHEMA_NAME, --sn SCHEMA_NAME
+  --collection_id COLLECTION_ID, --ci COLLECTION_ID
+  --collection_name COLLECTION_NAME, --cn COLLECTION_NAME
+  --field_id FIELD_ID, --fi FIELD_ID
+  --field_name FIELD_NAME, --fn FIELD_NAME
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+   http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013,2014 Ken Farmer
 """
 
 #--- standard modules ------------------
