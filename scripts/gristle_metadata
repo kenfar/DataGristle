@@ -1,10 +1,24 @@
 #!/usr/bin/env python
-""" Command line interface to metadata database.
+"""
+Command line interface to metadata database.  This is useful for reading and
+writing from datagristle metadata.
 
-    This source code is protected by the BSD license.  See the file "LICENSE"
-    in the source code root directory for the full language or refer to it here:
-       http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+Required arguments:
+    --table, -t {table name}   - Metadata table to perform action on
+                               - see short help for full list
+    --action, -a {list,get,set,del}  -  action to perform upon table
+
+Optional arguments:
+    -(see short help list)     - Each column in the table can be
+                                 referenced through an option or prompted for.
+    -h, --help                 - show this help message and exit
+    --long-help                - Print verbose help and exit.
+    --prompt, -p               - Causes program to prompt for each field
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------
