@@ -1,30 +1,64 @@
 #!/usr/bin/env python
-""" Prints a frequency distribution of a single column from the input file.
+"""
+gristle_scalar is used to perform a single scalar operation on one column
+within an input file.
 
-    Example usage:
-      - $ gristle_scalar.py ../data/state_crime.csv -c 2 -t float -a avg 
-      - $ 23045.79
-    
-    Limitations:
-      - Can only handle csv files
-      - Can only process a single column
-      - Does not check on max size for countdistinct or freq operations - so
-        very large files could run out of memory.
-      - Can only process a single file
+Potential scalar operations include Sum, AVG, Min, Max, Freq, and CountDistinct
 
-    To do:
-      - Eliminate col type arg or at least automate some of it
-      - Add max dictionary checks for freq & countdistinct operations
-      - Add actions: stddev & count
-      - Add actions: countknown & countunknown
-      - Add ability to process multiple columns simultaneously
-      - Improve design of how actions run and how intermediate data is stored
-      - Improve msg if user provides no args and tell about -h
+Usage:
+   $ gristle_scalar -v -f [file] [misc options]
 
-    This source code is protected by the BSD license.  See the file "LICENSE"
-    in the source code root directory for the full language or refer to it here:
-       http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+Example:
+   $ gristle_scalar ../data/state_crime.csv -c 2 -t float -a avg
+   $ 23045.79
+
+
+Options:
+  -h, --help            show this help message and exit
+  --long-help           Print more verbose help
+  -o OUTPUT, --output=OUTPUT
+                        Specifies output file.  Default is stdout.
+  -c COLUMN_NUMBER, --column=COLUMN_NUMBER
+                        Specifies the column to perform the operation on -
+                        based on a zero offset (ie, the first col is 0)
+  -t COLUMN_TYPE, --column_type=COLUMN_TYPE
+                        column type:  integer, float or string
+  -a ACTION, --action=ACTION
+                        scalar action to be performed:  min, max, avg, sum,
+                        freq, countdistinct
+  -d DELIMITER, --delimiter=DELIMITER
+                        Specify a quoted single-column field delimiter. This
+                        may bedetermined automatically by the program - unless
+                        you pipe the data in. Default is comma.
+  --quoting=QUOTING     Specify field quoting - generally only used for stdin
+                        data.  The default is False.
+  --quotechar=QUOTECHAR
+                        Specify field quoting character - generally only used
+                        for stdin data.  Default is double-quote
+  --hasheader           indicates that there is a header in the file.
+  --recdelimiter=RECDELIMITER
+
+
+Limitations:
+  - Can only handle csv files
+  - Can only process a single column
+  - Does not check on max size for countdistinct or freq operations - so
+    very large files could run out of memory.
+  - Can only process a single file
+
+To do:
+  - Eliminate col type arg or at least automate some of it
+  - Add max dictionary checks for freq & countdistinct operations
+  - Add actions: stddev & count
+  - Add actions: countknown & countunknown
+  - Add ability to process multiple columns simultaneously
+  - Improve design of how actions run and how intermediate data is stored
+  - Improve msg if user provides no args and tell about -h
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+   http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------
@@ -195,7 +229,12 @@ def get_opts_and_args():
            "\n")
     parser = optparse.OptionParser(usage = use)
 
-    parser.add_option('-o', '--output', 
+    parser.add_option('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
+
+    parser.add_option('-o', '--output',
            help='Specifies output file.  Default is stdout.')
     parser.add_option('-c', '--column',
            type=int,
@@ -207,6 +246,7 @@ def get_opts_and_args():
            choices=['min', 'max', 'avg', 'sum', 'freq', 'countdistinct'],
            help=('scalar action to be performed:  min, max, avg, sum, freq, '
                  'countdistinct'))
+
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted single-column field delimiter. This may be'
                  'determined automatically by the program - unless you pipe the'
@@ -226,6 +266,10 @@ def get_opts_and_args():
     parser.add_option('--recdelimiter')
 
     (opts, files) = parser.parse_args()
+
+    if opts.long_help:
+        print __doc__
+        sys.exit(0)
 
     if files:
         if len(files) > 1 and not opts.delimiter:
