@@ -1,34 +1,83 @@
 #!/usr/bin/env python
-""" Compares two input files and prints the differences.  Unlike the diff 
-    utility it is file structure-aware and is both more accurate and more 
-    detailed.
+"""
+Compares two input files and prints a summary of the differences.  Unlike
+the diff utility it is file structure-aware and is more accurate.
 
-    Two ways of performing the comparisons will be supported:
-       - unsorted input files:  for smaller files - all processing is performed
-         in memory
-       - sorted input files:  for larger files - minimal memory used - not
-         implemented yet
+Usage: gristle_differ used to compare two files based on a key in column 0,
+and comparing only columns 1 & 2, and writing the verbose results to stdout:
+   $ gristle_differ -1 file_one.dat -2 file_two.dat -k 0 -c 1,2,3,4,5 -v
 
-    Features that should be added include:
-       - sorted input files + sorting the files from within this program
-       - multi-char delimiters
-       - compare column exceptions (compare everything except col x)
-       - print only counts - or only 1 count (ex:  print only total number of 
-         differences)
-       - better structured printed of differences
-       - option to print 'same' records
-       - options to transform data prior to comparison: to change case, trim 
-         spaces,
-         etc
-       - improved msg if no args provided - tell about -h
-       - use a tuple for the key - so that it can be printed as separated cols
- 
-    This source code is protected by the BSD license.  See the file "LICENSE"
-    in the source code root directory for the full language or refer to it here:
-        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+     In file1 only:           5
+     In file1 only:           7
+     In file2 only:           45
+     In both but different:   44
+     file1 data: Barack Obamahttp://en.wikipedia.org/wiki/Barack_Obama20/01/2009IncumbentIllinois
+     file2 data: Barack Obamahttp://en.wikipedia.org/wiki/Barack_Obama20/01/200920/01/2017Illinois
+
+     Counts:
+        File1 records:        45
+        File2 records:        43
+        In file1 only:        3
+        In file2 only:        1
+        Same:                 40
+        Changed:              1
+
+Note that in the above example, the Counts section w, and 'file1 data'
+and 'file2 data' were only printed due to the verbose option.
+
+
+Options:
+  -h, --help            Show this help message and exit.
+  --long-help           Print more verbose help.
+  -v, --verbose         Prints far more details on comparisons and stats.
+                        The default is False (off).
+  -1 FILE1, --file1=FILE1
+                        First file to compare.
+  -2 FILE2, --file2=FILE2
+                        Second file to compare.
+  -k KEYCOL, --keycol=KEYCOL
+                        Specify the columns that constitute a unique row with
+                        a comma-delimited list of numbers using a 0-offset.
+                        This is a required option.
+  -c COMPARECOL, --comparecol=COMPARECOL
+                        Specify the columns to be compared with a comma-
+                        delimited listof numbers using a 0-offset.  This is a
+                        required option.
+  -d DELIMITER, --delimiter=DELIMITER
+                        Specify a quoted field delimiter.  If you don't provide
+                        this, gristle_differ will attempt to determine it.
+  -s, --sorted          Large files must be sorted by key - TBD
+  --hasheader           indicates that there is a header in the file.
+  --recdelimiter=RECDELIMITER
+  --maxsize=MAXSIZE     can override max number of rows to collect.  Defaul is
+                        10000 rows.
+  --casecompare         Turns case-aware compares on and off.  Default is True
+                        (on)
+
+Currently, gristle_differ only provides a single method of performing the
+delta: it puts the two intput files into memory then compares them row by row.
+This works very well with small, unsorted files.
+
+Future planned enhancements include:
+        - Support for large, sorted files.
+        - Ability to write entire records to separate output files.
+        - multi-char delimiters
+        - compare column exceptions (compare everything except col x)
+        - print only counts - or only 1 count (ex:  print only total number of
+          differences)
+        - better structured printed of differences
+        - option to print 'same' records
+        - simple delta-oriented transforms on writes - such as add a flag to
+          deleted records, intelligent handling of from/to timestamps, etc.
+        - use a tuple for the key - so that it can be printed as separated cols
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+    http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013,2014 Ken Farmer
 
 """
+
 
 #--- standard modules ------------------
 from __future__ import division
@@ -53,7 +102,7 @@ import gristle.file_type           as file_type
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL) 
+signal(SIGPIPE,SIG_DFL)
 
 
 def main():
@@ -85,14 +134,14 @@ def main():
         file_diff(opts)
     else:
         (f1_cnt, f2_cnt, f1only_cnt, f2only_cnt, same_cnt, chg_cnt) = \
-           dict_diff(opts, 
-                     my_file.dialect, 
-                     opts.maxsize, 
+           dict_diff(opts,
+                     my_file.dialect,
+                     opts.maxsize,
                      opts.verbose,
-                     opts.casecompare)   
+                     opts.casecompare)
 
     if opts.verbose:
-        print 
+        print
         print 'Counts: '
         print '   File1 records:        %d' % f1_cnt
         print '   File2 records:        %d' % f2_cnt
@@ -106,7 +155,7 @@ def main():
 
 
 def file_diff(opts):
-    """ Assumes both input files are sorted in ascending order by the key, this 
+    """ Assumes both input files are sorted in ascending order by the key, this
         function performs the delta operation by walking through the two files
         in synch.  The purpose is to minimize memory usage.
 
@@ -116,17 +165,17 @@ def file_diff(opts):
 
 
 def dict_diff(opts, dialect, maxsize, verbose, casecompare):
-    """ This delta operation is useful for small & unsorted files since it 
+    """ This delta operation is useful for small & unsorted files since it
         uses a dictionary-based delta operation that does not require sorting - but
         is otherwise slow and memory-intensive.
-   
+
         Inputs:
           - options - for file names, key & comparison columns
           - dialect
           - maxsize - for maximum number of rows to store in memory
           - verbose - to deterine how much to print
           - casecompare - to turn case-aware compares on & off
-      
+
         Outputs:
           - various counts
 
@@ -134,18 +183,18 @@ def dict_diff(opts, dialect, maxsize, verbose, casecompare):
           - does not identify records that are identical
           - requires a unique key
           - requires both files to have keys & comparison columns in identical
-            locations  
-  
+            locations
+
         To do:
           - should probably turn this into a class
           - start using maxsize
     """
 
-    f1kv = KeyValManager(opts.file1, dialect, opts.keycol, opts.comparecol, 
+    f1kv = KeyValManager(opts.file1, dialect, opts.keycol, opts.comparecol,
                          opts.maxsize, casecompare)
     f1kv.reader()
 
-    f2kv = KeyValManager(opts.file2, dialect, opts.keycol, opts.comparecol, 
+    f2kv = KeyValManager(opts.file2, dialect, opts.keycol, opts.comparecol,
                          opts.maxsize, casecompare)
     f2kv.reader()
 
@@ -180,11 +229,11 @@ def dict_diff(opts, dialect, maxsize, verbose, casecompare):
 
 
 class KeyValManager(object):
-    """ Builds a dictionary of keys and values from source file, then 
+    """ Builds a dictionary of keys and values from source file, then
         provides access to keys & values via methods.
     """
 
-    def __init__(self, filename, dialect, key_cols, comp_cols, max_size, 
+    def __init__(self, filename, dialect, key_cols, comp_cols, max_size,
                  casecompare=True):
         self.filename    = filename
         self.dialect     = dialect
@@ -214,7 +263,7 @@ class KeyValManager(object):
                     break
 
     def _caserule(self, field):
-        """ translate case if necessary 
+        """ translate case if necessary
         """
         if self.casecompare:
             return field
@@ -236,9 +285,9 @@ class KeyValManager(object):
 
     def _get_value(self, fields):
         """ Returns a string of concatenated values, or fields to be compared,
-            based on the input fields of a single record as well as the 
+            based on the input fields of a single record as well as the
             previously-provided comparison-column list
-            
+
             to do:
                - support col-ranges (ex:  5:9)
         """
@@ -256,7 +305,7 @@ def get_opts_and_args():
             - command line args & options
         Output:
             - opts dictionary
-            - args dictionary 
+            - args dictionary
     """
     use = ("%prog is used to compare two files and writes the differences to "
            "stdout: \n"
@@ -269,10 +318,14 @@ def get_opts_and_args():
     parser.add_option('-v', '--verbose',
            default=False,
            action='store_true')
+    parser.add_option('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
 
-    parser.add_option('-1', '--file1', 
+    parser.add_option('-1', '--file1',
            help='file1')
-    parser.add_option('-2', '--file2', 
+    parser.add_option('-2', '--file2',
            help='file2')
 
     parser.add_option('-k', '--keycol',
@@ -303,6 +356,11 @@ def get_opts_and_args():
                  '  Default is True (on)'))
 
     (opts, args) = parser.parse_args()
+
+    if opts.long_help:
+        print __doc__
+        sys.exit(0)
+
 
     if opts.file1 is None:
         parser.error("no filename was provided")
