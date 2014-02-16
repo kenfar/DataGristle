@@ -39,6 +39,13 @@ def coalesce(default, *args):
     return default
 
 
+def dict_coalesce(struct, key, default=None):
+    try:
+        return struct[key]
+    except KeyError:
+        return default
+
+
 def ifprint(value, string, *args):
     if value is not None:
         print string % args
