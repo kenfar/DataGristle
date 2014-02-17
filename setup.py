@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-version = "0.53"
+version          = "0.53"
 DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
 LONG_DESCRIPTION = open('README.md').read()
 
@@ -10,6 +10,7 @@ setup(name             = 'datagristle'     ,
       version          = version           ,
       description      = DESCRIPTION       ,
       long_description = LONG_DESCRIPTION  ,
+      keywords         = "data analysis quality utility etl",
       author           = 'Ken Farmer'      ,
       author_email     = 'kenfar@gmail.com',
       url              = 'http://github.com/kenfar/DataGristle',
