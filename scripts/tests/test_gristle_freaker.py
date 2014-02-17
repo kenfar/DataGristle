@@ -80,6 +80,9 @@ class Test_build_freq(object):
         self.sortcol                = 1
         self.max_key_len            = 50
 
+    def teardown_method(self, method):
+        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'FreakerTest'))
+
     def test_bf_01_multicol(self):
         col_freak = mod.ColFreaker(self.files, self.dialect, self.col_type,
                                    self.number,

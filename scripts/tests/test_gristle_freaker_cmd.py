@@ -17,6 +17,9 @@ from pprint import pprint as pp
 
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
+import test_tools
+
+
 
 def generate_test_file(delim, record_cnt, name='generic'):
     (fd, fqfn) = tempfile.mkstemp(prefix='TestFreakerIn_%s_' % name)
@@ -51,6 +54,7 @@ class TestCommandLine(object):
         os.remove(self.easy_fqfn)
         os.remove(self.empty_fqfn)
         os.remove(self.out_fqfn)
+        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestFreaker'))
 
     def test_empty_file(self):
         cmd = '%s %s -o %s -c 0' % (os.path.join(script_path, 'gristle_freaker'),

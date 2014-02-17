@@ -80,6 +80,9 @@ class Test_build_freq(object):
         self.columns                = [1,2]
         self.number                 = gen_rec_number
 
+    def teardown_method(self, method):
+        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'FreakerTest'))
+
     def test_bf_01_multicol(self):
         col_type        = 'specified'
         sampling_method = 'non'
