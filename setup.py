@@ -3,8 +3,8 @@
 from setuptools import setup, find_packages
 
 version = "0.53"
-DESCRIPTION      = 'A toolbox and library of ETL & data analysis tools'
-LONG_DESCRIPTION = open('README.txt').read()
+DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
+LONG_DESCRIPTION = open('README.md').read()
 
 setup(name             = 'datagristle'     ,
       version          = version           ,
@@ -29,7 +29,6 @@ setup(name             = 'datagristle'     ,
             'Topic :: Text Processing'                               ,
             'Topic :: Utilities'
             ],
-      download_url = 'http://github.com/downloads/kenfar/DataGristle/DataGristle-%s.tar.gz' % version,
       scripts      = ['scripts/gristle_determinator'  ,
                       'scripts/gristle_differ'        ,
                       'scripts/gristle_file_converter',
@@ -41,11 +40,13 @@ setup(name             = 'datagristle'     ,
                       'scripts/gristle_slicer'        ,
                       'scripts/gristle_validator'     ,
                       'scripts/gristle_viewer'         ],
-      install_requires     = ['appdirs    >= 1.1.0' ,
-                              'sqlalchemy >= 0.7'   ,
-                              'envoy      >= 0.0.2' ,
-                              'pytest'              ,
-                              'tox'                 ,
-                              'unittest2'          ],
+      install_requires     = ['appdirs     >= 1.2.0' ,
+                              'sqlalchemy  >= 0.8.4' ,
+                              'envoy       >= 0.0.2' ,
+                              'pytest      >= 2.5.2' ,
+                              'tox         >= 1.7.0' ,
+                              'validictory >= 0.9.3' ,
+                              'pyyaml      >= 3.10'  ,
+                              'unittest2'           ],
       packages     = find_packages(),
      )
