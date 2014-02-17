@@ -1,6 +1,9 @@
 Currently ahead of release tag - 2014-02
 ========================================
 
+v0.54 - 2014-02
+===============
+
 -  gristle\_validator - major updates to allow validation of csv files
    based on the json schema standard, with help from the Validictory
    module.
