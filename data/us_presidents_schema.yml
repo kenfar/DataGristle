@@ -1,0 +1,41 @@
+# Schema used to describe and validate the 3-field colors.csv file
+#
+#
+
+items:
+    - title:            presidency
+      blank:            False
+      required:         True
+      pattern:          '[0-9]+'
+      dg_type:          integer
+      dg_minimum:       1
+      dg_maximum:       60
+    - title:            president
+      blank:            False
+      minLength:        10
+      maxLength:        30
+      required:         True
+    - title:            wikipage
+      blank:            False
+      minLength:        20
+      maxLength:        75
+      required:         True
+    - title:            start_date
+      blank:            False
+      minLength:        8
+      maxLength:        10
+      required:         True
+      pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
+    - title:            end_date 
+      blank:            False
+      minLength:        8
+      maxLength:        10
+      required:         True
+      pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
+    - title:            state
+      blank:            False
+      minLength:        4
+      maxLength:        20
+      required:         True
+      enum:             ['Arkansas','Illinois','Virginia','Texas','Ohio','Iowa','California','Michigan','Georgia','New York','Missouri','Indiana','Massachusetts','New Jersey','Tennessee','Pennsylvania','Louisiana','New Hampshire']
+

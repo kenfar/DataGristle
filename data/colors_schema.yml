@@ -1,0 +1,23 @@
+# Schema used to describe and validate the 3-field colors.csv file
+#
+#
+
+items:
+    - title:            color
+      blank:            False
+      minLength:        3
+      maxLength:        10
+      required:         True
+      enum:             ['green','yello','red','blue','purple','brown','black','pink','maroon','violet','orange','gold','yellow']
+    - title:            name
+      blank:            False
+      minLength:        3
+      maxLength:        10
+      required:         True
+      enum:             ['beth','ruth','kim','sid','jim','natalie','gary','bill','adam','rich','buck','hunter','jeff','ben','arun','lilian','michele','sue','eric','joe','bob','jack']
+    - title:            location
+      blank:            False
+      minLength:        2
+      maxLength:        2
+      required:         True
+      enum:             ['ny','tx','ca','fl','wa','ga','al','mo','pa','mi','il','az']

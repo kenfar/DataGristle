@@ -1,0 +1,31 @@
+items:
+    - title:       station_id
+      dg_type:     integer
+      dg_minimum:  1000000000
+      dg_maximum:  1999999999
+      blank:       False
+      minLength:   10
+      maxLength:   10
+      required:    True
+      #pattern:     '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+    - title:       datetime
+      minLength:   19
+      maxLength:   19
+      required:    True
+      pattern:     '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:00:00'
+    - title:       sa
+      dg_type:     integer
+      dg_minimum:  0
+      dg_maximum:  999
+      minLength:   1
+      maxLength:   3
+      required:    True
+      pattern:     '[0-9]*'
+    - title:       ra
+      dg_type:     integer
+      dg_minimum:  0
+      dg_maximum:  999
+      minLength:   1
+      maxLength:   3
+      required:    True
+      pattern:     '[0-9]*'

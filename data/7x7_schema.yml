@@ -1,0 +1,37 @@
+items:
+    - title:       col0
+      blank:       False
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
+    - title:       col1
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
+    - title:       col2
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
+    - title:       col3
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
+    - title:       col4
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
+    - title:       col5
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
+    - title:       col6
+      minLength:   3
+      maxLength:   3
+      required:    True
+      pattern:     '\b\d-\d'
