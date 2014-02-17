@@ -3,39 +3,27 @@
 #
 
 
-Very next things to do:
+Next things to do:
 ==================================================================
-1.  Metadata
-    - sqlalchemy database layer                - done
-	- add extended tables                  - done
-	- add surrogate keys                   - done
-    - command-line metadata manipulation       - done
-    - gui metadata manipulation                - NEXT
-    - gristle_determinator integration         - done
-
-
-Then the next things to do:
-==================================================================
-1.  More Testing
-    - Test with tab delimiters
-    - Test more edge cases
-    - Write integration testing instructions for each script
-
-2.  New & Improved Tools:
+1.  metadata
+    - metadata-validation schema file import/export
+2.  gristle_validator
+    - add ability to run custom scripts
+    - add ability to run custom python module checks
+    - add ability to validate a database
+3.  gristle_col_adder
+    - add this tool
+4.  gristle_file_converter
+    - add ability to convert to/from yaml and json files
+5.  add a catalog of test data
+6.  Misc
     - Add more numeric analysis:  quartiles
     - PDF outputs
     - determinator:  add quartiles
-    - Add support for multi-character delimiters
-
-3.  New & Improved Documentation:
+7.  New & Improved Documentation:
     - Review documentation
-    - README in markdown
 
 
-Longer-term things to do:
-==================================================================
-
-    
 
 
 Maturity by Tool:
@@ -52,8 +40,9 @@ Maturity by Tool:
     - gristle_differ.py                        - 70%
     - gristle_file_converter.py                - 60%
     - gristle_filter.py                        - 60%
-    - gristle_scrubber.py                      - 0%
-    - gristle_validator.py                     - 10%
+
+3.  data quality tools:      
+    - gristle_validator.py                     - 100%
 
 3.  data analysis tools:
     - gristle_freaker.py                       - 100%
