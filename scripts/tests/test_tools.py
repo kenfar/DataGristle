@@ -4,6 +4,8 @@
 import imp
 import os
 import sys
+import tempfile
+import glob
 
 sys.dont_write_bytecode = True
 
@@ -64,3 +66,29 @@ def print_whoami():
     print 'Function: %s in file: %s at line: %d' % (name, file, line)
 
 
+
+def temp_file_remover(fqfn_prefix):
+      for temp_file in glob.glob('%s*' % fqfn_prefix):
+          os.remove(temp_file)
+
+
+def generate_7x7_test_file(prefix, hasheader=False):
+    (fd, fqfn) = tempfile.mkstemp(prefix=prefix)
+
+    data_7x7 = []
+    if hasheader:
+        data_7x7.append('col0|col1|col2|col3|col4|col5|col6')
+
+    data_7x7.append('0-0|0-1|0-2|0-3|0-4|0-5|0-6')
+    data_7x7.append('1-0|1-1|1-2|1-3|1-4|1-5|1-6')
+    data_7x7.append('2-0|2-1|2-2|2-3|2-4|2-5|2-6')
+    data_7x7.append('3-0|3-1|3-2|3-3|3-4|3-5|3-6')
+    data_7x7.append('4-0|4-1|4-2|4-3|4-4|4-5|4-6')
+    data_7x7.append('5-0|5-1|5-2|5-3|5-4|5-5|5-6')
+    data_7x7.append('6-0|6-1|6-2|6-3|6-4|6-5|6-6')
+
+    fp = os.fdopen(fd,"w")
+    for rec in data_7x7:
+        fp.write('%s\n' % rec)
+    fp.close()
+    return fqfn, data_7x7
