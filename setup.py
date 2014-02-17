@@ -10,7 +10,6 @@ def read(*paths):
 
 version          = "0.54"
 DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
-LONG_DESCRIPTION = open('README.md').read()
 
 setup(name             = 'datagristle'     ,
       version          = version           ,
