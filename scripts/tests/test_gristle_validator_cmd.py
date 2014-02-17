@@ -304,7 +304,12 @@ class TestFieldCount(object):
         assert len(self.err_output)  == 0
         assert len(self.good_output) == 0
         assert len(self.std_out)     == 0
-        assert len(self.std_err)     == 0
+        # std_err should be 0, but coverage.py might write 46 bytes
+        # to it:
+        assert (len(self.std_err)    == 0
+                or (len(self.std_err) < 50
+                    and 'Coverage.py' in self.std_err))
+
 
 
     def test_stats_option(self):
@@ -335,8 +340,12 @@ class TestFieldCount(object):
         assert len(self.err_output)  >  0
         assert len(self.good_output) == 0
         assert len(self.std_out)     >  0
-        assert len(self.std_err)     == 0
         assert len(self.std_out)     >  0
+        # std_err should be 0, but coverage.py might write 46 bytes
+        # to it:
+        assert (len(self.std_err)    == 0
+                or (len(self.std_err) < 50
+                    and 'Coverage.py' in self.std_err))
 
         std_out_recs = self.std_out.split('\n')
         input_cnt_found   = False
@@ -569,7 +578,12 @@ class TestSchemaValidation(object):
         assert len(self.err_output)  == 0
         assert len(self.good_output) == 7
         assert len(self.std_out)     == 0
-        assert len(self.std_err)     == 0
+        # std_err should be 0, but coverage.py might write 46 bytes
+        # to it:
+        assert (len(self.std_err)    == 0
+                or (len(self.std_err) < 50
+                    and 'Coverage.py' in self.std_err))
+
 
 
 class TestValidatingTheValidator(object):
