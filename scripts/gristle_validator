@@ -20,7 +20,6 @@ usage: gristle_validator [-h]
                          [--recdelimiter RECDELIMITER]
                          [--hasheader]
                          [--schemaid SCHEMA_ID]
-                         [--collectionid COLLECTION_ID]
                          [--validschema VALID_SCHEMA] [-s]
                          [--silent]
                          [--randomout RANDOMOUT] [--errmsg]
@@ -57,8 +56,6 @@ optional arguments:
                         Specify a quoted end-of-record delimiter.
   --hasheader           Indicates that there is a header in the file.
                         Validation will mostly ignore the header.
-  --collectionid COLLECTION_ID
-                        Allows user to get validation info from metadata db.
   --validschema VALID_SCHEMA
                         Name of validation schema file
   -s, --stats           Causes pgm to print counts.  Default is False.
@@ -133,7 +130,8 @@ def main():
                                    args.delimiter,
                                    args.quoting,
                                    args.quotechar,
-                                   args.recdelimiter)
+                                   args.recdelimiter,
+                                   args.hasheader)
     outgood_handler = OutputHandler(input_handler.dialect,
                                     args.outgood,
                                     sys.stdout,
@@ -647,10 +645,6 @@ def get_args():
            action='store_true',
            help='Indicate that there is a header in the file.')
 
-    parser.add_argument('--collectionid',
-           type=int,
-           dest='collection_id',
-           help=('Provides metadata used to identify data dictionary'))
     parser.add_argument('--validschema',
            dest='valid_schema',
            type=argparse.FileType('r'),
