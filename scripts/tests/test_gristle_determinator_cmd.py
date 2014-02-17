@@ -52,6 +52,8 @@ class Test_1(object):
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
         cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
+        print r.std_out
+        print r.std_err
         assert r.status_code == 0
 
         mydialect                = csv.Dialect
