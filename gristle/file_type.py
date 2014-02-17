@@ -113,7 +113,7 @@ class FileTyper(object):
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(50000))
         except:
-            raise IOError, 'could not analyse file'
+            raise IOError, 'could not analyse file - you may want to provide explicit csv delimiter, quoting, etc'
         csvfile.close()
 
         # See if we can improve quoting accuracy:
@@ -196,11 +196,17 @@ class FileTyper(object):
             Otherwise, figure out whether or not there's a header based on 
             the first 50,000 bytes
         """
+        #print 'has_header:  %s' % has_header
         if has_header:
             return has_header
         else:
             sample      = open(self.fqfn, 'r').read(50000)
-            return csv.Sniffer().has_header(sample)
+            try:
+                return csv.Sniffer().has_header(sample)
+            except:
+                raise IOError, 'Could not complete header analysis.  It may help to provide explicit header info'
+
+
 
 
     def _get_field_cnt(self):
