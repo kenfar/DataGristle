@@ -21,6 +21,8 @@ import pytest
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 fq_pgm      = os.path.join(script_path, 'gristle_viewer')
 
+import test_tools
+
 
 
 def generate_test_file(delim, record_cnt):
@@ -50,6 +52,8 @@ class TestCommandLine(object):
     def teardown_method(self, method):
         os.remove(self.in_fqfn)
         os.remove(self.out_fqfn)
+        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'ViewerTest'))
+
 
     def test_easy_file(self):
 
