@@ -10,7 +10,8 @@ codebase allows it to be easily extended to with custom code to handle that
 always challenging last 20%.
 
 Current Status:  Strong support for easy analysis, simple transformations of
-csv files, and ability to create data dictionaries.
+csv files, ability to create data dictionaries, and emerging data quality 
+capabilities.
 
 More info is on the DataGristle wiki here: 
    https://github.com/kenfar/DataGristle/wiki
@@ -48,7 +49,7 @@ More info is on the DataGristle wiki here:
 
        ~~~
        $ mkdir ~\Downloads
-       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.51.tar.gz
+       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.53.tar.gz
        $ tar -xvf easy_install datagristle
        $ cd ~\Downloads\datagristle-*
        $ python setup.py install
@@ -72,6 +73,71 @@ More info is on the DataGristle wiki here:
        - Identifies file formats, generates metadata, prints file analysis report
        - This is the most mature - and also used by the other utilities so that 
          you generally do not need to enter file structure info.
+   * gristle_validator
+       - Validates csv files by confirming that all records have the right number
+         of fields, and by apply a json schema full of requirements to each record.
+
+
+#gristle_validator
+    Splits a csv file into two separate files based on how records pass or fail
+    validation checks:
+       - Field count - checks the number of fields in each record against the
+         number required.  The correct number of fields can be provided in an
+         argument or will default to using the number from the first record.
+       - Schema - uses csv file requirements defined in a json-schema file for
+         quality checking.  These requirements include the number of fields, 
+         and for each field - the type, min & max length, min & max value,
+         whether or not it can be blank, existance within a list of valid
+         values, and finally compliance with a regex pattern.
+
+    The output can just be the return code (0 for success, 1+ for errors), can
+    be some high level statistics, or can be the csv input records split between
+    good and erroneous files.  Output can also be limited to a random subset.
+
+    Examples:
+       $ gristle_validator  sample.csv -f 3
+             Prints all valid input rows to stdout, prints all records with 
+             other than 3 fields to stderr along with an extra final field that
+             describes the error.
+       $ gristle_validator  sample.csv 
+             Prints all valid input rows to stdout, prints all records with 
+             other than the same number of fields found on the first record to
+             stderr along with an extra final field that describes the error.
+       $ gristle_validator  sample.csv  -d '|' --hasheader
+             Same comparison as above, but in this case the file was too small
+             or complex for the pgm to automatically determine csv dialect, so
+             we had to explicitly give that info to program.
+       $ gristle_validator  sample.csv --outgood sample_good.csv --outerr sample_err.csv
+             Same comparison as above, but explicitly splits good and bad data
+             into separate files.
+       $ gristle_validator  sample.csv --randomout 1
+             Same comparison as above, but only writes a random 1% of data out.
+       $ gristle_validator  sample.csv --silent
+             Same comparison as above, but writes nothing out.  Exit code can be
+             used to determine if any bad records were found.
+       $ gristle_validator  sample.csv --validschema sample_schema.csv 
+             The above command checks both field count as well as validations
+             described in the sample_schema.csv file.  Here's an example of what 
+             that file might look like:
+                items:
+                    - title:            rowid
+                      blank:            False
+                      required:         True
+                      dg_type:          integer
+                      dg_minimum:       1
+                      dg_maximum:       60
+                    - title:            start_date
+                      blank:            False
+                      minLength:        8
+                      maxLength:        10
+                      pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
+                    - title:            location
+                      blank:            False
+                      minLength:        2
+                      maxLength:        2
+                      enum:             ['ny','tx','ca','fl','wa','ga','al','mo']
+    
+
 
 #gristle_slicer
     Extracts subsets of input files based on user-specified columns and rows.
@@ -154,6 +220,7 @@ More info is on the DataGristle wiki here:
                     In addition to what was described in the first example this
                     adds explicit csv dialect overrides.
                            
+
 #gristle_determinator
     Analyzes the structures and contents of csv files in the end producing a 
     report of its findings.  It is intended to speed analysis of csv files by
@@ -252,6 +319,7 @@ More info is on the DataGristle wiki here:
                 -888                                     x 62 occurrences
                 0                                        x 37 occurrences
 
+
 #gristle_metadata
     Gristle_metadata provides a command-line interface to the metadata database.
     It's mostly useful for scripts, but also useful for occasional direct
@@ -264,6 +332,7 @@ More info is on the DataGristle wiki here:
                     Allows the user to input a row into the element table and 
                     prompts the user for all fields necessary.
                            
+
 #gristle_md_reporter
     Gristle_md_reporter allows the user to create data dictionary reports that
     combine information about the collection and fields along with field value
