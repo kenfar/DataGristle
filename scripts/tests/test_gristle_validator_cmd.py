@@ -16,8 +16,6 @@ import glob
 import errno
 from pprint import pprint as pp
 
-pp(sys.path)
-
 import envoy
 import yaml
 
@@ -448,7 +446,7 @@ class TestFieldCount(object):
 
 
 
-class noTestEmptyFile(object):
+class TestEmptyFile(object):
 
     def setup_method(self, method):
         self.empty_fqfn            = self._generate_empty_file()
@@ -517,7 +515,7 @@ class noTestEmptyFile(object):
 
 
 
-class noTestSchemaValidation(object):
+class TestSchemaValidation(object):
 
     def setup_method(self, method):
 
@@ -589,7 +587,7 @@ class noTestSchemaValidation(object):
 
 
 
-class NoTestValidatingTheValidator(object):
+class TestValidatingTheValidator(object):
 
     def setup_method(self, method):
 
@@ -720,7 +718,7 @@ class NoTestValidatingTheValidator(object):
         self.err_output  = err_recs
 
 
-class noTestCSVDialects(object):
+class TestCSVDialects(object):
 
     def setup_method(self, method):
 
