@@ -74,6 +74,7 @@ optional arguments:
 Tips on usage:
    - return codes are based on c headers:
         0  = success
+        1  = generic error
         61 = No data (ENODATA)
         74 = Invalid data found (EBADMSG)
 
@@ -97,12 +98,10 @@ from __future__ import division
 import sys
 import argparse
 import csv
-import fileinput
-import collections
 import os
 import random
 import errno
-from pprint import pprint as pp
+#from pprint import pprint as pp
 import validictory as valid
 import yaml
 
@@ -171,11 +170,11 @@ def main():
 
 
 
-def process_all_records(input_handler,
-                        outgood_handler,
-                        outerr_handler,
-                        rec_validator,
-                        stats):
+def process_all_records(input_handler, outgood_handler, outerr_handler,
+                        rec_validator, stats):
+    """ Walks through input file, validating each record, and writing
+        out results.
+    """
 
     valid_cnt            = 0
     invalid_cnt          = 0
@@ -217,6 +216,8 @@ def process_all_records(input_handler,
 
 
 def write_stats(stats, input_cnt, valid_cnt, invalid_cnt):
+    """ Writes input, output, and validation counts to stdout.
+    """
     if stats:
         print
         print 'input_cnt        | %d ' % input_cnt
@@ -225,21 +226,30 @@ def write_stats(stats, input_cnt, valid_cnt, invalid_cnt):
 
 
 def load_schema(schema_file):
+    """ Loads validation schema.
+        If the schema_file argument is None, then it will not load,
+        this is useful when the user wants to check field counts,
+        but does not have or want to use a validation schema.
+    """
     schema_dict = None
     if schema_file:
         schema_dict = yaml.safe_load(schema_file)
-        #pp(schema_dict)
-    #taking the following warning out for now - since it should be suppressed if 
-    #silent option is used.
-    #else:
-    #    print 'WARNING: No schema validation file provided'
     return schema_dict
 
 
 
 class OutputHandler(object):
+    """ Handles all aspects of writing to output files: opening file,
+        writing records, managing random writes, keeping counts,
+        closing the file, etc.
+    """
 
     def __init__(self, dialect, arg_output, default_output, silent, randomout):
+        """ Performs initial housekeeping on output handling:
+               - validates args
+               - sets output to either stdout or a file
+               - sets up writing through cvs module.
+        """
 
         assert silent in [True, False]
         assert 100 >= randomout >= -1
@@ -252,10 +262,15 @@ class OutputHandler(object):
         self.writer = csv.writer(self.outfile, dialect=dialect)
 
     def write(self, record, msg=None):
+        """ Write a record to output.
+            If silent arg was provided, then write is suppressed.
+            If randomout arg was provided, then randomly determine
+               whether or not to write record.
+        """
         if self.silent:
             return
         if self.randomout > -1:
-            if random.randint(1,100) > self.randomout:
+            if random.randint(1, 100) > self.randomout:
                 return
         if msg:
             record.append(msg)
@@ -358,7 +373,7 @@ class RecValidator(object):
         self.error           = None # holds last error encountered
         if rec_schema:
             try:
-                valid_validator      = ValidateTheValidator(self.rec_schema)
+                valid_validator = ValidateTheValidator(self.rec_schema)
             except ValueError, error:
                 print error
                 sys.exit(1)
@@ -488,17 +503,27 @@ class RecValidator(object):
 
 
 class ValidateTheValidator(object):
+    """ Validates the validation schema - to ensure that it is correctly
+        structured.   This includes checks on its structure, keywords, and
+        values.
+
+        Any errors found will be handled by a ValueError exception.
+    """
 
     def __init__(self, validation_schema):
         self.schema = validation_schema
-        self.unsupported_keys = ['minimum','maximum', 'format', 'divisibleBy']
-        self.valid_keys       = ['type','minLength', 'maxLength', 'title', 'description', 'enum',
-                                 'pattern', 'required', 'blank',
+        self.unsupported_keys = ['minimum', 'maximum', 'format', 'divisibleBy']
+        self.valid_keys       = ['type', 'minLength', 'maxLength', 'title',
+                                 'description', 'enum', 'pattern', 'required',
+                                 'blank',
                                  'dg_type', 'dg_minimum', 'dg_maximum']
         self._validate_schema()
 
 
     def _validate_schema(self):
+        """ Validates entire schema - with a few high-level checks, and by
+            running _validate_field for each field validation set.
+        """
         if 'items' not in self.schema:
             raise ValueError, "Error: invalid schema, missing 'items' key"
         if len(self.schema.keys()) != 1:
@@ -508,6 +533,9 @@ class ValidateTheValidator(object):
 
 
     def _validate_field(self, field_validators):
+        """ Validates one field, by running checks on each field
+            validator in the schema.
+        """
         for v_key in field_validators.keys():
            self._validate_validator(v_key, field_validators[v_key])
 
@@ -515,6 +543,10 @@ class ValidateTheValidator(object):
 
 
     def _validate_field_dg_range(self, field_validators):
+        """ Validates the custom dg_minimum and dg_maximum field validators.
+            These fields and their values are dependent on dg_type being
+            provided and having consistent types.
+        """
 
         def limit_checker(limit):
             if limit in field_validators:
@@ -536,9 +568,11 @@ class ValidateTheValidator(object):
 
 
     def _validate_validator(self, v_key, v_value):
+        """ Validate individual field validators:
+                - ensure all keys are valid & supported
+                - ensure values are valid for the keys
+        """
 
-        #print 'v_key:   %s' % v_key
-        #print 'v_value: %s' % v_value
         if v_key not in self.valid_keys:
             if v_key in self.unsupported_keys:
                 raise ValueError, 'Error:  invalid schema, unsupported key value: %s' % v_key
@@ -551,7 +585,7 @@ class ValidateTheValidator(object):
             if v_value not in [True, False]:
                 raise ValueError, 'Error:  invalid schema, unknown value for blank: %s' % v_value
         if v_key == 'dg_type':
-            if v_value not in ['integer','float','string']:
+            if v_value not in ['integer', 'float', 'string']:
                 raise ValueError, 'Error:  invalid schema, unknown value for dg_type: %s' % v_value
 
 
