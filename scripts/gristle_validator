@@ -1,169 +1,666 @@
 #!/usr/bin/env python
-""" Used to determine if a file format is valid.
+"""
+Gristle_validator is used to determine the validity of a file's structure
+and semantics.  It's functionality includes:
+   - output counts of invalid vs valid records
+   - an exit code that indicates findings (0 if everything's good, else 74)
+   - ability to split input file into separate valid & invalid files
+   - ability to use a json-schema compliant yaml config file to define
+     data validation requirements
+   - ability to check every record for the proper number of fields based
+     on an input argument
 
-    When provided with a file name and field_cnt it will write out any records
-    with an incorrect number of fields.
+usage: gristle_validator [-h]
+                         [-o OUTGOOD]
+                         [-e OUTERR]
+                         [-f FIELD_CNT]
+                         [-d DELIMITER]
+                         [--quoting QUOTING]
+                         [--quotechar QUOTECHAR]
+                         [--recdelimiter RECDELIMITER]
+                         [--hasheader]
+                         [--schemaid SCHEMA_ID]
+                         [--collectionid COLLECTION_ID]
+                         [--validschema VALID_SCHEMA] [-s]
+                         [--silent]
+                         [--randomout RANDOMOUT] [--errmsg]
+                         [--long-help]
+                         [files [files ...]]
 
-    To do:
-       - work with analyze_file to produce a special exception for empty files.
-       - improve msg if user provides no args - and tell about -h
-       - extended to write out records with incorrect types, ranges, case, etc.
+positional arguments:
+  files                 Specifies the input file.  The default is stdin.  Multiple filenames can be provided.
 
-    This source code is protected by the BSD license.  See the file "LICENSE"
-    in the source code root directory for the full language or refer to it here:
-       http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+optional arguments:
+  -h, --help            show this help message and exit.
+  --long-help           Print more verbose help.
+  -o OUTGOOD, --outgood OUTGOOD
+                        Specifies the output file.  The default is stdout.
+                        Note thatif a filename is provided the program will
+                        override any file of that name.
+  -e OUTERR, --outerr OUTERR
+                        Specifies the output file for invalid records.  The
+                        default is stderr.  Note that if a filename is provided
+                        the program will override any file of that name.
+  -f FIELD_CNT, --fieldcnt FIELD_CNT
+                        Specify the number of fields in the record.  If not
+                        provided it will default to number of fields on first
+                        record
+  -d DELIMITER, --delimiter DELIMITER
+                        Specify a quoted single-column field delimiter. This
+                        may be determined automatically by the program.
+  --quoting QUOTING     Specify field quoting - generally only used for stdin
+                        data.  The default is False.
+  --quotechar QUOTECHAR
+                        Specify field quoting character - generally only used
+                        for stdin data.  Default is double-quote
+  --recdelimiter RECDELIMITER
+                        Specify a quoted end-of-record delimiter.
+  --hasheader           Indicates that there is a header in the file.
+                        Validation will mostly ignore the header.
+  --collectionid COLLECTION_ID
+                        Allows user to get validation info from metadata db.
+  --validschema VALID_SCHEMA
+                        Name of validation schema file
+  -s, --stats           Causes pgm to print counts.  Default is False.
+  --silent              Causes pgm to print no stats, no valid or invalid recs.
+                        Useful when you only want to use return code to check
+                        for any invalid records.  Default is off.
+  --randomout RANDOMOUT
+                        Causes pgm to write only a percentage of records out.
+                        Provide an argument from 0 to 100.
+  --errmsg              Causes pgm to append error msg at end of each invalid
+                        record.  Default is on.
+
+Tips on usage:
+   - return codes are based on c headers:
+        0  = success
+        61 = No data (ENODATA)
+        74 = Invalid data found (EBADMSG)
+
+To do:
+   - allow detailed logs to be directed to a log directory
+   - allow user extensible:
+         - directory of programs to execute for validation
+   - work with analyze_file to produce a special exception for empty files.
+   - improve msg if user provides no args - and tell about -h
+   - extended to write out records with incorrect types, ranges, case, etc.
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+  http://opensource.org/licenses/BSD-3-Clause
+
+Copyright 2011,2012,2013,2014 Ken Farmer
 """
 
 #--- standard modules ------------------
 from __future__ import division
 import sys
-import optparse
+import argparse
 import csv
 import fileinput
 import collections
-#from pprint import pprint as pp
+import os
+import random
+import errno
+from pprint import pprint as pp
+import validictory as valid
+import yaml
 
-#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+
+#--- Ignore SIG_PIPE and don't throw exceptions on it
+#--- (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL)
+signal(SIGPIPE, SIG_DFL)
 
 #--- gristle modules -------------------
 sys.path.append('../')     # allows running from project structure
 sys.path.append('../../')  # allows running from project structure
+import gristle.file_type           as file_type
+import gristle.common              as common
 
-import gristle.file_type           as file_type 
 
-SMALL_SIDE = 0
-LARGE_SIDE = 1
-
-#------------------------------------------------------------------------------
-# Command-line section 
-#------------------------------------------------------------------------------
 def main():
     """ runs all processes:
-            - gets opts & args
-            - analyzes file to determine csv characteristics unless data is 
+            - gets args
+            - analyzes file to determine csv characteristics unless data is
               provided via stdin
             - runs each input record through process_cols to get output
             - writes records
     """
-    bad_field_cnt = collections.defaultdict(int)
+    args            = get_args()
 
-    (opts, files) = get_opts_and_args()
-    if len(files) == 1:
-        my_file                = file_type.FileTyper(files[0],
-                                            opts.delimiter   ,
-                                            opts.recdelimiter,
-                                            opts.hasheader)
+    #----- set up files
+    input_handler   = InputHandler(args.files,
+                                   args.delimiter,
+                                   args.quoting,
+                                   args.quotechar,
+                                   args.recdelimiter)
+    outgood_handler = OutputHandler(input_handler.dialect,
+                                    args.outgood,
+                                    sys.stdout,
+                                    args.silent,
+                                    args.randomout)
+    outerr_handler  = OutputHandler(input_handler.dialect,
+                                    args.outerr,
+                                    sys.stderr,
+                                    args.silent,
+                                    args.randomout)
+
+    #----- set up validation info
+    rec_schema      = load_schema(args.valid_schema)
+    rec_validator   = RecValidator(valid_field_cnt=args.field_cnt,
+                                   rec_schema=rec_schema)
+
+    #----- run all checks -----
+    invalid_cnt = process_all_records(input_handler,
+                                      outgood_handler,
+                                      outerr_handler,
+                                      rec_validator,
+                                      args.stats)
+
+    #----- housekeeping -----
+    outgood_handler.close()
+    outerr_handler.close()
+
+    if invalid_cnt > 0:
+        return errno.EBADMSG  # is a 74 on linux
+    elif input_handler.rec_cnt == 0:
+        return errno.ENODATA  # is a 61 on linux
+    else:
+        return 0
+
+
+
+def process_all_records(input_handler,
+                        outgood_handler,
+                        outerr_handler,
+                        rec_validator,
+                        stats):
+
+    valid_cnt            = 0
+    invalid_cnt          = 0
+
+    rec = input_handler.get_next()
+    while rec is not None:
+
+        valid_rec     = True
+        field_cnt_msg = None
+        schema_msg    = None
+
+        if not rec_validator.check_field_cnt(len(rec)):
+            valid_rec      = False
+            field_cnt_msg  = rec_validator.error
+
+        if (input_handler.dialect.has_header
+        and input_handler.rec_cnt == 1):
+            pass
+        else:
+            if rec_validator.rec_schema:
+                if not rec_validator.check_schema(rec):
+                    valid_rec      = False
+                    schema_msg     = rec_validator.error
+
+        if valid_rec:
+            valid_cnt   += 1
+            outgood_handler.write(rec)
+        else:
+            invalid_cnt += 1
+            outerr_handler.write(rec, common.coalesce(field_cnt_msg, schema_msg))
+
+        rec = input_handler.get_next()
+
+    write_stats(stats,
+                input_handler.rec_cnt,
+                valid_cnt,
+                invalid_cnt)
+    return invalid_cnt
+
+
+def write_stats(stats, input_cnt, valid_cnt, invalid_cnt):
+    if stats:
+        print
+        print 'input_cnt        | %d ' % input_cnt
+        print 'invalid_cnt      | %d ' % invalid_cnt
+        print 'valid_cnt        | %d ' % valid_cnt
+
+
+def load_schema(schema_file):
+    schema_dict = None
+    if schema_file:
+        schema_dict = yaml.safe_load(schema_file)
+        #pp(schema_dict)
+    #taking the following warning out for now - since it should be suppressed if 
+    #silent option is used.
+    #else:
+    #    print 'WARNING: No schema validation file provided'
+    return schema_dict
+
+
+
+class OutputHandler(object):
+
+    def __init__(self, dialect, arg_output, default_output, silent, randomout):
+
+        assert silent in [True, False]
+        assert 100 >= randomout >= -1
+        self.silent    = silent
+        self.randomout = randomout
+        if arg_output == '-':
+            self.outfile = default_output
+        else:
+            self.outfile = open(arg_output, "w")
+        self.writer = csv.writer(self.outfile, dialect=dialect)
+
+    def write(self, record, msg=None):
+        if self.silent:
+            return
+        if self.randomout > -1:
+            if random.randint(1,100) > self.randomout:
+                return
+        if msg:
+            record.append(msg)
+
+        self.writer.writerow(record)
+
+    def close(self):
+        self.outfile.close()
+
+
+
+
+class InputHandler(object):
+
+    def __init__(self, files, delimiter=None, quoting=None, quotechar=None,
+                 recdelimiter=None, hasheader=None):
+
+        self.files        = files
+        self.files_read   = 0
+        self.rec_cnt      = 0
+        # look at updated code
+        # should probably do:
+        # a. use explicitely provided values if available
+        # b. use values from metadata if available
+        # c. use values from analysis of file - if len(files) == 1
+        self.dialect = self._get_dialect(files, delimiter, quoting, quotechar,
+                                         recdelimiter, hasheader)
+
+        if self.files[0] == '-':
+            if os.isatty(0):  # checks if data was pipped into stdin
+                raise ValueError, "No files or stdin provided"
+            else:
+                self.infile = sys.stdin
+                self.files_read = 1
+        else:
+            self.infile     = self.files[0]
+            self.files_read = 1
+        self.csv_reader  = csv.reader(self.infile, dialect=self.dialect)
+
+
+    def _get_dialect(self, files, delimiter, quoting, quotechar,
+                     recdelimiter, hasheader):
+        if len(files) == 1 and files[0] != '-':
+            my_file   = file_type.FileTyper(files[0].name,
+                                            delimiter   ,
+                                            recdelimiter,
+                                            hasheader)
+            try:
+                my_file.analyze_file()
+            except file_type.IOErrorEmptyFile:
+                sys.exit(errno.ENODATA)
+            dialect                = my_file.dialect
+        else:
+            # dialect parameters needed for stdin - since the normal code can't
+            # analyze this data.
+            dialect                = csv.Dialect
+            dialect.delimiter      = delimiter
+            dialect.quoting        = quoting
+            dialect.quotechar      = quotechar
+            dialect.lineterminator = '\n'                 # naive assumption
+            dialect.hasheader      = hasheader
+
+        return dialect
+
+
+    def get_next(self):
+        """ Returns the next input record.   Can handle data piped in as well
+            as multiple input files.   All data is assumed to be csv files.
+        """
         try:
-            my_file.analyze_file()
-        except file_type.IOErrorEmptyFile:
-            return 1
+            rec = self.csv_reader.next()
+            self.rec_cnt += 1
+        except StopIteration:
+            if self.files_read < len(self.files): # another file to read!
+                self.files_read += 1
+                self.infile      = self.files[self.files_read - 1]
+                self.csv_reader  = csv.reader(self.infile, dialect=self.dialect)
+                try:
+                    rec = self.csv_reader.next()
+                    self.rec_cnt += 1
+                except StopIteration:
+                    rec = None
+            else:
+                rec = None
 
-        dialect                = my_file.dialect
-    else:
-        # dialect parameters needed for stdin - since the normal code can't
-        # analyze this data.
-        dialect                = csv.Dialect
-        dialect.delimiter      = opts.delimiter
-        dialect.quoting        = opts.quoting
-        dialect.quotechar      = opts.quotechar
-        dialect.lineterminator = '\n'                 # naive assumption
-
-    rec_cnt = -1
-
-    if opts.output == '-':
-        outfile = sys.stdout
-    else:
-        outfile = open(opts.output, "w")
-
-    for rec in csv.reader(fileinput.input(files), dialect):
-        rec_cnt += 1
-        if not rec:
-            break
-        if opts.fieldcnt is None:
-           opts.fieldcnt = len(rec)
-        if len(rec) != opts.fieldcnt:
-           bad_field_cnt[len(rec)] += 1
-           write_fields('field_cnt-%d' % len(rec), rec_cnt, outfile, rec, dialect.delimiter)
-
-    fileinput.close()
-    if opts.output != '-':
-        outfile.close()
-
-    return 0
+        return rec
 
 
 
+class RecValidator(object):
+    # how to provide caller with actual vs valid values?
 
-def write_fields(label, rec_cnt, outfile, fields, delimiter):
-    """ Writes output to output destination.
-        Input:
-            - record count
-            - output object
-            - delimited list of fields in record
-            - delimiter
-        Output:
-            - delimited output record written to stdout or file
-    """
-    rec = label + delimiter + str(rec_cnt) + delimiter + delimiter.join(fields)
-    outfile.write(rec + '\n')
+    def __init__(self,
+                 valid_field_cnt=None,
+                 rec_schema=None):
+
+        self.rec_schema      = rec_schema
+        self.valid_field_cnt = valid_field_cnt
+        self.last_field_cnt  = None
+        self.error           = None # holds last error encountered
+        if rec_schema:
+            try:
+                valid_validator      = ValidateTheValidator(self.rec_schema)
+            except ValueError, error:
+                print error
+                sys.exit(1)
+
+
+    def check_field_cnt(self, actual_field_cnt):
+        """ If no valid_field_cnt was assigned originally, set it to the first
+            actual field cnt.
+        """
+
+        if self.valid_field_cnt is None:
+            self.valid_field_cnt = actual_field_cnt
+        self.last_field_cnt = actual_field_cnt
+
+        if actual_field_cnt == self.valid_field_cnt:
+            self.error = None
+            return True
+        else:
+            self.error = 'bad field count - should be %d but is: %d'  % \
+                  (self.valid_field_cnt, self.last_field_cnt)
+            return False
+
+
+    def check_schema(self, record):
+        """ First checks that the values match the dg_type custom value.
+            Doing the custom check first since it gives the most detailed
+            error message.
+            If that passes, then run the validictory validation for more.
+        """
+        self.error = self._check_types_for_record(record)
+        if self.error:
+            return False
+
+        self.error = self._check_ranges_for_record(record)
+        if self.error:
+            return False
+
+        try:
+            valid.validate(record, self.rec_schema)
+        except ValueError, error:
+            self.error = error
+            return False
+        else:
+            return True
+
+
+    def _check_types_for_record(self, record):
+        """ Json schema and Validictory can't check types for us - since data
+            returned from the csv module is a string.  So, this is the work around.
+               - the json schema type should normally be: string
+               - we're adding our own type called 'dg_type' - which allows values
+                 of string, float or integer.  We will test for integers and floats.
+        """
+        # Loop through the schema, processing one column at a time.  
+        # for each column, check its info against record.
+        # if any fail the test, exit early with msg.
+        # else return None.
+        for index, col_info in enumerate(self.rec_schema['items']):
+            if 'dg_type' in col_info:
+                if col_info['dg_type'] == 'integer':
+                    try:
+                        int(record[index])
+                    except ValueError, error:
+                        msg = self._msg_formatter(index, 'dg_type:integer', record[index], col_info)
+                        return msg
+                elif col_info['dg_type'] == 'float':
+                    try:
+                        float(record[index])
+                    except ValueError, error:
+                        msg = self._msg_formatter(index, 'dg_type:float', record[index], col_info)
+                        return msg
+
+        return None
+
+
+    def _check_ranges_for_record(self, record):
+        """ Json schema and Validictory can't check numeric min & max values -
+            since the data returned from the csv module is a string.  So, this
+            is the work around.
+               - the dg_type constraint must be provided, and either float or
+                 integer
+               - the dg_minimum or dg_maximum value must be some appropriate
+                 number
+        """
+        # Loop through the schema, processing one column at a time.  
+        # for each column, check its info against record.
+        # if any fail the test, exit early with msg.
+        # else return None.
+        for index, col_info in enumerate(self.rec_schema['items']):
+            if 'dg_type' not in col_info:
+                continue
+            if col_info['dg_type'] == 'integer':
+                caster = int
+            else:
+                caster = float
+            if 'dg_minimum' in col_info:
+                try:
+                    if caster(record[index]) < caster(col_info['dg_minimum']):
+                        msg = self._msg_formatter(index, 'dg_minimum', record[index], col_info)
+                        return msg
+                except ValueError, error:
+                    return error
+            elif 'dg_maximum' in col_info:
+                try:
+                    if caster(record[index]) > caster(col_info['dg_maximum']):
+                        msg = self._msg_formatter(index, 'dg_maximum', record[index], col_info)
+                        return msg
+                except ValueError, error:
+                    return error
+
+        return None
+
+
+    def _msg_formatter(self, field_num, field_check, field_value, col_info):
+
+        if 'title' in col_info:
+            field_title = ' (%s) ' % col_info['title']
+        else:
+            field_title = ' '
+
+        msg = ('Failed to validate field number %(field_num)s %(field_title)s '
+               'failed %(field_check)s check with actual value of %(field_value)s'
+               % locals())
+        return msg
 
 
 
-def get_opts_and_args():
-    """ gets opts & args and returns them
+
+class ValidateTheValidator(object):
+
+    def __init__(self, validation_schema):
+        self.schema = validation_schema
+        self.unsupported_keys = ['minimum','maximum', 'format', 'divisibleBy']
+        self.valid_keys       = ['type','minLength', 'maxLength', 'title', 'description', 'enum',
+                                 'pattern', 'required', 'blank',
+                                 'dg_type', 'dg_minimum', 'dg_maximum']
+        self._validate_schema()
+
+
+    def _validate_schema(self):
+        if 'items' not in self.schema:
+            raise ValueError, "Error: invalid schema, missing 'items' key"
+        if len(self.schema.keys()) != 1:
+            raise ValueError, "Error: invalid schema, incorrect number of 'items' keys"
+        for field_validators in self.schema['items']:
+            self._validate_field(field_validators)
+
+
+    def _validate_field(self, field_validators):
+        for v_key in field_validators.keys():
+           self._validate_validator(v_key, field_validators[v_key])
+
+        self._validate_field_dg_range(field_validators)
+
+
+    def _validate_field_dg_range(self, field_validators):
+
+        def limit_checker(limit):
+            if limit in field_validators:
+                if 'dg_type' not in field_validators:
+                    raise ValueError, "Error: invalid schema, %s but no dg_type" % limit
+                else:
+                    try:
+                        if field_validators['dg_type'] == 'integer':
+                            int(field_validators[limit])
+                        elif field_validators['dg_type'] == 'float':
+                            float(field_validators[limit])
+                        else:
+                            raise ValueError, "Error: invalid schema, %s requires a numeric dg_type" % limit
+                    except ValueError, error:
+                        raise ValueError, "Error: invalid schema, %s not of dg_type" % limit
+
+        limit_checker('dg_minimum')
+        limit_checker('dg_maximum')
+
+
+    def _validate_validator(self, v_key, v_value):
+
+        #print 'v_key:   %s' % v_key
+        #print 'v_value: %s' % v_value
+        if v_key not in self.valid_keys:
+            if v_key in self.unsupported_keys:
+                raise ValueError, 'Error:  invalid schema, unsupported key value: %s' % v_key
+            else:
+                raise ValueError, 'Error:  invalid schema, unknown key value: %s' % v_key
+        if v_key == 'required':
+            if v_value not in [True, False]:
+                raise ValueError, 'Error:  invalid schema, unknown value for required: %s' % v_value
+        if v_key == 'blank':
+            if v_value not in [True, False]:
+                raise ValueError, 'Error:  invalid schema, unknown value for blank: %s' % v_value
+        if v_key == 'dg_type':
+            if v_value not in ['integer','float','string']:
+                raise ValueError, 'Error:  invalid schema, unknown value for dg_type: %s' % v_value
+
+
+
+
+def get_args():
+    """ gets args and returns them
         Input:
             - command line args & options
         Output:
-            - opts dictionary
-            - args dictionary 
+            - args dictionary
     """
     use = ("%prog is used to validate the number of fields in a file. It "
            "writes records with a fieldcnt other than provided to output "
            "file or stdout \n"
            " \n"
            "   %prog [file] [misc options]")
-    parser = optparse.OptionParser(usage = use)
+    parser = argparse.ArgumentParser(description=use,
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_option('-o', '--output', 
+    parser.add_argument('files',
+           default=['-'],
+           nargs='*',
+           type=argparse.FileType('r'),
+           help='Specifies the input file.  The default is stdin.  Multiple '
+                'filenames can be provided.')
+    parser.add_argument('-o', '--outgood',
            default='-',
            help='Specifies the output file.  The default is stdout.  Note that'
                 'if a filename is provided the program will override any '
                 'file of that name.')
-    parser.add_option('-f', '--fieldcnt',
+    parser.add_argument('-e', '--outerr',
+           default='-',
+           help='Specifies the output file for invalid records.  The default '
+                'is stderr.  Note that if a filename is provided the program '
+                'will override any file of that name.')
+
+    parser.add_argument('-f', '--fieldcnt',
            type=int,
+           dest='field_cnt',
            help=('Specify the number of fields in the record.  If not provided'
                  ' it will default to number of fields on first record'))
-    parser.add_option('-d', '--delimiter',
+
+    parser.add_argument('-d', '--delimiter',
            help=('Specify a quoted single-column field delimiter. This may be'
                  'determined automatically by the program.'))
-    parser.add_option('--quoting',
+    parser.add_argument('--quoting',
            default=False,
            help='Specify field quoting - generally only used for stdin data.'
                 '  The default is False.')
-    parser.add_option('--quotechar',
+    parser.add_argument('--quotechar',
            default='"',
            help='Specify field quoting character - generally only used for '
                 'stdin data.  Default is double-quote')
-    parser.add_option('--recdelimiter',
+    parser.add_argument('--recdelimiter',
            help='Specify a quoted end-of-record delimiter. ')
-    parser.add_option('--hasheader',
+    parser.add_argument('--hasheader',
            default=False,
            action='store_true',
            help='Indicate that there is a header in the file.')
 
-    (opts, files) = parser.parse_args()
+    parser.add_argument('--collectionid',
+           type=int,
+           dest='collection_id',
+           help=('Provides metadata used to identify data dictionary'))
+    parser.add_argument('--validschema',
+           dest='valid_schema',
+           type=argparse.FileType('r'),
+           help=('Name of validation schema file'))
 
-    if files:
-        if len(files) > 1 and not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+    parser.add_argument('-s', '--stats',
+           default=False,
+           action='store_true',
+           help='Causes pgm to print counts.  Default is False.')
+
+    parser.add_argument('--silent',
+           default=False,
+           action='store_true',
+           help='Causes pgm to print no stats, no valid or invalid recs.  Default is off.')
+    parser.add_argument('--randomout',
+           default=-1,
+           type=int,
+           help='Causes pgm to write only a percentage of records out.')
+    parser.add_argument('--errmsg',
+           default=False,
+           action='store_true',
+           help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
+    parser.add_argument('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
+
+    args = parser.parse_args()
+
+    if args.long_help:
+        print __doc__
+        sys.exit(0)
+
+    if args.files[0] != '-':
+        if len(args.files) > 1 and not args.delimiter:
+            parser.error('Please provide delimiter when reading multiple input files')
     else:   # stdin
-        if not opts.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin or reading multiple input files')
+        if not args.delimiter:
+            parser.error('Please provide delimiter when piping data into program via stdin')
 
-    return opts, files
+    if args.randomout > 100 or args.randomout < -1:
+        parser.error('Valid values for randomout are from 0 to 100')
+
+    return args
 
 
 
