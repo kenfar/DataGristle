@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
+import os
 from setuptools import setup, find_packages
+
+def read(*paths):
+    """Build a file path from *paths* and return the contents."""
+    with open(os.path.join(*paths), 'r') as f:
+        return f.read()
 
 version          = "0.54"
 DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
@@ -9,7 +15,8 @@ LONG_DESCRIPTION = open('README.md').read()
 setup(name             = 'datagristle'     ,
       version          = version           ,
       description      = DESCRIPTION       ,
-      long_description = LONG_DESCRIPTION  ,
+      long_description=(read('README.rst') + '\n\n' +
+                        read('CHANGELOG.rst')),
       keywords         = "data analysis quality utility etl",
       author           = 'Ken Farmer'      ,
       author_email     = 'kenfar@gmail.com',
