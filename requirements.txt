@@ -1,11 +1,13 @@
+PyYAML==3.10
 SQLAlchemy==0.8.4
 appdirs==1.2.0
 cov-core==1.7
 coverage==3.7.1
 envoy==0.0.2
-py==1.4.19
-pytest==2.5.0
+py==1.4.20
 pytest-cov==1.6
-tox==1.6.1
-virtualenv==1.10.1
+pytest==2.5.2
+tox==1.7.0
+validictory==0.9.3
+virtualenv==1.11.2
 wsgiref==0.1.2
