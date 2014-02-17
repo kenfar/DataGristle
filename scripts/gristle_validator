@@ -109,6 +109,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
 #--- gristle modules -------------------
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append('../')     # allows running from project structure
 sys.path.append('../../')  # allows running from project structure
 import gristle.file_type           as file_type
