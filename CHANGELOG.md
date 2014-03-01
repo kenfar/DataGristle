@@ -1,5 +1,9 @@
-# Currently ahead of release tag - 2014-02
+# v0.55 - 2014-02
 
+   * gristle_determinator - fixed a few problems:
+     - the 'Top Values not shown - all unique' message being truncated
+     - floats not handled correctly for stddev & variance
+     - quoted ints & floats not handled
 
 # v0.54 - 2014-02
 
