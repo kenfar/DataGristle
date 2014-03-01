@@ -60,34 +60,51 @@ def get_mean_length(values):
         return None
 
 
+
 def get_variance_and_stddev(values, mean=None):
-    """ Returns the variance & standard deviation of the input.  
-        Ignores unknown and character values, if no values found besides 
-        unknown it will just return 'None'.  Note this the equation 
-        implemented involves division by the number of entries, not division
-        by the number of entries + 1.
+    """ Returns the variance & standard deviation of the input.
+        Ignores unknown and character values, if no values found besides
+        unknown it will just return 'None'.  Note this uses the population
+        stddev, not the stddev.
 
         Inputs:
-          - a dictionary of frequency distribution - with all data of a 
-            string type, but numeric keys and numeric data representing
-            occurances of the keys.  Exceptions will be ignored.
+          - a dictionary of frequency distributions.  The value associated with
+            the key indicates the frequency of the key.  If the key or value
+            are not ints or floats it will attempt to convert them - at a cost
+            in speed.  Exceptions will be ignored.
+            ex:  {1:5, 2:6] - indicating 5 occurances of 1 and 6 of 2
+          - mean - optional, can be faster to provide it, but it will
+            determine the mean if it's not provided.
         Outputs:
-          - a single value - the mean of the inputs
+          - variance
+          - stddev
         Test Coverage:
           - complete via test harness
+        Further info:
+          - calculator: http://easycalculation.com/statistics/standard-deviation.php
+          - it will ignore non-numeric data
     """
     count   = 0
     accum   = 0
 
-    if values and not mean:
+    if mean is None:
         mean = get_mean(values)
 
-    for value in values:
+    for key in values:
+        #accum += math.pow(mean - int(value), 2)  * int(values[value])
+        #count += int(values[value])
+
         try:
-            accum += math.pow(mean - int(value), 2)  * int(values[value])
-            count += int(values[value])
-        except ValueError:      # catches dictionary with string
-            pass                # usually 'unknown values', sometimes garbage
+            accum += math.pow(mean - key, 2)  * values[key]
+            count += values[key]
+        except TypeError:
+            try:
+                numeric_key   = number(key)
+                numeric_count = number(values[key])
+                accum += math.pow(mean - numeric_key, 2)  * numeric_count
+                count += numeric_count
+            except ValueError:
+                pass # ignore this key/val, could be rare garbage 
 
     try:
         variance = accum / count
@@ -252,4 +269,30 @@ class GetDictMedian(object):
             accum += count
             if accum >= sub:
                 return key
+
+
+def number(val):
+    if is_int(val):
+        return int(val)
+    elif is_float(val):
+        return float(val)
+    else:
+        raise ValueError, '%s is not numeric' % val
+
+def is_float(x):
+    try:
+        a = float(x)
+    except ValueError:
+        return False
+    else:
+        return True
+
+def is_int(x):
+    try:
+        a = float(x)
+        b = int(a)
+    except ValueError:
+        return False
+    else:
+        return a == b
 
