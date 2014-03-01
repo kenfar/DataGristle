@@ -22,55 +22,103 @@ class Test_get_variance_and_stddev(object):
 
     def setup_method(self, method):
         # suffix of 'a' indicates the answer
-        self.list_1   = {}
-        self.list_1a  = (None, None)
-
-        self.list_2   = {2:1,2:1,2:1}
-        self.list_2a  = (0.0, 0.0)
-
-        self.list_3   = {2:1,3:1,9:1,12:1,13:1,15:1,
-                         17:1,19:1,22:1,23:1,25:1}
-        self.list_3a  = ('53.88', '7.34')
-
-        self.list_4   = {2:10,3:15,9:10,12:7,13:4,15:2,
-                         17:1,19:1,22:1,23:1,25:1}
-        self.list_4a  = ('37.11', '6.09')
-
-
-        #self.dict_1   = {}
-        #self.dict_1a  = None
-        #self.dict_2   = {'1':1, '2':1, '3':1, '4':1, '100':99 }
-        #self.dict_2a  = 100
-        #self.dict_3   = {'2':3, '4':3}
-        #self.dict_3a  = 3
-        #self.dict_4   = {'1':3, '4':1}
-        #self.dict_4a  = 1
-        #self.mymed         =  mod.GetDictMedian()
+        pass
 
     def _convert_float(self, value):
         return  '%.2f' % value
 
-    def test_math_001(self):
-        assert mod.get_variance_and_stddev(self.list_1) == self.list_1a
+    def test_math_empty_list(self):
+        list_1   = {}
+        list_1a  = (None, None)
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
-    def test_math_002(self):
-        assert mod.get_variance_and_stddev(self.list_2, 2) == self.list_2a
-        assert mod.get_variance_and_stddev(self.list_2) == self.list_2a
+    def test_math_identical_single_number_occuring_once(self):
 
-    def test_math_003(self):
-        var, stddev  = mod.get_variance_and_stddev(self.list_3)
+        list_1   = {2:1}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2) == list_1a
+        assert mod.get_variance_and_stddev(list_1)    == list_1a
+
+        list_2   = {2:1, 2:1,2:1}
+        list_2a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_2, 2) == list_2a
+        assert mod.get_variance_and_stddev(list_2)    == list_2a
+
+    def test_math_multiple_numbers_occuring_once(self):
+
+        list_1   = {2:1, 3:1, 4:1}
+        list_1a  = ('0.67', '0.82')
+        var, stddev  = mod.get_variance_and_stddev(list_1)
         small_var    = self._convert_float(var)
         small_stddev = self._convert_float(stddev)
-        assert (small_var, small_stddev) == self.list_3a
+        assert (small_var, small_stddev) == list_1a
 
-    def test_math_004(self):
-        var, stddev  = mod.get_variance_and_stddev(self.list_4)
+        list_2   = {2:1, 3:1, 9:1, 12:1, 13:1, 15:1,
+                   17:1, 19:1, 22:1, 23:1, 25:1}
+        list_2a  = ('53.88', '7.34')
+        var, stddev  = mod.get_variance_and_stddev(list_2)
         small_var    = self._convert_float(var)
         small_stddev = self._convert_float(stddev)
-        #pprint(locals())
-        assert (small_var, small_stddev) == self.list_4a
+        assert (small_var, small_stddev) == list_2a
+
+    def test_math_multiple_numbers_occurring_multiple_times(self):
+        list_4   = {2:10, 3:15, 9:10, 12:7, 13:4, 15:2,
+                   17:1, 19:1, 22:1, 23:1, 25:1}
+        list_4a  = ('37.11', '6.09')
+        var, stddev  = mod.get_variance_and_stddev(list_4)
+        small_var    = self._convert_float(var)
+        small_stddev = self._convert_float(stddev)
+        assert (small_var, small_stddev) == list_4a
+
+    def test_math_identical_single_float_occuring_once(self):
+        list_1   = {2.0:1}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2) == list_1a
+        assert mod.get_variance_and_stddev(list_1)    == list_1a
+
+        list_2   = {2.5:1}
+        list_2a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_2, 2.5) == list_2a
+        assert mod.get_variance_and_stddev(list_2)      == list_2a
 
 
+    def test_math_floats_multiple_floats_occuring_once(self):
+
+        list_1   = {2.0:1, 3.0:1, 4.0:1}
+        list_1a  = ('0.67', '0.82')
+        var, stddev  = mod.get_variance_and_stddev(list_1)
+        small_var    = self._convert_float(var)
+        small_stddev = self._convert_float(stddev)
+        assert (small_var, small_stddev) == list_1a
+
+    def test_math_single_float_occurring_multiple_times(self):
+        list_1   = {2.5:2}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2.5) == list_1a
+        assert mod.get_variance_and_stddev(list_1)      == list_1a
+
+    def test_math_single_string_occurring_once(self):
+        list_1   = {'2':2}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2) == list_1a
+        assert mod.get_variance_and_stddev(list_1)      == list_1a
+
+        list_1   = {'2':'2'}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2) == list_1a
+        assert mod.get_variance_and_stddev(list_1)      == list_1a
+
+    def test_math_ignoring_bad_key(self):
+        list_1   = {2:2, 'bar':2}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2) == list_1a
+        assert mod.get_variance_and_stddev(list_1)      == list_1a
+
+    def test_math_ignoring_bad_value(self):
+        list_1   = {2:2, 3:'foo'}
+        list_1a  = (0.0, 0.0)
+        assert mod.get_variance_and_stddev(list_1, 2) == list_1a
+        assert mod.get_variance_and_stddev(list_1)      == list_1a
 
 
 class TestGetDictMedian(object):
