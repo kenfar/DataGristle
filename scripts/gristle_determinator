@@ -495,7 +495,7 @@ class OutputWriter(object):
         if my_fields.field_freqs[col_no] is not None:
             sorted_list = my_fields.get_top_freq_values(col_no, limit=10)
             if sorted_list[key_sub][val_sub] == 1:
-                self.write_string('Top Values not shown - all values are unique', indent=4)
+                self.write_string('Top Values', 'not shown - all are unique', indent=4)
             else:
                 if self.output_format == 'readable':
                     self.write_string('Top Values', indent=4)
