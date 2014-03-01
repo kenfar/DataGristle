@@ -129,7 +129,7 @@ class Test_1(object):
         assert self.field_struct['field_1']['main']['variance']        == '32.96'
 
     def test_top_value_info(self):
-        assert self.field_struct['field_0']['top_values']['top_values_not_shown']    == ' '
+        assert self.field_struct['field_0']['top_values']['top_values']  == 'not shown - all are unique'
         assert self.field_struct['field_1']['top_values']['2']    == '1'
         assert self.field_struct['field_1']['top_values']['6']    == '2'
         assert self.field_struct['field_1']['top_values']['8']    == '1'
