@@ -1,0 +1,19 @@
+# Schema used to describe and validate the 3-field colors.csv file
+#
+#
+
+items:
+    - title:            alphas
+      blank:            False
+      minLength:        1
+      maxLength:        12
+    - title:            integers
+      blank:            True
+      dg_type:          integer
+      dg_minimum:       0
+      dg_maximum:       1000
+    - title:            floats
+      blank:            False
+      dg_type:          float
+      dg_minimum:       0.001
+      dg_maximum:       1000
