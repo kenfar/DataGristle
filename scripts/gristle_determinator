@@ -202,6 +202,7 @@ import optparse
 import errno
 import csv
 import sqlalchemy
+from pprint import pprint as pp
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
@@ -494,16 +495,20 @@ class OutputWriter(object):
         self.subsection = 'top_values'
         if my_fields.field_freqs[col_no] is not None:
             sorted_list = my_fields.get_top_freq_values(col_no, limit=10)
-            if sorted_list[key_sub][val_sub] == 1:
-                self.write_string('Top Values', 'not shown - all are unique', indent=4)
-            else:
-                if self.output_format == 'readable':
-                    self.write_string('Top Values', indent=4)
-                for pair in sorted_list:
+            if len(sorted_list):
+                if sorted_list[key_sub][val_sub] == 1:
+                    self.write_string('Top Values', 'not shown - all are unique', indent=4)
+                else:
                     if self.output_format == 'readable':
-                        self.write_string(pair[key_sub], 'x %d occurances' % pair[val_sub], indent=8, key_width=30)
-                    else:
-                        self.write_string(pair[key_sub], '%d' % pair[val_sub], indent=8, key_width=30)
+                        self.write_string('Top Values', indent=4)
+                        for pair in sorted_list:
+                            if self.output_format == 'readable':
+                                self.write_string(pair[key_sub], 'x %d occurances' % pair[val_sub], indent=8, key_width=30)
+                            else:
+                                self.write_string(pair[key_sub], '%d' % pair[val_sub], indent=8, key_width=30)
+            else:
+                self.write_string('Top Values', 'no value found', indent=4)
+
 
 
     def write_header(self, val='', indent=0):
