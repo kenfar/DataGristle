@@ -30,6 +30,8 @@ Usage: gristle_determinator [file] [misc options]
     --recdelimiter=RECDELIMITER
                           Specify a quoted end-of-record delimiter.
     --hasheader           Indicates that there is a header in the file.
+    --hasnoheader         Indicates that there is no header in the file. Useful
+                          for overriding automatic csv-guessing behavior.
     -T COLUMN_TYPES, --types=COLUMN_TYPES
                           Allows manual specification of field types: integer,
                           float, string, timestamp. Use format: "colno:type,
@@ -490,6 +492,8 @@ class OutputWriter(object):
 
 
     def write_field_freq(self, my_fields, col_no):
+        """ Writes out the top_values section for a single column.
+        """
         key_sub = 0
         val_sub = 1
         self.subsection = 'top_values'
@@ -501,13 +505,17 @@ class OutputWriter(object):
                 else:
                     if self.output_format == 'readable':
                         self.write_string('Top Values', indent=4)
-                        for pair in sorted_list:
-                            if self.output_format == 'readable':
-                                self.write_string(pair[key_sub], 'x %d occurances' % pair[val_sub], indent=8, key_width=30)
-                            else:
-                                self.write_string(pair[key_sub], '%d' % pair[val_sub], indent=8, key_width=30)
+                    for pair in sorted_list:
+                        if self.output_format == 'readable':
+                            self.write_string(pair[key_sub], 'x %d occurances' % \
+                                              pair[val_sub], indent=8, key_width=30)
+                        else:
+                            self.write_string(pair[key_sub], '%d' % \
+                                              pair[val_sub], indent=8, key_width=30)
             else:
                 self.write_string('Top Values', 'no value found', indent=4)
+        else: # wasn't originally included
+            self.write_string('Top Values', 'no values found', indent=4)
 
 
 
@@ -593,9 +601,16 @@ def get_opts_and_args():
     parser.add_option('--recdelimiter',
            help='Specify a quoted end-of-record delimiter. ')
     parser.add_option('--hasheader',
-           default=False,
+           default=None,
            action='store_true',
+           dest='hasheader',
            help='Indicates that there is a header in the file. ')
+    parser.add_option('--hasnoheader',
+           default=None,
+           action='store_false',
+           dest='hasheader',
+           help=('Indicates that there is no header in the file. Useful for '
+                 'overriding automatic csv-guessing behavior.'))
     parser.add_option('-T', '--types',
            type='string',
            dest='column_types',
