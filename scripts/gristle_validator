@@ -56,6 +56,9 @@ optional arguments:
                         Specify a quoted end-of-record delimiter.
   --hasheader           Indicates that there is a header in the file.
                         Validation will mostly ignore the header.
+  --hasnoheader         Indicates that there is no header in the file.
+                        Useful in overriding automatic csv-dialect guessing
+                        behavior of program.
   --validschema VALID_SCHEMA
                         Name of validation schema file
   -s, --stats           Causes pgm to print counts.  Default is False.
@@ -192,6 +195,8 @@ def process_all_records(input_handler, outgood_handler, outerr_handler,
         if (input_handler.dialect.has_header
         and input_handler.rec_cnt == 1):
             pass
+        elif not valid_rec:
+            pass  # don't check schema if the rec failed field_cnt check
         else:
             if rec_validator.rec_schema:
                 if not rec_validator.check_schema(rec):
@@ -438,12 +443,16 @@ class RecValidator(object):
                     except ValueError, error:
                         msg = self._msg_formatter(index, 'dg_type:integer', record[index], col_info)
                         return msg
+                    except IndexError, error:
+                        return 'Failed to validate field due to parsing error.  Wrong delimiter?'
                 elif col_info['dg_type'] == 'float':
                     try:
                         float(record[index])
                     except ValueError, error:
                         msg = self._msg_formatter(index, 'dg_type:float', record[index], col_info)
                         return msg
+                    except IndexError, error:
+                        return 'Failed to validate field due to parsing error.  Wrong delimiter?'
 
         return None
 
@@ -475,6 +484,8 @@ class RecValidator(object):
                         return msg
                 except ValueError, error:
                     return error
+                except IndexError, error:
+                    return 'Failed to validate field due to parsing error.  Wrong delimiter?'
             elif 'dg_maximum' in col_info:
                 try:
                     if caster(record[index]) > caster(col_info['dg_maximum']):
@@ -482,11 +493,16 @@ class RecValidator(object):
                         return msg
                 except ValueError, error:
                     return error
+                except IndexError, error:
+                    return 'Failed to validate field due to parsing error.  Wrong delimiter?'
 
         return None
 
 
-    def _msg_formatter(self, field_num, field_check, field_value, col_info):
+    def _msg_formatter(self, field_num, field_check, field_value, col_info, hard_msg=None):
+
+        if hard_msg:
+            return hard_msg
 
         if 'title' in col_info:
             field_title = ' (%s) ' % col_info['title']
@@ -642,9 +658,17 @@ def get_args():
     parser.add_argument('--recdelimiter',
            help='Specify a quoted end-of-record delimiter. ')
     parser.add_argument('--hasheader',
-           default=False,
+           dest='hasheader',
+           default=None,
            action='store_true',
            help='Indicate that there is a header in the file.')
+    parser.add_argument('--hasnoheader',
+           dest='hasheader',
+           default=None,
+           action='store_false',
+           help=('Indicate that there is no header in the file.'
+                 'Occasionally helpful in overriding automatic '
+                 'csv dialect guessing.'))
 
     parser.add_argument('--validschema',
            dest='valid_schema',
