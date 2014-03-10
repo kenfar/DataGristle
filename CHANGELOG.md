@@ -1,3 +1,13 @@
+# v0.56 - 2014-03
+
+   * gristle_determinator
+     - added hasnoheader arg
+     - fixed problem printing top_values on empty file with header
+   * gristle_validator
+     - added hasnoheader arg
+   * gristle_freaker
+     - added hasnoheader arg
+
 # v0.55 - 2014-02
 
    * gristle_determinator - fixed a few problems:
