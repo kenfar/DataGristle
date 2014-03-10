@@ -8,7 +8,7 @@ def read(*paths):
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "0.55"
+version          = "0.56"
 DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
 
 setup(name             = 'datagristle'     ,
