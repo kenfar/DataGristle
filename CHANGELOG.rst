@@ -1,3 +1,19 @@
+v0.56 - 2014-03
+===============
+
+-  gristle\_determinator
+
+   -  added hasnoheader arg
+   -  fixed problem printing top\_values on empty file with header
+
+-  gristle\_validator
+
+   -  added hasnoheader arg
+
+-  gristle\_freaker
+
+   -  added hasnoheader arg
+
 v0.55 - 2014-02
 ===============
 
