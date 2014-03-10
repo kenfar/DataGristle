@@ -23,8 +23,9 @@ import yaml
 import test_tools
 
 # get pathing set for running code out of project structure & testing it via tox
-script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-fq_pgm      = os.path.join(script_path, 'gristle_validator')
+data_dir    = os.path.join(test_tools.get_app_root(), 'data')
+script_dir  = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
+fq_pgm      = os.path.join(script_dir, 'gristle_validator')
 sys.path.insert(0, test_tools.get_app_root())
 
 import gristle.common  as comm
@@ -151,7 +152,6 @@ def _generate_7x7_schema_file():
     schema['items'].append(col6)
 
     return _write_schema_file('7x7', schema)
-
 
 
 
@@ -514,7 +514,6 @@ class TestEmptyFile(object):
 
 
 
-
 class TestSchemaValidation(object):
 
     def setup_method(self, method):
@@ -722,42 +721,20 @@ class TestCSVDialects(object):
 
     def setup_method(self, method):
 
-        self.pgm                   = fq_pgm
-        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_')
-        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_')
-
-
-    def test_quoted_csv(self):
-        self.in_fqfn     = _generate_foobarbatz_file(100, delimiter=True)  # create a big file with 10,000 recs
-        schema           = _generate_foobarbatz_schema()
-        self.schema_fqfn = _write_schema_file('foobarbatz', schema)
-
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
-                         --validschema %(schema)s  \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         -s                        \
-                   """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
-                          'in_fqfn': self.in_fqfn,
-                          'schema':  self.schema_fqfn}
-        #print self.cmd
-        r = envoy.run(self.cmd)
-        self.get_outputs(r)
-        #pp(self.err_output)
-
-        assert self.status_code      == 0
-        assert len(self.err_output)  == 0
-        assert len(self.good_output) == 100
+        self.pgm                    = fq_pgm
+        (dummy, self.outgood_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator3x3OutGood_')
+        (dummy, self.outerr_fqfn)   = tempfile.mkstemp(prefix='TestGristleValidator3x3OutErr_')
+        (dummy, self.outgood2_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator3x3OutGood2_')
+        (dummy, self.outerr2_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator3x3OutErr2_')
 
     def teardown_method(self, method):
-        test_tools.temp_file_remover(self.in_fqfn)
-        test_tools.temp_file_remover(self.schema_fqfn)
+        ###don't want to delete these - they're external files:
+        ###test_tools.temp_file_remover(self.in_fqfn)
+        ###test_tools.temp_file_remover(self.schema_fqfn)
         test_tools.temp_file_remover(self.outgood_fqfn)
         test_tools.temp_file_remover(self.outerr_fqfn)
+        test_tools.temp_file_remover(self.outgood2_fqfn)
+        test_tools.temp_file_remover(self.outerr2_fqfn)
         test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
 
     def get_outputs(self, response):
@@ -775,8 +752,158 @@ class TestCSVDialects(object):
             err_recs.append(rec[:-1])
         fileinput.close()
 
-        self.status_code = response.status_code
-        self.std_out     = response.std_out
-        self.std_err     = response.std_err
-        self.good_output = good_recs
-        self.err_output  = err_recs
+        return response.status_code, response.std_out, response.std_err, good_recs, err_recs
+
+
+
+    def test_quoted_csv(self):
+        # create a big file with 10,000 recs
+        self.in_fqfn     = _generate_foobarbatz_file(100, delimiter=True)
+        schema           = _generate_foobarbatz_schema()
+        self.schema_fqfn = _write_schema_file('foobarbatz', schema)
+
+        self.cmd = """%(pgm)s %(in_fqfn)s          \
+                         -d '|'                    \
+                         --validschema %(schema)s  \
+                         --quoting 'quote_none'    \
+                         --outgood %(outgood)s     \
+                         --outerr  %(outerr)s      \
+                         -s                        \
+                   """ % {'pgm':     self.pgm,
+                          'outgood': self.outgood_fqfn,
+                          'outerr':  self.outerr_fqfn,
+                          'in_fqfn': self.in_fqfn,
+                          'schema':  self.schema_fqfn}
+        r = envoy.run(self.cmd)
+        status_code, stdout, stderr, good_recs, err_recs = self.get_outputs(r)
+
+        assert status_code    == 0
+        assert len(err_recs)  == 0
+        assert len(good_recs) == 100
+
+
+
+    def test_header_vs_nonheader(self):
+        """Tests how program handles files with or without headers
+           and with hasheader or hasnoheader args.
+        """
+        self.in_fqfn     = os.path.join(data_dir, '3x3.csv')
+        self.schema_fqfn = os.path.join(data_dir, '3x3_schema.yml')
+
+        #---- noheader in file - no header arg - should figure it out
+        self.cmd1 = """%(pgm)s %(in_fqfn)s         \
+                         -d ','                    \
+                         --validschema %(schema)s  \
+                         --quoting 'quote_none'    \
+                         --outgood %(outgood)s     \
+                         --outerr  %(outerr)s      \
+                         -s                        \
+                   """ % {'pgm':     self.pgm,
+                          'outgood': self.outgood_fqfn,
+                          'outerr':  self.outerr_fqfn,
+                          'in_fqfn': self.in_fqfn,
+                          'schema':  self.schema_fqfn}
+        r = envoy.run(self.cmd1)
+        status1, stdout1, stderr1, good_recs1, err_recs1 = self.get_outputs(r)
+
+        assert status1          == 0
+        assert len(err_recs1)   == 0
+        assert len(good_recs1)  == 3
+
+        #---- noheader in file - hasnoheader arg 
+        self.cmd2 = """%(pgm)s %(in_fqfn)s         \
+                         -d ','                    \
+                         --validschema %(schema)s  \
+                         --quoting 'quote_none'    \
+                         --outgood %(outgood)s     \
+                         --outerr  %(outerr)s      \
+                         --hasnoheader             \
+                         -s                        \
+                   """ % {'pgm':     self.pgm,
+                          'outgood': self.outgood_fqfn,
+                          'outerr':  self.outerr_fqfn,
+                          'in_fqfn': self.in_fqfn,
+                          'schema':  self.schema_fqfn}
+        r = envoy.run(self.cmd2)
+        status2, stdout2, stderr2, good_recs2, err_recs2 = self.get_outputs(r)
+
+        assert status2          == 0
+        assert len(err_recs2)   == 0
+        assert len(good_recs2)  == 3
+
+
+        #---- header in file - header arg 
+        self.in_fqfn     = os.path.join(data_dir, '3x3_header.csv')
+        self.cmd3 = """%(pgm)s %(in_fqfn)s         \
+                         -d ','                    \
+                         --validschema %(schema)s  \
+                         --quoting 'quote_none'    \
+                         --outgood %(outgood)s     \
+                         --outerr  %(outerr)s      \
+                         --hasheader               \
+                         -s                        \
+                   """ % {'pgm':     self.pgm,
+                          'outgood': self.outgood_fqfn,
+                          'outerr':  self.outerr_fqfn,
+                          'in_fqfn': self.in_fqfn,
+                          'schema':  self.schema_fqfn}
+        r = envoy.run(self.cmd3)
+        status3, stdout3, stderr3, good_recs3, err_recs3 = self.get_outputs(r)
+
+        assert status3          == 0
+        assert len(err_recs3)   == 0
+        assert len(good_recs3)  == 4
+
+        assert len(good_recs1) == len(good_recs2)  == len(good_recs3) - 1
+        assert len(err_recs1)  == len(err_recs2)   == len(err_recs3)
+        assert status1         == status2          == status3
+
+
+        #---- header in file - no header arg - should figure it out ---
+        self.in_fqfn     = os.path.join(data_dir, '3x3_header.csv')
+        self.cmd4 = """%(pgm)s %(in_fqfn)s         \
+                         -d ','                    \
+                         --validschema %(schema)s  \
+                         --quoting 'quote_none'    \
+                         --outgood %(outgood)s     \
+                         --outerr  %(outerr)s      \
+                         -s                        \
+                   """ % {'pgm':     self.pgm,
+                          'outgood': self.outgood_fqfn,
+                          'outerr':  self.outerr_fqfn,
+                          'in_fqfn': self.in_fqfn,
+                          'schema':  self.schema_fqfn}
+        r = envoy.run(self.cmd4)
+        status4, stdout4, stderr4, good_recs4, err_recs4 = self.get_outputs(r)
+
+        assert status4          == 0
+        assert len(err_recs4)   == 0
+        assert len(good_recs4)  == 4
+
+        assert len(good_recs3) == len(good_recs4)
+        assert len(err_recs3)  == len(err_recs4)
+        assert status3         == status4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

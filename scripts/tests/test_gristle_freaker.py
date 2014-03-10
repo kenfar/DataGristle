@@ -30,7 +30,7 @@ def generate_col_freaker_dependencies():
     dialect.delimiter      = '|'
     dialect.quoting        = True
     dialect.quotechar      = '"'
-    dialect.hasheader      = False
+    dialect.has_header     = False
     dialect.lineterminator = '\n'
     files                  = []
     files.append(generate_test_file(dialect.delimiter, 1000))
@@ -67,7 +67,7 @@ class Test_build_freq(object):
         self.dialect.delimiter      = '|'
         self.dialect.quoting        = True
         self.dialect.quotechar      = '"'
-        self.dialect.hasheader      = False
+        self.dialect.has_header     = False
         self.dialect.lineterminator = '\n'
         self.files                  = []
         self.files.append(generate_test_file(self.dialect.delimiter, 1000))
@@ -156,7 +156,7 @@ class Test_get_opts_and_args(object):
         assert opts.recdelimiter is None
         assert opts.delimiter    is None
         assert opts.quoting      is False
-        assert opts.hasheader    is False
+        assert opts.hasheader    is None
         assert opts.sampling_method == 'non'
         assert opts.sampling_rate   is None
         assert opts.sortcol    == 1
@@ -212,7 +212,7 @@ class Test_dict_sorter(object):
         self.dialect.delimiter      = '|'
         self.dialect.quoting        = True
         self.dialect.quotechar      = '"'
-        self.dialect.hasheader      = False
+        self.dialect.has_header     = False
         self.dialect.lineterminator = '\n'
         self.files                  = []
         self.files.append(generate_test_file(self.dialect.delimiter, 1))

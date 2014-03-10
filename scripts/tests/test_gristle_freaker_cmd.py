@@ -15,9 +15,9 @@ import envoy
 import inspect
 from pprint import pprint as pp
 
-script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-
 import test_tools
+script_dir = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
+data_dir   = os.path.join(test_tools.get_app_root(), 'data')
 
 
 
@@ -35,6 +35,68 @@ def generate_test_file(delim, record_cnt, name='generic'):
 
     fp.close()
     return fqfn
+
+
+class TestCSVDialect(object):
+
+    def setup_method(self, method):
+        (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestFreakerOut_')
+
+    def teardown_method(self, method):
+        os.remove(self.out_fqfn)
+
+    def get_outputs(self):
+        self.out_recs = []
+        for rec in fileinput.input(self.out_fqfn):
+            self.out_recs.append(rec[:-1])
+
+
+    def test_noheader_file_with_no_header_args(self):
+        in_fqfn = os.path.join(data_dir, '3x3.csv')
+        cmd = "%s %s -d ',' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'),
+                                           in_fqfn, self.out_fqfn)
+        r =  envoy.run(cmd)
+        self.get_outputs()
+        print self.out_recs
+        print r.std_out
+        print r.std_err
+        assert len(self.out_recs) == 3
+        assert r.status_code == 0
+
+
+    def test_noheader_file_with_hasnoheader_arg(self):
+        in_fqfn = os.path.join(data_dir, '3x3.csv')
+        cmd = "%s %s -d ',' -o %s -c 0 --hasnoheader" % (os.path.join(script_dir, 'gristle_freaker'),
+                                           in_fqfn, self.out_fqfn)
+        r =  envoy.run(cmd)
+        self.get_outputs()
+        print self.out_recs
+        assert len(self.out_recs) == 3
+        assert r.status_code == 0
+
+    def test_header_file_with_no_header_args(self):
+        in_fqfn = os.path.join(data_dir, '3x3_header.csv')
+        cmd = "%s %s -d ',' -o %s -c 0 " % (os.path.join(script_dir, 'gristle_freaker'),
+                                           in_fqfn, self.out_fqfn)
+        r =  envoy.run(cmd)
+        self.get_outputs()
+        print self.out_recs
+        assert len(self.out_recs) == 3
+        assert r.status_code == 0
+
+    def test_header_file_with_hasheader_arg(self):
+        in_fqfn = os.path.join(data_dir, '3x3_header.csv')
+        cmd = "%s %s -d ',' -o %s -c 0 --hasheader" % (os.path.join(script_dir, 'gristle_freaker'),
+                                           in_fqfn, self.out_fqfn)
+        r =  envoy.run(cmd)
+        self.get_outputs()
+        print self.out_recs
+        assert len(self.out_recs) == 3
+        assert r.status_code == 0
+
+
+
+
 
 
 
@@ -57,7 +119,7 @@ class TestCommandLine(object):
         test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestFreaker'))
 
     def test_empty_file(self):
-        cmd = '%s %s -o %s -c 0' % (os.path.join(script_path, 'gristle_freaker'),
+        cmd = '%s %s -o %s -c 0' % (os.path.join(script_dir, 'gristle_freaker'),
                                     self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
@@ -79,7 +141,7 @@ class TestCommandLine(object):
 
 
     def test_empty_stdin_file(self):
-        cmd = "cat %s | %s -d '|' -o %s -c 0" % (self.empty_fqfn, os.path.join(script_path, 'gristle_freaker'),
+        cmd = "cat %s | %s -d '|' -o %s -c 0" % (self.empty_fqfn, os.path.join(script_dir, 'gristle_freaker'),
                                                  self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
@@ -97,7 +159,7 @@ class TestCommandLine(object):
 
 
     def test_empty_multiple_files(self):
-        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_path, 'gristle_freaker'), self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'), self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -116,7 +178,7 @@ class TestCommandLine(object):
     def test_full_single_file(self):
         """ Tests use of columns all against a single file.
         """
-        cmd = "%s %s -c '1,2' -d '|' -o %s " % (os.path.join(script_path, 'gristle_freaker'), self.easy_fqfn, self.out_fqfn)
+        cmd = "%s %s -c '1,2' -d '|' -o %s " % (os.path.join(script_dir, 'gristle_freaker'), self.easy_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
@@ -144,7 +206,7 @@ class TestCommandLine(object):
 
 
     def test_full_multiple_files(self):
-        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_path, 'gristle_freaker'),
+        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'),
                                               self.easy_fqfn, self.easy_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
@@ -162,7 +224,7 @@ class TestCommandLine(object):
 
 
     def test_empty_and_full_multiple_files(self):
-        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_path, 'gristle_freaker'),
+        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'),
                                               self.empty_fqfn, self.easy_fqfn, self.out_fqfn)
         p =  subprocess.Popen(cmd,
                               stdin=subprocess.PIPE,
@@ -180,7 +242,7 @@ class TestCommandLine(object):
 
 
     def test_file_with_columntype_all(self):
-        cmd = "%s %s --columntype all -d '|' -o %s " % (os.path.join(script_path, 'gristle_freaker'),
+        cmd = "%s %s --columntype all -d '|' -o %s " % (os.path.join(script_dir, 'gristle_freaker'),
                                                self.easy_fqfn,
                                                self.out_fqfn)
         #print cmd
@@ -220,7 +282,7 @@ class TestCommandLine(object):
 
 
     def test_file_with_columntype_each(self):
-        cmd = "%s %s --columntype each -d '|' -o %s " % (os.path.join(script_path, 'gristle_freaker'),
+        cmd = "%s %s --columntype each -d '|' -o %s " % (os.path.join(script_dir, 'gristle_freaker'),
                                                self.easy_fqfn,
                                                self.out_fqfn)
         #print cmd

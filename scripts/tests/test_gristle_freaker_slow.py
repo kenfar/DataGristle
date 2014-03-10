@@ -36,7 +36,7 @@ def generate_col_freaker_dependencies():
     dialect.delimiter      = '|'
     dialect.quoting        = True
     dialect.quotechar      = '"'
-    dialect.hasheader      = False
+    dialect.has_header     = False
     dialect.lineterminator = '\n'
     files                  = []
     files.append(generate_test_file(dialect.delimiter, 1000))
@@ -73,7 +73,7 @@ class Test_build_freq(object):
         self.dialect.delimiter      = '|'
         self.dialect.quoting        = True
         self.dialect.quotechar      = '"'
-        self.dialect.hasheader      = False
+        self.dialect.has_header     = False
         self.dialect.lineterminator = '\n'
         self.files                  = []
         self.files.append(generate_test_file(self.dialect.delimiter, gen_rec_number))

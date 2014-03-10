@@ -15,9 +15,12 @@ import tempfile
 import envoy
 import csv
 import pytest
-from pprint import pprint
+import errno
+from pprint import pprint as pp
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data')
+
 import gristle.file_type as file_type
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
 
@@ -38,7 +41,78 @@ def generate_test_file(delim, rec_list, quoted=False):
     return fqfn
 
 
-class Test_1(object):
+def get_value(parsable_out, division, section, subsection, key):
+    """ Gets the value (right-most field) out of gristle_determinator
+        parsable output given the key values for the rest of the fields.
+    """
+    mydialect                = csv.Dialect
+    mydialect.delimiter      = '|'
+    mydialect.quoting        = file_type.get_quote_number('QUOTE_ALL')
+    mydialect.quotechar      = '"'
+    mydialect.lineterminator = '\n'
+
+    csvobj = csv.reader(parsable_out.split('\n'), dialect=mydialect)
+
+    for record in csvobj:
+        if not record:
+            continue
+        assert len(record) == 5
+        rec_division   = record[0]
+        rec_section    = record[1]
+        rec_subsection = record[2]
+        rec_key        = record[3]
+        rec_value      = record[4]
+
+        if (rec_division   == division
+        and rec_section    == section
+        and rec_subsection == subsection
+        and rec_key        == key):
+            return rec_value
+
+    return None
+
+
+
+class Test_empty_file(object):
+
+    def setup_method(self, method):
+        pass
+
+    def test_empty_file(self):
+        fqfn = os.path.join(data_dir, 'empty.csv')
+        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        r    = envoy.run(cmd)
+        print r.std_out
+        print r.std_err
+        assert r.status_code == errno.ENODATA
+        assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'record_count')  is None
+        assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     is None
+
+    def test_empty_file_with_header(self):
+        fqfn = os.path.join(data_dir, 'empty_header.csv')
+        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        r    = envoy.run(cmd)
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'record_count')  == '1'
+        assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     == 'True'
+
+    def test_empty_file_with_header_and_hasheader_arg(self):
+        fqfn = os.path.join(data_dir, 'empty_header.csv')
+        cmd = '%s %s --outputformat=parsable --hasheader' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        r    = envoy.run(cmd)
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'record_count')  == '1'
+        assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     == 'True'
+
+
+
+
+
+class Test_output_formatting_and_contents(object):
 
     def setup_method(self, method):
         recs = [ ['Alabama','8','18'],
@@ -52,8 +126,8 @@ class Test_1(object):
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
         cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        #print r.std_out
+        #print r.std_err
         assert r.status_code == 0
 
         mydialect                = csv.Dialect
@@ -76,7 +150,7 @@ class Test_1(object):
             assert division in ['file_analysis_results','field_analysis_results']
 
             if division == 'file_analysis_results':
-                assert section == 'main'
+                assert section    == 'main'
                 assert subsection == 'main'
                 self.file_struct[key] = value
             elif division == 'field_analysis_results':
@@ -129,10 +203,11 @@ class Test_1(object):
         assert self.field_struct['field_1']['main']['variance']        == '32.96'
 
     def test_top_value_info(self):
+        #pp(self.field_struct)
         assert self.field_struct['field_0']['top_values']['top_values']  == 'not shown - all are unique'
         assert self.field_struct['field_1']['top_values']['2']    == '1'
         assert self.field_struct['field_1']['top_values']['6']    == '2'
         assert self.field_struct['field_1']['top_values']['8']    == '1'
-        assert self.field_struct['field_1']['top_values']['19']    == '1'
+        assert self.field_struct['field_1']['top_values']['19']   == '1'
 
 
