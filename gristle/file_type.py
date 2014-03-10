@@ -193,18 +193,18 @@ class FileTyper(object):
     def _get_has_header(self, has_header):
         """ if the has_header flag was already provided, then just return it
             back.
-            Otherwise, figure out whether or not there's a header based on 
+            Otherwise, figure out whether or not there's a header based on
             the first 50,000 bytes
         """
         #print 'has_header:  %s' % has_header
-        if has_header:
-            return has_header
-        else:
+        if has_header is None:
             sample      = open(self.fqfn, 'r').read(50000)
             try:
                 return csv.Sniffer().has_header(sample)
             except:
                 raise IOError, 'Could not complete header analysis.  It may help to provide explicit header info'
+        else:
+            return has_header
 
 
 
@@ -213,7 +213,7 @@ class FileTyper(object):
         """ determines the number of fields in the file.
 
             To do:  make it less naive - it currently assumes that all #recs
-            will have the same number of fields.  It should be improved to 
+            will have the same number of fields.  It should be improved t 
             deal with bad data.
         """
         if not self._delimiter or len(self._delimiter) == 1:
