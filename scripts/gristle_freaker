@@ -176,7 +176,8 @@ def get_dialect(opts, files):
             dialect.lineterminator = '\n'                 # naive assumption
         else:
             dialect                = my_file.dialect
-            dialect.hasheader      = opts.hasheader       # shouldn't be needed
+            #removing following line - should be obsolete:
+            #dialect.hasheader      = opts.hasheader       # shouldn't be needed
     else:
         # dialect parameters needed for stdin - since the normal code can't
         # analyze this data.
@@ -184,8 +185,8 @@ def get_dialect(opts, files):
         dialect.delimiter      = opts.delimiter
         dialect.quoting        = opts.quoting
         dialect.quotechar      = opts.quotechar
-        dialect.hasheader      = opts.hasheader
-        dialect.lineterminator = '\n'                 # naive assumption
+        dialect.has_header     = opts.hasheader
+        dialect.lineterminator = '\n'                     # naive assumption
     return dialect
 
 
@@ -252,7 +253,7 @@ class ColFreaker(object):
             if not record:
                 break
             self.read_cnt += 1
-            if (self.read_cnt == 1 and self.dialect.hasheader):
+            if (self.read_cnt == 1 and self.dialect.has_header):
                 continue
             if self.sampling_method == 'interval':
                 if self.read_cnt % self.sampling_rate != 0:
@@ -551,9 +552,18 @@ class CommandLineParser(object):
                help='Specify quoted end-of-record delimiter.')
 
         self.parser.add_option('--hasheader',
-               default=False,
+               dest='hasheader',
+               default=None,
                action='store_true',
                help='indicates that there is a header in the file.')
+        self.parser.add_option('--hasnoheader',
+               dest='hasheader',
+               default=None,
+               action='store_false',
+               help=('Indicates that there is no header in the file.'
+                     'Useful for overriding automatic csv dialect-guessing'
+                     ' behavior.'))
+
 
 
     def _format_columns(self):
