@@ -20,6 +20,14 @@ def datagristle():
     schema_rows = schemas.fetchall()
     return render_template('splash.html', schema_rows=schema_rows)
 
+@app.route('/newschema', methods=['GET', 'POST'])
+def newschema():
+    if request.method == 'POST':
+        rc = meta.schema_tools.setter(schema_name=request.form['newsn'],
+                                      schema_desc=request.form['newsd'])
+        return redirect('/')
+    return render_template("schema_new.html")
+
 @app.route('/schema<int:schema_id>')
 def schema(schema_id):
     schema_q = """SELECT schema_name, schema_id, schema_desc
@@ -41,7 +49,6 @@ def schema(schema_id):
 @app.route('/schema<int:schema_id>/edit', methods=['GET', 'POST'])
 def schema_edit(schema_id):
     if request.method == 'POST':
-        print(request.form)
         rc = meta.schema_tools.setter(schema_id=schema_id,
                                       schema_name=request.form['newsn'],
                                       schema_desc=request.form['newsd'])
@@ -52,6 +59,13 @@ def schema_edit(schema_id):
     schema = meta.engine.execute(schema_q, schema_id=schema_id)
     schema_row = schema.fetchall()
     return render_template("schema_edit.html", fields=schema_row[0], sid=schema_id)
+
+@app.route('/schema<int:schema_id>/delete', methods=['GET', 'POST'])
+def schema_delete(schema_id):
+    if request.method == 'POST':
+        rc = meta.schema_tools.deleter(schema_id=schema_id)
+        return redirect('/')
+    return render_template("schema_delete.html", sid=schema_id)
 
 @app.route('/schema<int:schema_id>/collection<int:coll_id>')
 def collection(schema_id, coll_id):
