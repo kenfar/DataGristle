@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h2>Schema: {{ schema_row[0][0] }}</h2>
+<h3>Description: {{ schema_row[0][2] }}</h3>
+
+<h4><a href="/schema{{ schema_row[0][1] }}/edit">Edit</a></h4>
+
+<br>
+
+<table border="1">
+    <tr>
+        <td>Collection Name</td>
+        <td>Collection Description</td>
+    </tr>
+{% for c in coll_rows %}
+    <tr>
+        <td><a href="/schema{{ schema_row[0][1] }}/collection{{ c[0] }}">{{ c[1] }}</a></td>
+        <td>{{ c[2] }}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endblock body %}
