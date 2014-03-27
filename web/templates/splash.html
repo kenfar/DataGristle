@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h2>Schemas</h2>
+
+<br>
+
+<a href="/newschema">New Schema</a>
+
+<table border="1">
+    <tr>
+        <td>Schema Name</td>
+        <td>Schema Description</td>
+    </tr>
+{% for s in schema_rows %}
+    <tr>
+        <td><a href="schema{{ s[1] }}">{{ s[0] }}</a></td>
+        {% if s[2] == '' %}
+            <td>{{ None }}</td>
+        {% else %}
+            <td>{{ s[2] }}</td>
+        {% endif %}
+    </tr>
+{% endfor %}
+</table>
+{% endblock body %}

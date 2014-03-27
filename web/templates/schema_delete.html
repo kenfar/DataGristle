@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<form method=post action="/schema{{ sid }}/delete">
+    <p><input type=submit value="Are you Sure?" method=post action="/schema{{ sid }}/delete">
+</form>
+{% endblock body %}
