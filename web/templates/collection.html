@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h2>Collection: {{ coll_rows[0][1] }}</h2>
+<h3>Description: {{ coll_rows[0][2] }}</h3>
+
+<h4><a href="/schema{{ sid }}/collection{{ cid }}/edit">Edit</a></h4>
+<h4><a href="/schema{{ sid }}/collection{{ cid }}/delete">Delete</a></h4>
+
+<br>
+
+<table border="1">
+    <tr>
+        <td>Field Name</td>
+        <td>Field Description</td>
+        <td>Field Type</td>
+        <td>Field Order</td>
+        <td>Field Length</td>
+    </tr>
+{% for f in field_rows %}
+    <tr>
+        <td>{{ f[1] }}</td>
+        <td>{{ f[2] }}</td>
+        <td>{{ f[3] }}</td>
+        <td>{{ f[4] }}</td>
+        <td>{{ f[5] }}</td>
+    </tr>
+{% endfor %}
+</table>
+{% endblock body %}
