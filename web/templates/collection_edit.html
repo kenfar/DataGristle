@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<form method=post action="/schema{{ sid }}/collection{{ cid }}/edit">
+    <p>Collection  Name: <input name='newcn' type="text" value="{{ coll_row[0] }}">
+    <p>Collection Description: <input name='newcd' type="text" value="{{ coll_row[2] }}">
+    <p><input type=submit value="Save" method=post action="/schema{{ sid }}/collection{{ cid }}/edit">
+</form>
+{% endblock body %}

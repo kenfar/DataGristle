@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<form method=post action="/schema{{ sid }}/edit">
+    <p>Schema Name: <input name='newsn' type="text" value="{{ fields[0] }}">
+    <p>Schema Description: <input name='newsd' type="text" value="{{ fields[2] }}">
+    <p><input type=submit value="Save" method=post action="/schema{{ sid }}/edit">
+</form>
+{% endblock body %}

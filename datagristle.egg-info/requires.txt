@@ -1,5 +1,8 @@
-appdirs    >= 1.1.0
-sqlalchemy >= 0.7
-envoy      >= 0.0.2
-pytester
+appdirs     >= 1.2.0
+sqlalchemy  >= 0.8.4
+envoy       >= 0.0.2
+pytest      >= 2.5.2
+tox         >= 1.7.0
+validictory >= 0.9.3
+pyyaml      >= 3.10
 unittest2

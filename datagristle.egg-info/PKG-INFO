@@ -1,88 +1,171 @@
 Metadata-Version: 1.1
 Name: datagristle
-Version: 0.51
-Summary: A toolbox and library of ETL & data analysis tools
+Version: 0.56
+Summary: A toolbox and library of ETL, data quality, and data analysis tools
 Home-page: http://github.com/kenfar/DataGristle
 Author: Ken Farmer
 Author-email: kenfar@gmail.com
 License: BSD
-Download-URL: http://github.com/downloads/kenfar/DataGristle/DataGristle-0.51.tar.gz
-Description: Datagristle is a toolbox of tough and flexible data connectors and analyzers.  
-        It's kind of an interactive mix between ETL and data analysis optimized for 
-        rapid analysis and manipulation of a wide variety of data.
+Description: Datagristle is a toolbox of tough and flexible data connectors and
+        analyzers.
+        It's kind of an interactive mix between ETL and data analysis optimized
+        for rapid analysis and manipulation of a wide variety of data.
         
-        It's neither an enterprise ETL tool, nor an enterprise analysis, reporting, 
-        or data mining tool.  It's intended to be an easily-adopted tool for technical
-        analysts that combines the most useful subset of data transformation and 
-        analysis capabilities necessary to do 80% of the work.  Its open source python
-        codebase allows it to be easily extended to with custom code to handle that
-        always challenging last 20%.
+        It's neither an enterprise ETL tool, nor an enterprise analysis,
+        reporting, or data mining tool. It's intended to be an easily-adopted
+        tool for technical analysts that combines the most useful subset of data
+        transformation and analysis capabilities necessary to do 80% of the
+        work. Its open source python codebase allows it to be easily extended to
+        with custom code to handle that always challenging last 20%.
         
-        Current Status:  Strong support for easy analysis, simple transformations of
-        csv files, and ability to create data dictionaries.
+        Current Status: Strong support for easy analysis, simple transformations
+        of csv files, ability to create data dictionaries, and emerging data
+        quality capabilities.
         
-        More info is on the DataGristle wiki here: 
-           https://github.com/kenfar/DataGristle/wiki
+        More info is on the DataGristle wiki here:
+        https://github.com/kenfar/DataGristle/wiki
         
+        Next Steps:
+        ===========
         
-        #Next Steps:  
+        -  attractive PDF output of gristle\_determinator.py
+        -  metadata database population
         
-           * attractive PDF output of gristle_determinator.py
-           * metadata database population
+        Its objectives include:
+        =======================
         
-        #Its objectives include:
+        -  multi-platform (unix, linux, mac os, windows with effort)
+        -  multi-language (primarily python)
+        -  free - no cripple-licensing
+        -  primary audience is programming data analysts - not non-technical
+           analysts
+        -  primary environment is command-line rather than windows, graphical
+           desktop or eclipse
+        -  extensible
+        -  allow a bi-directional iteration between ETL & data analysis
+        -  can quickly perform initial data analysis prior to longer-duration,
+           deeper analysis with heavier-weight tools.
         
-           * multi-platform (unix, linux, mac os, windows with effort) 
-           * multi-language (primarily python)
-           * free - no cripple-licensing
-           * primary audience is programming data analysts - not non-technical analysts
-           * primary environment is command-line rather than windows, graphical desktop
-             or eclipse
-           * extensible
-           * allow a bi-directional iteration between ETL & data analysis
-           * can quickly perform initial data analysis prior to longer-duration, deeper
-             analysis with heavier-weight tools.
+        Installation
+        ============
         
+        -  Using `pip <http://www.pip-installer.org/en/latest/>`_ (preferred) or
+           `easyinstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`_:
         
-        #Installation
+           \ :sub:`~`\  $ pip install datagristle $ easy\_install datagristle
+           \ :sub:`~`\ 
         
-           * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
+        -  Or install manually from
+           `pypi <https://pypi.python.org/pypi/datagristle>`_:
         
-               ~~~
-               $ pip install datagristle
-               $ easy_install datagristle
-               ~~~
+           \ :sub:`~`\  $ mkdir ~$ wget
+           https://pypi.python.org/packages/source/d/datagristle/datagristle-0.53.tar.gz
+           $ tar -xvf easy\_install datagristle $ cd ~-\* $ python setup.py
+           install \ :sub:`~`\ 
         
-           * Or install manually from [pypi](https://pypi.python.org/pypi/datagristle):
+        Dependencies
+        ============
         
-               ~~~
-               $ mkdir ~\Downloads
-               $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.51.tar.gz
-               $ tar -xvf easy_install datagristle
-               $ cd ~\Downloads\datagristle-*
-               $ python setup.py install
-               ~~~
-              
+        -  Python 2.6 or Python 2.7
         
-        #Dependencies
+        Mature Utilities Provided in This Release:
+        ==========================================
         
-           * Python 2.6 or Python 2.7
+        -  gristle\_slicer
         
+           -  Used to extract a subset of columns and rows out of an input file.
         
-        #Mature Utilities Provided in This Release:
+        -  gristle\_freaker
         
-           * gristle_slicer
-               - Used to extract a subset of columns and rows out of an input file.
-           * gristle_freaker
-               - Produces a frequency distribution of multiple columns from input file.
-           * gristle_viewer
-               - Shows one record from a file at a time - formatted based on metadata. 
-           * gristle_determinator
-               - Identifies file formats, generates metadata, prints file analysis report
-               - This is the most mature - and also used by the other utilities so that 
-                 you generally do not need to enter file structure info.
+           -  Produces a frequency distribution of multiple columns from input
+              file.
         
-        #gristle_slicer
+        -  gristle\_viewer
+        
+           -  Shows one record from a file at a time - formatted based on
+              metadata.
+        
+        -  gristle\_determinator
+        
+           -  Identifies file formats, generates metadata, prints file analysis
+              report
+           -  This is the most mature - and also used by the other utilities so
+              that you generally do not need to enter file structure info.
+        
+        -  gristle\_validator
+        
+           -  Validates csv files by confirming that all records have the right
+              number of fields, and by apply a json schema full of requirements
+              to each record.
+        
+        gristle\_validator
+        ==================
+        
+        ::
+        
+            Splits a csv file into two separate files based on how records pass or fail
+            validation checks:
+               - Field count - checks the number of fields in each record against the
+                 number required.  The correct number of fields can be provided in an
+                 argument or will default to using the number from the first record.
+               - Schema - uses csv file requirements defined in a json-schema file for
+                 quality checking.  These requirements include the number of fields, 
+                 and for each field - the type, min & max length, min & max value,
+                 whether or not it can be blank, existance within a list of valid
+                 values, and finally compliance with a regex pattern.
+        
+            The output can just be the return code (0 for success, 1+ for errors), can
+            be some high level statistics, or can be the csv input records split between
+            good and erroneous files.  Output can also be limited to a random subset.
+        
+            Examples:
+               $ gristle_validator  sample.csv -f 3
+                     Prints all valid input rows to stdout, prints all records with 
+                     other than 3 fields to stderr along with an extra final field that
+                     describes the error.
+               $ gristle_validator  sample.csv 
+                     Prints all valid input rows to stdout, prints all records with 
+                     other than the same number of fields found on the first record to
+                     stderr along with an extra final field that describes the error.
+               $ gristle_validator  sample.csv  -d '|' --hasheader
+                     Same comparison as above, but in this case the file was too small
+                     or complex for the pgm to automatically determine csv dialect, so
+                     we had to explicitly give that info to program.
+               $ gristle_validator  sample.csv --outgood sample_good.csv --outerr sample_err.csv
+                     Same comparison as above, but explicitly splits good and bad data
+                     into separate files.
+               $ gristle_validator  sample.csv --randomout 1
+                     Same comparison as above, but only writes a random 1% of data out.
+               $ gristle_validator  sample.csv --silent
+                     Same comparison as above, but writes nothing out.  Exit code can be
+                     used to determine if any bad records were found.
+               $ gristle_validator  sample.csv --validschema sample_schema.csv 
+                     The above command checks both field count as well as validations
+                     described in the sample_schema.csv file.  Here's an example of what 
+                     that file might look like:
+                        items:
+                            - title:            rowid
+                              blank:            False
+                              required:         True
+                              dg_type:          integer
+                              dg_minimum:       1
+                              dg_maximum:       60
+                            - title:            start_date
+                              blank:            False
+                              minLength:        8
+                              maxLength:        10
+                              pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
+                            - title:            location
+                              blank:            False
+                              minLength:        2
+                              maxLength:        2
+                              enum:             ['ny','tx','ca','fl','wa','ga','al','mo']
+        
+        gristle\_slicer
+        ===============
+        
+        ::
+        
             Extracts subsets of input files based on user-specified columns and rows.
             The input csv file can be piped into the program through stdin or identified
             via a command line option.  The output will default to stdout, or redirected
@@ -107,14 +190,17 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
                $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
                             Prints columns 0-4 for the last 100 records, csv
                             dialect info (delimiter, quoting) provided manually)
-             
         
-        #gristle_freaker
+        gristle\_freaker
+        ================
+        
+        ::
+        
             Creates a frequency distribution of values from columns of the input file
             and prints it out in columns - the first being the unique key and the last 
             being the count of occurances.
         
-            
+        
             Examples:
                $ gristle_freaker sample.csv -d '|'  -c 0
                             Creates two columns from the input - the first with
@@ -132,8 +218,27 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
                             Creates three columns from the input - the first two
                             with unique key combinations from columns 0 & 1, the 
                             third with the number of times each combination exists.
+               $ gristle_freaker sample.csv -d '|'  -c -1
+                            Creates two columns from the input - the first with unique
+                            keys from the last column of the file (negative numbers 
+                            wrap), then a second with the number of times each exists.
+               $ gristle_freaker sample.csv -d '|'  --columntype all
+                            Creates two columns from the input - all columns combined
+                            into a key, then a second with the number of times each
+                            combination exists.
+               $ gristle_freaker sample.csv -d '|'  --columntype each
+                            Unlike the other examples, this one performs a separate
+                            analysis for every single column of the file.  Each analysis
+                            produces three columns from the input - the first is a 
+                            column number, second is a unique value from the column, 
+                            and the third is the number of times that value appeared.  
+                            This output is repeated for each column.
         
-        #gristle_viewer
+        gristle\_viewer
+        ===============
+        
+        ::
+        
             Displays a single record of a file, one field per line, with field names 
             displayed as labels to the left of the field values.  Also allows simple 
             navigation between records.
@@ -146,8 +251,12 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
                $ gristle_viewer sample.csv -r 3  -d '|' -q quote_none
                             In addition to what was described in the first example this
                             adds explicit csv dialect overrides.
-                                   
-        #gristle_determinator
+        
+        gristle\_determinator
+        =====================
+        
+        ::
+        
             Analyzes the structures and contents of csv files in the end producing a 
             report of its findings.  It is intended to speed analysis of csv files by
             automating the most common and frequently-performed analysis tasks.  It's
@@ -245,7 +354,11 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
                         -888                                     x 62 occurrences
                         0                                        x 37 occurrences
         
-        #gristle_metadata
+        gristle\_metadata
+        =================
+        
+        ::
+        
             Gristle_metadata provides a command-line interface to the metadata database.
             It's mostly useful for scripts, but also useful for occasional direct
             command-line access to the metadata.
@@ -256,8 +369,12 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
                $ gristle_metadata --table element --action put --prompt
                             Allows the user to input a row into the element table and 
                             prompts the user for all fields necessary.
-                                   
-        #gristle_md_reporter
+        
+        gristle\_md\_reporter
+        =====================
+        
+        ::
+        
             Gristle_md_reporter allows the user to create data dictionary reports that
             combine information about the collection and fields along with field value
             descriptions and frequencies.
@@ -271,19 +388,61 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and 
                             Prints a data dictionary report of the president collection,
                             only shows field-level information for field_id 3.
         
+        Licensing
+        =========
+        
+        -  Gristle uses the BSD license - see the separate LICENSE file for
+           further information
+        
+        Copyright
+        =========
+        
+        -  Copyright 2011,2012,2013 Ken Farmer
         
         
-        #Licensing
+        v0.56 - 2014-03
+        ===============
         
-           * Gristle uses the BSD license - see the separate LICENSE file for further 
-             information
+        -  gristle\_determinator
         
+           -  added hasnoheader arg
+           -  fixed problem printing top\_values on empty file with header
         
-        #Copyright
+        -  gristle\_validator
         
-           * Copyright 2011,2012,2013 Ken Farmer
+           -  added hasnoheader arg
         
+        -  gristle\_freaker
         
+           -  added hasnoheader arg
+        
+        v0.55 - 2014-02
+        ===============
+        
+        -  gristle\_determinator - fixed a few problems:
+        
+           -  the 'Top Values not shown - all unique' message being truncated
+           -  floats not handled correctly for stddev & variance
+           -  quoted ints & floats not handled
+        
+        v0.54 - 2014-02
+        ===============
+        
+        -  gristle\_validator - major updates to allow validation of csv files
+           based on the json schema standard, with help from the Validictory
+           module.
+        
+        v0.53 - 2014-01
+        ===============
+        
+        -  gristle\_freaker - major updates to enable distributes on all columns
+           to be automatically gathered through either (all or each) args. 'All'
+           combines all columns into a single tuple prior to producing
+           distribution. 'Each' creates a separate distribution for every column
+           within the csv file.
+        -  travisci - added support and started using this testing service.
+        
+Keywords: data analysis quality utility etl
 Platform: UNKNOWN
 Classifier: Development Status :: 5 - Production/Stable
 Classifier: Environment :: Console
