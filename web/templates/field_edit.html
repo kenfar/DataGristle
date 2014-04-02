@@ -22,7 +22,10 @@
     </tr>
     <tr>
 	<th>Field Type:        </th>
-	<td><input name='ft' type="text" value="{{ ft }}"></td>
+	<td><select name='ft' id="type_drop">
+		    <option  {% if ft_select == 'int' %} SELECTED {% endif %} value="int">int</option>
+		    <option  {% if ft_select == 'string' %} SELECTED {% endif %} value="string">String</option>
+	    </select></td>
     </tr>
     <tr>
 	<th>Field Length:      </th>
