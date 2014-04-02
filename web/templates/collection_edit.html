@@ -1,9 +1,22 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<form method=post action="/schema{{ sid }}/collection{{ cid }}/edit">
-    <p>Collection  Name: <input name='newcn' type="text" value="{{ coll_row[0] }}">
-    <p>Collection Description: <input name='newcd' type="text" value="{{ coll_row[2] }}">
-    <p><input type=submit value="Save" method=post action="/schema{{ sid }}/collection{{ cid }}/edit">
+<br>
+<h2>Collection Edit</h2>
+<br>
+<br>
+
+<form method=post action="/schema{{ sid }}/collection{{ cid }}/{{ action }}">
+    <table border="1">
+       <tr>
+           <th>Collection  Name: </th>
+	   <td><input name='cn' type="text" value="{{ cn }}"></td>
+       </tr>
+       <tr>
+	   <th>Collection Desc: </th>
+	   <td><input name='cd' type="text" value="{{ cd }}"></td>
+       </tr>
+    </table>
+    <p><input type=submit value="Save" method=post action="/schema{{ sid }}/collection{{ cid }}/{{ action }}">
 </form>
 {% endblock body %}

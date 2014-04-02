@@ -1,30 +1,49 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<h2>Collection: {{ coll_rows[0][1] }}</h2>
-<h3>Description: {{ coll_rows[0][2] }}</h3>
+<br>
+<h2>Collection Details</h2>
+<br>
+<br>
 
-<h4><a href="/schema{{ sid }}/collection{{ cid }}/edit">Edit</a></h4>
-<h4><a href="/schema{{ sid }}/collection{{ cid }}/delete">Delete</a></h4>
+<table border="1">
+	<tr><td><b>Collection: </td><td>{{ coll_rows.collection_name }}</td></tr>
+        <tr><td><b>Description: </td><td>{{ coll_rows.collection_desc }}</td></tr>
+</table>
+<br>
+
+<a href="/schema{{ sid }}/collection{{ cid }}/edit">Edit this collection</a>
+<br>
+<a href="/schema{{ sid }}/collection{{ cid }}/delete">Delete this collection</a>
+<br>
+<br>
+
 
 <br>
 
 <table border="1">
     <tr>
-        <td>Field Name</td>
-        <td>Field Description</td>
-        <td>Field Type</td>
-        <td>Field Order</td>
-        <td>Field Length</td>
+        <td><b>Field Name</td>
+	<td><b>Field Description</td>
+        <td><b>Field Type</td>
+	<td><b>Field Order</td>
+	<td><b>Field Length</td>
     </tr>
 {% for f in field_rows %}
     <tr>
-        <td>{{ f[1] }}</td>
-        <td>{{ f[2] }}</td>
-        <td>{{ f[3] }}</td>
-        <td>{{ f[4] }}</td>
-        <td>{{ f[5] }}</td>
+        <td><a href="/schema{{ sid }}/collection{{ cid }}/field{{ f[0] }}">{{ f.field_name }}</a></td>
+        <td>{{ f.field_desc }}</td>
+        <td>{{ f.field_type }}</td>
+        <td>{{ f.field_order }}</td>
+        <td>{{ f.field_len }}</td>
     </tr>
 {% endfor %}
+<tr>
+    <td><b><a href="/schema{{ sid }}/collection{{ cid }}/field/new">New Field</a></td>
+    <td>Click on 'New Field' to add another field</td>
+    <td> </td>
+    <td> </td>
+    <td> </td>
+</tr>
 </table>
 {% endblock body %}
