@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<br>
+<h2>Field Details</h2>
+<br>
+<br>
+
+<table border="1">
+	<tr><td><b>Field Name: </td><td>{{ field_rows.field_name }}</td></tr>
+	<tr><td><b>Description: </td><td>{{ field_rows.field_desc }}</td></tr>
+	<tr><td><b>Type: </td><td>{{ field_rows.field_type }}</td></tr>
+	<tr><td><b>Order: </td><td>{{ field_rows.field_order }}</td></tr>
+	<tr><td><b>Length: </td><td>{{ field_rows.field_len }}</td></tr>
+	<tr><td><b>Element Name: </td><td>{{ field_rows.element_name }}</td></tr>
+<table>
+
+
+<br>
+<a href="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/edit">Edit this field</a>
+<br>
+<a href="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/delete">Delete this field</a>
+<br>
+<br>
+
+<br>
+
+{% endblock body %}

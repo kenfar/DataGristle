@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<br>
+<h2>Field Edit</h2>
+<br>
+<br>
+
+<form method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/{{ action }}">
+  <table border="1">
+    <tr>
+	<th>Field Name:        </th> 
+	<td><input name='fn' type="text" value="{{ fn }}"></td>
+    </tr>
+    <tr>
+	<th>Field Description: </th>
+	<td><input name='fd' type="text" value="{{ fd }}"></td>
+    </tr>
+    <tr>
+	<th>Field Order:       </th>
+	<td><input name='fo' type="text" value="{{ fo }}"></td>
+    </tr>
+    <tr>
+	<th>Field Type:        </th>
+	<td><input name='ft' type="text" value="{{ ft }}"></td>
+    </tr>
+    <tr>
+	<th>Field Length:      </th>
+	<td><input name='fl' type="text" value="{{ fl }}"></td>
+    </tr>
+    <tr>
+	<th>Element Name:      </th>
+	<td><input name='en' type="text" value="{{ en }}"></td>
+    </tr>
+  </table>
+  <p><input type=submit value="Save" method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/{{ action }}">
+  {% if msg %}<p class=msg><strong>Error:</strong> {{ msg }}{% endif %}
+
+</form>
+{% endblock body %}
