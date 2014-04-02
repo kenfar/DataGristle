@@ -1,16 +1,16 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<h2>Schemas</h2>
-
 <br>
-
-<a href="/newschema">New Schema</a>
+<h2>Schema List</h2>
+<br>
+<br>
 
 <table border="1">
     <tr>
-        <td>Schema Name</td>
-        <td>Schema Description</td>
+        <td><b>Schema Name</td>
+        <td><b>Schema Description</td>
+        <td><b>Coll Cnt</td>
     </tr>
 {% for s in schema_rows %}
     <tr>
@@ -19,8 +19,15 @@
             <td>{{ None }}</td>
         {% else %}
             <td>{{ s[2] }}</td>
+        <td>{{ s[3] }}</td>
         {% endif %}
     </tr>
 {% endfor %}
+<tr>
+    <td><b><a href="/schema/new">New Schema</a></td>
+    <td>Click on 'New Schema' to add another schema</td>
+    <td> </td>
+</tr>
 </table>
+
 {% endblock body %}
