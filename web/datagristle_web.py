@@ -307,7 +307,9 @@ def field_edit(schema_id, coll_id, field_id):
                 return render_template("field_edit.html", action='edit', sid=schema_id, cid=coll_id,
                                        fid=field_id, msg=msg, fn=request.form['fn'], fd=request.form['fd'],
                                        ft=request.form['ft'], fo=request.form['fo'], fl=request.form['fl'],
-                                       en=request.form['en'])
+                                       en=request.form['en'],
+                                       ft_string_select=None, ft_int_select=1,
+                                       ft_select=request.form['ft'])
             else:
                return redirect('/schema%i/collection%i/field%i' % (schema_id, coll_id, field_id))
     else:
@@ -315,7 +317,9 @@ def field_edit(schema_id, coll_id, field_id):
         return render_template("field_edit.html", action='edit', sid=schema_id, cid=coll_id,
                                fid=field_id, fn=row.field_name, fd=row.field_desc,
                                fo=row.field_order, ft=row.field_type,
-                               fl=row.field_len, en=row.element_name)
+                               fl=row.field_len, en=row.element_name,
+                               ft_string_select=None, ft_int_select=1,
+                               ft_select=row.field_type)
 
 
 if __name__ == "__main__":
