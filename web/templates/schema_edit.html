@@ -1,9 +1,23 @@
 {% extends "layout.html" %}
 
+
 {% block body %}
-<form method=post action="/schema{{ sid }}/edit">
-    <p>Schema Name: <input name='newsn' type="text" value="{{ fields[0] }}">
-    <p>Schema Description: <input name='newsd' type="text" value="{{ fields[2] }}">
-    <p><input type=submit value="Save" method=post action="/schema{{ sid }}/edit">
+<br>
+<h2>Schema {{ action }}</h2>
+<br>
+<br>
+<form method=post action="/schema{{ sid }}/{{ action }}">
+    <table border="1">
+	<tr>
+	    <th>Schema Name:</th>
+	    <td><input name='sn' type="text" value="{{ sn }}"></td>
+	</tr>
+	<tr>
+	    <th>Schema Description:</th>
+	    <td><input name='sd' type="text" value="{{ sd }}"></td>
+	</tr>
+    </table>
+    <p><input type=submit value="Save" method=post action="/schema{{ sid }}/{{ action }}">
+    {% if msg %}<p class=msg><strong>Error:</strong> {{ msg }}{% endif %}
 </form>
 {% endblock body %}

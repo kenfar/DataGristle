@@ -1,23 +1,41 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<h2>Schema: {{ schema_row[0][0] }}</h2>
-<h3>Description: {{ schema_row[0][2] }}</h3>
 
-<h4><a href="/schema{{ schema_row[0][1] }}/edit">Edit</a></h4>
-<h4><a href="/schema{{ schema_row[0][1] }}/delete">Delete</a></h4>
+<br>
+<h2>Schema Details</h2>
+<br>
+<br>
 
-<a href="/schema{{ schema_row[0][1] }}/newcollection">New Collection</a>
+<table border="1">
+   <tr><td><b>Schema:  </td><td>{{ sn }}</td></tr>
+   <tr><td><b>Description:  </td><td>{{ sd }}</td></tr>
+</table>
+
+<br>
+<a href="/schema{{ si }}/edit">Edit this schema</a>
+<br>
+<a href="/schema{{ si }}/delete">Delete this schema</a>
+<br>
+<br>
+<br>
+
 <table border="1">
     <tr>
-        <td>Collection Name</td>
-        <td>Collection Description</td>
+        <td><b>Collection Name</td>
+        <td><b>Collection Description</td>
     </tr>
 {% for c in coll_rows %}
     <tr>
-        <td><a href="/schema{{ schema_row[0][1] }}/collection{{ c[0] }}">{{ c[1] }}</a></td>
+        <td><a href="/schema{{ si }}/collection{{ c[0] }}">{{ c[1] }}</a></td>
         <td>{{ c[2] }}</td>
     </tr>
 {% endfor %}
+<tr>
+    <td><b><a href="/schema{{ si }}/collection/new">New Collection</a></td>
+    <td>Click on 'New Collection' to add another collection</td>
+</tr>
 </table>
+
+{% if msg %}<p class=msg><strong>Error:</strong> {{ msg }}{% endif %}
 {% endblock body %}
