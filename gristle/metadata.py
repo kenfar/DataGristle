@@ -42,6 +42,7 @@ from sqlalchemy import (Table, Column, Boolean, Integer, String, Float,
                         MetaData, DATETIME,
                         UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
                         event, text, create_engine)
+from sqlalchemy import exc
 import datetime
 from pprint import pprint as pp
 import simplesql
@@ -222,6 +223,89 @@ class SchemaTools(simplesql.TableTools):
         return self.schema
 
 
+    def insert(self, **kwargs):
+        """ Inserts schema values into database.
+            Inputs:
+                - keyword arg of schema_name
+                - keyword arg of schema_desc
+            Returns:
+                - lastrowid
+                - rowcount
+            Raises:
+                - exc.IntegrityError
+        """
+        required_col_list = ['schema_name', 'schema_desc']
+        self.validate(required_col_list, **kwargs)
+
+        raw_sql = """ INSERT INTO schema
+                      (schema_name,
+                       schema_desc)
+                      VALUES (:schema_name,
+                              :schema_desc)
+                  """
+        sql    = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        schema_name=kwargs['schema_name'],
+                                        schema_desc=kwargs['schema_desc'])
+        except exc.IntegrityError, e:
+            raise ValueError, 'Insert failed. %s' % e.message
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
+
+
+    def update(self, **kwargs):
+        """ updates schema
+            Inputs:
+                - keyword arg of schema_name
+                - keyword arg of schema_desc
+            Returns:
+                - lastrowid
+                - rowcount
+            Raises:
+                - exc.IntegrityError
+        """
+
+        required_col_list = ['schema_id', 'schema_name', 'schema_desc']
+        self.validate(required_col_list, **kwargs)
+
+        raw_sql = """ UPDATE schema
+                         SET schema_name = :schema_name,
+                             schema_desc = :schema_desc
+                       WHERE schema_id   = :schema_id
+                  """
+        sql    = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        schema_name=kwargs['schema_name'],
+                                        schema_desc=kwargs['schema_desc'],
+                                        schema_id=kwargs['schema_id'])
+        except exc.IntegrityError, e:
+            raise ValueError, 'Update failed. %s' % e.message
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
+
+
+    def validate(self, required_col_list, **kwargs):
+        """ Check for common schema problems.
+        """
+
+        missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
+        if missing_col_list:
+            raise ValueError, 'mandatory columns missing: %s' % missing_col_list
+
+        if (kwargs['schema_name'] is None
+        or kwargs['schema_name'].strip() == ''):
+            raise ValueError, 'schema_name may not be blank'
+
+
+
+
+
 class ElementTools(simplesql.TableTools):
     """ Inclues all methods for element table
     """
@@ -322,6 +406,7 @@ class FieldTools(simplesql.TableTools):
         self.instance    = None # assigned in InstanceTools
         return self._table
 
+
     def get_field_id(self, collection_id, field_order=None,
                      field_name=None, field_type=None, field_len=None,
                      field_desc=None):
@@ -357,6 +442,152 @@ class FieldTools(simplesql.TableTools):
                                field_len=field_len,
                                field_desc=field_desc)
 
+
+    def insert(self, **kwargs):
+        """ Inserts schema values into database.
+            Inputs:
+                - keyword arg of schema_name
+                - keyword arg of schema_desc
+            Returns:
+                - lastrowid
+                - rowcount
+            Raises:
+                - exc.IntegrityError
+        """
+        required_col_list = ['collection_id', 'field_name', 'field_desc',
+                             'field_order','field_type','field_len',
+                             'element_name']
+        vkwargs = self.validate(required_col_list, **kwargs)
+
+        raw_sql = """ INSERT INTO field
+                      (collection_id,
+                       field_name,
+                       field_desc,
+                       field_order,
+                       field_type,
+                       field_len)
+                      VALUES (:collection_id,
+                              :field_name,
+                              :field_desc,
+                              :field_order,
+                              :field_type,
+                              :field_len)
+                  """
+        sql    = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        collection_id=vkwargs['collection_id'],
+                                        field_name=vkwargs['field_name'],
+                                        field_desc=vkwargs['field_desc'],
+                                        field_order=vkwargs['field_order'],
+                                        field_type=vkwargs['field_type'],
+                                        field_len=vkwargs['field_len'])
+        except exc.IntegrityError, e:
+            print sql
+            raise ValueError, 'Insert failed. %s' % e.message
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
+
+
+    def update(self, **kwargs):
+        """ Updates schema values into database.
+            Inputs:
+                - keyword arg of schema_name
+                - keyword arg of schema_desc
+            Returns:
+                - lastrowid
+                - rowcount
+            Raises:
+                - exc.IntegrityError
+        """
+        required_col_list = ['field_id', 'collection_id', 'field_name',
+                             'field_desc', 'field_order','field_type',
+                             'field_len',  'element_name']
+        vkwargs = self.validate(required_col_list, **kwargs)
+
+        raw_sql = """ UPDATE field
+                         SET collection_id  =  :collection_id,
+                             field_name     =  :field_name,
+                             field_desc     =  :field_desc,
+                             field_order    =  :field_order,
+                             field_type     =  :field_type,
+                             field_len      =  :field_len,
+                             element_name   =  :element_name
+                             WHERE field_id =  :field_id
+                  """
+        sql    = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        field_id=vkwargs['field_id'],
+                                        collection_id=vkwargs['collection_id'],
+                                        field_name=vkwargs['field_name'],
+                                        field_desc=vkwargs['field_desc'],
+                                        field_order=vkwargs['field_order'],
+                                        field_type=vkwargs['field_type'],
+                                        field_len=vkwargs['field_len'],
+                                        element_name=vkwargs['element_name'])
+        except exc.IntegrityError, e:
+            print sql
+            raise ValueError, 'Insert failed. %s' % e.message
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
+
+
+    def validate(self, required_col_list, **kwargs):
+        """ Check for common schema problems.
+        """
+        missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
+        if missing_col_list:
+            raise ValueError, 'mandatory columns missing: %s' % missing_col_list
+
+        if (kwargs['element_name'] == 'None'
+        or kwargs['element_name'] == ''):
+            kwargs['element_name'] = None
+        else:
+            kwargs['element_name'] = kwargs['element_name']
+
+        if (kwargs['field_len'] == 'None'
+        or kwargs['field_len'] == ''):
+            kwargs['field_len'] = None
+        else:
+            kwargs['field_len'] = kwargs['field_len']
+
+
+        if (kwargs['field_name'] is None
+        or kwargs['field_name'].strip() == ''):
+            raise ValueError, 'field_name may not be blank'
+
+        if kwargs['element_name']:
+            if (kwargs['field_type'] or kwargs['field_len']):
+                raise ValueError, 'field_type and field_len must be blank if element_name is provided'
+
+        if kwargs['field_type'] not in ['string', 'int']:
+            raise ValueError, 'field_type of %s is invalid.  Must be either string or int' \
+                % kwargs['field_type']
+
+        try:
+            if (kwargs['field_len'] and len(kwargs['field_len']) > 0):
+                if int(kwargs['field_len'])  < 1:
+                    raise ValueError, 'Field_len if provided must be > 0'
+        except ValueError:
+            raise ValueError, 'Field_len must be a non-zero integer'
+
+        if kwargs['field_type'] == 'int' and kwargs['field_len']:
+            raise ValueError, 'field_len must not be provided for field_type of int.'
+
+        try:
+            if kwargs['field_order']:
+                if int(kwargs['field_order'])  < 0:
+                    raise ValueError, 'Field_order if provided must be >= 0'
+        except ValueError:
+            raise ValueError, 'Field_order must be a non-negative integer'
+
+
+        return kwargs
 
 
 
