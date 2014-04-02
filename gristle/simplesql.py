@@ -20,6 +20,7 @@ from sqlalchemy import exc
 from sqlalchemy import UniqueConstraint
 #from pprint import pprint
 
+import logging
 
 
 
@@ -125,7 +126,6 @@ class TableTools(object):
                 - if constraint violation occurs - manually generate exception!
             Returns number of rows inserted.
         """
-
         kw_insert = {}
         #broken code - not sure what it did exactly!
         for key in kw.keys():
@@ -145,6 +145,7 @@ class TableTools(object):
             # possibly caused by violation of check or fk key constraint
             # print 'insert exception'
             # print e
+            #print except_detail
             kw_update = {}
             for key in kw.keys():
                 if kw[key] not in self.update_defaulted:
@@ -152,7 +153,12 @@ class TableTools(object):
             upd_sql      = self._table.update()
             upd_sql      = self._create_where(upd_sql, kw_update)
             #print kw_update
-            result = upd_sql.execute(kw_update)
+	    try:
+                result = upd_sql.execute(kw_update)
+            except exc.IntegrityError, except_detail:
+	        print 'insert failed, update failed'
+		print except_detail
+		raise
             if result.rowcount == 0:       # this is the only way to catch
                 print 'update exception'
                 print except_detail        # might want to get rid of this
