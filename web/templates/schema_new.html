@@ -1,9 +1,0 @@
-{% extends "layout.html" %}
-
-{% block body %}
-<form method=post action="/newschema">
-    <p>Schema Name: <input name='newsn' type="text">
-    <p>Schema Description: <input name='newsd' type="text">
-    <p><input type=submit value="Save" method=post action="/newschema">
-</form>
-{% endblock body %}
