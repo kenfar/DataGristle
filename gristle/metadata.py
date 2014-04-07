@@ -492,10 +492,10 @@ class FieldTools(simplesql.TableTools):
 
 
     def update(self, **kwargs):
-        """ Updates schema values into database.
+        """ Updates field values into database.
             Inputs:
-                - keyword arg of schema_name
-                - keyword arg of schema_desc
+                - keyword args of field_id, collection_id, field_name, field_desc, 
+                  field_order, field_type, field_len, element_name
             Returns:
                 - lastrowid
                 - rowcount
@@ -586,7 +586,6 @@ class FieldTools(simplesql.TableTools):
         except ValueError:
             raise ValueError, 'Field_order must be a non-negative integer'
 
-
         return kwargs
 
 
@@ -616,6 +615,87 @@ class FieldValueTools(simplesql.TableTools):
         self._table      = self.field_value
         self._table_name = 'field_value'
         return self._table
+
+
+    def validate(self, required_col_list, **kwargs):
+        """ Check for common schema problems.
+        """
+        missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
+        if missing_col_list:
+            raise ValueError, 'mandatory columns missing: %s' % missing_col_list
+        return kwargs
+
+
+    def insert(self, **kwargs):
+        """ Inserts field_value into database.
+            Inputs:
+                - keyword arg of field_id, fv_value, fv_desc, and fv_issues
+            Returns:
+                - lastrowid
+                - rowcount
+            Raises:
+                - exc.IntegrityError
+        """
+        required_col_list = ['field_id', 'fv_value', 'fv_desc', 'fv_issues']
+        vkwargs           = self.validate(required_col_list, **kwargs)
+
+        raw_sql = """ INSERT INTO field_value
+                      (field_id,
+                       fv_value,
+                       fv_desc,
+                       fv_issues)
+                      VALUES (:field_id,
+                              :fv_value,
+                              :fv_desc,
+                              :fv_issues)
+                  """
+        sql    = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        field_id=kwargs['field_id'],
+                                        fv_value=kwargs['fv_value'],
+                                        fv_desc=kwargs['fv_desc'],
+                                        fv_issues=kwargs['fv_issues'])
+        except exc.IntegrityError, e:
+            raise ValueError, 'Insert failed. %s' % e.message
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
+
+    def update(self, **kwargs):
+        """ Updates field_value into database.
+            Inputs:
+                - keyword arg of field_id, fv_value, fv_desc, and fv_issues
+            Returns:
+                - lastrowid
+                - rowcount
+            Raises:
+                - exc.IntegrityError
+        """
+        required_col_list = ['field_id', 'fv_value', 'fv_desc', 'fv_issues']
+        vkwargs           = self.validate(required_col_list, **kwargs)
+
+        raw_sql = """ UPDATE field_value
+                         SET fv_desc        =  :fv_desc,
+                             fv_issues      =  :fv_issues
+                       WHERE field_id =  :field_id
+                         AND fv_value =  :fv_value
+                  """
+        sql    = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        field_id=vkwargs['field_id'],
+                                        fv_value=vkwargs['fv_value'],
+                                        fv_desc=vkwargs['fv_desc'],
+                                        fv_issues=vkwargs['fv_issues'])
+        except exc.IntegrityError, e:
+            print sql
+            raise ValueError, 'Insert failed. %s' % e.message
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
 
 
 
