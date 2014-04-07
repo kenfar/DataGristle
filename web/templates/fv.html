@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<br>
+<h2>Field Value Details</h2>
+<br>
+<br>
+
+<table border="1">
+	<tr><td><b>Field Value: </td><td>{{ fvv }}</td></tr>
+	<tr><td><b>Description: </td><td>{{ fvd }}</td></tr>
+	<tr><td><b>Issues: </td><td>{{ fvi }}</td></tr>
+<table>
+
+
+<br>
+<a href="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv{{ fvv }}/edit">Edit this field value</a>
+<br>
+<a href="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv{{ fvv }}/delete">Delete this field value</a>
+<br>
+<br>
+
+<br>
+
+
+{% endblock body %}

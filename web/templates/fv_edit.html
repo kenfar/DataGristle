@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<br>
+<h2>Field Value Edit</h2>
+<br>
+<br>
+
+<form method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv{{ fv }}/{{ action }}">
+  <table border="1">
+    <tr>
+	<th>Field Value:        </th> 
+	{% if action == 'new' %}<td><input name='fv' type="text" value="{{ fv }}"></td>{% endif %}
+	{% if action == 'edit' %}<td>{{ fvd }}</td>{% endif %}
+    </tr>
+    <tr>
+	<th>Field Value Desc: </th>
+	<td><input name='fvd' type="text" value="{{ fvd }}"></td>
+    </tr>
+    <tr>
+	<th>Field Value Issue:       </th>
+	<td><input name='fvi' type="text" value="{{ fvi }}"></td>
+    </tr>
+  </table>
+  <p><input type=submit value="Save" method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv{{ fv }}/{{ action }}">
+  {% if msg %}<p class=msg><strong>Error:</strong> {{ msg }}{% endif %}
+
+</form>
+{% endblock body %}
