@@ -237,6 +237,24 @@ def collection_delete(schema_id, coll_id):
 # Field Handling
 #==============================================================================
 
+@app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/')
+def field(schema_id, coll_id, field_id):
+    row   = meta.field_tools.getter(field_id=field_id)
+
+    fv_sql = """SELECT fv_value, fv_desc, fv_issues
+                    FROM field_value
+                WHERE field_id = :field_id"""
+    fvalues = meta.engine.execute(fv_sql, field_id=field_id)
+    fv_rows = fvalues.fetchall()
+
+    return render_template('field.html',
+                           sid=schema_id,
+                           cid=coll_id,
+                           fid=field_id,
+                           field_rows=row,
+                           fv_rows=fv_rows)
+
+
 @app.route('/schema<int:schema_id>/collection<int:coll_id>/field/new', methods=['GET', 'POST'])
 def field_new(schema_id, coll_id):
     if request.method == 'POST':
@@ -262,30 +280,13 @@ def field_new(schema_id, coll_id):
                                fn='',fd='',fo='',ft='',fl='',en='')
 
 
-@app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/')
-def field(schema_id, coll_id, field_id):
-    row   = meta.field_tools.getter(field_id=field_id)
-    #pp(row)
-    #print row
-    #print dir(row)
-    #if row.field_len is None:
-    #    row.field_len = ''
-    #if row.element_name is None:
-    #    row.element_name = ''
-
-    return render_template('field.html',
-                           sid=schema_id,
-                           cid=coll_id,
-                           fid=field_id,
-                           field_rows=row)
-
-
 @app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/delete', methods=['GET', 'POST'])
 def field_delete(schema_id, coll_id, field_id):
     if request.method == 'POST':
         rc = meta.field_tools.deleter(field_id=field_id)
         return redirect('/schema%i/collection%i' % (schema_id, coll_id))
     return render_template("field_delete.html", sid=schema_id, cid=coll_id, fid=field_id)
+
 
 
 @app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/edit', methods=['GET', 'POST'])
@@ -320,6 +321,130 @@ def field_edit(schema_id, coll_id, field_id):
                                fl=row.field_len, en=row.element_name,
                                ft_string_select=None, ft_int_select=1,
                                ft_select=row.field_type)
+
+
+
+#==============================================================================
+# FieldValue Handling
+#==============================================================================
+@app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/fv<fv_value>/', methods=['GET'])
+def fv(schema_id, coll_id, field_id, fv_value):
+
+    fv_sql = """SELECT fv_desc,
+                       fv_issues
+                    FROM field_value
+                WHERE field_id = :field_id
+                  AND fv_value = :fv_value"""
+    fvalues = meta.engine.execute(fv_sql, field_id=field_id, fv_value=fv_value)
+    fv_row = fvalues.fetchall()
+
+    return render_template('fv.html',
+                           sid=schema_id,
+                           cid=coll_id,
+                           fid=field_id,
+                           fvv=fv_value,
+                           fvd=fv_row[0][0],
+                           fvi=fv_row[0][1])
+
+
+
+@app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/fv/new', methods=['GET', 'POST'])
+def fv_new(schema_id, coll_id, field_id):
+    if request.method == 'POST':
+        while True:
+            try:
+                temp_fvi = data2db(request.form['fvi'])
+                temp_fvd = data2db(request.form['fvd'])
+                (rowcnt, rowid) = meta.field_value_tools.insert(field_id=field_id,
+                                                  fv_value=request.form['fv'],
+                                                  fv_desc=request.form['fvd'],
+                                                  fv_issues=request.form['fvi'])
+            except ValueError, e:
+                print 'fv_new - ValueError'
+                return render_template("fv_edit.html", sid=schema_id, cid=coll_id, fid=field_id,
+                       action='new', msg=e,
+                       fv=request.form['fv'],fvd=request.form['fvd'],fvi=request.form['fvi'])
+
+            else:
+                return redirect('/schema%i/collection%i/field%i' % \
+                       (schema_id, coll_id, field_id))
+    else:
+        return render_template("fv_edit.html", sid=schema_id, cid=coll_id, fid=field_id,
+                               action='new', fv='',fvd='',fvi='')
+
+
+@app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/fv<fv_value>/edit', methods=['GET', 'POST'])
+def fv_edit(schema_id, coll_id, field_id, fv_value):
+    if request.method == 'POST':
+        while True:
+            try:
+                temp_fvd = data2db(request.form['fvd'])
+                temp_fvi = data2db(request.form['fvi'])
+                (rowcnt, rowid) = meta.field_value_tools.update(field_id=field_id,
+                                                  fv_value=fv_value,
+                                                  fv_desc=temp_fvd,
+                                                  fv_issues=temp_fvi)
+            except ValueError, e:
+                app.logger.error('FieldValueexperienced an IntegrityError!')
+                msg = 'IntegrityError - data violates rules: %s' % e
+                return render_template("fv_edit.html", action='edit', sid=schema_id, cid=coll_id,
+                                       fid=field_id, msg=msg,
+                                       fv=fv_value,
+                                       fvd=request.form['fvd'],
+                                       fvi=request.form['fvi'])
+            else:
+               return redirect('/schema%i/collection%i/field%i/fv%s' % \
+                              (schema_id, coll_id, field_id, fv_value))
+    else:
+        fv_sql = """SELECT fv_desc,
+                           fv_issues
+                        FROM field_value
+                    WHERE field_id = :field_id
+                    AND fv_value = :fv_value"""
+        fvalues = meta.engine.execute(fv_sql, field_id=field_id, fv_value=fv_value)
+        row = fvalues.fetchall()
+
+        return render_template("fv_edit.html", action='edit', sid=schema_id, cid=coll_id,
+                               fid=field_id,
+                               fv=fv_value,
+                               fvd=row[0][0],
+                               fvi=row[0][1])
+
+@app.route('/schema<int:schema_id>/collection<int:coll_id>/field<int:field_id>/fv<fv_value>/delete', methods=['GET', 'POST'])
+def fv_delete(schema_id, coll_id, field_id, fv_value):
+    if request.method == 'POST':
+        sql = """DELETE
+                 FROM field_value
+                 WHERE field_id = :field_id
+                   AND fv_value = :fv_value"""
+        fvalues = meta.engine.execute(sql, field_id=field_id, fv_value=fv_value)
+        rc = meta.field_value_tools.deleter(field_id=field_id, fv_value=fv_value)
+        return redirect('/schema%i/collection%i/field%i' % (schema_id, coll_id, field_id))
+    else:
+        return render_template("fv_delete.html", sid=schema_id, cid=coll_id,
+                               fid=field_id, fv=fv_value)
+
+
+
+#==============================================================================
+# Misc
+#==============================================================================
+
+
+def data2db(val):
+    if val == 'None':
+       return None
+    else:
+       return val
+
+
+
+def data2form(val):
+    if val is None:
+       return ''
+    else:
+       return val
+
 
 
 if __name__ == "__main__":
