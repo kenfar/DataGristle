@@ -25,4 +25,25 @@
 
 <br>
 
+
+<table border="1">
+    <tr>
+        <td><b>Field Value</td>
+        <td><b>Field Description</td>
+        <td><b>Field Issue</td>
+    </tr>
+{% for fv in fv_rows %}
+    <tr>
+	<td><a href="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv{{ fv.fv_value }}">{{ fv.fv_value }}</a></td>
+        <td>{{ fv.fv_desc }}</td>
+        <td>{{ fv.fv_issues }}</td>
+    </tr>
+{% endfor %}
+<tr>
+    <td><b><a href="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv/new">New Field</a></td>
+    <td>Click on 'New Field' to add another field</td>
+    <td> </td>
+</tr>
+</table>
+
 {% endblock body %}
