@@ -7,8 +7,9 @@
 <br>
 
 <table border="1">
-	<tr><td><b>Collection: </td><td>{{ coll_rows.collection_name }}</td></tr>
-        <tr><td><b>Description: </td><td>{{ coll_rows.collection_desc }}</td></tr>
+	<tr><td><b>Collection ID: </td><td>{{ coll_rows.collection_id }}</td></tr>
+	<tr><td><b>Collection Name: </td><td>{{ coll_rows.collection_name }}</td></tr>
+        <tr><td><b>Collection Desc: </td><td>{{ coll_rows.collection_desc }}</td></tr>
 </table>
 <br>
 
@@ -23,6 +24,7 @@
 
 <table border="1">
     <tr>
+        <td><b>Field ID</td>
         <td><b>Field Name</td>
 	<td><b>Field Description</td>
         <td><b>Field Type</td>
@@ -31,6 +33,7 @@
     </tr>
 {% for f in field_rows %}
     <tr>
+        <td>{{ f.field_id }}</td>
         <td><a href="/schema{{ sid }}/collection{{ cid }}/field{{ f[0] }}">{{ f.field_name }}</a></td>
         <td>{{ f.field_desc }}</td>
         <td>{{ f.field_type }}</td>
@@ -39,6 +42,7 @@
     </tr>
 {% endfor %}
 <tr>
+    <td> </td>
     <td><b><a href="/schema{{ sid }}/collection{{ cid }}/field/new">New Field</a></td>
     <td>Click on 'New Field' to add another field</td>
     <td> </td>

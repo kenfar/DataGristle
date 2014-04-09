@@ -9,7 +9,11 @@
 <form method=post action="/schema{{ sid }}/collection{{ cid }}/{{ action }}">
     <table border="1">
        <tr>
-           <th>Collection  Name: </th>
+           <th>Collection ID: </th>
+	   <td>{{ ci }}</td>
+       </tr>
+       <tr>
+           <th>Collection Name: </th>
 	   <td><input name='cn' type="text" value="{{ cn }}"></td>
        </tr>
        <tr>

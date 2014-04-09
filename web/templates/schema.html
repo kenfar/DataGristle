@@ -8,7 +8,8 @@
 <br>
 
 <table border="1">
-   <tr><td><b>Schema:  </td><td>{{ sn }}</td></tr>
+   <tr><td><b>Schema ID:    </td><td>{{ si }}</td></tr>
+   <tr><td><b>Schema Name:  </td><td>{{ sn }}</td></tr>
    <tr><td><b>Description:  </td><td>{{ sd }}</td></tr>
 </table>
 
@@ -22,16 +23,19 @@
 
 <table border="1">
     <tr>
+        <td><b>Collection ID</td>
         <td><b>Collection Name</td>
         <td><b>Collection Description</td>
     </tr>
 {% for c in coll_rows %}
     <tr>
+        <td>{{ c[0] }}</td>
         <td><a href="/schema{{ si }}/collection{{ c[0] }}">{{ c[1] }}</a></td>
         <td>{{ c[2] }}</td>
     </tr>
 {% endfor %}
 <tr>
+    <td></td>
     <td><b><a href="/schema{{ si }}/collection/new">New Collection</a></td>
     <td>Click on 'New Collection' to add another collection</td>
 </tr>
