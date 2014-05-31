@@ -117,5 +117,4 @@ def collection_delete(schema_id, coll_id):
     return render_template("collection_delete.html", sid=schema_id, cid=coll_id)
 
 if __name__ == "__main__":
-    app.debug = True
     app.run()
