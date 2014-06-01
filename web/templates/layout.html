@@ -4,24 +4,21 @@
     <title>Data Gristle</title>
 </head>
 <body>
-    <div id="header">
-        <h1>Data Gristle</h1>
+    {% set path = request.path.split('/')[1:] %}
+    <div class="header">
+        <ul>
+            <li><a href="/" id="title"><h2>Data Gristle</h2></a></li>
+            <li><a href="http://www.github.com/kenfar/datagristle">More Info</a></li>
+            {% for p in path %}
+                {% if p != '' %}
+                    <li>
+                        <a href="/" class="nav">&#10146;{{ p }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
     </div>
     <div class=page>
-      <a href="http://www.github.com/kenfar/datagristle">More Info</a>
-
-      <a href="/">Home</a>>
-      {% set path = request.path.split('/')[1:] %}
-      {% set lvl = '/' %}
-      {% for p in path %}
-        {% set lvl = lvl + path[loop.index - 1] + '/' %}
-        {% if lvl == request.path %}
-          <a href="{{ lvl }}">{{ p }}</a>
-        {% else %}
-          <a href="{{ lvl }}">{{ p }}</a>>
-        {% endif %}
-      {% endfor %}
-
       {% block body %}
       {% endblock %}
     </div>
