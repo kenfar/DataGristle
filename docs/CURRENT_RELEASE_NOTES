@@ -1,6 +1,6 @@
 ===============================================================================
-Version:     0.53
-Copyright 2011,2012,2013 Ken Farmer
+Version:     0.57
+Copyright 2011,2012,2013,2014 Ken Farmer
 See the file "LICENSE" for the full license governing this code. 
 ===============================================================================
 
@@ -10,7 +10,7 @@ See the file "LICENSE" for the full license governing this code.
 Overall Testing status:
 ===============================================================================
     - test harness on python 2.7    - done
-    - test harness on python 2.6    - done
+    - test harness on python 2.6    - done - gristle_validator has issues
     - run pylint                    - done
     - check coverage                - done
     - test automatically installing:
