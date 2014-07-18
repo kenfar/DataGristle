@@ -55,6 +55,7 @@ setup(name             = 'datagristle'     ,
                               'tox         >= 1.7.0' ,
                               'validictory >= 0.9.3' ,
                               'pyyaml      >= 3.10'  ,
+                              'cletus'               ,
                               'unittest2'           ],
       packages     = find_packages(),
      )
