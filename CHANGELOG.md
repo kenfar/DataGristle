@@ -1,3 +1,8 @@
+# v0.57 - 2014-07
+   * gristle_processor
+     - initial addition to toolkit.  Provides ability to scan through directory
+       structure recursively, and delete files that match config criteria.
+
 # v0.56 - 2014-03
 
    * gristle_determinator
