@@ -5,22 +5,29 @@
 
 Next things to do:
 ==================================================================
-1.  metadata
+1.  gristle_processor
+    - add ability to run external scripts
+    - add ability to run against files in mtime or fntime order and
+      log last file processed - for restartability
+    - add more app-level testing for mtime & atime actions
+    - add more comments
+    - add more input validation
+2.  metadata
     - metadata-validation schema file import/export
-2.  gristle_validator
+3.  gristle_validator
     - add ability to run custom scripts
     - add ability to run custom python module checks
     - add ability to validate a database
-3.  gristle_col_adder
+4.  gristle_col_adder
     - add this tool
-4.  gristle_file_converter
+5.  gristle_file_converter
     - add ability to convert to/from yaml and json files
-5.  add a catalog of test data
-6.  Misc
+6.  add a catalog of test data
+7.  Misc
     - Add more numeric analysis:  quartiles
     - PDF outputs
     - determinator:  add quartiles
-7.  New & Improved Documentation:
+8.  New & Improved Documentation:
     - Review documentation
 
 
@@ -44,11 +51,13 @@ Maturity by Tool:
 3.  data quality tools:      
     - gristle_validator.py                     - 100%
 
-3.  data analysis tools:
+4.  data analysis tools:
     - gristle_freaker.py                       - 100%
     - gristle_viewer.py                        - 100%
     - gristle_scalar.py                        - 60%
     - gristle_histogramer.py                   - 0%
 
+5.  file system tools:
+    - gristle_processor                        - 50%
 
 
