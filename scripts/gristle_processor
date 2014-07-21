@@ -233,6 +233,19 @@ class FileAnalyzer(object):
                                    'year':'y',    'year':'y'}
 
     def qualify_file(self, fn, fqfn):
+        """
+        Inputs:
+           - fn - unqualified filename or rightmost part of directory path
+               - ex: bar.csv
+               - ex: foo
+           - fqfn - fully qualified file name:
+               - ex: /tmp/foo/bar.csv
+        Returns:
+           - boolean
+        Process:
+           - first checks inclusion phase
+           - then checks exclusion phase
+        """
 
         if not self._check_inclusion_phase(fn, fqfn):
             logger.debug('file disqualified in inclusion_phase: %s' % fqfn)
@@ -451,6 +464,17 @@ class FileAnalyzer(object):
 
 
 def get_config(arg_config_file=None, arg_config_name=None):
+    """
+    Inputs
+        - arg_config_file - if provided, used to open config file.
+        - arg_config_name - if provided, used to lookup config in XDG
+          config location.  On linux this would be:
+            $HOME/.config/datagristle/gristle_processor/[arg_config_name]
+        One of these two must be provided.
+    Outputs
+        - config dictionary
+        - config file name
+    """
 
     assert not (arg_config_file and arg_config_name)
 
