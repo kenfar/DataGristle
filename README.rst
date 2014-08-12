@@ -90,6 +90,11 @@ Mature Utilities Provided in This Release:
       number of fields, and by apply a json schema full of requirements
       to each record.
 
+-  gristle\_dir\_merger
+
+   -  Used to consolidate large directories with options to control
+      matching criteria as well as matching actions.
+
 gristle\_validator
 ==================
 
@@ -380,6 +385,28 @@ gristle\_md\_reporter
                     Prints a data dictionary report of the president collection,
                     only shows field-level information for field_id 3.
 
+gristle\_dir\_merger
+====================
+
+::
+
+    Gristle_dir_merger consolidates directory structures of files.  Has a variety
+    of options for controlling the matching criteria and matching actions.
+
+    Examples:
+       $ gristle_dir_merger /dir1 /dir2 --criteria name and size --action  most_current_wins
+                    Merges /dir1 into /dir2 based on name and size.
+                    When directories or files match, the entry with the most 
+                    current date wins (overwrites the other).
+       $ gristle_dir_merger /dir1 /dir2 --criteria name  --action  biggest_wins
+                    Merges /dir1 into /dir2 based on name.
+                    When directories or files match, the entry with the largest
+                    file size wins (overwrites the other).
+       $ gristle_dir_merger /dir1 /dir2 --criteria name  --action  latest_wins
+                    Merges /dir1 into /dir2 based on name.
+                    When directories or files match, the entry with the latest
+                    change date wins (overwrites the other).
+
 Licensing
 =========
 
@@ -390,3 +417,4 @@ Copyright
 =========
 
 -  Copyright 2011,2012,2013 Ken Farmer
+
