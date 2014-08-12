@@ -92,3 +92,9 @@ def generate_7x7_test_file(prefix, hasheader=False):
         fp.write('%s\n' % rec)
     fp.close()
     return fqfn, data_7x7
+
+
+def touch(fname, times=None):
+    with file(fname, 'a'):
+        os.utime(fname, times)
+
