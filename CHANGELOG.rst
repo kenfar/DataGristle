@@ -1,3 +1,20 @@
+v0.58 - 2014-08
+===============
+
+-  gristle\_dir\_merger
+
+   -  initial addition to toolkit. Merges directories of files using a
+      variety of matching criteria and matching actions.
+
+v0.57 - 2014-07
+===============
+
+-  gristle\_processor
+
+   -  initial addition to toolkit. Provides ability to scan through
+      directory structure recursively, and delete files that match
+      config criteria.
+
 v0.56 - 2014-03
 ===============
 
@@ -39,3 +56,4 @@ v0.53 - 2014-01
    distribution. 'Each' creates a separate distribution for every column
    within the csv file.
 -  travisci - added support and started using this testing service.
+

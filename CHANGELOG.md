@@ -1,3 +1,8 @@
+# v0.58 - 2014-08
+   * gristle_dir_merger
+     - initial addition to toolkit.  Merges directories of files using a variety
+       of matching criteria and matching actions.   
+
 # v0.57 - 2014-07
    * gristle_processor
      - initial addition to toolkit.  Provides ability to scan through directory
