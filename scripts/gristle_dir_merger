@@ -1,0 +1,424 @@
+#!/usr/bin/env python
+"""
+Gristle_dir_merger is used to perform powerful directory merging.
+
+To do:
+   - add better comments
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+  http://opensource.org/licenses/BSD-3-Clause
+
+Copyright 2014 Ken Farmer
+"""
+
+#--- standard modules ------------------
+from __future__ import division
+import sys
+import argparse
+import os
+import time
+import re
+import math
+import operator
+import shutil
+import errno
+import glob
+from pprint import pprint as pp
+
+#from pprint import pprint as pp
+import validictory as valid
+import appdirs
+import yaml
+import cletus.cletus_log          as log
+import cletus.cletus_supp         as supp
+import cletus.cletus_job          as job
+import cletus.cletus_config       as config
+
+#--- Ignore SIG_PIPE and don't throw exceptions on it
+#--- (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE, SIG_DFL)
+
+#--- gristle modules -------------------
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import gristle.file_type           as file_type
+import gristle.common              as comm
+
+__version__ = 'unknown'
+try:
+    from gristle._version import __version__
+except ImportError:
+    # We're running in a directory that doesn't have pathing set up quite right
+    pass
+
+
+logger = None
+APP_NAME = 'datagristle'
+
+
+def main():
+    """
+    """
+    args              = get_args()
+    setup_logs(args.log_dir, args.log_level)
+    logger.info('program starting')
+
+    for i, dir in enumerate(args.dirlist):
+        if i == len(args.dirlist) - 1:
+            break  # don't walk through target dest
+
+        logger.info('processing dir: %s' % dir)
+        process_dir = ProcessDir(dir,
+                                 args.dirlist[-1],
+                                 args.criteria,
+                                 args.action)
+        process_dir.walk(dir, args.dirlist[-1])
+
+    logger.info('program terminating successfully')
+    return 0
+
+
+
+class ProcessDir(object):
+    """
+    Handles all processing of a single Config Section, each of which has its
+    own root directory.
+    """
+
+    def __init__(self, source_dir, dest_dir, criteria, action,
+                 test_run=False):
+
+        self.criteria      = criteria
+        self.source_dir    = source_dir
+        self.dest_dir      = dest_dir
+        self.dest_files    = {} # key is path, value is list of files
+        self.action        = action
+
+
+    def _is_file_in_destdir(self, dest_dir, file_name):
+        if dest_dir not in self.dest_files:
+            logger.debug('dest_dir not in dest_files: %s' % dest_dir)
+            self.dest_files[dest_dir]   = \
+                [os.path.basename(f) for f in glob.glob(os.path.join(dest_dir, '*'))]
+        else:
+            logger.debug('dest_dir in dest_files: %s' % dest_dir)
+
+        if file_name in self.dest_files[dest_dir]:
+            logger.debug('file_name in dest_files: %s' % file_name)
+            return True
+        else:
+            logger.debug('file_name not in dest_files: %s' % file_name)
+            return False
+
+
+    def get_walk_entries(self, a_dir):
+        entries = os.listdir(a_dir)
+        dirs    = []
+        files   = []
+        for entry in entries:
+            if os.path.isdir(os.path.join(a_dir, entry)):
+                dirs.append(entry)
+            else:
+                files.append(entry)
+        return dirs, files
+
+
+    def walk(self, source_dir, dest_dir):
+
+        dirs, files = self.get_walk_entries(source_dir)
+        logger.info('walk-root: %s' % source_dir)
+        logger.info('   source_dir: %s' % source_dir)
+        logger.info('   dest_dir:   %s' % dest_dir)
+
+        for dir_name in dirs:
+            logger.info('   dirname: %s' % dir_name)
+            if os.path.isdir(os.path.join(dest_dir, dir_name)):
+                self.walk(os.path.join(source_dir, dir_name),
+                            os.path.join(dest_dir, dir_name))
+                logger.debug('listdir of source_dir:')
+                logger.debug(os.listdir(os.path.join(source_dir, dir_name)))
+                if is_dir_empty(os.path.join(source_dir, dir_name)):
+                    logger.debug('source_dir empty - will be removed')
+                    os.rmdir(os.path.join(source_dir, dir_name))
+                else:
+                    logger.debug('source_dir not empty')
+            elif os.path.isfile(os.path.join(dest_dir, dir_name)):
+                logger.critical('source dir has same name as dest file')
+                logger.critical('   source: %s' % (os.path.join(source_dir, dir_name)))
+                logger.critical('   dest: %s' % (os.path.join(dest_dir, dir_name)))
+                logger.critical('   resolution not supported at this time')
+                sys.exit(1)
+            else:
+                logger.debug('      will move source_dir to dest_dir')
+                self._move_source(source_dir, dir_name, dest_dir)
+
+        for file_name in files:
+            logger.info('   filename: %s' % file_name)
+            self._merge_file(source_dir, file_name, dest_dir)
+
+        if not dirs and not files:
+            logger.debug('      walk complete')
+
+
+    def _merge_file(self, source_dir, source_file, dest_dir):
+        assert os.path.isdir(source_dir)
+        assert os.path.isfile(os.path.join(source_dir, source_file))
+        assert os.path.isdir(dest_dir)
+
+        actions = {'first_wins':        self._first_wins,
+                   'last_wins' :        self._last_wins,
+                   'all_wins':          self._all_wins,
+                   'most_current_wins': self._most_current_wins,
+                   'biggest_wins':      self._biggest_wins }
+
+        if self._match_files(source_dir, source_file, dest_dir, source_file):
+            actions[self.action](source_dir, source_file, dest_dir, source_file)
+        else:
+            logger.debug('      unique source - will move to dest_dir')
+            self._move_source(source_dir, source_file, dest_dir)
+
+
+    def _match_files(self, source_dir, source_file, dest_dir, dest_file):
+
+         if 'name' in self.criteria:
+             if not self._is_file_in_destdir(dest_dir, source_file):
+             #if source_file not in self.dest_files:
+                 logger.debug('      file only exists in source_dir')
+                 return False
+
+         if 'size' in self.criteria:
+             if self._compare_sizes(source_dir, source_file, dest_dir, dest_file) != 'match':
+                 logger.debug('      file exists in both locations, but has diff size')
+                 return False
+
+         if 'md5' in self.criteria:
+            logger.critical('MD5 Not implemented yet')
+            sys.exit(1)
+
+         return True
+
+
+
+    def _first_wins(self, source_dir, source_file, dest_dir, dest_file):
+        logger.debug('      _first_wins - will delete source')
+        self._delete_source(source_dir, source_file)
+
+    def _last_wins(self, source_dir, source_file, dest_dir, dest_file):
+        logger.debug('moving file: %s   to: %s' % (os.path.join(source_dir, source_file),dest_dir))
+        self._move_source(source_dir, source_file, dest_dir)
+
+    def _biggest_wins(self, source_dir, source_file, dest_dir, dest_file):
+        logger.debug('      _biggest wins')
+        if os.path.getsize(os.path.join(source_dir, source_file)) \
+        > os.path.getsize(os.path.join(dest_dir, dest_file)):
+            logger.debug('          biggest is source: %s' % os.path.join(source_dir, source_file))
+            logger.debug('          source size: %d' % os.path.getsize(os.path.join(source_dir, source_file)))
+            self._move_source(source_dir, source_file, dest_dir)
+        else:
+            logger.debug('          biggest is dest: %s' % os.path.join(dest_dir, dest_file))
+            logger.debug('          dest size: %d' % os.path.getsize(os.path.join(dest_dir, dest_file)))
+            self._delete_source(source_dir, source_file)
+
+    def _most_current_wins(self, source_dir, source_file, dest_dir, dest_file):
+        logger.debug('most_current_wins')
+        source_fn_time = os.path.getmtime(os.path.join(source_dir, source_file))
+        dest_fn_time   = os.path.getmtime(os.path.join(dest_dir, dest_file))
+        if source_fn_time > dest_fn_time:
+            self._move_source(source_dir, source_file, dest_dir)
+        else:
+            self._delete_source(source_dir, source_file)
+
+    def _move_source(self, source_dir, source_file, dest_dir):
+        assert os.path.exists(os.path.join(source_dir, source_file))
+        assert os.path.isdir(dest_dir)
+        if not os.path.exists(os.path.join(dest_dir, source_file)):
+            shutil.move(os.path.join(source_dir, source_file), dest_dir)
+        elif (os.path.isfile(os.path.join(source_dir, source_file))
+        and os.path.isfile(os.path.join(dest_dir, source_file))):
+            shutil.copy2(os.path.join(source_dir, source_file), dest_dir)
+            os.remove(os.path.join(source_dir, source_file))
+
+    def _all_wins(self, source_dir, source_file, dest_dir, dest_file):
+        """ No files will over-write one another - instead the new file will
+            get a modified name within the destination directory.
+        """
+        logger.debug('      _all_wins - will move source to new name in dest_dir')
+        self._rename_and_move_source(source_dir, source_file, dest_dir)
+
+
+    def _rename_and_move_source(self, source_dir, source_file, dest_dir, dest_file=None):
+
+        if not dest_file:
+            dest_file = create_unique_file_name(dest_dir, source_file)
+
+        assert os.path.isfile(os.path.join(source_dir, source_file))
+        assert os.path.isdir(dest_dir)
+        assert not os.path.exists(os.path.join(dest_dir, dest_file))
+
+        shutil.move(os.path.join(source_dir, source_file),
+                    os.path.join(dest_dir, dest_file))
+
+
+    def _delete_source(self, source_dir, source_file):
+        os.remove(os.path.join(source_dir, source_file))
+
+
+
+    def _compare_sizes(self, source_dir, source_file, dest_dir, dest_file):
+        size1 = os.path.getsize(os.path.join(source_dir, source_file))
+        size2 = os.path.getsize(os.path.join(dest_dir, dest_file))
+        if size1 == size2:
+            return 'match'
+        elif size1 > size2:
+            return 'source-bigger'
+        else:
+            return 'dest-bigger'
+
+def is_dir_empty(a_dir):
+    if len(os.listdir(a_dir)) == 0:
+        return True
+    else:
+        return False
+
+
+def create_unique_file_name(dir_name, file_name):
+    new_file_name = None
+    base_name, extension = os.path.splitext(file_name)
+
+    i = 0
+    while os.path.exists(os.path.join(dir_name, file_name)):
+        i += 1
+        file_name  = '%s.%d%s' % (base_name, i, extension)
+
+    return file_name
+
+
+
+
+
+def abort(summary, details, rc=1):
+    """ Creates formatted error message within a box of = characters
+        then exits.
+    """
+
+    #---prints top line:
+    print('=' * 79)
+
+    #---prints message within = characters, assumes it is kinda short:
+    print '=== ',
+    print '%-69.69s' % summary,
+    print(' ===')
+    if logger:
+        logger.critical(summary)
+
+    #---prints exception msg, breaks it into multiple lines:
+    for i in range(int(math.ceil(len(details)/68))):
+        print '=== ',
+        print '%-69.69s' % details[i*68:(i*68)+68],
+        print ' ==='
+    if logger: 
+        logger.critical(details)
+
+    #---prints bottom line:
+    print('=' * 79)
+
+    sys.exit(rc)
+
+
+
+
+
+
+def setup_logs(arg_log_dir, log_level='debug', log_to_console=True):
+    """ Sets up the cletus logger.  This is just a wrapper around the
+        standard logger.
+        -  APP_NAME will be used to look up the XDG logging directory
+        -  log_name will be used for organizing the logs
+        -  arg_log_dir will override default if user provided something
+    """
+    assert log_level.lower() in ('debug', 'info', 'warning', 'error', 'critical')
+    global logger
+    cl_logger = log.LogManager(app_name=APP_NAME,
+                               log_name=__name__,
+                               log_dir=arg_log_dir,
+                               log_to_console=log_to_console)
+    logger    = cl_logger.logger
+    logger.setLevel(log_level.upper())
+
+
+
+
+
+
+def get_args():
+    """ gets args and returns them
+        Input:
+            - command line args & options
+        Output:
+            - args dictionary
+    """
+    use = ("%prog is used to run user-specified actions against files. It is "
+           "typically scheduled to run periodically, and uses a config file for "
+           "criteria. \n"
+           " \n"
+           "   %prog [file] [misc options]")
+
+    parser = argparse.ArgumentParser(description=use,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('dirlist',
+           #dest='dir_list',
+           nargs='+',
+           help='List of at least two directories. All files'
+                ' will be moved into the last (rightmost) entry.')
+    parser.add_argument('-c', '--criteria',
+           nargs='+',
+           choices=['name','size','md5'],
+           required=True,
+           help='Matching criteria.  Reference multiple times to include multiple criteria.')
+    parser.add_argument('-a', '--action',
+           choices=['first_wins', 'last_wins', 'all_wins', 'most_current_wins', 'biggest_wins'],
+           default='all_wins',
+           required=False,
+           help='Determines move/copy action for a matched file.')
+
+    parser.add_argument('--log-dir',
+           dest='log_dir',
+           default=None,
+           help='Overrides the xdg-default logging directory.  XDG default on linux is $HOME/.cache/datagristle/gristle_process')
+    parser.add_argument('--log-level',
+           dest='log_level',
+           choices=['debug', 'info', 'warning', 'error', 'critical'],
+           default='info',
+           help='Specifies level of detail in logs.  Default is None - which leaves it to the config file.')
+
+    parser.add_argument('--testrun',
+           default=False,
+           action='store_true',
+           dest='test_run',
+           help=('Identify files to act upon - but just list them'))
+
+    parser.add_argument('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
+    parser.add_argument('--version',
+           action='version',
+           version='gristle_dir_merger %s' % __version__)
+
+
+    args = parser.parse_args()
+
+    if args.long_help:
+        print __doc__
+        sys.exit(0)
+
+
+    return args
+
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
