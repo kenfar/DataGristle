@@ -59,5 +59,6 @@ Maturity by Tool:
 
 5.  file system tools:
     - gristle_processor                        - 50%
+    - gristle_dir_merger                       - 100%
 
 
