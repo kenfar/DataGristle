@@ -1,5 +1,5 @@
 ===============================================================================
-Version:     0.57
+Version:     0.58
 Copyright 2011,2012,2013,2014 Ken Farmer
 See the file "LICENSE" for the full license governing this code. 
 ===============================================================================
@@ -117,60 +117,8 @@ gristle_md_reporter.py
     - test coverage:        -- 
     - pylint status         -- 9.18
 
+gristle_dir_merger.py       
+    - test coverage:        -- 
+    - pylint status         -- 
 
 
-===============================================================================
-Manual test cases:
-   - these are gradually migrating into the test harnesses, but I'm tracking
-     them here so that I can see progress and coverage.
-===============================================================================
-
-1.  gristle_slicer.py           
-    - multi empty args              -- 
-    - full arg after empty file arg -- 
-    - single empty filename arg     -- 
-    - file passed via stdin empty   -- 
-
-2.  gristle_viewer.py           
-    - multi empty args              -- in test harness
-    - multi full args               -- in test harness
-    - full arg after empty file arg --
-    - single empty filename arg     -- in test harness
-    - single full filename arg      -- in test-harness
-
-3.  gristle_determinator.py         
-    - single empty filename arg:    -- 
-    - single full filename arg:     -- 
-    - file passed via stdin empty   -- 
-
-4.  gristle_differ.py
-    - file1 or file2 empty          -- 
-    - both files empty              -- 
-
-5.  gristle_freaker.py
-    - multi-empty filename args     -- in test-harness
-    - multi-full args               -- in test-harness
-    - full arg after empty file arg -- 
-    - single empty filename arg     -- in test-harness
-    - file passed via stdin empty   -- in test-harness
-
-6.  gristle_scalar.py
-    - multiple empty file args      -- in test-harness
-    - multi-full args               -- in test-harness
-    - full arg after empty file arg -- in test-harness
-    - stdin empty                   -- in test-harness
-        - single real file arg      -- in test-harness
-    - single empty file arg         -- in test-harness
-
-7.  gristle_filter.py
-    - multi-empty args              -- in test-harness
-    - multi-full args               -- in test-harness
-    - full arg after empty file arg -- in test-harness
-    - file passed via stdin empty   -- in test-harness
-
-8.  gristle_file_converter
-    - multi-empty args              -- old-FAIL (no multiple args)
-    - multi-full args               -- old-FAIL (no multiple args)
-    - full arg after empty file arg -- old-FAIL (no multiple args)
-    - file passed via stdin empty   -- old-FAIL (no stdin)
-    - single empty filename arg     -- in test harness
