@@ -263,6 +263,7 @@ class TestMergeByNameAndSize(object):
         assert 'foo.csv'  in os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
         assert 'mysubdir' not in os.listdir(self.source_dir)
 
+
     def test_files_with_same_sizes(self):
         """      starting dirs & files:
             \tmp\*_source_?\mysubdir                # 'mysubdir' deleted
@@ -293,6 +294,38 @@ class TestMergeByNameAndSize(object):
         assert 'mysubdir' in os.listdir(self.dest_dir)
         assert 'foo.csv'  in os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
         assert 'mysubdir' not in os.listdir(self.source_dir)
+
+    def test_files_with_diff_sizes(self):
+        """      starting dirs & files:
+            \tmp\*_source_?\mysubdir                # 'mysubdir' deleted
+            \tmp\*_source_?\mysubdir\foo.csv 0 len  # file moved
+            \tmp\*_dest_???\mysubdir\foo.csv 5 len
+                  should become:
+            \tmp\*_source_?
+            \tmp\*_dest_???\mysubdir\foo.csv
+        """
+        source_subdir = os.path.join(self.source_dir, 'mysubdir')
+        os.mkdir(source_subdir)
+        create_test_file(source_subdir, 'foo.csv', 'blahblahblah') # same name, bigger
+
+        dest_subdir = os.path.join(self.dest_dir, 'mysubdir')
+        os.mkdir(dest_subdir)
+        create_test_file(dest_subdir, 'foo.csv', '')     #same name but smaller
+
+        self.cmd = """%(pgm)s %(source_dir)s %(dest_dir)s         \
+                         -c name size        -a first_wins        \
+                         --log-level debug         \
+                   """ % {'pgm': PGM,
+                          'source_dir': self.source_dir,
+                          'dest_dir':   self.dest_dir}
+        r = envoy.run(self.cmd)
+        self.get_outputs(r)
+
+        assert r.status_code      == 0
+        assert 'mysubdir' not in os.listdir(self.source_dir)
+        assert 'mysubdir' in os.listdir(self.dest_dir)
+        assert 'foo.csv'  in os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
+        assert 'foo.1.csv'  in os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
 
 
 class TestActionFirstWins(object):
