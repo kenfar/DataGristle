@@ -174,6 +174,9 @@ class ProcessDir(object):
 
         if self._match_files(source_dir, source_file, dest_dir, source_file):
             actions[self.action](source_dir, source_file, dest_dir, source_file)
+        elif 'size' in self.criteria:
+            logger.debug('      unique source - will move to dest_dir - maybe with new name')
+            self._rename_and_move_source(source_dir, source_file, dest_dir)
         else:
             logger.debug('      unique source - will move to dest_dir')
             self._move_source(source_dir, source_file, dest_dir)
@@ -199,14 +202,15 @@ class ProcessDir(object):
          return True
 
 
-
     def _first_wins(self, source_dir, source_file, dest_dir, dest_file):
         logger.debug('      _first_wins - will delete source')
         self._delete_source(source_dir, source_file)
 
+
     def _last_wins(self, source_dir, source_file, dest_dir, dest_file):
         logger.debug('moving file: %s   to: %s' % (os.path.join(source_dir, source_file),dest_dir))
         self._move_source(source_dir, source_file, dest_dir)
+
 
     def _biggest_wins(self, source_dir, source_file, dest_dir, dest_file):
         logger.debug('      _biggest wins')
@@ -220,6 +224,7 @@ class ProcessDir(object):
             logger.debug('          dest size: %d' % os.path.getsize(os.path.join(dest_dir, dest_file)))
             self._delete_source(source_dir, source_file)
 
+
     def _most_current_wins(self, source_dir, source_file, dest_dir, dest_file):
         logger.debug('most_current_wins')
         source_fn_time = os.path.getmtime(os.path.join(source_dir, source_file))
@@ -228,6 +233,7 @@ class ProcessDir(object):
             self._move_source(source_dir, source_file, dest_dir)
         else:
             self._delete_source(source_dir, source_file)
+
 
     def _move_source(self, source_dir, source_file, dest_dir):
         assert os.path.exists(os.path.join(source_dir, source_file))
@@ -238,6 +244,7 @@ class ProcessDir(object):
         and os.path.isfile(os.path.join(dest_dir, source_file))):
             shutil.copy2(os.path.join(source_dir, source_file), dest_dir)
             os.remove(os.path.join(source_dir, source_file))
+
 
     def _all_wins(self, source_dir, source_file, dest_dir, dest_file):
         """ No files will over-write one another - instead the new file will
@@ -283,7 +290,6 @@ def is_dir_empty(a_dir):
 
 
 def create_unique_file_name(dir_name, file_name):
-    new_file_name = None
     base_name, extension = os.path.splitext(file_name)
 
     i = 0
