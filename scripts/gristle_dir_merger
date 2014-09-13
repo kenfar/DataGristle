@@ -18,22 +18,15 @@ import sys
 import argparse
 import os
 import time
-import re
+#import re
 import math
-import operator
 import shutil
 import errno
 import glob
-from pprint import pprint as pp
-
+import hashlib
+import logging
 #from pprint import pprint as pp
-import validictory as valid
-import appdirs
-import yaml
-import cletus.cletus_log          as log
-import cletus.cletus_supp         as supp
-import cletus.cletus_job          as job
-import cletus.cletus_config       as config
+
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
@@ -53,29 +46,29 @@ except ImportError:
     pass
 
 
-logger = None
 APP_NAME = 'datagristle'
 
 
 def main():
     """
     """
-    args              = get_args()
+    args  = get_args()
     setup_logs(args.log_dir, args.log_level)
-    logger.info('program starting')
 
-    for i, dir in enumerate(args.dirlist):
+    # hypothetically, this could process a list of many directories
+    # effectively, it's limited to 2 at present
+    for i, adir in enumerate(args.dirlist):
         if i == len(args.dirlist) - 1:
             break  # don't walk through target dest
 
-        logger.info('processing dir: %s' % dir)
-        process_dir = ProcessDir(dir,
+        process_dir = ProcessDir(adir,
                                  args.dirlist[-1],
-                                 args.criteria,
-                                 args.action)
-        process_dir.walk(dir, args.dirlist[-1])
+                                 args.matchon,
+                                 args.onmatch,
+                                 args.onpartmatch,
+                                 args.dry_run)
+        process_dir.walk(adir, args.dirlist[-1])
 
-    logger.info('program terminating successfully')
     return 0
 
 
@@ -86,33 +79,29 @@ class ProcessDir(object):
     own root directory.
     """
 
-    def __init__(self, source_dir, dest_dir, criteria, action,
-                 test_run=False):
+    def __init__(self, source_dir, dest_dir, matchon, full_match, part_match,
+                 dry_run=False):
 
-        self.criteria      = criteria
+        assert os.path.isdir(source_dir)
+        assert os.path.isdir(dest_dir)
+
+        self.matchon       = matchon
         self.source_dir    = source_dir
         self.dest_dir      = dest_dir
         self.dest_files    = {} # key is path, value is list of files
-        self.action        = action
-
-
-    def _is_file_in_destdir(self, dest_dir, file_name):
-        if dest_dir not in self.dest_files:
-            logger.debug('dest_dir not in dest_files: %s' % dest_dir)
-            self.dest_files[dest_dir]   = \
-                [os.path.basename(f) for f in glob.glob(os.path.join(dest_dir, '*'))]
-        else:
-            logger.debug('dest_dir in dest_files: %s' % dest_dir)
-
-        if file_name in self.dest_files[dest_dir]:
-            logger.debug('file_name in dest_files: %s' % file_name)
-            return True
-        else:
-            logger.debug('file_name not in dest_files: %s' % file_name)
-            return False
+        self.full_match       = full_match
+        self.part_match     = part_match
+        self.merger        = MergeFiles(dry_run)
 
 
     def get_walk_entries(self, a_dir):
+        """ Intended to emulate the os.walk() interaction.
+            Inputs:
+                - a_dir - a directory
+            Outputs:
+                - dirs  - a list of subdirectories within a_dir
+                - files - a list of files within a_dir
+        """
         entries = os.listdir(a_dir)
         dirs    = []
         files   = []
@@ -125,136 +114,139 @@ class ProcessDir(object):
 
 
     def walk(self, source_dir, dest_dir):
+        """ Inputs:
+                - source_dir - fully qualified
+                - dest_dir   - fully qualified
 
-        dirs, files = self.get_walk_entries(source_dir)
-        logger.info('walk-root: %s' % source_dir)
-        logger.info('   source_dir: %s' % source_dir)
-        logger.info('   dest_dir:   %s' % dest_dir)
+            Processing
+                - Will call itself
+        """
+        kill_if_symlink(source_dir)
+        kill_if_symlink(dest_dir)
+
+        dirs, files  = self.get_walk_entries(source_dir)
 
         for dir_name in dirs:
-            logger.info('   dirname: %s' % dir_name)
+
+            kill_if_symlink(os.path.join(source_dir, dir_name))
             if os.path.isdir(os.path.join(dest_dir, dir_name)):
                 self.walk(os.path.join(source_dir, dir_name),
-                            os.path.join(dest_dir, dir_name))
-                logger.debug('listdir of source_dir:')
-                logger.debug(os.listdir(os.path.join(source_dir, dir_name)))
+                          os.path.join(dest_dir, dir_name))
                 if is_dir_empty(os.path.join(source_dir, dir_name)):
-                    logger.debug('source_dir empty - will be removed')
-                    os.rmdir(os.path.join(source_dir, dir_name))
-                else:
-                    logger.debug('source_dir not empty')
+                    self.merger.keep_dest(source_dir, dir_name, dest_dir, dir_name)
+                    log_reason('source_dir empty - will be removed')
+
             elif os.path.isfile(os.path.join(dest_dir, dir_name)):
-                logger.critical('source dir has same name as dest file')
-                logger.critical('   source: %s' % (os.path.join(source_dir, dir_name)))
-                logger.critical('   dest: %s' % (os.path.join(dest_dir, dir_name)))
-                logger.critical('   resolution not supported at this time')
+                logging.critical('source dir has same name as dest file')
+                logging.critical('   source: %s' % (os.path.join(source_dir, dir_name)))
+                logging.critical('   dest: %s' % (os.path.join(dest_dir, dir_name)))
+                logging.critical('   resolution not supported at this time')
                 sys.exit(1)
+
             else:
-                logger.debug('      will move source_dir to dest_dir')
-                self._move_source(source_dir, dir_name, dest_dir)
+                reason = 'source has no matching dest'
+                self.merger.keep_source(source_dir, dir_name, dest_dir, dir_name, reason=reason)
 
         for file_name in files:
-            logger.info('   filename: %s' % file_name)
+            kill_if_symlink(os.path.join(source_dir, file_name))
             self._merge_file(source_dir, file_name, dest_dir)
 
-        if not dirs and not files:
-            logger.debug('      walk complete')
 
 
-    def _merge_file(self, source_dir, source_file, dest_dir):
-        assert os.path.isdir(source_dir)
-        assert os.path.isfile(os.path.join(source_dir, source_file))
-        assert os.path.isdir(dest_dir)
+    def _merge_file(self, sdir, sfile, ddir):
+        assert os.path.isdir(sdir)
+        assert os.path.isfile(os.path.join(sdir, sfile))
+        assert os.path.isdir(ddir)
 
-        actions = {'first_wins':        self._first_wins,
-                   'last_wins' :        self._last_wins,
-                   'all_wins':          self._all_wins,
-                   'most_current_wins': self._most_current_wins,
-                   'biggest_wins':      self._biggest_wins }
-
-        if self._match_files(source_dir, source_file, dest_dir, source_file):
-            actions[self.action](source_dir, source_file, dest_dir, source_file)
-        elif 'size' in self.criteria:
-            logger.debug('      unique source - will move to dest_dir - maybe with new name')
-            self._rename_and_move_source(source_dir, source_file, dest_dir)
+        if self._is_file_in_destdir(ddir, sfile):
+            if self.matchon == 'name_only':
+                self.merger.action[self.full_match](sdir, sfile, ddir, sfile)
+            elif self.matchon == 'name_and_md5':
+                if compare_md5s(sdir, sfile, ddir, sfile) == 'match':
+                    self.merger.action[self.full_match](sdir, sfile, ddir, sfile)
+                else:
+                    self.merger.action[self.part_match](sdir, sfile, ddir, sfile)
         else:
-            logger.debug('      unique source - will move to dest_dir')
-            self._move_source(source_dir, source_file, dest_dir)
+            reason = 'source has no matching dest'
+            self.merger._move_source(sdir, sfile, ddir, reason=reason)
 
 
-    def _match_files(self, source_dir, source_file, dest_dir, dest_file):
 
-         if 'name' in self.criteria:
-             if not self._is_file_in_destdir(dest_dir, source_file):
-             #if source_file not in self.dest_files:
-                 logger.debug('      file only exists in source_dir')
-                 return False
+    def _is_file_in_destdir(self, dest_dir, file_name):
+        if dest_dir not in self.dest_files:
+            self.dest_files[dest_dir]   = \
+                [os.path.basename(f) for f in glob.glob(os.path.join(dest_dir, '*'))]
 
-         if 'size' in self.criteria:
-             if self._compare_sizes(source_dir, source_file, dest_dir, dest_file) != 'match':
-                 logger.debug('      file exists in both locations, but has diff size')
-                 return False
-
-         if 'md5' in self.criteria:
-            logger.critical('MD5 Not implemented yet')
-            sys.exit(1)
-
-         return True
+        if file_name in self.dest_files[dest_dir]:
+            return True
+        else:
+            return False
 
 
-    def _first_wins(self, source_dir, source_file, dest_dir, dest_file):
-        logger.debug('      _first_wins - will delete source')
-        self._delete_source(source_dir, source_file)
+
+class MergeFiles(object):
+
+    def __init__(self, dry_run):
+        self.dry_run       = dry_run
+        self.action   = {'keep_dest':     self.keep_dest,
+                         'keep_source':   self.keep_source,
+                         'keep_both':     self.keep_both,
+                         'keep_newest':   self.keep_newest,
+                         'keep_biggest':  self.keep_biggest }
+
+    def keep_dest(self, source_dir, source_file, dest_dir, dest_file, reason=''):
+        self._delete_source(source_dir, source_file, reason=reason)
 
 
-    def _last_wins(self, source_dir, source_file, dest_dir, dest_file):
-        logger.debug('moving file: %s   to: %s' % (os.path.join(source_dir, source_file),dest_dir))
-        self._move_source(source_dir, source_file, dest_dir)
+    def keep_source(self, source_dir, source_file, dest_dir, dest_file, reason=''):
+        self._move_source(source_dir, source_file, dest_dir, reason=reason)
 
 
-    def _biggest_wins(self, source_dir, source_file, dest_dir, dest_file):
-        logger.debug('      _biggest wins')
+    def keep_biggest(self, source_dir, source_file, dest_dir, dest_file, reason=''):
         if os.path.getsize(os.path.join(source_dir, source_file)) \
         > os.path.getsize(os.path.join(dest_dir, dest_file)):
-            logger.debug('          biggest is source: %s' % os.path.join(source_dir, source_file))
-            logger.debug('          source size: %d' % os.path.getsize(os.path.join(source_dir, source_file)))
-            self._move_source(source_dir, source_file, dest_dir)
+            self._move_source(source_dir, source_file, dest_dir, reason=reason)
         else:
-            logger.debug('          biggest is dest: %s' % os.path.join(dest_dir, dest_file))
-            logger.debug('          dest size: %d' % os.path.getsize(os.path.join(dest_dir, dest_file)))
-            self._delete_source(source_dir, source_file)
+            self._delete_source(source_dir, source_file, reason=reason)
 
 
-    def _most_current_wins(self, source_dir, source_file, dest_dir, dest_file):
-        logger.debug('most_current_wins')
+    def keep_newest(self, source_dir, source_file, dest_dir, dest_file, reason=''):
         source_fn_time = os.path.getmtime(os.path.join(source_dir, source_file))
         dest_fn_time   = os.path.getmtime(os.path.join(dest_dir, dest_file))
+
         if source_fn_time > dest_fn_time:
-            self._move_source(source_dir, source_file, dest_dir)
+            self._move_source(source_dir, source_file, dest_dir, reason=reason)
         else:
-            self._delete_source(source_dir, source_file)
+            self._delete_source(source_dir, source_file, reason=reason)
 
 
-    def _move_source(self, source_dir, source_file, dest_dir):
-        assert os.path.exists(os.path.join(source_dir, source_file))
-        assert os.path.isdir(dest_dir)
-        if not os.path.exists(os.path.join(dest_dir, source_file)):
-            shutil.move(os.path.join(source_dir, source_file), dest_dir)
-        elif (os.path.isfile(os.path.join(source_dir, source_file))
-        and os.path.isfile(os.path.join(dest_dir, source_file))):
-            shutil.copy2(os.path.join(source_dir, source_file), dest_dir)
-            os.remove(os.path.join(source_dir, source_file))
-
-
-    def _all_wins(self, source_dir, source_file, dest_dir, dest_file):
+    def keep_both(self, source_dir, source_file, dest_dir, dest_file, reason=''):
         """ No files will over-write one another - instead the new file will
             get a modified name within the destination directory.
         """
-        logger.debug('      _all_wins - will move source to new name in dest_dir')
-        self._rename_and_move_source(source_dir, source_file, dest_dir)
+        self._rename_and_move_source(source_dir, source_file, dest_dir, reason=reason)
 
 
-    def _rename_and_move_source(self, source_dir, source_file, dest_dir, dest_file=None):
+
+    def _move_source(self, source_dir, source_file, dest_dir, reason):
+        log_action('move_source', os.path.join(source_dir, source_file))
+        log_reason(reason)
+        assert os.path.exists(os.path.join(source_dir, source_file))
+        assert os.path.isdir(dest_dir)
+        if not self.dry_run:
+            if not os.path.exists(os.path.join(dest_dir, source_file)):
+                shutil.move(os.path.join(source_dir, source_file), dest_dir)
+            elif (os.path.isfile(os.path.join(source_dir, source_file))
+            and os.path.isfile(os.path.join(dest_dir, source_file))):
+                shutil.copy2(os.path.join(source_dir, source_file), dest_dir)
+                os.remove(os.path.join(source_dir, source_file))
+
+
+    def _rename_and_move_source(self, source_dir, source_file, dest_dir,
+                                dest_file=None, reason=None):
+
+        log_action('rename_and_move_source', os.path.join(source_dir, source_file))
+        log_reason(reason)
 
         if not dest_file:
             dest_file = create_unique_file_name(dest_dir, source_file)
@@ -263,24 +255,57 @@ class ProcessDir(object):
         assert os.path.isdir(dest_dir)
         assert not os.path.exists(os.path.join(dest_dir, dest_file))
 
-        shutil.move(os.path.join(source_dir, source_file),
+        if not self.dry_run:
+            shutil.move(os.path.join(source_dir, source_file),
                     os.path.join(dest_dir, dest_file))
 
 
-    def _delete_source(self, source_dir, source_file):
-        os.remove(os.path.join(source_dir, source_file))
+    def _delete_source(self, source_dir, source_file=None, reason=None):
+        log_action('delete_source', os.path.join(source_dir, source_file or ''))
+        log_reason(reason)
+
+        if not self.dry_run:
+            adir = os.path.join(source_dir, source_file)
+            if os.path.isdir(adir):
+                os.rmdir(adir)
+            else:
+                os.remove(adir)
 
 
 
-    def _compare_sizes(self, source_dir, source_file, dest_dir, dest_file):
-        size1 = os.path.getsize(os.path.join(source_dir, source_file))
-        size2 = os.path.getsize(os.path.join(dest_dir, dest_file))
-        if size1 == size2:
-            return 'match'
-        elif size1 > size2:
-            return 'source-bigger'
+
+def compare_md5s(source_dir, source_file, dest_dir, dest_file):
+
+    #---- first run a cheap check: -----
+    size1 = os.path.getsize(os.path.join(source_dir, source_file))
+    size2 = os.path.getsize(os.path.join(dest_dir, dest_file))
+    #if size1 == size2:
+    #    return 'match'
+    if size1 > size2:
+        return 'not-matched'
+    elif size1 < size2:
+        return 'not-matched'
+
+    #---- next keep comparing sections, hoping to bail out early
+    #---- on a difference:
+    source_md5 = hashlib.md5()
+    dest_md5   = hashlib.md5()
+    source_f = open(os.path.join(source_dir, source_file), 'r')
+    dest_f   = open(os.path.join(dest_dir,   dest_file), 'r')
+    while True:
+        source_chunk =  source_f.read(128 * source_md5.block_size)
+        dest_chunk   =  dest_f.read(128 * dest_md5.block_size)
+        if not source_chunk or not dest_chunk:
+            break
         else:
-            return 'dest-bigger'
+            source_md5.update(source_chunk)
+            dest_md5.update(dest_chunk)
+            if source_md5.hexdigest() != dest_md5.hexdigest():
+                return 'not-matched'
+
+    return 'match'
+
+
 
 def is_dir_empty(a_dir):
     if len(os.listdir(a_dir)) == 0:
@@ -315,16 +340,16 @@ def abort(summary, details, rc=1):
     print '=== ',
     print '%-69.69s' % summary,
     print(' ===')
-    if logger:
-        logger.critical(summary)
+    if logging:
+        logging.critical(summary)
 
     #---prints exception msg, breaks it into multiple lines:
     for i in range(int(math.ceil(len(details)/68))):
         print '=== ',
         print '%-69.69s' % details[i*68:(i*68)+68],
         print ' ==='
-    if logger: 
-        logger.critical(details)
+    if logging:
+        logging.critical(details)
 
     #---prints bottom line:
     print('=' * 79)
@@ -337,23 +362,35 @@ def abort(summary, details, rc=1):
 
 
 def setup_logs(arg_log_dir, log_level='debug', log_to_console=True):
-    """ Sets up the cletus logger.  This is just a wrapper around the
-        standard logger.
+    """ Sets up the cletus logging.  This is just a wrapper around the
+        standard logging.
         -  APP_NAME will be used to look up the XDG logging directory
         -  log_name will be used for organizing the logs
         -  arg_log_dir will override default if user provided something
     """
     assert log_level.lower() in ('debug', 'info', 'warning', 'error', 'critical')
-    global logger
-    cl_logger = log.LogManager(app_name=APP_NAME,
-                               log_name=__name__,
-                               log_dir=arg_log_dir,
-                               log_to_console=log_to_console)
-    logger    = cl_logger.logger
-    logger.setLevel(log_level.upper())
+    logging.basicConfig(level=log_level.upper(),
+                        format='%(message)s')
+
+def log_action(onmatch, file_name):
+    logging.info('%s - %s' % (onmatch, file_name))
+
+def log_reason(reason):
+    if reason:
+        logging.debug('   %s' % reason)
 
 
 
+
+def kill_if_symlink(fqfn):
+
+    if os.path.exists(fqfn):
+        if os.path.islink(fqfn):
+            logging.critical('Symbolic link not supported: %s' % fqfn)
+            sys.exit(1)
+    else:
+        logging.critical('File missing while checking for symlink: %s' % fqfn)
+        sys.exit(1)
 
 
 
@@ -364,9 +401,7 @@ def get_args():
         Output:
             - args dictionary
     """
-    use = ("%prog is used to run user-specified actions against files. It is "
-           "typically scheduled to run periodically, and uses a config file for "
-           "criteria. \n"
+    use = ("%prog is used to consolidate directories"
            " \n"
            "   %prog [file] [misc options]")
 
@@ -378,16 +413,23 @@ def get_args():
            nargs='+',
            help='List of at least two directories. All files'
                 ' will be moved into the last (rightmost) entry.')
-    parser.add_argument('-c', '--criteria',
-           nargs='+',
-           choices=['name','size','md5'],
+    parser.add_argument('--match-on',
+           dest='matchon',
+           choices=['name_only','name_and_md5'],
            required=True,
            help='Matching criteria.  Reference multiple times to include multiple criteria.')
-    parser.add_argument('-a', '--action',
-           choices=['first_wins', 'last_wins', 'all_wins', 'most_current_wins', 'biggest_wins'],
-           default='all_wins',
+    parser.add_argument('--on-match',
+           dest='onmatch',
+           choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
+           default='keep_both',
            required=False,
            help='Determines move/copy action for a matched file.')
+    parser.add_argument('--on-partial-match',
+           dest='onpartmatch',
+           choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
+           required=False,
+           help='Determines move/copy action for a file with matched name but different content.')
+
 
     parser.add_argument('--log-dir',
            dest='log_dir',
@@ -399,11 +441,11 @@ def get_args():
            default='info',
            help='Specifies level of detail in logs.  Default is None - which leaves it to the config file.')
 
-    parser.add_argument('--testrun',
+    parser.add_argument('--dry-run',
            default=False,
            action='store_true',
-           dest='test_run',
-           help=('Identify files to act upon - but just list them'))
+           dest='dry_run',
+           help=('Identify files to act upon - but just list them - no movement'))
 
     parser.add_argument('--long-help',
            default=False,
@@ -413,12 +455,18 @@ def get_args():
            action='version',
            version='gristle_dir_merger %s' % __version__)
 
-
     args = parser.parse_args()
 
     if args.long_help:
         print __doc__
         sys.exit(0)
+
+    if args.matchon == 'name_only':
+        if args.onpartmatch is not None:
+            parser.error("on-partial-match must not be provided when match-on is 'name_only'")
+    else:
+        if args.onpartmatch is None:
+            args.onpartmatch = 'keep_newest'
 
 
     return args
