@@ -118,7 +118,8 @@ def get_case(field_type, values):
 def get_field_freq(filename,
                    dialect,
                    field_number,
-                   max_freq_size=MAX_FREQ_SIZE_DEFAULT):
+                   max_freq_size=MAX_FREQ_SIZE_DEFAULT,
+                   read_limit=None):
     """ Collects a frequency distribution for a single field by reading
         the file provided.
         Issues:
@@ -133,6 +134,9 @@ def get_field_freq(filename,
         rec_cnt += 1
         if rec_cnt == 1 and dialect.has_header:
             continue
+        elif read_limit and rec_cnt >= read_limit:
+            truncated = True
+            break
         try:
             freq[fields[field_number].strip()] += 1
         except IndexError:
