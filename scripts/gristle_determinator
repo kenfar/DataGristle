@@ -252,7 +252,8 @@ def main():
                                        opts.delimiter,
                                        opts.recdelimiter,
                                        opts.hasheader,
-                                       quoting=csv.QUOTE_MINIMAL)
+                                       quoting=csv.QUOTE_MINIMAL,
+                                       read_limit=opts.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
@@ -281,7 +282,8 @@ def main():
 
     my_fields.analyze_fields(opts.column_number,
                              opts.column_type_overrides,
-                             opts.number)
+                             opts.number,
+                             opts.read_limit)
 
     out_writer.write_field_results(my_fields, opts.column_number)
     if opts.metadata:
@@ -434,7 +436,10 @@ class OutputWriter(object):
 
         self.write_string('format type',      my_file.format_type)
         self.write_string('field count',      my_file.field_cnt)
-        self.write_string('record count',     my_file.record_cnt)
+        if my_file.est_rec_cnt:
+            self.write_string('record count', '%d (est)' % my_file.record_cnt)
+        else:
+            self.write_string('record count',     my_file.record_cnt)
         self.write_string('hasheader',        my_file.dialect.has_header)
         if my_file.dialect.delimiter.strip() == '':
             self.write_string('delimiter',        '[space]')
@@ -595,6 +600,9 @@ def get_opts_and_args():
            help='Specify a maximum number of entries for freq dictionary. '
                  'This is applied separately to each column.  The default is'
                  ' set at approximately 1 million entries. ')
+    parser.add_option('--read-limit',
+           type=int,
+           help='Specify a maximum number of records to read from input file')
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted field delimiter.'
                  'This is essential for multi-column delimiters.'))
