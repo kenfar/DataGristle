@@ -53,7 +53,8 @@ class FileTyper(object):
                  delimiter=None,
                  rec_delimiter=None,   #unused
                  has_header=None,
-                 quoting=None):
+                 quoting=None,
+                 read_limit=None):
         """  fqfn = fully qualified file name
         """
         self._delimiter           = delimiter
@@ -64,8 +65,10 @@ class FileTyper(object):
         self.fixed_length         = None
         self.field_cnt            = None
         self.record_cnt           = None
+        self.est_rec_cnt          = False
         self.csv_quoting          = None
         self.dialect              = None
+        self.read_limit           = None
 
     def analyze_file(self):
         """ analyzes a file to determine the structure of the file in terms
@@ -98,7 +101,7 @@ class FileTyper(object):
         self.dialect.has_header  = self._get_has_header(self._has_header)
         self._has_header         = self.dialect.has_header
         self.field_cnt           = self._get_field_cnt()
-        self.record_cnt          = self._count_records()
+        self.record_cnt, self.est_rec_cnt   = self._count_records()
 
         return self.dialect
 
@@ -257,12 +260,32 @@ class FileTyper(object):
 
     def _count_records(self):
         """ Returns the number of records in the file
+            Outputs:
+               - rec count
+               - estimated - True or False, indicates if the rec count is an
+                 estimation based on the first self.read_limit rows.
         """
-        rec_cnt = 0
-        for dummy in fileinput.input(self.fqfn):
+        rec_cnt           = 0
+        estimated_rec_cnt = 0
+        byte_cnt          = 0
+        estimated         = False
+
+        for rec in fileinput.input(self.fqfn):
             rec_cnt += 1
+            byte_cnt += len(rec)
+            if self.read_limit and (rec_cnt >= self.read_limit):
+                estimated = True
+                break
         fileinput.close()
-        return rec_cnt
+
+        if estimated:
+            try:
+                bytes_per_rec = byte_cnt / rec_cnt
+                estimated_rec_cnt = int(os.path.getsize(self.fqfn) / bytes_per_rec) 
+            except  ZeroDivisionError:
+                pass
+
+        return estimated_rec_cnt or rec_cnt, estimated
 
 
 
