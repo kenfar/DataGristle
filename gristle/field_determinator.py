@@ -101,7 +101,8 @@ class FieldDeterminator(object):
     def analyze_fields(self,
                        field_number=None,
                        field_types_overrides=None,
-                       max_freq_number=None):
+                       max_freq_number=None,
+                       read_limit=None):
         """ Determines types, names, and characteristics of fields.
 
             Inputs:
@@ -140,7 +141,8 @@ class FieldDeterminator(object):
             self.field_rows_invalid[f_no]) = miscer.get_field_freq(self.filename,
                                                             self.dialect,
                                                             f_no,
-                                                            max_items)
+                                                            max_items,
+                                                            read_limit)
 
             self.field_types[f_no]  = typer.get_field_type(self.field_freqs[f_no])
             if field_types_overrides:
