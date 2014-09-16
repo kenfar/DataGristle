@@ -12,46 +12,52 @@ positional arguments:
 
 optional arguments:
 
-  --match-on-name-only  Match files on name only.  Overrides default of
-                        match-on-name-and-md5.
-
   --match-on-name-and-md5
                         Match files on name and an MD5 commparison.  This is the
                         default.
+  --match-on-name-only  Match files on name only.  Overrides default of
+                        match-on-name-and-md5.
+
   --on-full-match       Action for files matched completely.
-         keep_dest    - keeps the desination file and deletes the source file.
+         keep_dest    - Keeps the desination file and deletes the source file.
                         This is the default - because it is the fastest, and
                         the two files are already deemed to be identical.
-         keep_source  - keeps the source and deletes the destination.  This
+         keep_source  - Keeps the source and deletes the destination.  This
                         override might be useful if you want to keep the
                         ownership, privs, etc associated with the source file.
                         Or if you're only matching on name.
-         keep_both    - keeps both files by copying the source_file over with a
+         keep_both    - Keeps both files by copying the source_file over with a
                         slightly modified name - in which a number is inserted
                         prior to the file extension.
-         keep_newest  - keeps the newest of the two matching files, as
+         keep_newest  - Keeps the newest of the two matching files, as
                         determined by modification time.
-         keep_biggest - keeps the largest of the two matching files.
+         keep_biggest - Keeps the largest of the two matching files.
 
   --on-partial-match    Action for files matched by name, but not by md5.  Only
                         applies to match-on-name-and-md5.
-         keep_newest  - keeps the newest of the two matching files, as
+         keep_newest  - Keeps the newest of the two matching files, as
                         determined by modification time.  Ths is the default.
-         keep_biggest - keeps the largest of the two matching files.
-         keep_both    - keeps both files by copying the source_file over with a
+         keep_biggest - Keeps the largest of the two matching files.
+         keep_both    - Keeps both files by copying the source_file over with a
                         slightly modified name - in which a number is inserted
                         prior to the file extension.
-         keep_dest    - keeps the desination file and deletes the source file.
-         keep_source  - keeps the source and deletes the destination.
+         keep_dest    - Keeps the desination file and deletes the source file.
+         keep_source  - Keeps the source and deletes the destination.
 
   --dry-run             Lists files and action, but does not change them.
   -r, --recursive       Walk through directories recursively.  Default is
-                        non-recursive
-
-  --log-level {debug,info,warning,error,critical}
-                        Level of log detail.  Default is Info.
-  --version             show program's version number and exit
-  -h, --help            show this help message and exit
+                        non-recursive.
+  -s, --stats           Prints processing counts.
+  --log-level           Controls level of detail for what is printed.
+        critical      - Prints only messages that cause the entire program to fail.
+        error         - Prints the above plus messages about operations that
+                        failed.
+        warning       - Prints the above plus warnings.
+        info          - Prints the above plus info about each file.  This is
+                        the Default.
+        debug         - Prints the above plus details on each file's process.
+  --version             Show program's version number and exit.
+  -h, --help            Show this help message and exit.
   --long-help           Print more verbose help.
 
 
@@ -86,6 +92,22 @@ Examples
         - Bottom line: this is a good way to go if you have
           files that have changed in both directories, but always want to
           use the source files.
+
+Performance
+  Because of a number of optimizations, gristle_dir_merger does as little work
+  as it can get away with.  This means using the dest_dir copy rather than the
+  source_copy when two files match, and it means stopping the md5 process as
+  soon as the files are discovered to be different.
+
+  A simple benchmark was performed with a circa 2010 laptop with an SSD drive
+  using two 600 MB directories, each containing the exact same 550 files
+  spread across 70 directories.  This is a worst-case scenario, since 100% of
+  all files will have to be MD5'd:
+        - using defaults (match-on-name-and-md5 and keep-source):
+            - ~9 seconds
+        - using worst-case settings  (match-on-name-and-md5 and keep-source):
+            - ~13 seconds
+  These times would be far slower on magnetic media.
 
 
 This source code is protected by the BSD license.  See the file "LICENSE"
@@ -130,11 +152,10 @@ except ImportError:
 def main():
     """
     """
-    args  = get_args()
+    args       = get_args()
     setup_logs(args.log_level)
 
     process_dir = ProcessDir(args.source_dir,
-                             args.dest_dir,
                              args.matchon,
                              args.on_f_match,
                              args.on_p_match,
@@ -142,25 +163,10 @@ def main():
                              args.dry_run)
 
     process_dir.walk(args.source_dir, args.dest_dir)
+    process_dir.remove_top_source()
 
-    process_dir.generate_dest_counts()
     if args.stats:
-        logging.info('---------- Counts -----------')
-        logging.info('Total Source Objects:       %d' % (process_dir.sdir_cnt + process_dir.sfile_cnt))
-        logging.info('   Directory Read Cnt:      %d' % process_dir.sdir_cnt)
-        logging.info('   File Read Cnt:           %d' % process_dir.sfile_cnt)
-        logging.info('      DotFile Read Cnt:     %d' % process_dir.sdotfile_cnt)
-        logging.info('Total Dest Objects:         %d' % (process_dir.ddir_cnt + process_dir.dfile_cnt))
-        logging.info('   Directory Read Cnt:      %d' % process_dir.ddir_cnt)
-        logging.info('   File Read Cnt:           %d' % process_dir.dfile_cnt)
-        logging.info('')
-        logging.info('Full Match Cnt:             %d' % process_dir.full_match_cnt)
-        logging.info('Partial Match Cnt:          %d' % process_dir.partial_match_cnt)
-        logging.info('No Match Cnt:               %d' % process_dir.no_match_cnt)
-        logging.info('')
-        logging.info('Delete Source Cnt:          %d' % process_dir.merger.delete_source_cnt)
-        logging.info('Move Source Cnt:            %d' % process_dir.merger.move_source_cnt)
-        logging.info('Rename And Move Source Cnt: %d' % process_dir.merger.rename_and_move_source_cnt)
+        process_dir.write_stats()
 
     return 0
 
@@ -171,16 +177,15 @@ class ProcessDir(object):
         against files within them.
     """
 
-    def __init__(self, source_dir, dest_dir, matchon, full_match, part_match,
-                 recursive, dry_run=False):
+    def __init__(self, starting_source_dir,
+                 matchon, full_match, part_match, recursive, dry_run=False):
 
-        assert os.path.isdir(source_dir)
-        assert os.path.isdir(dest_dir)
+        assert os.path.isdir(starting_source_dir)
 
+        self.start_time    = time.time()
         self.recursive     = recursive
         self.matchon       = matchon
-        self.source_dir    = source_dir
-        self.dest_dir      = dest_dir
+        self.starting_source_dir    = starting_source_dir
         self.dest_dirs     = {} # key is dirpath, value is count of files within
         self.dest_files    = {} # key is dirpath, value is list of files
         self.full_match    = full_match
@@ -262,6 +267,7 @@ class ProcessDir(object):
 
 
 
+
     def _merge_file(self, sdir, sfile, ddir):
         """ Attempts to match a source file against a corresponding one in the
             dest dir by name_only or name_and_md5.  Then it performs the action
@@ -328,6 +334,35 @@ class ProcessDir(object):
                 dfile_cnt += value
         self.ddir_cnt  = ddir_cnt
         self.dfile_cnt = dfile_cnt - ddir_cnt
+
+
+    def remove_top_source(self):
+        if is_dir_empty(self.starting_source_dir):
+            self.merger.keep_dest(self.starting_source_dir, None, None, None)
+            log_reason('source_dir empty - will be removed')
+
+
+    def write_stats(self):
+        self.generate_dest_counts()
+
+        logging.info('---------- Counts -----------')
+        logging.info('Total Source Objects:       %d' % (self.sdir_cnt + self.sfile_cnt))
+        logging.info('   Directory Read Cnt:      %d' % self.sdir_cnt)
+        logging.info('   File Read Cnt:           %d' % self.sfile_cnt)
+        logging.info('      DotFile Read Cnt:     %d' % self.sdotfile_cnt)
+        logging.info('Total Dest Objects:         %d' % (self.ddir_cnt + self.dfile_cnt))
+        logging.info('   Directory Read Cnt:      %d' % self.ddir_cnt)
+        logging.info('   File Read Cnt:           %d' % self.dfile_cnt)
+        logging.info('')
+        logging.info('Full Match Cnt:             %d' % self.full_match_cnt)
+        logging.info('Partial Match Cnt:          %d' % self.partial_match_cnt)
+        logging.info('No Match Cnt:               %d' % self.no_match_cnt)
+        logging.info('')
+        logging.info('Delete Source Cnt:          %d' % self.merger.delete_source_cnt)
+        logging.info('Move Source Cnt:            %d' % self.merger.move_source_cnt)
+        logging.info('Rename And Move Source Cnt: %d' % self.merger.rename_and_move_source_cnt)
+        logging.info('')
+        logging.info('Seconds Duration:      %7.2f' % (time.time() - self.start_time))
 
 
 
@@ -436,11 +471,15 @@ class MergeFiles(object):
     def _delete_source(self, source_dir, source_file=None, reason=None):
         log_action('delete_source', os.path.join(source_dir, source_file or ''))
         log_reason(reason)
-        kill_if_symlink(os.path.join(source_dir, source_file), 'source')
+        kill_if_symlink(os.path.join(source_dir, source_file or ''), 'source')
         self.delete_source_cnt += 1
 
         if not self.dry_run:
-            adir = os.path.join(source_dir, source_file)
+            if source_file:
+                adir = os.path.join(source_dir, source_file)
+            else:
+                adir = source_dir
+
             if os.path.isdir(adir):
                 os.rmdir(adir)
             else:
