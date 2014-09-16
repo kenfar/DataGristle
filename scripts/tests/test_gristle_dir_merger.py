@@ -12,6 +12,7 @@ import random
 import csv
 import pytest
 import shutil
+import envoy
 from pprint import pprint as pp
 
 import test_tools
@@ -64,6 +65,23 @@ class TestCreateUniqueFileName(object):
 def touch(fname, times=None):
     with file(fname, 'a'):
         os.utime(fname, times)
+
+
+def generate_file(temp_dir, records=1):
+    (fd, fqfn) = tempfile.mkstemp(prefix='test_md5_', dir=temp_dir)
+
+    fp = os.fdopen(fd,"w")
+    for x in range(records):
+        fp.write('blahblahblahfidoblahblah\n')
+    fp.close()
+
+    cmd = 'md5sum %s' % fqfn
+    r   = envoy.run(cmd)
+    assert r.status_code == 0, 'generate_file md5sum failed'
+    md5sum, fn  = r.std_out.split()
+
+    return fqfn, md5sum
+
 
 
 
