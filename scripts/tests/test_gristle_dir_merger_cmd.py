@@ -130,6 +130,13 @@ class TestEmpties(object):
         r = envoy.run(self.cmd)
         self.get_outputs(r)
 
+        print 'dest_dir: %s' % self.dest_dir
+        print os.listdir(self.dest_dir)
+        print 'dest sub dir: %s' % os.path.join(self.dest_dir, 'mysubdir')
+        print 'dest sub contents: '
+        #print os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
+        print 'is a file? %s' % os.path.isfile(os.path.join(self.dest_dir, 'mysubdir'))
+
         assert r.status_code      == 0
         assert 'mysubdir' in os.listdir(self.dest_dir)
         assert not os.path.exists(self.source_dir)
@@ -192,6 +199,11 @@ class TestMatchOnNameOnly(object):
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_both')
         r = envoy.run(self.cmd)
+        print('dest_dir:')
+        print(os.listdir(self.dest_dir))
+        print('')
+        print('dest_subdir:')
+        print(os.listdir(self.dest_subdir))
         self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
     def test_dup_files_and_onmatch_is_usesource(self):
