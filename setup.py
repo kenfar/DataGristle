@@ -8,7 +8,7 @@ def read(*paths):
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "0.57"
+version          = "0.58"
 DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
 
 setup(name             = 'datagristle'     ,
@@ -38,6 +38,7 @@ setup(name             = 'datagristle'     ,
             ],
       scripts      = ['scripts/gristle_determinator'  ,
                       'scripts/gristle_differ'        ,
+                      'scripts/gristle_dir_merger'    ,
                       'scripts/gristle_file_converter',
                       'scripts/gristle_filter'        ,
                       'scripts/gristle_freaker'       ,
