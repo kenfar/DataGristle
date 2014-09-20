@@ -133,6 +133,9 @@ import errno
 import glob
 import hashlib
 import logging
+from os.path import dirname, basename
+from os.path import isdir, isfile, exists
+from os.path import join as pjoin
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
@@ -140,7 +143,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
 #--- gristle modules -------------------
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import gristle.file_type           as file_type
 import gristle.common              as comm
 
@@ -181,22 +184,22 @@ class ProcessDirs(object):
         against files within them.
     """
 
-    def __init__(self, starting_source_dir,
+    def __init__(self, starting_src_dir,
                  matchon, full_match, part_match, recursive,
-                 dry_run, ignore_errors):
+                 dry_run, ignore_err):
 
-        assert os.path.isdir(starting_source_dir)
+        assert isdir(starting_src_dir)
 
-        self.start_time    = time.time()
-        self.ignore_errors = ignore_errors
-        self.recursive     = recursive
-        self.matchon       = matchon
-        self.starting_source_dir    = starting_source_dir
-        self.dest_dirs     = {} # key is dirpath, value is count of files within
-        self.dest_files    = {} # key is dirpath, value is list of files
-        self.full_match    = full_match
-        self.part_match    = part_match
-        self.merger        = MergeFiles(dry_run, ignore_errors)
+        self.start_time        = time.time()
+        self.ignore_err        = ignore_err
+        self.recursive         = recursive
+        self.matchon           = matchon
+        self.starting_src_dir  = starting_src_dir
+        self.dest_dirs         = {} # key is dirpath, value is count of files within
+        self.dest_files        = {} # key is dirpath, value is list of files
+        self.full_match        = full_match
+        self.part_match        = part_match
+        self.merger            = MergeFiles(dry_run, ignore_err)
         self.full_match_cnt    = 0
         self.partial_match_cnt = 0
         self.no_match_cnt      = 0
@@ -207,7 +210,7 @@ class ProcessDirs(object):
         self.dfile_cnt         = 0
 
 
-    def get_walk_entries(self, a_dir):
+    def get_walk_entries(self, src_dir):
         """ Intended to emulate the os.walk() interaction.
             Inputs:
                 - a_dir - a directory
@@ -215,114 +218,114 @@ class ProcessDirs(object):
                 - dirs  - a list of subdirectories within a_dir
                 - files - a list of files within a_dir
         """
-        entries = os.listdir(a_dir)
+        entries = os.listdir(src_dir)
         dirs    = []
         files   = []
         for entry in entries:
-            if os.path.isdir(os.path.join(a_dir, entry)):
+            if isdir(pjoin(src_dir, entry)):
                 dirs.append(entry)
             else:
                 files.append(entry)
         return dirs, files
 
 
-    def walk(self, source_dir, dest_dir):
+    def walk(self, src_dir, dst_dir):
         """ Inputs:
-                - source_dir - fully qualified
-                - dest_dir   - fully qualified
+                - src_dir - fully qualified source directory
+                - dst_dir - fully qualified destination directory
             Processing
                 - Will call itself
                 - Will terminate the program if it encounters a symbolic link
         """
-        kill_if_symlink(source_dir, 'source', self.ignore_errors)
-        kill_if_symlink(dest_dir, 'dest', self.ignore_errors)
+        kill_if_symlink(src_dir, 'source', self.ignore_err)
+        kill_if_symlink(dst_dir, 'dest', self.ignore_err)
 
-        dirs, files  = self.get_walk_entries(source_dir)
+        sub_dirs, files  = self.get_walk_entries(src_dir)
 
-        for dir_name in dirs:
+        for sub_dir in sub_dirs:
 
             self.sdir_cnt += 1
-            self._is_file_in_destdir(dest_dir, None) # only call for stats
-            kill_if_symlink(os.path.join(source_dir, dir_name), 'source', self.ignore_errors)
-            kill_if_symlink(os.path.join(dest_dir, dir_name), 'dest', self.ignore_errors)
-            if os.path.isdir(os.path.join(source_dir, dir_name)):
+            self._is_srcfile_in_destdir(None, dst_dir) # ensure dir in cache
+            kill_if_symlink(pjoin(src_dir, sub_dir), 'source', self.ignore_err)
+            kill_if_symlink(pjoin(dst_dir, sub_dir), 'dest', self.ignore_err)
+
+            if isdir(pjoin(src_dir, sub_dir)):
                 if self.recursive:
-                    self.walk(os.path.join(source_dir, dir_name),
-                              os.path.join(dest_dir, dir_name))
-                #if is_dir_empty(os.path.join(source_dir, dir_name)):
-                if not os.listdir(os.path.join(source_dir, dir_name)):
-                    self.merger.keep_dest(os.path.join(source_dir, dir_name), None,
-                                          os.path.join(dest_dir, dir_name), None)
+                    self.walk(pjoin(src_dir, sub_dir), pjoin(dst_dir, sub_dir))
+                if not os.listdir(pjoin(src_dir, sub_dir)):
+                    self.merger.keep_dest(pjoin(src_dir, sub_dir),
+                                          pjoin(dst_dir, sub_dir), None)
                     log_reason('source_dir empty - will be removed')
 
             else:
                 self.no_match_cnt += 1
                 reason = 'source_dir has no matching dest'
-                self.merger.keep_source(source_dir, dir_name, dest_dir, dir_name, reason=reason)
+                self.merger.keep_source(pjoin(src_dir, sub_dir),
+                                        pjoin(dst_dir, sub_dir), reason=reason)
 
         for file_name in files:
             self.sfile_cnt += 1
             if file_name.startswith('.'):
                self.sdotfile_cnt += 1
-            self._merge_source_file(source_dir, file_name, dest_dir)
+            self._merge_source_file(pjoin(src_dir, file_name), dst_dir)
 
-        if source_dir == self.starting_source_dir:
+        if src_dir == self.starting_src_dir:
             self.remove_top_source()
 
 
 
-    def _merge_source_file(self, sdir, sfile, ddir):
+    def _merge_source_file(self, src_path, dst_path):
         """ Attempts to match a source file against a corresponding one in the
             dest dir by name_only or name_and_md5.  Then it performs the action
             specified for the level of match that occurred.
             Inputs:
-               - sdir  - the source_dir
-               - sfile - the source_file
-               - ddir  - the dest-dir - may not exist
+               - src_path - the source path - must specify a file
+               - dst_path - the source path - must specify a dir
         """
-        assert os.path.isdir(sdir)
-        assert os.path.isfile(os.path.join(sdir, sfile))
+        assert isfile(src_path)
+        if exists(dst_path):
+            assert isdir(dst_path)
 
-        if self._is_file_in_destdir(ddir, sfile):
+        if self._is_srcfile_in_destdir(basename(src_path), dst_path):
             if self.matchon == 'name_only':
                 self.full_match_cnt += 1
                 rsn = 'full-match'
-                self.merger.action[self.full_match](sdir, sfile, ddir, sfile, rsn)
+                self.merger.action[self.full_match](src_path, dst_path, rsn)
             elif self.matchon == 'name_and_md5':
-                if compare_md5s(sdir, sfile, ddir, sfile) == 'matched':
+                if compare_md5s(src_path, pjoin(dst_path, basename(src_path))) == 'matched':
                     self.full_match_cnt += 1
                     rsn = 'full-match'
-                    self.merger.action[self.full_match](sdir, sfile, ddir, sfile, rsn)
+                    self.merger.action[self.full_match](src_path, dst_path, rsn)
                 else:
                     self.partial_match_cnt += 1
                     rsn = 'partial-match'
-                    self.merger.action[self.part_match](sdir, sfile, ddir, sfile, rsn)
+                    self.merger.action[self.part_match](src_path, dst_path, rsn)
             else:
                 logging.critical('Logic Error, bad value: %s' % self.matchon)
                 sys.exit(2)
         else:
             self.no_match_cnt += 1
             rsn = 'source_file has no matching dest'
-            self.merger.keep_source(sdir, sfile, ddir, None, rsn)
+            self.merger.keep_source(src_path, dst_path, rsn)
 
 
 
-    def _is_file_in_destdir(self, dest_dir, file_name):
+    def _is_srcfile_in_destdir(self, src_file, dest_dir):
         """ Determines if source_file is also in the corresponding dest_dir.
             Inputs:
+                - src_file
                 - dest_dir
-                - file_name
             Outputs:
                 - Boolean
         """
         if dest_dir not in self.dest_dirs:
-            dest_file_list = glob.glob(os.path.join(dest_dir, '*'))
-            dest_file_list.extend(glob.glob(os.path.join(dest_dir, '.*')))
+            dest_file_list = glob.glob(pjoin(dest_dir, '*'))
+            dest_file_list.extend(glob.glob(pjoin(dest_dir, '.*')))
             self.dest_dirs[dest_dir]  = len(dest_file_list)
-            self.dest_files[dest_dir] = [os.path.basename(f) for f in dest_file_list]
+            self.dest_files[dest_dir] = [basename(f) for f in dest_file_list]
 
-        if file_name:
-            if file_name in self.dest_files[dest_dir]:
+        if src_file:
+            if src_file in self.dest_files[dest_dir]:
                 return True
             else:
                 return False
@@ -340,8 +343,8 @@ class ProcessDirs(object):
 
 
     def remove_top_source(self):
-        if not os.listdir(self.starting_source_dir):
-            self.merger.keep_dest(self.starting_source_dir, None, None, None)
+        if not os.listdir(self.starting_src_dir):
+            self.merger.keep_dest(self.starting_src_dir, None, None)
             log_reason('source_dir empty - will be removed')
 
 
@@ -378,9 +381,9 @@ class MergeFiles(object):
            - ignore_errors - T/F
     """
 
-    def __init__(self, dry_run, ignore_errors):
+    def __init__(self, dry_run, ignore_err):
         self.dry_run                     = dry_run
-        self.ignore_errors               = ignore_errors
+        self.ignore_err                  = ignore_err
         self.action   = {'keep_dest':     self.keep_dest,
                          'keep_source':   self.keep_source,
                          'keep_both':     self.keep_both,
@@ -391,123 +394,108 @@ class MergeFiles(object):
         self.delete_source_cnt           = 0
 
 
-    def keep_dest(self, sdir, sfile, ddir, dfile, reason=''):
-        spath = os.path.join(sdir, sfile) if sfile else sdir
-        dpath = os.path.join(ddir, dfile) if dfile else ddir
-        self._delete_source(spath, rsn=reason)
+    def keep_dest(self, src_path, dst_path, reason=''):
+        self._delete_source(src_path, rsn=reason)
 
 
-    def keep_source(self, sdir, sfile, ddir, dfile, reason=''):
-        spath = os.path.join(sdir, sfile) if sfile else sdir
-        dpath = os.path.join(ddir, dfile) if dfile else ddir
-        self._move_source(spath, dpath, reason=reason)
+    def keep_source(self, src_path, dst_path, reason=''):
+        self._move_source(src_path, dst_path, reason=reason)
 
 
-    def keep_biggest(self, sdir, sfile, ddir, dfile, reason=''):
-        spath = os.path.join(sdir, sfile) if sfile else sdir
-        dpath = os.path.join(ddir, dfile) if dfile else ddir
-
-        if os.path.getsize(spath) > os.path.getsize(dpath):
-            self._move_source(spath, dpath, reason=reason)
+    def keep_biggest(self, src_path, dst_path, reason=''):
+        if os.path.getsize(src_path) > os.path.getsize(dst_path):
+            self._move_source(src_path, dst_path, reason=reason)
         else:
-            self._delete_source(spath, rsn=reason)
+            self._delete_source(src_path, rsn=reason)
 
 
+    def keep_newest(self, src_path, dst_path, reason=''):
+        src_fn_time = os.path.getmtime(src_path)
+        dst_fn_time   = os.path.getmtime(dst_path)
 
-    def keep_newest(self, sdir, sfile, ddir, dfile, reason=''):
-        spath          = os.path.join(sdir, sfile) if sfile else sdir
-        dpath          = os.path.join(ddir, dfile) if dfile else ddir
-        source_fn_time = os.path.getmtime(spath)
-        dest_fn_time   = os.path.getmtime(dpath)
-
-        if source_fn_time > dest_fn_time:
-            self._move_source(spath, dpath, reason=reason)
+        if src_fn_time > dst_fn_time:
+            self._move_source(src_path, dst_path, reason=reason)
         else:
-            self._delete_source(spath, rsn=reason)
+            self._delete_source(src_path, rsn=reason)
 
 
-
-
-    def keep_both(self, sdir, sfile, ddir, dfile, reason=''):
+    def keep_both(self, src_path, dst_path, reason=''):
         """ No files will over-write one another - instead the new file will
             get a modified name within the destination directory.
         """
-        self._rename_and_move_source(sdir, sfile, ddir, reason=reason)
+        self._rename_and_move_source(src_path, dst_path, reason=reason)
 
 
-    def _move_source(self, spath, dpath, reason):
 
-        log_action('move_source', spath)
+    def _move_source(self, src_path, dst_path, reason):
+
+        log_action('move_source', src_path)
         log_reason(reason)
-        kill_if_symlink(spath, 'source', self.ignore_errors)
-        kill_if_symlink(dpath, 'dest', self.ignore_errors)
+        kill_if_symlink(src_path, 'source', self.ignore_err)
+        kill_if_symlink(dst_path, 'dest', self.ignore_err)
         self.move_source_cnt += 1
 
-        stype = get_fileobj_type(spath)
-        dtype = get_fileobj_type(dpath)
+        stype = get_fileobj_type(src_path)
+        dtype = get_fileobj_type(dst_path)
 
         if stype == 'dir' and dtype == 'file':
-            logging.critical('dest_dir exists, but is a file: %s' % dpath)
-            if not self.ignore_errors:
+            logging.critical('dest_dir exists, but is a file: %s' % dst_path)
+            if not self.ignore_err:
                 sys.exit(2)
 
         if not self.dry_run:
-            if not dtype:  # dpath doesn't exist
-                create_dest_dir_if_needed(dpath)
+            if not dtype:  # dst_path doesn't exist
+                create_dest_dir_if_needed(dst_path)
             if stype == 'file':
-                shutil.copy2(spath, dpath)
-                os.remove(spath)
+                shutil.copy2(src_path, dst_path)
+                os.remove(src_path)
             else:
-                shutil.move(spath, dpath)
+                shutil.move(src_path, dst_path)
 
 
-
-    def _rename_and_move_source(self, sdir, sfile, ddir, dfile=None, reason=None):
+    def _rename_and_move_source(self, src_path, dst_path, reason=None):
         """ Requirements:
-            - sdir & sfile must refer to a file, not just a dir
-            - dfile must be None - only included to be consistent with other
-              dict-called functions.
+            - src_path must refer to a file
+            - dst_path must refer to a dir, if a filename is provided it
+              will be removed.
         """
-        assert dfile is None 
-        sfqfn = os.path.join(sdir, sfile)
-
-        log_action('rename_and_move_source', sfqfn)
+        log_action('rename_and_move_source', src_path)
         log_reason(reason)
-        kill_if_symlink(sfqfn, 'source', self.ignore_errors)
-        kill_if_symlink(ddir, 'dest', self.ignore_errors)
+        kill_if_symlink(src_path, 'source', self.ignore_err)
+        kill_if_symlink(dst_path, 'dest', self.ignore_err)
 
-        if not os.path.isfile(sfqfn) or not os.path.isdir(ddir):
-            logging.critical('Invalid files: source must be file and dest dir')
-            logging.critical('Source: %s' % sfqfn)
-            logging.critical('Dest: %s' % ddir)
-            if self.ignore_errors is False:
+        if isdir(src_path):
+            logging.critical('Invalid files: source must be file')
+            logging.critical('Source: %s' % src_path)
+            if self.ignore_err is False:
                 sys.exit(1)
 
-        self.rename_and_move_source_cnt += 1
+        if isfile(dst_path):
+            dst_path = dirname(dst_path)
 
-        dest_file = create_unique_file_name(ddir, sfile)
-        dfqfn = os.path.join(ddir, dest_file)
+        self.rename_and_move_source_cnt += 1
+        dest_file = create_unique_file_name(dst_path, basename(src_path))
 
         if not self.dry_run:
-            shutil.move(sfqfn, dfqfn)
+            shutil.move(src_path, pjoin(dst_path, dest_file))
 
 
-    def _delete_source(self, spath, rsn=None):
-        log_action('delete_source', spath or '')
+    def _delete_source(self, src_path, rsn=None):
+        log_action('delete_source', src_path or '')
         log_reason(rsn)
-        kill_if_symlink(spath, 'source', self.ignore_errors)
+        kill_if_symlink(src_path, 'source', self.ignore_err)
         self.delete_source_cnt += 1
 
         if not self.dry_run:
-            if os.path.isfile(spath):
-                os.remove(spath)
+            if isfile(src_path):
+                os.remove(src_path)
             else:
-                os.rmdir(spath)
+                os.rmdir(src_path)
 
 
 def get_fileobj_type(path):
-    if os.path.exists(path):
-        if os.path.isfile(path):
+    if exists(path):
+        if isfile(path):
             return 'file'
         else:
             return 'dir'
@@ -517,12 +505,12 @@ def get_fileobj_type(path):
 
 
 def create_dest_dir_if_needed(dest_dir):
-    if not os.path.exists(dest_dir):
+    if not exists(dest_dir):
         os.mkdir(dest_dir)
         logging.info('Created dir: %s' % dest_dir)
 
 
-def compare_md5s(source_dir, source_file, dest_dir, dest_file):
+def compare_md5s(src_path, dst_path):
     """ Compares two files to determine if their content is identical
         through the use of MD5 hashes.   Two optimizations exist:
            - it first checks to see if the file sizes are identical
@@ -535,9 +523,12 @@ def compare_md5s(source_dir, source_file, dest_dir, dest_file):
         Outputs:
            - result of either 'matched' or 'not-matched'
     """
+    assert isfile(src_path)
+    assert isfile(dst_path)
+
     #---- first run a cheap check: -----
-    size1 = os.path.getsize(os.path.join(source_dir, source_file))
-    size2 = os.path.getsize(os.path.join(dest_dir, dest_file))
+    size1 = os.path.getsize(src_path)
+    size2 = os.path.getsize(dst_path)
     #if size1 == size2:
     #    return 'match'
     if size1 > size2:
@@ -549,8 +540,8 @@ def compare_md5s(source_dir, source_file, dest_dir, dest_file):
     #---- on a difference:
     source_md5 = hashlib.md5()
     dest_md5   = hashlib.md5()
-    source_f = open(os.path.join(source_dir, source_file), 'r')
-    dest_f   = open(os.path.join(dest_dir,   dest_file), 'r')
+    source_f = open(src_path, 'r')
+    dest_f   = open(dst_path, 'r')
     while True:
         source_chunk =  source_f.read(128 * source_md5.block_size)
         dest_chunk   =  dest_f.read(128 * dest_md5.block_size)
@@ -585,7 +576,7 @@ def create_unique_file_name(dir_name, file_name):
     base_name, extension = os.path.splitext(file_name)
 
     i = 0
-    while os.path.exists(os.path.join(dir_name, file_name)):
+    while exists(pjoin(dir_name, file_name)):
         i += 1
         file_name  = '%s.%d%s' % (base_name, i, extension)
 
@@ -642,47 +633,6 @@ def log_reason(reason):
 
 
 
-def kill_if_source_dest_inconsistent(source_dir, source_file,
-                                     dest_dir, dest_file,
-                                     ignore_errors):
-    """ Tests source dir/file against dest dir/file to ensure they're both
-        files or both directories.  It generally exits the program if they 
-        aren't.
-        Inputs:
-            - source_dir
-            - source_file - may be None if dest_file is None
-            - dest_dir
-            - dest_file - may be None if source_file is None
-            - ignore_errors - True/False - won't exit if True
-        Process:
-            - if the objects are inconsistent then it will log an error msg.
-              If ignore_errors is False, then it will also exit the program.
-    """
-
-    if source_file:
-        source_fqfn = os.path.join(source_dir, source_file)
-    elif source_dir:
-        source_fqfn = source_dir
-    else:
-        logging.warning('Missing source_dir for dest: %s' % dest_dir)
-        return
-
-    if dest_file:
-        dest_fqfn   = os.path.join(dest_dir, dest_file)
-    elif dest_dir:
-        dest_fqfn   = dest_dir
-    else:
-        logging.warning('Missing dest_dir for source: %s' % source_fqfn)
-        return
-
-    if  os.path.isfile(source_fqfn) !=  os.path.isfile(dest_fqfn):
-        logging.critical('Inconsistent file objects - one is file and one is dir: ')
-        logging.critical('   Source file: %s' % source_fqfn)
-        logging.critical('   Dest dir: %s' % dest_fqfn)
-        if ignore_errors is False:
-            sys.exit(1)
-
-
 
 def kill_if_symlink(fqfn, dir_type, ignore_errors):
     """ Tests a fully-qualified file name to see if it's a symlink. If it 
@@ -702,7 +652,7 @@ def kill_if_symlink(fqfn, dir_type, ignore_errors):
               so this could get called for a dest_dir that doesn't exist.
     """
     assert dir_type in ['source','dest']
-    if os.path.exists(fqfn):
+    if exists(fqfn):
         if os.path.islink(fqfn):
             logging.critical('Symbolic link not supported: %s' % fqfn)
             if not ignore_errors:
