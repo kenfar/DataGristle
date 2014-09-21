@@ -390,22 +390,37 @@ gristle\_dir\_merger
 
 ::
 
-    Gristle_dir_merger consolidates directory structures of files.  Has a variety
-    of options for controlling the matching criteria and matching actions.
+    Gristle_dir_merger consolidates directory structures of files.  Is both fast
+    and flexible with a variety of options for choosing which file to use based
+    on full (name and md5) and partial matches (name only) .
 
-    Examples:
-       $ gristle_dir_merger /dir1 /dir2 --criteria name and size --action  most_current_wins
-                    Merges /dir1 into /dir2 based on name and size.
-                    When directories or files match, the entry with the most 
-                    current date wins (overwrites the other).
-       $ gristle_dir_merger /dir1 /dir2 --criteria name  --action  biggest_wins
-                    Merges /dir1 into /dir2 based on name.
-                    When directories or files match, the entry with the largest
-                    file size wins (overwrites the other).
-       $ gristle_dir_merger /dir1 /dir2 --criteria name  --action  latest_wins
-                    Merges /dir1 into /dir2 based on name.
-                    When directories or files match, the entry with the latest
-                    change date wins (overwrites the other).
+    Examples
+       $ gristle_dir_merger /tmp/foo /data/foo
+             - Compares source of /tmp/foo to dest of /data/foo.
+             - Files will be consolidated into /data/foo, and deleted from /tmp/foo.
+             - Comparison will be: match-on-name-and-md5 (default)
+             - Full matches will use: keep_dest (default)
+             - Partial matches will use: keep_newest (default)
+             - Bottom line: this is what you normally want.
+       $ gristle_dir_merger /tmp/foo /data/foo --dry-run
+             - Same as the first example - except it only prints what it would do
+               without actually doing it.
+             - Bottom line: this is a good step to take prior to running it for real.
+       $ gristle_dir_merger /tmp/foo /data/foo -r
+             - Same as the first example - except it runs recursively through
+               the directories.
+       $ gristle_dir_merger /tmp/foo /data/foo --on-partial-match keep-biggest
+             - Comparison will be: match-on-name-and-md5 (default)
+             - Full matches will use: keep_dest (default)
+             - Partial matches will use: keep_biggest (override)
+             - Bottom line: this is a good combo if you know that some files
+               have been modified on both source & dest, and newest isn't the best.
+       $ gristle_dir_merger /tmp/foo /data/foo --match-on-name-only --on-full-match keep-source
+             - Comparison will be: match-on-name-only (override)
+             - Full matches will use: keep_source (override)
+             - Bottom line: this is a good way to go if you have
+               files that have changed in both directories, but always want to
+               use the source files.
 
 Licensing
 =========
@@ -416,5 +431,4 @@ Licensing
 Copyright
 =========
 
--  Copyright 2011,2012,2013 Ken Farmer
-
+-  Copyright 2011,2012,2013,2014 Ken Farmer
