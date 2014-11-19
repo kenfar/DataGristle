@@ -1,0 +1,57 @@
+
+files:
+    - None
+    - None
+
+temp_dir:        /tmp
+#out_dir:         
+key_cols:        3
+ignore_cols:     0,1,2,8
+compare_cols:    
+
+delimiter:       '|'
+hasheader:       False
+#recdelimiter:    
+quoting:         quote_none
+quotechar:       None
+escapechar:      False
+
+already_sorted:  False
+already_uniq:    False
+dry_run:         False
+stats:           True
+
+assignments:
+    -
+      dest_file:     delete
+      dest_field:    2
+      src_type:      literal
+      src_val:       'd'
+      comment:       assigning the delete_flag
+    -
+      dest_file:     delete
+      dest_field:    1
+      src_type:      copy
+      src_file:      old
+      src_field:     1
+      comment:       assigning the id
+    -
+      dest_file:     delete
+      dest_field:    1
+      src_type:      lookup
+      src_val:       'get_next_id testfile'
+      comment:       assigning the id
+    -
+      dest_file:     chgold
+      dest_field:    3
+      src_type:      literal
+      src_val:       start_time
+      comment:       assigning the id
+
+
+
+
+
+
+#log_level:  DEBUG
+#log_to_console: False

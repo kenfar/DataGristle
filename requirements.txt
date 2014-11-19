@@ -13,3 +13,4 @@ virtualenv==1.11.2
 wsgiref==0.1.2
 flask
 cletus
+psycopg2

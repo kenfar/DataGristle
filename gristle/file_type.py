@@ -25,8 +25,20 @@ import common as comm
 def get_quote_number(quote_name):
     """ used to help applications look up quote names typically provided by
         users.
+        Inputs:
+           - quote_name
+        Outputs:
+           - quote_number
+        Note that if a quote_number is accidently passed to this function, it
+        will simply pass it through.
     """
-    return csv.__dict__[quote_name.upper()]
+    if not comm.isnumeric(quote_name):
+        return csv.__dict__[quote_name.upper()]
+    elif get_quote_name(quote_name):
+        return int(quote_name)
+    else:
+        raise ValueError, 'Invalid quote_name: %s' % quote_name
+
 def get_quote_name(quote_number):
     """ used to help applications look up quote numbers typically provided by
         users.
@@ -53,19 +65,23 @@ class FileTyper(object):
                  delimiter=None,
                  rec_delimiter=None,   #unused
                  has_header=None,
-                 quoting=None):
+                 quoting='quote_none',
+                 quote_char=None,
+                 read_limit=None):
         """  fqfn = fully qualified file name
         """
         self._delimiter           = delimiter
         self._has_header          = has_header
-        self._quoting             = quoting
+        self._quoting_num         = get_quote_number(quoting)
         self.fqfn                 = fqfn
         self.format_type          = None
         self.fixed_length         = None
         self.field_cnt            = None
         self.record_cnt           = None
+        self.est_rec_cnt          = None
         self.csv_quoting          = None
         self.dialect              = None
+        self.read_limit           = read_limit
 
     def analyze_file(self):
         """ analyzes a file to determine the structure of the file in terms
@@ -78,15 +94,15 @@ class FileTyper(object):
             self.dialect                  = csv.Dialect
             self.dialect.delimiter        = self._delimiter
             self.dialect.skipinitialspace = False
-            if self._quoting is None:
-                self._quoting             = csv.QUOTE_MINIMAL
-            self.dialect.quoting          = self._quoting
+            if self._quoting_num is None:
+                self._quoting_num         = csv.QUOTE_MINIMAL
+            self.dialect.quoting          = self._quoting_num
             self.dialect.quotechar        = '"'             #naive default
             self.dialect.lineterminator   = '\n'
         else:
             self.dialect                  = self._get_dialect()
             self.dialect.lineterminator   = '\n'
-            self._quoting                 = self.dialect.quoting
+            self._quoting_num             = self.dialect.quoting
             self._delimiter               = self.dialect.delimiter
 
         if self.dialect.quoting == csv.QUOTE_NONE:
@@ -98,14 +114,14 @@ class FileTyper(object):
         self.dialect.has_header  = self._get_has_header(self._has_header)
         self._has_header         = self.dialect.has_header
         self.field_cnt           = self._get_field_cnt()
-        self.record_cnt          = self._count_records()
+        self.record_cnt, self.est_rec_cnt = self._count_records()
 
         return self.dialect
 
 
     def _get_dialect(self):
         """ gets the dialect for a file
-            Uses the csv.Sniffer class 
+            Uses the csv.Sniffer class
             Then performs additional processing to try to improve accuracy of
             quoting.
         """
@@ -139,7 +155,6 @@ class FileTyper(object):
         # found.
         quoted_field_cnt = collections.defaultdict(int)
 
-        rec_cnt   = 0
         for rec in fileinput.input(self.fqfn):
             fields = rec[:-1].split(dialect.delimiter)
             total_field_cnt[len(fields)] += 1
@@ -151,7 +166,7 @@ class FileTyper(object):
                         quoted_cnt += 1
             quoted_field_cnt[quoted_cnt] += 1
 
-            if rec_cnt > 1000:
+            if fileinput.lineno > 1000:
                 break
         fileinput.close()
 
@@ -230,6 +245,7 @@ class FileTyper(object):
                 fileinput.close()
                 row_len = len(fields)
                 break
+            fileinput.close()
 
         return row_len
 
@@ -240,12 +256,15 @@ class FileTyper(object):
 
             Returns either 'csv' or 'fixed'
         """
+        # our solution isn't accurate enough to show yet, so for now just 
+        # set to empty-string:
+        return 'csv' 
+
+        # eventually, we'll improve this old code:
         rec_length = collections.defaultdict(int)
-        rec_cnt = 0
         for rec in fileinput.input(self.fqfn):
             rec_length[len(rec)] += 1
-            rec_cnt += 1
-            if rec_cnt > 1000:     # don't want to read millions of recs
+            if fileinput.lineno > 1000:     # don't want to read millions of recs
                 break
         fileinput.close()
 
@@ -257,12 +276,34 @@ class FileTyper(object):
 
     def _count_records(self):
         """ Returns the number of records in the file
+            Outputs:
+               - rec count
+               - estimated - True or False, indicates if the rec count is an
+                 estimation based on the first self.read_limit rows.
         """
-        rec_cnt = 0
-        for dummy in fileinput.input(self.fqfn):
+        rec_cnt           = 0
+        estimated_rec_cnt = 0
+        byte_cnt          = 0
+        estimated         = False
+
+        for rec in fileinput.input(self.fqfn):
             rec_cnt += 1
+            byte_cnt += len(rec)
+            if (self.read_limit and rec_cnt >= self.read_limit):
+                estimated = True
+                break
         fileinput.close()
-        return rec_cnt
+
+        if estimated:
+            try:
+                bytes_per_rec = byte_cnt / rec_cnt
+                estimated_rec_cnt = int(os.path.getsize(self.fqfn) / bytes_per_rec) 
+            except  ZeroDivisionError:
+                pass
+
+        return estimated_rec_cnt or rec_cnt, estimated
+
+
 
 
 

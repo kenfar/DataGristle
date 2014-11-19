@@ -129,9 +129,12 @@ class TestCommandLine(object):
         records =  p.communicate()[0]
         #for record in records.split('\n'):
         #    print record
-        #print 'returncode:'
-        #print p.returncode
-        assert os.strerror(p.returncode).lower() == 'no data available'
+        print 'returncode:'
+        print p.returncode
+        # We've got different messages here that mean essentially the same
+        # thing, which you get depends on platform.
+        assert os.strerror(p.returncode).lower() in ['no data available',
+                                                     'no message available on stream']
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
@@ -149,7 +152,10 @@ class TestCommandLine(object):
                               close_fds=True,
                               shell=True)
         records =  p.communicate()[0]
-        assert os.strerror(p.returncode).lower() == 'no data available'
+        # We've got different messages here that mean essentially the same
+        # thing, which you get depends on platform.
+        assert os.strerror(p.returncode).lower() in ['no data available',
+                                                     'no message available on stream']
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
@@ -166,7 +172,10 @@ class TestCommandLine(object):
                               close_fds=True,
                               shell=True)
         records =  p.communicate()[0]
-        assert os.strerror(p.returncode).lower() == 'no data available'
+        # We've got different messages here that mean essentially the same
+        # thing, which you get depends on platform.
+        assert os.strerror(p.returncode).lower() in ['no data available',
+                                                     'no message available on stream']
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)

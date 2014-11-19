@@ -1,0 +1,272 @@
+#!/usr/bin/env python
+"""
+Compares two input files and prints a summary of the differences.  Unlike
+the diff utility it is file structure-aware and is more accurate.
+
+Usage: gristle_differ used to compare two files based on a key in column 0,
+and comparing only columns 1 & 2, and writing the verbose results to stdout:
+   $ gristle_differ -1 file_one.dat -2 file_two.dat -k 0 -c 1,2,3,4,5 -v
+
+     In file1 only:           5
+     In file1 only:           7
+     In file2 only:           45
+     In both but different:   44
+     file1 data: Barack Obamahttp://en.wikipedia.org/wiki/Barack_Obama20/01/2009IncumbentIllinois
+     file2 data: Barack Obamahttp://en.wikipedia.org/wiki/Barack_Obama20/01/200920/01/2017Illinois
+
+     Counts:
+        File1 records:        45
+        File2 records:        43
+        In file1 only:        3
+        In file2 only:        1
+        Same:                 40
+        Changed:              1
+
+Note that in the above example, the Counts section w, and 'file1 data'
+and 'file2 data' were only printed due to the verbose option.
+
+
+Options:
+  -h, --help            Show this help message and exit.
+  --long-help           Print more verbose help.
+  -v, --verbose         Prints far more details on comparisons and stats.
+                        The default is False (off).
+  -1 FILE1, --file1=FILE1
+                        First file to compare.
+  -2 FILE2, --file2=FILE2
+                        Second file to compare.
+  -k KEYCOL, --keycol=KEYCOL
+                        Specify the columns that constitute a unique row with
+                        a comma-delimited list of numbers using a 0-offset.
+                        This is a required option.
+  -c COMPARECOL, --comparecol=COMPARECOL
+                        Specify the columns to be compared with a comma-
+                        delimited listof numbers using a 0-offset.  This is a
+                        required option.
+  -d DELIMITER, --delimiter=DELIMITER
+                        Specify a quoted field delimiter.  If you don't provide
+                        this, gristle_differ will attempt to determine it.
+  -s, --sorted          Large files must be sorted by key - TBD
+  --hasheader           indicates that there is a header in the file.
+  --recdelimiter=RECDELIMITER
+  --maxsize=MAXSIZE     can override max number of rows to collect.  Defaul is
+                        10000 rows.
+  --casecompare         Turns case-aware compares on and off.  Default is True
+                        (on)
+
+Currently, gristle_differ only provides a single method of performing the
+delta: it puts the two intput files into memory then compares them row by row.
+This works very well with small, unsorted files.
+
+Future planned enhancements include:
+        - Support for large, sorted files.
+        - Ability to write entire records to separate output files.
+        - multi-char delimiters
+        - compare column exceptions (compare everything except col x)
+        - print only counts - or only 1 count (ex:  print only total number of
+          differences)
+        - better structured printed of differences
+        - option to print 'same' records
+        - simple delta-oriented transforms on writes - such as add a flag to
+          deleted records, intelligent handling of from/to timestamps, etc.
+        - use a tuple for the key - so that it can be printed as separated cols
+
+This source code is protected by the BSD license.  See the file "LICENSE"
+in the source code root directory for the full language or refer to it here:
+    http://opensource.org/licenses/BSD-3-Clause
+Copyright 2011,2012,2013,2014 Ken Farmer
+
+"""
+#--- standard modules ------------------
+from __future__ import division
+import sys
+import os
+import argparse
+import csv
+#from pprint import pprint as pp
+
+#--- gristle modules -------------------
+# lets get pathing set for running code out of project structure & testing it via tox
+sys.path.append('../')
+sys.path.append('../../')
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
+
+def main():
+    """ runs all processes:
+            - gets args
+            - compares files
+            - writes counts
+    """
+    #args = get_args()
+    arg_processor = DifferArgProcessor()
+    args          = arg_processor.args
+
+    # either file may be empty - but at least one must have data in it.
+    if os.path.get_filesize(args.file1) == 0
+            and os.path.get_filesize(args.file2) == 0):
+        return 1
+
+    # set up delta processor
+    adj_key_cols     = [ x+1 for x in args.key_cols ]
+    adj_ignore_cols  = [ x+1 for x in args.ignore_cols ]
+    adj_compare_cols = [ x+1 for x in args.compare_cols ]
+    adj_temp_dir     = args.temp_dir or dirname(args.file2)
+    adj_out_dir      = args.out_dir  or dirname(args.file2)
+
+    delta     = mod.FileDelta(adj_temp_dir, adj_out_dir, args.delimiter, args.quoting)
+    for col in adj_key_cols:
+        delta.set_field('join', col)
+
+    f1_sorted_uniq_fn, f1_dups_drop_cnt = prep_file(delta, args.file1,
+                                          args.already_sorted, args.already_uniq)
+    f2_sorted_uniq_fn, f2_dups_drop_cnt = prep_file(delta, args.file2,
+                                          args.already_sorted, args.already_uniq)
+
+    # finally, run the comparison
+    delta.compare_files(f1_sorted_uniq_fn, f2_sorted_uniq_fn,
+                        ignore_fields=adj_ignore_cols,
+                        compare_fields=adj_compare_cols)
+
+    os.remove(f1_sorted_uniq_fn)
+    os.remove(f2_sorted_uniq_fn)
+
+    if args.verbose:
+        print
+        print 'Counts: '
+        print '   File1 dups dropped:   %d' % f1_dups_drop_cnt
+        print '   File1 records:        %d' % delta.old_read_cnt
+        print '   File2 dups dropped:   %d' % f2_dups_drop_cnt
+        print '   File2 records:        %d' % delta.new_read_cnt
+        print '   In file1 only:        %d' % delta.out_counts['delete']
+        print '   In file2 only:        %d' % delta.out_counts['insert']
+        print '   Same:                 %d' % delta.out_counts['same']
+        print '   Changed:              %d' % delta.out_counts['chgold']
+
+    return 0
+
+
+def prep_file(delta, filename, already_sorted, already_uniq):
+
+    if already_sorted:
+        sorted_fn       = filename
+    else:
+        sorted_fn       = delta.sort_file(filename)
+
+    if already_unique:
+        final_name      = sorted_fn
+        dups_removed    = 0
+    else:
+        final_name, read_cnt, write_cnt = delta.dedup_file(sorted_fn)
+        dups_removed = read_cnt - write_cnt
+
+    if sorted_fn != filename:
+        os.remove(sorted_fn)
+
+    return final_name, dups_removed
+
+
+
+
+
+
+def get_args():
+    """ Returns command line args
+        Input:
+            - command line args & options
+        Output:
+            - arguments dictionary
+    """
+    use = ("%prog is used to compare two files and writes the differences to "
+           "stdout: \n"
+           "\n"
+           "   example:  %prog filea.dat fileb.dat -k 0 -c 1,2 -v")
+
+    parser = argparse.ArgumentParser(description=use,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_option('file1',
+           argparse.FileType('r'),
+           required=True,
+           help='file1')
+    parser.add_option('file2',
+           argparse.FileType('r'),
+           required=True,
+           help='file2')
+
+    parser.add_option('-k', '--key-cols',
+           required=True,
+           help='Specify the columns that constitute a unique row with a comma-'
+                'delimited list of numbers using a 0-offset.  This is a '
+                'required option.')
+    parser.add_option('-c', '--compare-cols',
+           help=('Columns to compare - described by their position using a zero-offset.'
+                '  Mutually exclusive with ignore-cols'))
+    parser.add_option('-i', '--ignore-cols',
+           help=('Columns to ignore - described by their position using a zero-offset.'
+                ' Mutually exclusive with compare-cols'))
+    parser.add_option('--already-sorted',
+           default=False,
+           action='store_true',
+           help='Causes program to bypass sorting step.')
+    parser.add_option('--already-uniq',
+           default=False,
+           action='store_true',
+           help='Causes program to bypass deduping step.')
+
+    parser.add_option('--temp-dir',
+           help='Used for keeping temporary files.')
+    parser.add_option('--out-dir',
+           help=('Where the output files will be written.  Defaults to the'
+                 ' directory of the second file.')
+
+    parser.add_option('-d', '--delimiter',
+           help='Specify a quoted field delimiter. ')
+    parser.add_option('-q', '--quoting',
+           help=('Specify type of quoting: QUOTE_NONE (default), QUOTE_MINIMAL'
+                 'or QUOTE_ALL'))
+
+    parser.add_argument('--dry-run',
+           default=False,
+           action='store_true',
+           help=('Sorts, dedups, compares inputs and displays counts, but does'
+                 ' not produce output files')
+    parser.add_argument('-v', '--verbose',
+           default=False,
+           action='store_true')
+    parser.add_argument('--long-help',
+           default=False,
+           action='store_true',
+           help='Print more verbose help')
+    args = parser.parse_args()
+
+    if args.long_help:
+        print __doc__
+        sys.exit(0)
+
+    if args.compare_cols and args.ignore_cols:
+        parser.error("Provide only one of compare_cols or ignore_cols, not both")
+    elif args.compare_cols is None and args.ignore_cols is None:
+        parser.error("One of compare_cols or ignore_cols must be provided")
+
+    for col in args.key_cols.split(','):
+        if not comm.isnumeric(col):
+            parser.error('Invalid key_cols: must be comma-separated list of integers: %s' % col)
+    for col in args.ignore_cols.split(','):
+        if not comm.isnumeric(col):
+            parser.error('Invalid ignore_cols: must be comma-separated list of integers: %s' % col)
+    for col in args.compare_cols.split(','):
+        if not comm.isnumeric(col):
+            parser.error('Invalid compare_cols: must be comma-separated list of integers: %s' % col)
+
+    return args
+
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+

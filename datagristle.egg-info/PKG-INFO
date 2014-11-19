@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: datagristle
-Version: 0.56
+Version: 0.58
 Summary: A toolbox and library of ETL, data quality, and data analysis tools
 Home-page: http://github.com/kenfar/DataGristle
 Author: Ken Farmer
@@ -97,6 +97,11 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and
            -  Validates csv files by confirming that all records have the right
               number of fields, and by apply a json schema full of requirements
               to each record.
+        
+        -  gristle\_dir\_merger
+        
+           -  Used to consolidate large directories with options to control
+              matching criteria as well as matching actions.
         
         gristle\_validator
         ==================
@@ -388,6 +393,43 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and
                             Prints a data dictionary report of the president collection,
                             only shows field-level information for field_id 3.
         
+        gristle\_dir\_merger
+        ====================
+        
+        ::
+        
+            Gristle_dir_merger consolidates directory structures of files.  Is both fast
+            and flexible with a variety of options for choosing which file to use based
+            on full (name and md5) and partial matches (name only) .
+        
+            Examples
+               $ gristle_dir_merger /tmp/foo /data/foo
+                     - Compares source of /tmp/foo to dest of /data/foo.
+                     - Files will be consolidated into /data/foo, and deleted from /tmp/foo.
+                     - Comparison will be: match-on-name-and-md5 (default)
+                     - Full matches will use: keep_dest (default)
+                     - Partial matches will use: keep_newest (default)
+                     - Bottom line: this is what you normally want.
+               $ gristle_dir_merger /tmp/foo /data/foo --dry-run
+                     - Same as the first example - except it only prints what it would do
+                       without actually doing it.
+                     - Bottom line: this is a good step to take prior to running it for real.
+               $ gristle_dir_merger /tmp/foo /data/foo -r
+                     - Same as the first example - except it runs recursively through
+                       the directories.
+               $ gristle_dir_merger /tmp/foo /data/foo --on-partial-match keep-biggest
+                     - Comparison will be: match-on-name-and-md5 (default)
+                     - Full matches will use: keep_dest (default)
+                     - Partial matches will use: keep_biggest (override)
+                     - Bottom line: this is a good combo if you know that some files
+                       have been modified on both source & dest, and newest isn't the best.
+               $ gristle_dir_merger /tmp/foo /data/foo --match-on-name-only --on-full-match keep-source
+                     - Comparison will be: match-on-name-only (override)
+                     - Full matches will use: keep_source (override)
+                     - Bottom line: this is a good way to go if you have
+                       files that have changed in both directories, but always want to
+                       use the source files.
+        
         Licensing
         =========
         
@@ -397,8 +439,25 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and
         Copyright
         =========
         
-        -  Copyright 2011,2012,2013 Ken Farmer
+        -  Copyright 2011,2012,2013,2014 Ken Farmer
         
+        
+        v0.58 - 2014-08
+        ===============
+        
+        -  gristle\_dir\_merger
+        
+           -  initial addition to toolkit. Merges directories of files using a
+              variety of matching criteria and matching actions.
+        
+        v0.57 - 2014-07
+        ===============
+        
+        -  gristle\_processor
+        
+           -  initial addition to toolkit. Provides ability to scan through
+              directory structure recursively, and delete files that match
+              config criteria.
         
         v0.56 - 2014-03
         ===============
@@ -441,6 +500,7 @@ Description: Datagristle is a toolbox of tough and flexible data connectors and
            distribution. 'Each' creates a separate distribution for every column
            within the csv file.
         -  travisci - added support and started using this testing service.
+        
         
 Keywords: data analysis quality utility etl
 Platform: UNKNOWN
