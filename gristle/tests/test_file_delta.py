@@ -91,7 +91,7 @@ class TestAssignment(object):
         dass    = mod.DeltaAssignments()
         dass.set_assignment('insert', 2, 'literal', 'foo')
         dass.assign('insert', cur_rec, old_rec, new_rec)
-        assert cur_rec == ['a', 'foo', 'c', 'd']
+        assert cur_rec == ['a', 'b', 'foo', 'd']
         
     def test_assign_copy_oldfield_to_rec(self):
         old_rec = ['o0', 'o1', 'o2', 'o3']
@@ -100,7 +100,7 @@ class TestAssignment(object):
         dass    = mod.DeltaAssignments()
         dass.set_assignment('insert', 2, 'copy', None, 'old', 1)
         dass.assign('insert', cur_rec, old_rec, new_rec)
-        assert cur_rec == ['a', 'o0', 'c', 'd']
+        assert cur_rec == ['a', 'b', 'o1', 'd']
 
     def test_assign_copy_newfield_to_rec(self):
         old_rec = ['o0', 'o1', 'o2', 'o3']
@@ -109,7 +109,7 @@ class TestAssignment(object):
         dass    = mod.DeltaAssignments()
         dass.set_assignment('chgold', 2, 'copy', None, 'new', 1)
         dass.assign('chgold', cur_rec, old_rec, new_rec)
-        assert cur_rec == ['a', 'n0', 'c', 'd']
+        assert cur_rec == ['a', 'b', 'n1', 'd']
 
     def test_assign_copy_oldfield_empty(self):
         old_rec = []
@@ -128,14 +128,14 @@ class TestAssignment(object):
         dass.set_assignment('chgold', 2, 'copy', None, 'new', 1)
         dass.set_assignment('chgold', 1, 'copy', None, 'new', 2)
         dass.assign('chgold', cur_rec, old_rec, new_rec)
-        assert cur_rec == ['n1', 'n0', 'c', 'd']
+        assert cur_rec == ['a', 'n2', 'n1', 'd']
 
     def test_assign_sequence(self):
         old_rec = ['0', 'o1', 'o2', 'o3']
         new_rec = ['0', 'n1', 'n2', 'n3']
         cur_rec = ['', 'b', 'c', 'd']
         dass    = mod.DeltaAssignments()
-        dass.set_assignment('insert', 1, 'sequence', None, 'old', 0)
+        dass.set_assignment('insert', 0, 'sequence', None, 'old', 0)
 
         fqfn    = pjoin(self.temp_dir, 'old.csv')
         with open(fqfn, 'w') as f:
@@ -151,14 +151,18 @@ class TestAssignment(object):
         assert cur_rec == ['6', 'b', 'c', 'd']
 
     def test_assign_two_sequences_to_4fields(self):
+        """ This shows that a single sequence can be used on multiple files without
+            creating duplicates.
+            It also shows that multiple sequences can be made from multiple sources.
+        """
         old_rec = ['0', 'o1', 'o2', 'o3']
         new_rec = ['0', 'n1', 'n2', 'n3']
         cur_rec = ['', 'b', 'c', 'd']
         dass    = mod.DeltaAssignments()
-        dass.set_assignment('insert', 1, 'sequence', None, 'old', 0)
-        dass.set_assignment('insert', 3, 'sequence', None, 'old', 2)
-        dass.set_assignment('chgnew', 1, 'sequence', None, 'old', 0)
-        dass.set_assignment('chgnew', 3, 'sequence', None, 'old', 2)
+        dass.set_assignment('insert', 0, 'sequence', None, 'old', 0)
+        dass.set_assignment('insert', 2, 'sequence', None, 'old', 2)
+        dass.set_assignment('chgnew', 0, 'sequence', None, 'old', 0)
+        dass.set_assignment('chgnew', 2, 'sequence', None, 'old', 2)
 
         fqfn    = pjoin(self.temp_dir, 'old.csv')
         with open(fqfn, 'w') as f:
@@ -182,7 +186,7 @@ class TestAssignment(object):
         new_rec = ['0', 'n1', 'n2', 'n3']
         cur_rec = ['', 'b', 'c', 'd']
         dass    = mod.DeltaAssignments()
-        dass.set_assignment('insert', 1, 'sequence', None, 'old', 0)
+        dass.set_assignment('insert', 0, 'sequence', None, 'old', 0)
 
         fqfn    = pjoin(self.temp_dir, 'old.csv')
         with open(fqfn, 'w') as f:
@@ -202,7 +206,7 @@ class TestAssignment(object):
         cur_rec = ['a', 'b', 'c', 'd']
         dass    = mod.DeltaAssignments()
         dass.set_special_values('batchid', '9999')
-        dass.set_assignment('insert', 2, 'special', 'batchid', None, None)
+        dass.set_assignment('insert', 1, 'special', 'batchid', None, None)
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['a', '9999', 'c', 'd']
 
