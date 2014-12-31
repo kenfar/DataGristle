@@ -74,6 +74,19 @@ def ifprint(value, string, *args):
 
 
 class ArgProcessor(object):
+    """ Perform standard datagristle arg parsing as well as custom script parsing.
+
+    Objective is to establish consistency between args of all scripts.  User must
+    override add_custom_args(), adding to it any other arg groups desired (via 
+    appropriate method calls).
+
+    Args:
+        short_desc: a single paragraph description of script.
+        long_desc: a 1-2 page description of script.
+    Raises:
+        sys.exit:  on most errors
+        NotImplementedError: if add_custom_args() is not overrridden
+    """
     def __init__(self, short_desc, long_desc):
         self.parser     = argparse.ArgumentParser(short_desc,
                               formatter_class=argparse.RawTextHelpFormatter)
@@ -182,7 +195,7 @@ class ArgProcessor(object):
         """
         """
         self.parser.add_argument('--log-level',
-                            choices=['debug','info','warning','error', 'critical'],
+                            choices=['DEBUG','INFO','WARNING','ERROR', 'CRITICAL'],
                             help='Specify verbosity of logging')
         self.parser.add_argument('--console-log',
                             action='store_true',
@@ -205,7 +218,7 @@ class ArgProcessor(object):
         else:
             default=None
             help='Specifies the input file(s). '
-        print 'default: %s' % default
+        #print 'default: %s' % default
            
         self.parser.add_argument('files',
                                 default=default,
@@ -225,12 +238,16 @@ class ArgProcessor(object):
 
 
 class DelimiterAction(argparse.Action):
+    """ An argparse delimiter action to fix unprintable delimiter values.
+    """
     def __call__(self, parser, namespace, values, option_string=None):
         val = dialect_del_fixer(values)
         setattr(namespace, self.dest, val)
 
 
 def dialect_del_fixer(values):
+    """ Fix unprintable delimiter values provided as CLI args
+    """
     if values == '\\t':
         val = '\t'
     elif values == 'tab':
@@ -244,6 +261,25 @@ def dialect_del_fixer(values):
 
 
 def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader):
+    """ Gets a csv dialect for a csv file or set of attributes.
+
+    If files are provided and are not '-' -then use files and run file_type.FileTyper
+    to get csv - while passing rest of args to FileTyper.  Otherwise, manually construct
+    csv dialect from non-files arguments.
+
+    Args:
+        files: a list of files to analyze.  Analyze the minimum number of recs
+               from the first file to determine delimiter.  
+        delimiter: a single character
+        quotename: one of QUOTE_MINIMAL, QUOTE_NONE, QUOTE_ALL, QUOTE_NONNUMERIC
+        quotechar: a single character
+        recdelimiter: a single character
+        hasheader: a boolean
+    Returns:
+        csv dialect object
+    Raises:
+        sys.exit - if all files are empty
+    """
     if files[0] != '-':
         for fn in files:
             assert isfile(fn)
@@ -307,3 +343,48 @@ def abort(summary, details=None, rc=1):
     print('=' * 79)
 
     sys.exit(rc)
+
+
+
+def colnames_to_coloff0(col_names, lookup_list):                        
+    """ Returns a list of collection column positions with offset of 0 for a list of
+        collection column names (optional) and a lookup list of col names and/or col
+        offsets.
+
+        Inputs:
+           - col_names   - list of collection column names, may be empty
+           - lookup_list - list of column names or positions to lookup (off0)
+        Returns:
+           - result      - list of column positions (off0)
+        Raises:
+           - KeyError if column name from lookup_list not in colnames,
+                      or if col position from lookup_list extends beyond
+                      populated col_names list.
+        Notes:
+           - output will always be a list of integers
+           - input column offsets can be integers (0) or strings ('0')
+    """
+    assert isinstance(col_names, list)
+    assert isinstance(lookup_list, list)
+
+    colname_lookup = dict((element, offset) for offset, element in enumerate(col_names))
+    colname_lookup_len = len(colname_lookup)
+
+    try:
+        result         =  [int(x) if isnumeric(x) else colname_lookup[x] for x in lookup_list]
+    except KeyError:
+        raise KeyError, 'Column name not found in colname list'
+
+    # extra edit to look for offsets not found within a colname listing:
+    if colname_lookup:
+       for x in result:
+          if x >= colname_lookup_len:
+              raise KeyError, 'column number %s not found in colname list' % x
+
+    #assert isinstance(result, list)
+    return result
+     
+
+
+
+
