@@ -13,7 +13,18 @@ import gristle.common as comm
 
 
 class CSVDeDuper(object):
+    """ Read sorted csv file and write non-duplicates to another csv file
+        based on key fields.
 
+    Args:
+        dialect:   csv dialect
+        key_fields_0off: positions of key fields, based on zero-offset
+        out_dir:  directory for output file.  Default is input file's
+        directory.
+    Raises:
+        ValueError: if key fields are invalid (ex: non-numeric)
+        ValueError: if out_dir is invalid (ex: doesn't exist)
+    """
 
     def __init__(self, dialect, key_fields_0off, out_dir=None):
 
@@ -38,13 +49,24 @@ class CSVDeDuper(object):
 
 
     def dedup_file(self, in_fqfn, out_fqfn=None):
-        """ Inputs:
-               - in_fqfn
-               - out_fqfn
-            Outputs:
-               - fqfn of new file
-               - read count
-               - write count
+        """ Copy non-duplicated records from csv input file to csv output file.
+
+        Args:
+            in_fqfn: the fully-qualified file name for the sorted input csv file
+            out_fqfn: the fully-aualified file name for the sorted output csv
+            file.  If none is provided it will use the in_fqfn + .uniq
+        Returns:
+            out_fqfn:  output fully-qualified filename
+            read_cnt:  count of records read
+            write_cnt: count of records written
+        Notes:
+            - The number of duplicates dropped can be derrived by subtracting
+              the write count from the read count.
+            - Unlike some utilities this tool will not remove all copies of a
+              duplicate - just enough to drop the number to a single instance.
+              For example, if there are three records with a key of 'aaa', two
+              will be dropped and the program will write one to the output
+              file.
         """
         if not out_fqfn:
             out_dir  = self.out_dir or dirname(in_fqfn)
