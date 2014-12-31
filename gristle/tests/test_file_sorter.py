@@ -95,18 +95,6 @@ class TestSort(object):
         assert dirname(outfile) == out_dir
         assert basename(outfile) == basename(self.fqfn) + '.sorted'
 
-    def tbdtest_sort_file_tempdir(self):
-        """ need a way to test that it actually uses tmpdir.
-            maybe create a tiny file system for it to use?
-        """
-        out_dir = tempfile.mkdtemp(prefix='gristle_out_')
-        tmp_dir = tempfile.mkdtemp(prefix='gristle_tmp_') 
-        delta   = mod.FileDelta(tmp_dir, out_dir, ',', 'QUOTE_NONE')
-        delta.set_fields('join', 1, 2)
-        outfile = delta.sort_file(self.fqfn)
-        assert dirname(outfile) == out_dir
-
-
 
 def create_test_file(temp_dir):
     fqfn = pjoin(temp_dir, 'foo.csv')
