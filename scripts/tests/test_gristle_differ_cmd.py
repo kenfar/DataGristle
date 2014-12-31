@@ -38,18 +38,73 @@ import gristle.common  as comm
 import gristle.csvhelper as csvhelp
 from gristle.common import dict_coalesce
 
+class TestInvalidInput(object):
+
+    def setup_method(self, method):
+        self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
+        self.dialect    = csvhelp.create_dialect('|', csvhelp.QUOTE_NONE, False)
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14'],
+                       ['del-row','6','16'],
+                       ['same-row','8','18']]
+        self.file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+
+        file2_recs = [ ['chg-row','4','1a'],
+                       ['new-row','13a','45b'],
+                       ['same-row','8','18']]
+        self.file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+        self.config   = Config(self.temp_dir)
+        self.config.add_property({'delimiter':'tab'})
+        self.config.add_property({'hasheader':False})
+        self.config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        self.config.add_property({'col_names': ['col0', 'col1', 'col2']})
+        self.config.add_property({'key_cols': ['0']})
+        self.config.add_property({'compare_cols': ['2']})
+        self.config.add_property({'temp_dir': self.temp_dir})
+        self.config.add_property({'files': [self.file1, self.file2]})
+        self.config.add_assignment('chgnew', 'col1','copy',None,'old','col0')
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.temp_dir)
+
+    def test_assign_colname_list(self):
+        """
+        """
+        # override init values:
+        # following entry is invalid: assign field can't be a list:
+        self.config.add_assignment('chgnew', ['col1'],'copy',None,'old','col0')
+        self.config.write_config()
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), self.config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code != 0
 
 
-
-
-
+    def test_assign_invalid_colname(self):
+        """
+        """
+        # override init values:
+        # following entry is invalid: assign field must be in colname list:
+        self.config.add_assignment('chgnew', 'col9','copy',None,'old','col0')
+        self.config.write_config()
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), self.config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code != 0
 
 
 class TestCommandLine(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.fieldnames = ['col-key', 'col-1', 'col-2']
         self.dialect    = csvhelp.create_dialect('|', csvhelp.QUOTE_NONE, False)
 
     def teardown_method(self, method):
@@ -64,12 +119,12 @@ class TestCommandLine(object):
         file1_recs = [ ['chg-row','4','14'],
                        ['del-row','6','16'],
                        ['same-row','8','18']]
-        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
+        file1      = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
 
         file2_recs = [ ['chg-row','4','1a'],
                        ['new-row','13a','45b'],
                        ['same-row','8','18']]
-        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+        file2      = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
 
         cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                  file1, file2, self.temp_dir)
@@ -301,8 +356,6 @@ class TestCommandLine(object):
         print r.std_err
         assert r.status_code == 0
         fn = basename(file2)
-        for rec in r.std_out:
-            print rec
 
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
@@ -310,6 +363,246 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
+
+    def test_with_config_file_dialect_and_misc_prop_and_literal_assignment(self):
+        """
+        """
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14'],
+                       ['del-row','6','16'],
+                       ['same-row','8','18']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+
+        file2_recs = [ ['chg-row','4','1a'],
+                       ['new-row','13a','45b'],
+                       ['same-row','8','18']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'key_cols': ['0']})
+        config.add_property({'compare_cols': ['2']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.add_assignment('delete',1,'literal', 'd',None,None)
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.delete'),
+                                 self.dialect)[0][1] == 'd'
+
+    def test_with_config_file_dialect_and_special_assignment(self):
+        """
+        """
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14','empty'],
+                       ['del-row','6','16','empty'],
+                       ['same-row','8','18','empty']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+        file2_recs = [ ['chg-row','4','1a','empty'],
+                       ['new-row','13a','45b','empty'],
+                       ['same-row','8','18','empty']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'key_cols': ['0']})
+        config.add_property({'compare_cols': ['2']})
+        config.add_property({'variables': ['foo:bar', 'baz:gorilla']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.add_assignment('delete',1,'special','foo',None,None)
+        config.add_assignment('insert',3,'special','baz',None,None)
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.delete'),
+                                 self.dialect)[0][1] == 'bar'
+        print get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.insert'),
+                                 self.dialect)[0][3] == 'gorilla'
+
+    def test_with_config_file_dialect_and_misc_prop_and_copy_assignment(self):
+        """
+        """
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14'],
+                       ['del-row','6','16'],
+                       ['same-row','8','18']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+
+        file2_recs = [ ['chg-row','4','1a'],
+                       ['new-row','13a','45b'],
+                       ['same-row','8','18']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'key_cols': ['0']})
+        config.add_property({'compare_cols': ['2']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.add_assignment('chgnew',1,'copy',None,'old',0)
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'),
+                                 self.dialect)[0][1] == 'chg-row'
+
+    def test_with_config_file_dialect_and_misc_prop_and_seq_assignment(self):
+        """
+        """
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','1'],
+                       ['del-row','6','2'],
+                       ['same-row','8','3']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+
+        file2_recs = [ ['chg-row','4b',''],
+                       ['new-row','13a',''],
+                       ['same-row','8','']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'key_cols': ['0']})
+        config.add_property({'compare_cols': ['1']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        #config.add_assignment('insert',1,'sequence',None,'old',2)
+        config.add_assignment('insert',2,'sequence',None,'old',2)
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+        print 'get file contents - insert: '
+        print get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect)
+        print 'get file contents - delete: '
+        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        print 'get file contents - same '
+        print get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect)
+        print 'get file contents - chgold '
+        print get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect)
+        print 'get file contents - chgnew '
+        print get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.insert'),
+                                 self.dialect)[0][2] == '4'
+
+    def test_with_seq_assignment_based_on_arg_var(self):
+        """
+        """
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4',''],
+                       ['del-row','6',''],
+                       ['same-row','8','']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+        file2_recs = [ ['chg-row','4b',''],
+                       ['new-row','13a',''],
+                       ['same-row','8','']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'key_cols': ['0']})
+        config.add_property({'compare_cols': ['1']})
+        config.add_property({'variables': ['foo:7']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.add_assignment('insert',2,'sequence','foo',None,None)
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+        print 'get file contents - insert: '
+        print get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.insert'),
+                                 self.dialect)[0][2] == '8'
 
     def test_with_multi_cols(self):
         """
@@ -344,8 +637,6 @@ class TestCommandLine(object):
         print r.std_err
         assert r.status_code == 0
         fn = basename(file2)
-        for rec in r.std_out:
-            print rec
 
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
@@ -353,30 +644,133 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-    def notest_multi_column(self):
-        """ Tests ability to specify multiple key or comparison columns
-            TBD
+    def test_colnames_for_keycol_and_comparecol(self):
         """
-        pass
-
-    def notest_maxsize(self):
-        """ Tests with files greater than maxsize and tests overriding of maxsize
-            TBD
         """
-        pass
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14'],
+                       ['del-row','6','16'],
+                       ['same-row','8','18']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
 
-    def notest_dialect_overrides(self):
-        """ Tests hasheader, delimiter, and recdelimiter args
-            TBD
+        file2_recs = [ ['chg-row','4','1a'],
+                       ['new-row','13a','45b'],
+                       ['same-row','8','18']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'col_names': ['col0', 'col1', 'col2']})
+        config.add_property({'key_cols': ['col0']})
+        config.add_property({'compare_cols': ['col2']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+    def test_colnames_and_colnum_mix_for_ignorecol(self):
         """
-        pass
-
-    def notest_counts(self):
-        """ diff cmdline: Tests counts
-            TBD
         """
-        pass
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14','same'],
+                       ['del-row','6','16', 'same'],
+                       ['same-row','8','18', 'same']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
 
+        file2_recs = [ ['chg-row','4','1a', 'same'],
+                       ['new-row','13a','45b', 'same'],
+                       ['same-row','8','18', 'same']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'col_names': ['col0', 'col1', 'col2', 'col3']})
+        config.add_property({'key_cols': ['col0']})
+        config.add_property({'ignore_cols': ['col1', 3]})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+    def test_colname_copy_assignment(self):
+        """
+        """
+        self.dialect.delimiter = '\t'
+        file1_recs = [ ['chg-row','4','14'],
+                       ['del-row','6','16'],
+                       ['same-row','8','18']]
+        file1    = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect,  file1_recs)
+
+        file2_recs = [ ['chg-row','4','1a'],
+                       ['new-row','13a','45b'],
+                       ['same-row','8','18']]
+        file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+
+        config = Config(self.temp_dir)
+        config.add_property({'delimiter':'tab'})
+        config.add_property({'hasheader':False})
+        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'col_names': ['col0', 'col1', 'col2']})
+        config.add_property({'key_cols': ['0']})
+        config.add_property({'compare_cols': ['2']})
+        config.add_property({'temp_dir': self.temp_dir})
+        config.add_property({'files': [file1, file2]})
+        config.add_assignment('chgnew','col1','copy',None,'old','col0')
+        config.write_config()
+
+        cmd = ''' %s   \
+                  --config-fn %s \
+              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
+        r = envoy.run(cmd)
+        print '------- std_out ------'
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+        fn = basename(file2)
+
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
+        assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+
+        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        assert get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'),
+                                 self.dialect)[0][1] == 'chg-row'
 
 def get_file_contents(fn, dialect):
     recs = []
@@ -409,13 +803,17 @@ class Config(object):
     def add_assignment(self, dest_file, dest_field, src_type, src_val, src_file, src_field):
         if 'assignments' not in self.config:
             self.config['assignments'] = []
-            assignment = {'dest_file': dest_file, 'dest_field': dest_field,
-                          'src_type':  src_type,  'src_val':    src_val,
-                          'src_file':  src_file,  'src_field':  src_field}
-            self.config['assignments'].append(assignment)
+        assignment = {'dest_file':  dest_file,
+                      'dest_field': dest_field,
+                      'src_type':   src_type,
+                      'src_val':    src_val,
+                      'src_file':   src_file,
+                      'src_field':  src_field}
+        self.config['assignments'].append(assignment)
 
     def write_config(self):
         config_yaml = yaml.safe_dump(self.config)
+        print config_yaml
         with open(self.config_fqfn, 'w') as f:
             f.write(config_yaml)
 
