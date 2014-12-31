@@ -12,49 +12,65 @@ import gristle.common as comm
 
 
 
-
 class CSVSorter(object):
+    """ Sort a file.
+ 
+    Args:
+        dialect:  a csv module dialect
+        key_fields_0off: a list of fields to sort the file with - identified by
+                 an numeric value representing the position of the field, given a zero-offset.
+        tmp_dir: a directory to use for sort temp space.  Defaults to None, in
+                 which case the input file directory will be used.
+        out_dir: a directory to use for the output file.  Defaults to None, in
+		 which case the input file directory will be used.
+    Raises:
+        ValueError: if tmp_dir or out_dir are provided but do not exist
+        ValueError: if sort keys are invalid
+        IOError: if unix sort fails
+    """
 
-
-    def __init__(self, dialect, join_fields_0off, tmp_dir=None, out_dir=None):
+    def __init__(self, dialect, key_fields_0off, tmp_dir=None, out_dir=None):
 
         assert dialect          is not None
-        assert join_fields_0off is not None
-        self.dialect = dialect
+        assert key_fields_0off  is not None
 
-        if tmp_dir:
-            if isdir(tmp_dir):
-                self.tmp_dir = tmp_dir
-            else:
-                raise ValueError, 'Invalid sort temp directory: %s' % tmp_dir
+        self.dialect   = dialect
+        self.sort_del  = self._get_sort_del(self.dialect.delimiter)
+
+        if tmp_dir and not isdir(tmp_dir):
+            raise ValueError, 'Invalid sort temp directory: %s' % tmp_dir
         else:
             self.tmp_dir = tmp_dir
 
-        if out_dir:
-            if isdir(out_dir):
-                self.out_dir = out_dir
-            else:
-                raise ValueError, 'Invalid sort output directory: %s' % out_dir
+        if out_dir and not isdir(out_dir):
+            raise ValueError, 'Invalid sort output directory: %s' % out_dir
         else:
             self.out_dir = out_dir
 
+        # convert from std datagristle 0offset to sort's 1offset
         try:
-            join_fields_1off = [ int(x)+1 for x in join_fields_0off ]
+            key_fields_1off = [ int(x)+1 for x in key_fields_0off ]
         except ValueError:
-            print 'Error: invalid non-numeric sort key: %s' % join_fields_0off
+            print 'Error: invalid non-numeric sort key: %s' % key_fields_0off
             raise
 
         self.field_opt = ''
-        for field in join_fields_1off:
+        for field in key_fields_1off:
             self.field_opt += ' -k %s' % field
-        self.sort_del = self._get_sort_del(self.dialect.delimiter)
 
 
     def sort_file(self, in_fqfn, out_fqfn=None):
-        """ Inputs:
-               - in_fn
-               - out_fn
-               - key_pos_list: list of
+        """ Sort input file giving output file.
+
+        Args:
+            in_fn:  input file name
+            out_fn: output file name.  Defaults to None.  If it is None
+                    then the name will be derrived from input file + .sorted
+        Returns:
+            out_fqfn: the fully-qualified output file name
+        Raises:
+            IOError: if the sort produces a non-zero return code
+            ValueError: if the input file is invalid
         """
         tmp_dir  = self.tmp_dir or dirname(in_fqfn)
         if not out_fqfn:
