@@ -54,6 +54,16 @@ class TestDeduping(object):
                 assert 0, "too many rows returned"
         fileinput.close()
 
+    def test_dedup_file_1key_with_empty_file(self):
+        input_fqfn   = create_empty_test_file(self.temp_dir)
+        joinfields = [1]
+        deduper  = mod.CSVDeDuper(self.dialect, joinfields, self.temp_dir)
+        (out_fqfn, read_cnt, write_cnt)      = deduper.dedup_file(input_fqfn)
+        assert out_fqfn == self.fqfn + '.uniq'
+        assert isfile(out_fqfn)
+        assert read_cnt  == 0
+        assert write_cnt == 0
+
     def test_dedup_file_2keys_without_dups(self):
         sorted_fqfn   = create_sorted_test_file(self.temp_dir)
         joinfields    = [1,2]
@@ -102,6 +112,11 @@ class TestDeduping(object):
         (out_fqfn, read_cnt, write_cnt)  = sorter.dedup_file(sorted_fqfn)
         assert dirname(out_fqfn) == out_dir
 
+def create_empty_test_file(temp_dir):
+    fqfn = pjoin(temp_dir, 'foo.csv')
+    with open(fqfn, 'w') as f:
+        pass
+    return fqfn
 
 def create_test_file(temp_dir):
     fqfn = pjoin(temp_dir, 'foo.csv')
