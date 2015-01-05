@@ -29,44 +29,9 @@ include:
       files
     - populating a batch_id in any or all files
 
-Comparisons can based on explicit columns0can ignore certain columns
-            "for the comparison, and then can perform some simple transformations.
-            "The input files are referred to as old & new, file0 & file1, or f0 & f1
-            "this inconsistency reflects the fact that the program may be used
-            "to compare two historical snapshots of a file (old vs new) or two independent
-            "files (file0 vs file1).
-            "\n"
-            "   example:  gristle_differ file0rdat file1.dat --compare-cols '0, 1' --ignore_cols '19,22,33'"
-            "\n\n")
-Compares two files and writes rows to five output files:
-    <new file name>.insert
-    <new file name>.delete
-    <new file name>.chgnew
-    <new file name>.chgold
-    <new file name>.same
+example:  $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
 
 
-Usage: gristle_differ used to compare two files based on a key in column 0,
-and comparing only columns 1 & 2, and writing the verbose results to stdout:
-   $ gristle_differ -1 file_one.dat -2 file_two.dat -k 0 -c 1,2,3,4,5 -v
-
-     In file1 only:           5
-     In file1 only:           7
-     In file2 only:           45
-     In both but different:   44
-     file1 data: Barack Obamahttp://en.wikipedia.org/wiki/Barack_Obama20/01/2009IncumbentIllinois
-     file2 data: Barack Obamahttp://en.wikipedia.org/wiki/Barack_Obama20/01/200920/01/2017Illinois
-
-     Counts:
-        File1 records:        45
-        File2 records:        43
-        In file1 only:        3
-        In file2 only:        1
-        Same:                 40
-        Changed:              1
-
-Note that in the above example, the Counts section w, and 'file1 data'
-and 'file2 data' were only printed due to the verbose option.
 
 Positional arguments:
   files                 Specifies the two input files.  The first argument is
