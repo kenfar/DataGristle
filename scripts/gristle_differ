@@ -29,9 +29,34 @@ include:
       files
     - populating a batch_id in any or all files
 
-example:  $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
+Example 1: Simple Comparison
+    $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
 
+    Produces the following files:
+       - file1.dat.insert
+       - file1.dat.delete
+       - file1.dat.same
+       - file1.dat.chgnew
+       - file1.dat.chgold
 
+Example 2: Complex Operation
+    $ gristle_differ file0.dat file1.dat --config-fn ./foo.yml  \
+        --variables batchid:919 --variables pkid:82304
+
+    Produces the same output file names as example 1.
+
+    But in this case it gets the majority of its configuration items from
+    the config file ('foo.yml').  This could include key columns, comparison
+    columns, ignore columns, post-delta transformations, and other information.
+
+    The two variables options are used to pass in user-defined variables that
+    can be referenced by the post-delta transformations.  The batchid will get
+    copied into a batch_id column for every file, and the pkid is a sequence
+    that will get incremented and used for new rows in the insert, delete and
+    chgnew files.
+
+See the wiki page for more examples and information on the operation and config
+file.
 
 Positional arguments:
   files                 Specifies the two input files.  The first argument is
@@ -109,7 +134,7 @@ Keyword arguments:
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
     http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013,2014 Ken Farmer
+Copyright 2011,2012,2013,2014,2015 Ken Farmer
 
 """
 #--- standard modules ------------------
@@ -186,15 +211,16 @@ def main():
 
     if config['stats']:
         print
-        print 'Counts: '
-        #print '   File1 dups dropped:   %d' % f0_dups_drop_cnt
-        print '   File1 records:        %d' % delta.old_read_cnt
-        #print '   File2 dups dropped:   %d' % f1_dups_drop_cnt
-        print '   File2 records:        %d' % delta.new_read_cnt
-        print '   In file1 only:        %d' % delta.out_counts['delete']
-        print '   In file2 only:        %d' % delta.out_counts['insert']
-        print '   Same:                 %d' % delta.out_counts['same']
-        print '   Changed:              %d' % delta.out_counts['chgold']
+        print 'Read Stats:'
+        print '   File0/oldfile records:  %d' % delta.old_read_cnt
+        print '   File1/newfile records:  %d' % delta.new_read_cnt
+        print
+        print 'Write Stats:'
+        print '   *.delete records:       %d' % delta.out_counts['delete']
+        print '   *.insert records:       %d' % delta.out_counts['insert']
+        print '   *.same records:         %d' % delta.out_counts['same']
+        print '   *.chgold records:       %d' % delta.out_counts['chgold']
+        print '   *.chgnew records:       %d' % delta.out_counts['chgnew']
 
     return 0
 
