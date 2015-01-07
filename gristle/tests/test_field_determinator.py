@@ -110,7 +110,7 @@ class FileAndTestManager(object):
         os.remove(self.test1_fqfn)
 
 
-    def test_deter_a01_field_freq(self):
+    def test_deter_field_freq(self):
 
         # there are 100 unique values for this column
         assert len(self.MyFields.get_known_values(self.id_col)) == 100
@@ -135,7 +135,7 @@ class FileAndTestManager(object):
         assert self.MyFields.get_top_freq_values(fieldno=6, limit=1)[0][0] == 'aaa'
 
 
-    def test_deter_a02_field_general_dictionaries(self):
+    def test_deter_field_general_dictionaries(self):
         assert self.MyFields.field_min[self.id_col]             == '0'
         assert self.MyFields.field_min[self.very_mixed_col]     == 'A'
         assert self.MyFields.field_min[self.lower_col]          == 'bbbbb'
@@ -163,7 +163,7 @@ class FileAndTestManager(object):
         assert self.MyFields.field_trunc[self.string_col]       is False
 
 
-    def test_deter_a03_field_string_dictionaries(self):
+    def test_deter_field_string_dictionaries(self):
         assert self.MyFields.field_case[self.id_col]                 is None
         assert self.MyFields.field_case[self.very_mixed_col]         == 'mixed'
         assert self.MyFields.field_case[self.lower_col]              == 'lower'
@@ -191,7 +191,7 @@ class FileAndTestManager(object):
         assert self.MyFields.field_mean_length[self.string_col]      == 3
 
 
-    def test_deter_a04_field_numeric_dictionaries(self):
+    def test_deter_field_numeric_dictionaries(self):
         assert self.MyFields.field_mean[self.id_col]
         assert self.MyFields.field_mean[self.very_mixed_col]    is None
         assert self.MyFields.field_mean[self.empty_col]         is None
@@ -214,13 +214,13 @@ class FileAndTestManager(object):
         assert self.MyFields.stddev[self.string_col]            is None
 
 
-    def test_deter_a05_field_5_extra_float(self):
-        """ 
+    def test_deter_field_5_extra_float(self):
+        """
         """
         ####print self.MyFields.get_top_freq_values(fieldno=5, limit=10)
         assert self.MyFields.field_mean[self.float_col]               is not None
 
-    def test_deter_a06_field_6_extra_string(self):
+    def test_deter_field_6_extra_string(self):
         assert self.MyFields.field_mean[self.string_col]  is None
         assert self.MyFields.field_mean[self.string_col]  is None
 
@@ -248,22 +248,22 @@ class TestOverrideFloatToString(FileAndTestManager):
         self.quoting     = True
         self.overrides   = {5:'string'}
 
-    def test_deter_a05_field_5_extra_float(self):
+    def test_deter_field_5_extra_float(self):
         assert self.MyFields.field_mean[self.float_col]               is None
 
-    def test_deter_a02_field_general_dictionaries(self):
+    def test_deter_field_general_dictionaries(self):
         assert self.MyFields.field_min[self.float_col]          == '999.9'
         assert self.MyFields.field_max[self.float_col]          == '999.9'
         assert self.MyFields.field_types[self.float_col]        == 'string'
         assert self.MyFields.field_trunc[self.float_col]        == False
 
-    def test_deter_a03_field_string_dictionaries(self):
+    def test_deter_field_string_dictionaries(self):
         assert self.MyFields.field_case[self.float_col]         is not None
         assert self.MyFields.field_max_length[self.float_col]   is not None
         assert self.MyFields.field_min_length[self.float_col]   is not None
         assert self.MyFields.field_mean_length[self.float_col]  is not None
 
-    def test_deter_a04_field_numeric_dictionaries(self):
+    def test_deter_field_numeric_dictionaries(self):
         assert self.MyFields.field_mean[self.float_col]         is None
 
 
