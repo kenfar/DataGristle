@@ -30,7 +30,7 @@ class Test_get_case(object):
         self.test_unk2 = []
 
 
-    def test_misc_a01(self):
+    def test_misc_basics(self):
         assert mod.get_case('string', self.test_u1) == 'upper'
         assert mod.get_case('string', self.test_u2) == 'upper'
 
@@ -65,23 +65,23 @@ class Test_get_field_freq(object):
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
-    def test_misc_b01_truncation(self):
-        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
+    def test_misc_truncation(self):
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn,
                                                 self.dialect,
                                                 field_number=0,
                                                 max_freq_size=4)
         assert len(freq) == 4
         assert trunc_flag is True
 
-    def test_misc_b02(self):
-        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
+    def test_misc_no_trunc_high_cardinality(self):
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn,
                                                 self.dialect,
                                                 field_number=0)
         assert len(freq) == 200
         assert trunc_flag is False
 
-    def test_misc_b03(self):
-        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn, 
+    def test_misc_no_trunc_low_cardinality(self):
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn,
                                                 self.dialect,
                                                 field_number=2)
         assert len(freq) == 1  # should be 1 x '' x 200 occurances
@@ -136,27 +136,27 @@ class TestGetFieldNames(object):
         os.remove(self.empty_fqfn)
         os.remove(self.noquote_fqfn)
 
-    def test_misc_c01_header_all_cols(self):
+    def test_misc_header_all_cols(self):
 
         assert mod.get_field_names(self.header_fqfn,
                                    self.dialect) == self.name_list
 
-    def test_misc_c01_header_one_col(self):
+    def test_misc_header_one_col(self):
 
         assert mod.get_field_names(self.header_fqfn, 
                                    self.dialect, 1)  == 'phone'
 
-    def test_misc_c02_headless_all_col(self):
+    def test_misc_headless_all_col(self):
         self.dialect.has_header = False
         assert mod.get_field_names(self.headless_fqfn, self.dialect) \
                 == ['field_0','field_1','field_2','field_3']
 
-    def test_misc_c02_headless_one_col(self):
+    def test_misc_headless_one_col(self):
         self.dialect.has_header = False
         assert mod.get_field_names(self.headless_fqfn, self.dialect, 1) \
                 == 'field_1'
 
-    def test_misc_c03_empty(self):
+    def test_misc_empty(self):
         # test with header:
         assert mod.get_field_names(self.empty_fqfn, self.dialect) is None
         assert mod.get_field_names(self.empty_fqfn, self.dialect, 1) is None
@@ -166,7 +166,7 @@ class TestGetFieldNames(object):
         assert mod.get_field_names(self.empty_fqfn, self.dialect) is None
         assert mod.get_field_names(self.empty_fqfn, self.dialect, 1) is None
 
-    def test_misc_c04_noquote(self):
+    def test_misc_noquote(self):
 
         assert mod.get_field_names(self.noquote_fqfn,
                                    self.dialect) == self.name_list
@@ -203,27 +203,27 @@ class TestMinAndMax(object):
                             '777':2    ,
                             '11':2 }
 
-    def test_misc_d01_emptiness(self):
+    def test_misc_emptiness(self):
         assert mod.get_max('string', self.empty_dict) is None
         assert mod.get_max('string', self.empty_list) is None
         assert mod.get_min('string', self.empty_dict) is None
         assert mod.get_min('string', self.empty_list) is None
 
-    def test_misc_d02_easy_dict(self):
+    def test_misc_easy_dict(self):
         assert mod.get_max('string', self.easy_dict)  == 'Wyoming'
         assert mod.get_min('string', self.easy_dict)  == 'Nevada'
 
-    def test_misc_d03_easy_list(self):
+    def test_misc_easy_list(self):
         assert mod.get_max('string', self.easy_list)  == 'Wyoming'
         assert mod.get_min('string', self.easy_list)  == 'Nevada'
 
-    def test_misc_d04_unknowns(self):
+    def test_misc_unknowns(self):
         assert mod.get_max('string', self.unk_list)  == 'Texas'
         assert mod.get_max('string', self.unk_dict)  == 'Texas'
         assert mod.get_min('string', self.unk_dict)  == 'Nevada'
         assert mod.get_min('string', self.unk_list)  == 'Nevada'
 
-    def test_misc_d05_mins(self):
+    def test_misc_mins(self):
         assert mod.get_min('integer', self.num_dict)  == '9'
 
 
