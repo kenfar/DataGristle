@@ -46,12 +46,12 @@ class Test_get_field_freq(object):
 
     def setup_method(self, method):
         (fd1, self.test1_fqfn) = tempfile.mkstemp()
-        fp1 = os.fdopen(fd1,"w")
+        fp1 = os.fdopen(fd1, "w")
         for x in range(100):
-           reca = 'a%d|a%d|\n' % (x,x)
-           fp1.write(reca)
-           recb = 'b%d|b%d|\n' % (x,x)
-           fp1.write(recb)
+            reca = 'a%d|a%d|\n' % (x, x)
+            fp1.write(reca)
+            recb = 'b%d|b%d|\n' % (x, x)
+            fp1.write(recb)
         fp1.close()
 
         self.dialect                  = csv.Dialect
@@ -86,6 +86,16 @@ class Test_get_field_freq(object):
                                                 field_number=2)
         assert len(freq) == 1  # should be 1 x '' x 200 occurances
         assert trunc_flag is False
+
+    def test_misc_read_limit_truncation(self):
+        (freq, trunc_flag, bad_cnt) = mod.get_field_freq(self.test1_fqfn,
+                                                         self.dialect,
+                                                         field_number=0,
+                                                         max_freq_size=-1,
+                                                         read_limit=10)
+        assert len(freq) == 11
+        assert trunc_flag is True
+
 
 
 
