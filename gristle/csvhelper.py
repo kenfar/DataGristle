@@ -8,7 +8,6 @@
 from __future__ import division
 
 #--- standard modules ------------------
-import fileinput
 import collections
 import csv
 import os
