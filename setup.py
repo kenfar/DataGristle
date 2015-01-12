@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 
 import os
+import uuid
 from setuptools import setup, find_packages
+from pip.req import parse_requirements
 
 def read(*paths):
     """Build a file path from *paths* and return the contents."""
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-version          = "0.58"
+def read_version():
+    rec = read('gristle/_version.py')
+    fields = rec.split('=')
+    version = fields[1].strip()[1:-1]
+    assert version.count('.') == 2
+    return version
+
+
+version          = read_version()
 DESCRIPTION      = 'A toolbox and library of ETL, data quality, and data analysis tools'
+REQUIREMENTS     = [str(ir.req) for ir in parse_requirements('requirements.txt', session=uuid.uuid1())]
 
 setup(name             = 'datagristle'     ,
       version          = version           ,
@@ -47,14 +58,6 @@ setup(name             = 'datagristle'     ,
                       'scripts/gristle_slicer'        ,
                       'scripts/gristle_validator'     ,
                       'scripts/gristle_viewer'         ],
-      install_requires     = ['appdirs     >= 1.2.0' ,
-                              'sqlalchemy  >= 0.8.4' ,
-                              'envoy       >= 0.0.2' ,
-                              'pytest      >= 2.5.2' ,
-                              'tox         >= 1.7.0' ,
-                              'validictory >= 0.9.3' ,
-                              'pyyaml      >= 3.10'  ,
-                              'cletus'               ,
-                              'unittest2'           ],
+      install_requires = REQUIREMENTS,
       packages     = find_packages(),
      )
