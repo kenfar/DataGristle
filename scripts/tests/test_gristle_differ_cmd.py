@@ -26,12 +26,8 @@ import envoy
 #--- gristle modules -------------------
 import test_tools
 
-# get script_diring set for running code out of project structure & testing it via
-# tox
-#script_dir = dirname(dirname(os.path.realpath((__file__))))
-#data_dir    = pjoin(test_tools.get_app_root(), 'data')
+# get script_diring set for running code out of project structure & testing it via tox
 script_dir   = dirname(dirname(os.path.realpath((__file__))))
-#fq_pgm       = pjoin(script_dir, 'gristle_differ')
 sys.path.insert(0, test_tools.get_app_root())
 
 import gristle.common  as comm
