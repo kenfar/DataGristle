@@ -6,7 +6,6 @@ from os.path import isfile, isdir, exists
 from os.path import dirname, basename
 from os.path import join  as pjoin
 import csv
-import fileinput
 
 import envoy
 import gristle.common as comm
@@ -77,19 +76,21 @@ class CSVDeDuper(object):
         outwriter = csv.writer(outfile, dialect=self.dialect)
         last_rec  = None
         write_cnt = 0
-        for rec in csv.reader(fileinput.input(in_fqfn), dialect=self.dialect):
-            if last_rec:
-                for key in self.key_fields_0off:
-                    if rec[key] != last_rec[key]:
-                         break
-                else:
-                    continue  # duplicate
-            write_cnt += 1
-            outwriter.writerow(rec)
-            last_rec = rec
-        read_cnt = fileinput.lineno()
+        read_cnt  = 0
+        with open(in_fqfn, 'rb') as infile:
+            reader = csv.reader(infile, self.dialect)
+            for rec in reader:
+                read_cnt += 1
+                if last_rec:
+                    for key in self.key_fields_0off:
+                        if rec[key] != last_rec[key]:
+                            break
+                    else:
+                        continue  # duplicate
+                write_cnt += 1
+                outwriter.writerow(rec)
+                last_rec = rec
         outfile.close()
-        fileinput.close()
         return (out_fqfn, read_cnt, write_cnt)
 
 
