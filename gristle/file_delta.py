@@ -6,11 +6,9 @@ from os.path import isfile, isdir, exists
 from os.path import dirname, basename
 from os.path import join  as pjoin
 import csv
-import fileinput
 import collections
 from pprint import pprint as pp
 
-import psycopg2       as dbapi2
 import logging
 import envoy
 import gristle.common as comm
@@ -475,21 +473,23 @@ class DeltaAssignments(object):
             return # all sequences already have a starting val
 
         old_rec_cnt = 0
-        for rec in csv.reader(fileinput.input(old_fqfn), dialect):
-            for src_field in self.seq:
-                if self.seq[src_field]['last_val'] is not None:
-                    continue # set already by config
-                elif rec[src_field].strip() == '':
-                    continue # old file lacks good sequence val in this rec
-                try:
-                    new_val = int(rec[src_field])
-                except ValueError:
-                    abort('Non-integer value within sequence field: %s' % rec[src_field])
-                if fileinput.lineno() == 1:
-                    self.seq[src_field]['start_val'] = new_val
-                elif new_val > self.seq[src_field]['start_val']:
-                    self.seq[src_field]['start_val'] = new_val
-            old_rec_cnt = fileinput.lineno()
+        with open(old_fqfn, 'rb') as infile:
+            reader = csv.reader(infile, dialect)
+            for rec in reader:
+                old_rec_cnt += 1
+                for src_field in self.seq:
+                    if self.seq[src_field]['last_val'] is not None:
+                        continue # set already by config
+                    elif rec[src_field].strip() == '':
+                        continue # old file lacks good sequence val in this rec
+                    try:
+                        new_val = int(rec[src_field])
+                    except ValueError:
+                        abort('Non-integer value within sequence field: %s' % rec[src_field])
+                    if old_rec_cnt == 1:
+                        self.seq[src_field]['start_val'] = new_val
+                    elif new_val > self.seq[src_field]['start_val']:
+                        self.seq[src_field]['start_val'] = new_val
 
         # for any sequences set by the loop through the file, now we
         # can set their last_val:
