@@ -129,7 +129,16 @@ Keyword arguments:
   --hasnoheader         Indicate that there is no header in the file.  This is
                         a standard datagristle option - but not yet supported
                         within this pgm.
-  -V, --Version         Show program's version number and exits.
+  -V, --version         Show program's version number and exits.
+
+The config file is useful when the there are many arguments, especially when
+using post-delta transforms.  The program can be referred to a config file in
+either of two ways:
+   - config-fn argument: that references a specific file name
+   - config-name argument: that refers to a file name within the XDG standard
+     directory.
+        - On linux: $HOME/.config/gristle_differ/<name>.yml
+        - On MacOS: $HOME/
 
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
