@@ -67,9 +67,13 @@ class FileTyper(object):
                  has_header=None,
                  quoting='quote_none',
                  quote_char=None,
-                 read_limit=None):
-        """  fqfn = fully qualified file name
+                 read_limit=-1):
         """
+             Arguments - most are optional because dialect is optional
+                - fqfn = fully qualified file name
+                - read_limit = default is -1, which means unlimited
+        """
+        assert read_limit is not None
         self._delimiter           = delimiter
         self._has_header          = has_header
         self._quoting_num         = get_quote_number(quoting)
@@ -78,7 +82,7 @@ class FileTyper(object):
         self.fixed_length         = None
         self.field_cnt            = None
         self.record_cnt           = None
-        self.est_rec_cnt          = None
+        self.record_cnt_is_est    = None
         self.csv_quoting          = None
         self.dialect              = None
         self.read_limit           = read_limit
@@ -113,8 +117,10 @@ class FileTyper(object):
         self.format_type         = self._get_format_type()
         self.dialect.has_header  = self._get_has_header(self._has_header)
         self._has_header         = self.dialect.has_header
+
+        # unrelated to dialect, actually uses csv dialect info:
         self.field_cnt           = self._get_field_cnt()
-        self.record_cnt, self.est_rec_cnt = self._count_records()
+        self.record_cnt, self.record_cnt_is_est = self._count_records()
 
         return self.dialect
 
@@ -228,26 +234,23 @@ class FileTyper(object):
         """ determines the number of fields in the file.
 
             To do:  make it less naive - it currently assumes that all #recs
-            will have the same number of fields.  It should be improved t 
+            will have the same number of fields.  It should be improved to
             deal with bad data.
         """
         if not self._delimiter or len(self._delimiter) == 1:
-            csvfile = open(self.fqfn, "r")
-            for row in csv.reader(csvfile, self.dialect):
-                row_len = len(row)
-                csvfile.close()
+            for rec in csv.reader(fileinput.input(self.fqfn), self.dialect):
+                rec_len = len(rec)
                 break
         else:
             print 'file_type._get_field_cnt - DEPRECATED FUNCTIONALITY'
             # csv module can't handle multi-column delimiters:
             for rec in fileinput.input(self.fqfn):
                 fields = rec[:-1].split(self._delimiter)
-                fileinput.close()
-                row_len = len(fields)
+                rec_len = len(fields)
                 break
-            fileinput.close()
+        fileinput.close()
 
-        return row_len
+        return rec_len
 
 
     def _get_format_type(self):
@@ -257,10 +260,15 @@ class FileTyper(object):
             Returns either 'csv' or 'fixed'
         """
         # our solution isn't accurate enough to show yet, so for now just 
-        # set to empty-string:
+        # set to 'csv':
         return 'csv' 
 
-        # eventually, we'll improve this old code:
+        #todo:  make this smarter:
+        #       - Since we're not using a csv dialect we could have control 
+        #         characters breaking a row into multiple lines.
+        #       - Also, a small csv file might really have all rows get the same
+        #         length.
+        #       - Also, the user may be passed in explicit csv dialect info.
         rec_length = collections.defaultdict(int)
         for rec in fileinput.input(self.fqfn):
             rec_length[len(rec)] += 1
@@ -284,22 +292,34 @@ class FileTyper(object):
         rec_cnt           = 0
         estimated_rec_cnt = 0
         byte_cnt          = 0
-        estimated         = False
-
-        for rec in fileinput.input(self.fqfn):
-            rec_cnt += 1
-            byte_cnt += len(rec)
-            if (self.read_limit and rec_cnt >= self.read_limit):
-                estimated = True
-                break
-        fileinput.close()
+        if self.read_limit > -1:
+            estimated         = True
+        else:
+            estimated         = False
 
         if estimated:
+            # fastest method, should be helpful if the read_limit is very high
+            # but can miscount rows if newlines are in a field
+            estimated = True
+            infile  = open(self.fqfn, 'rb')
+            for rec in infile:
+                byte_cnt += len(rec)
+                rec_cnt  += 1
+                if rec_cnt  >= self.read_limit:
+                    break
+            infile.close()
             try:
                 bytes_per_rec = byte_cnt / rec_cnt
                 estimated_rec_cnt = int(os.path.getsize(self.fqfn) / bytes_per_rec) 
             except  ZeroDivisionError:
                 pass
+
+        else:
+            # much slower method, but most accurate
+            with open(self.fqfn, 'rb') as infile:
+                reader = csv.reader(infile, self.dialect)
+                for row in reader:
+                    rec_cnt += 1
 
         return estimated_rec_cnt or rec_cnt, estimated
 
