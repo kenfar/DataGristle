@@ -113,7 +113,7 @@ class ArgProcessor(object):
                 action='store_true',
                 help='Print more verbose help')
 
-        self.parser.add_argument('-V', '--Version',
+        self.parser.add_argument('-V', '--version',
                 action='version',
                 version='version: %s' % __version__)
 
