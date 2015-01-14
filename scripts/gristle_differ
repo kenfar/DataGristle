@@ -589,6 +589,9 @@ def validate_config(config):
     elif config['compare_cols'] == [] and config['ignore_cols'] == []:
         abort("Error: One of compare_cols or ignore_cols must be provided")
 
+    if config['hasheader']:
+        abort("Error: hasheader is not supported yet.")
+
     for kv_pair in config['variables']:
         if ':' not in kv_pair:
             abort('Invalid variable: must be name:value.  Was: %s' % kv_pair)
