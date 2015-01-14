@@ -93,7 +93,7 @@ class Test_get_field_freq(object):
                                                          field_number=0,
                                                          max_freq_size=-1,
                                                          read_limit=10)
-        assert len(freq) == 11
+        assert len(freq) == 10
         assert trunc_flag is True
 
 
