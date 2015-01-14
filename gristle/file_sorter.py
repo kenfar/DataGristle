@@ -62,6 +62,10 @@ class CSVSorter(object):
     def sort_file(self, in_fqfn, out_fqfn=None):
         """ Sort input file giving output file.
 
+        Note that sort_file does not have very sophisticated csv-sorting
+        features: it doesn't recognize quoting or escaping, so control
+        characters in the data can throw off the record structure.
+
         Args:
             in_fn:  input file name
             out_fn: output file name.  Defaults to None.  If it is None
@@ -72,6 +76,7 @@ class CSVSorter(object):
             IOError: if the sort produces a non-zero return code
             ValueError: if the input file is invalid
         """
+
         tmp_dir  = self.tmp_dir or dirname(in_fqfn)
         if not out_fqfn:
             out_dir  = self.out_dir or dirname(in_fqfn)
@@ -94,8 +99,10 @@ class CSVSorter(object):
             raise IOError, 'Invalid sort status code: %d' % r.status_code
         return out_fqfn
 
-    def _get_sort_del(self, delimiter):
 
+    def _get_sort_del(self, delimiter):
+        """ Gets a quoted, sort-acceptable delimiter given a regular delimiter.
+        """
         if delimiter == '\t':
             return "$'\t'"
             #alternative, got stuck on envoy i think:
