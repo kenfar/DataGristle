@@ -5,16 +5,14 @@ import sys
 from os.path import isfile, isdir, exists
 from os.path import dirname, basename
 from os.path import join  as pjoin
-import csv
 
 import envoy
-import gristle.common as comm
 
 
 
 class CSVSorter(object):
     """ Sort a file.
- 
+
     Args:
         dialect:  a csv module dialect
         key_fields_0off: a list of fields to sort the file with - identified by
@@ -22,7 +20,7 @@ class CSVSorter(object):
         tmp_dir: a directory to use for sort temp space.  Defaults to None, in
                  which case the input file directory will be used.
         out_dir: a directory to use for the output file.  Defaults to None, in
-		 which case the input file directory will be used.
+                 which case the input file directory will be used.
     Raises:
         ValueError: if tmp_dir or out_dir are provided but do not exist
         ValueError: if sort keys are invalid
@@ -106,7 +104,7 @@ class CSVSorter(object):
         if delimiter == '\t':
             return "$'\t'"
             #alternative, got stuck on envoy i think:
-            #return ''' " `echo '\t'` " ''' 
+            #return ''' " `echo '\t'` " '''
         else:
             return "'%s'" % delimiter
 
