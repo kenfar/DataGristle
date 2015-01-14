@@ -29,8 +29,6 @@ Usage: gristle_determinator [file] [misc options]
     -d DELIMITER, --delimiter=DELIMITER
                           Specify a quoted field delimiter.This is essential for
                           multi-column delimiters.
-    --recdelimiter=RECDELIMITER
-                          Specify a quoted end-of-record delimiter.
     --hasheader           Indicates that there is a header in the file.
     --hasnoheader         Indicates that there is no header in the file. Useful
                           for overriding automatic csv-guessing behavior.
@@ -252,7 +250,7 @@ def main():
 
     my_file       = file_type.FileTyper(files[0],
                                        opts.delimiter,
-                                       opts.recdelimiter,
+                                       None,
                                        opts.hasheader,
                                        quoting=csv.QUOTE_MINIMAL,
                                        read_limit=opts.read_limit)
@@ -275,7 +273,7 @@ def main():
                                   my_file.dialect.has_header,
                                   my_file.dialect,
                                   my_file.dialect.delimiter,
-                                  opts.recdelimiter,
+                                  None,
                                   opts.verbose)
 
     if opts.column_type_overrides:
@@ -613,8 +611,6 @@ def get_opts_and_args():
     parser.add_option('-d', '--delimiter',
            help=('Specify a quoted field delimiter.'
                  'This is essential for multi-column delimiters.'))
-    parser.add_option('--recdelimiter',
-           help='Specify a quoted end-of-record delimiter. ')
     parser.add_option('--hasheader',
            default=None,
            action='store_true',
