@@ -49,7 +49,7 @@ More info is on the DataGristle wiki here:
 
        ~~~
        $ mkdir ~\Downloads
-       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.53.tar.gz
+       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.59.tar.gz
        $ tar -xvf easy_install datagristle
        $ cd ~\Downloads\datagristle-*
        $ python setup.py install
@@ -448,5 +448,5 @@ More info is on the DataGristle wiki here:
 
 # Copyright
 
-   * Copyright 2011,2012,2013,2014 Ken Farmer
+   * Copyright 2011,2012,2013,2014,2015 Ken Farmer
 
