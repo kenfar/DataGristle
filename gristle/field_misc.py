@@ -31,7 +31,7 @@ MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
 def get_field_names(filename,
                     dialect,
                     col_number=None):
-    """ Determines names of fields 
+    """ Determines names of fields
         Inputs:
         Outputs:
         Misc:
@@ -118,29 +118,53 @@ def get_case(field_type, values):
 def get_field_freq(filename,
                    dialect,
                    field_number,
-                   max_freq_size=MAX_FREQ_SIZE_DEFAULT):
-    """ Collects a frequency distribution for a single field by reading
-        the file provided.
+                   max_freq_size=MAX_FREQ_SIZE_DEFAULT,
+                   read_limit=-1):
+    """ Collects a frequency distribution for a single field by reading the
+        file provided.
+
+        Arguments:
+            - filename:
+            - dialect:
+            - field_number:
+            - max_freq_size: defaults to the system max, which is typically
+              over 1M.  A value of -1 will result in 'no limit'.
+            - read_limit:  A performance option that stops reading after this
+              number of records.  The default is -1 which means, no limit.
+
+        Returns:
+            - freq: a dictionary of values & counts
+            - truncated: a boolean that indicates whether or not the results
+              were obtained from the entire file, or had to stop due to
+              max_freq_size or read_limit.
+            - invalid_row_cnt: a count of rows that could not be analyzed,
+              because they were missing this field.
+
         Issues:
-        - has limited checking for wrong number of fields in rec
+            - has limited checking for wrong number of fields in rec
     """
-    freq        = collections.defaultdict(int)
-    rec_cnt     = 0
-    truncated   = False
+    freq            = collections.defaultdict(int)
+    truncated       = False
     invalid_row_cnt = 0
 
-    for fields in csv.reader(open(filename,'r'), dialect=dialect):
-        rec_cnt += 1
-        if rec_cnt == 1 and dialect.has_header:
-            continue
-        try:
-            freq[fields[field_number].strip()] += 1
-        except IndexError:
-            invalid_row_cnt += 1
-        if len(freq) >= max_freq_size:
-            print '      WARNING: freq dict is too large - will trunc'
-            truncated = True
-            break
+    row_cnt = 0
+    with open(filename, 'rb') as infile:
+        reader = csv.reader(infile, dialect)
+        for fields in reader:
+            row_cnt += 1
+            if row_cnt == 1 and dialect.has_header:
+                continue
+            try:
+                freq[fields[field_number].strip()] += 1
+            except IndexError:
+                invalid_row_cnt += 1
+            if max_freq_size > -1 and len(freq) >= max_freq_size:
+                print '      WARNING: freq dict is too large - will trunc'
+                truncated = True
+                break
+            elif read_limit > -1 and row_cnt >= read_limit:
+                truncated = True
+                break
 
     return freq, truncated, invalid_row_cnt
 
