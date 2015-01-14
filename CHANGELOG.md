@@ -1,8 +1,11 @@
-# v0.60 - 2014-12
+# v0.59 - 2015-01
    * gristle_differ
      - totally rewritten.  Can now handle very large files, perform post-transform
        transformations, handle more complex comparisons, and use column names rather 
        than just positions.
+   * gristle_determinator
+     - added read-limit argument.  This allows the tool to be easily run against a
+       subset of a very large input file.
    * gristle_scalar
      - removed from library.  There are better tools in other solutions can be used
        instead.  This tool may come back again later, but only if enormously rewritten.
