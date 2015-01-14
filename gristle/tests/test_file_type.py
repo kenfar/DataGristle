@@ -99,8 +99,16 @@ class TestInternals(object):
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
-    def test_file_record_number(self):
-        assert self.MyTest._count_records() == (self.record_cnt, False)
+    def test_file_record_number_without_read_limit(self):
+        assert (self.record_cnt, False) == self.MyTest._count_records()
+
+    def test_file_record_number_with_read_limit(self):
+        self.MyTest = mod.FileTyper(self.test1_fqfn, read_limit=10)
+        self.MyTest.analyze_file()
+        (est_rec_cnt, est_flag) = self.MyTest._count_records()
+        assert est_flag is True
+        # it should normally be within 5-10% of 100
+        assert abs(115-est_rec_cnt) < 30
 
     def test_file_format_type(self):
         assert self.MyTest._get_format_type() == 'csv'
