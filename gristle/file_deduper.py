@@ -7,9 +7,6 @@ from os.path import dirname, basename
 from os.path import join  as pjoin
 import csv
 
-import envoy
-import gristle.common as comm
-
 
 class CSVDeDuper(object):
     """ Read sorted csv file and write non-duplicates to another csv file
@@ -33,7 +30,7 @@ class CSVDeDuper(object):
         self.dialect    = dialect
 
         try:
-            self.key_fields_0off = [ int(x) for x in key_fields_0off ]
+            self.key_fields_0off = [int(x) for x in key_fields_0off]
         except ValueError:
             print 'Error: invalid non-numeric sort key: %s' % key_fields_0off
             raise
