@@ -9,8 +9,6 @@ import csv
 import collections
 from pprint import pprint as pp
 
-import logging
-import envoy
 import gristle.common as comm
 from gristle.common import abort as abort
 
@@ -354,7 +352,7 @@ class DeltaAssignments(object):
                 else:
                     abort('Sequence refers to invalid special variable'
                           'should be unique.  Variable: %s   Its value: %s'
-                          % (src_val, self.special-values[src_val]))
+                          % (src_val, self.special_values[src_val]))
             else:
                 abort('Invalid src_val from config, must be numeric for sequence: %s'
                       ' or refer to special variable name '% src_val)
