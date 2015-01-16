@@ -211,3 +211,162 @@ class Test_output_formatting_and_contents(object):
         assert self.field_struct['field_1']['top_values']['19']   == '1'
 
 
+
+class Test_read_limit(object):
+
+    def setup_method(self, method):
+        recs = [ ['Alabama','8','18'],
+                 ['Alaska','6','16'],
+                 ['Arizona','6','14'],
+                 ['Arkansas','2','12'],
+                 ['California','19','44'],
+                 ['Colorado','19','44'],
+                 ['Illinois','19','44'],
+                 ['Indiana','19','44'],
+                 ['Kansas','19','44'],
+                 ['Kentucky','19','44'],
+                 ['Louisiana','19','44'],
+                 ['Maine','19','44'],
+                 ['Mississippi','19','44'],
+                 ['Nebraska','19','44'],
+                 ['Oklahoma','19','44'],
+                 ['Tennessee','19','44'],
+                 ['Texas','19','9999'],
+                 ['Virginia','19','44'],
+                 ['West Virginia','19','44'],
+               ]
+        self.file_struct  = {}
+        self.field_struct = {}
+
+        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
+        cmd = '%s %s --read-limit 4 --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        r    = envoy.run(cmd)
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+
+        mydialect                = csv.Dialect
+        mydialect.delimiter      = '|'
+        mydialect.quoting        = file_type.get_quote_number('QUOTE_ALL')
+        mydialect.quotechar      = '"'
+        mydialect.lineterminator = '\n'
+
+        csvobj = csv.reader(r.std_out.split('\n'), dialect=mydialect)
+        for record in csvobj:
+            if not record:
+                continue
+            assert len(record) == 5
+            division   = record[0]
+            section    = record[1]
+            subsection = record[2]
+            key        = record[3]
+            value      = record[4]
+
+            assert division in ['file_analysis_results','field_analysis_results']
+
+            if division == 'file_analysis_results':
+                assert section    == 'main'
+                assert subsection == 'main'
+                self.file_struct[key] = value
+            elif division == 'field_analysis_results':
+                assert 'field_' in section
+                assert subsection in ['main','top_values']
+                if section not in self.field_struct:
+                    self.field_struct[section] = {}
+                if subsection not in self.field_struct[section]:
+                    self.field_struct[section][subsection] = {}
+                self.field_struct[section][subsection][key] = value
+
+    def test_limits(self):
+        assert 'est' in self.file_struct['record_count']
+
+    def test_file_info(self):
+        assert self.file_struct['skipinitialspace']  == 'False'
+        assert self.file_struct['quoting']           == 'QUOTE_NONE'
+        assert self.file_struct['field_count']       == '3'
+        assert self.file_struct['delimiter']         == "'|'"
+
+    def test_field_info(self):
+        assert self.field_struct['field_0']['main']['known_values']    == '4'
+        assert self.field_struct['field_0']['main']['min']             == 'Alabama'
+        assert self.field_struct['field_0']['main']['max']             == 'Arkansas'
+        assert self.field_struct['field_0']['main']['unique_values']   == '4'
+
+
+class Test_max_freq(object):
+
+    def setup_method(self, method):
+        recs = [ ['Alabama','8','18'],
+                 ['Alaska','6','16'],
+                 ['Arizona','6','14'],
+                 ['Arkansas','2','12'],
+                 ['California','19','44'],
+                 ['Colorado','19','44'],
+                 ['Illinois','19','44'],
+                 ['Indiana','19','44'],
+                 ['Kansas','19','44'],
+                 ['Kentucky','19','44'],
+                 ['Louisiana','19','44'],
+                 ['Maine','19','44'],
+                 ['Mississippi','19','44'],
+                 ['Nebraska','19','44'],
+                 ['Oklahoma','19','44'],
+                 ['Tennessee','19','44'],
+                 ['Texas','19','9999'],
+                 ['Virginia','19','44'],
+                 ['West Virginia','19','44'],
+               ]
+        self.file_struct  = {}
+        self.field_struct = {}
+
+        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
+        cmd = '%s %s --max-freq 10  --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        r    = envoy.run(cmd)
+        print r.std_out
+        print r.std_err
+        assert r.status_code == 0
+
+        mydialect                = csv.Dialect
+        mydialect.delimiter      = '|'
+        mydialect.quoting        = file_type.get_quote_number('QUOTE_ALL')
+        mydialect.quotechar      = '"'
+        mydialect.lineterminator = '\n'
+
+        csvobj = csv.reader(r.std_out.split('\n'), dialect=mydialect)
+        for record in csvobj:
+            if not record:
+                continue
+            if len(record) != 5:
+                if 'WARNING: freq dict is too large' in record[0]:
+                    continue # ignore warning row
+                else:
+                    pytest.fail('Invalid result record: %s' % record[0])
+            division   = record[0]
+            section    = record[1]
+            subsection = record[2]
+            key        = record[3]
+            value      = record[4]
+
+            assert division in ['file_analysis_results','field_analysis_results']
+
+            if division == 'file_analysis_results':
+                assert section    == 'main'
+                assert subsection == 'main'
+                self.file_struct[key] = value
+            elif division == 'field_analysis_results':
+                assert 'field_' in section
+                assert subsection in ['main','top_values']
+                if section not in self.field_struct:
+                    self.field_struct[section] = {}
+                if subsection not in self.field_struct[section]:
+                    self.field_struct[section][subsection] = {}
+                self.field_struct[section][subsection][key] = value
+
+    def test_limits(self):
+        assert self.file_struct['record_count']      == '19'
+
+    def test_field_info(self):
+        assert self.field_struct['field_0']['main']['known_values']    == '10'
+        assert self.field_struct['field_0']['main']['min']             == 'Alabama'
+        assert self.field_struct['field_0']['main']['max']             == 'Kentucky' # affected
+        assert self.field_struct['field_0']['main']['unique_values']   == '10' # affected
