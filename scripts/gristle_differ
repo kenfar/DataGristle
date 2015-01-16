@@ -149,16 +149,12 @@ Copyright 2011,2012,2013,2014,2015 Ken Farmer
 #--- standard modules ------------------
 from __future__ import division
 import sys, os
-import argparse
-import csv
 import logging
 import copy
-from  os.path import isfile, isdir, exists
-from  os.path import dirname, basename
+from  os.path import isfile, isdir, exists, dirname, basename
 from  os.path import join as pjoin
-from  pprint  import pprint as pp
+#from  pprint  import pprint as pp
 
-import appdirs
 import cletus.cletus_config as conf
 
 #--- gristle modules -------------------
@@ -168,8 +164,7 @@ sys.path.append('../../')
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 
 import gristle.common       as comm
-from   gristle.common  import abort, isnumeric
-from gristle.csvhelper import create_dialect
+from   gristle.common  import abort
 import gristle.file_delta   as gdelta
 import gristle.file_sorter  as gsorter
 import gristle.file_deduper as gdeduper
@@ -179,6 +174,7 @@ import gristle.file_deduper as gdeduper
 from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
+APP_NAME='gristle_differ'
 logging.basicConfig()
 
 
@@ -210,7 +206,7 @@ def main():
     # either file may be empty - but at least one must have data in it.
     assert len(config['files']) == 2
     if (os.path.getsize(config['files'][0]) == 0
-             and os.path.getsize(config['files'][1]) == 0):
+            and os.path.getsize(config['files'][1]) == 0):
         return 1
 
     dialect = comm.get_dialect(config['files'], config['delimiter'], config['quoting'],
@@ -281,14 +277,16 @@ def delta_runner(config, dialect):
     delta.dass.get_sequence_starts(dialect, config['files'][0])
 
     #--- sort & dedupe the two source files -----
-    f0_sorted_uniq_fn, f0_dups_drop_cnt = prep_file(delta, config['files'][0],
-                                                    dialect, keys_off0,
-                                                    adj_temp_dir, adj_out_dir,
-                                                    config['already_sorted'], config['already_uniq'])
-    f1_sorted_uniq_fn, f1_dups_drop_cnt = prep_file(delta, config['files'][1],
-                                                    dialect, keys_off0,
-                                                    adj_temp_dir, adj_out_dir,
-                                                    config['already_sorted'], config['already_uniq'])
+    f0_sorted_uniq_fn, _ = prep_file(config['files'][0],
+                                     dialect, keys_off0,
+                                     adj_temp_dir, adj_out_dir,
+                                     config['already_sorted'],
+                                     config['already_uniq'])
+    f1_sorted_uniq_fn, _ = prep_file(config['files'][1],
+                                     dialect, keys_off0,
+                                     adj_temp_dir, adj_out_dir,
+                                     config['already_sorted'],
+                                     config['already_uniq'])
 
     #--- finally, run the comparison ---
     delta.compare_files(f0_sorted_uniq_fn, f1_sorted_uniq_fn,
@@ -327,11 +325,10 @@ def get_assign_with_offsets_for_names(col_names, config):
 
 
 
-def prep_file(delta, filename, dialect, key_cols, temp_dir, out_dir, already_sorted, already_uniq):
+def prep_file(filename, dialect, key_cols, temp_dir, out_dir, already_sorted, already_uniq):
     """ Set up a file for the delta class comparison.
 
     Args:
-        delta:
         filename: name of input file
         dialect:  csv dialect
         key_cols: list of key columns, offsets only
@@ -383,44 +380,45 @@ class ArgProcessor(comm.ArgProcessor):
 
         self.add_positional_file_args(stdin=False)
 
-        self.parser.add_argument('-k', '--key-cols',
-                default=[],
-                nargs='*',
-                help='Specify the columns that constitute a unique row with a comma-'
-                     'delimited list of numbers using a 0-offset.  This is a '
-                     'required option.')
-        self.parser.add_argument('-c', '--compare-cols',
-                nargs='*',
-                default=[],
-                help=('Columns to compare - described by their position using a zero-offset.'
-                      '  Mutually exclusive with ignore-cols'))
-        self.parser.add_argument('-i', '--ignore-cols',
-                nargs='*',
-                default=[],
-                help=('Columns to ignore - described by their position using a zero-offset.'
-                      ' Mutually exclusive with compare-cols'))
-        self.parser.add_argument('--col_names',
-                nargs='*',
-                default=[],
-                help=('Column names - allows other cols to use names rather than offsets'))
-        self.parser.add_argument('--variables',
-                nargs='*',
-                default=[],
-                help=('Variables to reference with assignments.  Format is "<name>:<value>"'))
+        par_add_arg = self.parser.add_argument
+        par_add_arg('-k', '--key-cols',
+                    default=[],
+                    nargs='*',
+                    help='Specify the columns that constitute a unique row with a comma-'
+                         'delimited list of numbers using a 0-offset.  This is a '
+                         'required option.')
+        par_add_arg('-c', '--compare-cols',
+                    nargs='*',
+                    default=[],
+                    help=('Columns to compare - described by their position using a zero-offset.'
+                          '  Mutually exclusive with ignore-cols'))
+        par_add_arg('-i', '--ignore-cols',
+                    nargs='*',
+                    default=[],
+                    help=('Columns to ignore - described by their position using a zero-offset.'
+                          ' Mutually exclusive with compare-cols'))
+        par_add_arg('--col_names',
+                    nargs='*',
+                    default=[],
+                    help=('Column names - allows other cols to use names rather than offsets'))
+        par_add_arg('--variables',
+                    nargs='*',
+                    default=[],
+                    help=('Variables to reference with assignments.  Format is "<name>:<value>"'))
 
-        self.parser.add_argument('--already-sorted',
-                default=False,
-                action='store_true',
-                help='Causes program to bypass sorting step.')
-        self.parser.add_argument('--already-uniq',
-                default=False,
-                action='store_true',
-                help='Causes program to bypass deduping step.')
-        self.parser.add_argument('--temp-dir',
-                help='Used for keeping temporary files.')
-        self.parser.add_argument('--out-dir',
-                help=('Where the output files will be written.  Defaults to the'
-                      ' directory of the second file.'))
+        par_add_arg('--already-sorted',
+                    default=False,
+                    action='store_true',
+                    help='Causes program to bypass sorting step.')
+        par_add_arg('--already-uniq',
+                    default=False,
+                    action='store_true',
+                    help='Causes program to bypass deduping step.')
+        par_add_arg('--temp-dir',
+                    help='Used for keeping temporary files.')
+        par_add_arg('--out-dir',
+                    help=('Where the output files will be written.  Defaults to the'
+                          ' directory of the second file.'))
 
         self.add_option_dry_run()
         self.add_option_stats()
@@ -465,50 +463,50 @@ def setup_config(args):
     #                                       "required": False},
     config_schema = {'type': 'object',
                      'properties': {
-                       'files':           {"type":     "array"},
-                       'temp_dir':        {"required": False},
-                       'out_dir':         {"type":     ["null", "string"],
-                                           "required": False},
-                       'config_fn':       {"required": False},
-                       'config_name':     {"required": False},
-                       'col_names':       {"type":     "array",
-                                           "required": False},
-                       'key_cols':        {"type":     "array"},
-                       'ignore_cols':     {"type":     "array"},
-                       'compare_cols':    {"type":     "array"},
-                       'variables':       {"type":     "array"},
-                       'already_sorted':  {"type":     "boolean"},
-                       'already_uniq':    {"type":     "boolean"},
-                       'assignments':     {"type":     "array",
-                                           "required": False,
-                                           "properties": {
-                                                "dest_file":       {"type":    "string"},
-                                                "dest_field":      {"type":    "string"},
-                                                "src_type":        {"type":    "string"},
-                                                "src_val":         {"type":    "string"},
-                                                "src_file":        {"type":    "string"},
-                                                "src_field":       {"type":    "string"},
-                                                "comments":        {"type":    "string"} } },
-                       'delimiter':       {"type":     ["null", "string"]},
-                       'hasheader':       {'type':     ["null", "boolean"]},
-                       'recdelimiter':    {"type":     ["null", "string"]},
-                       'quoting':         {'type':     ["null", "string"],
-                                           "enum":     ["quote_none", "quote_all",
-                                                        "quote_minimal", "quote_nonnumeric",
-                                                        "0", "1", "2", "3"]},
-                       'quotechar':       {"type":     ["null", "string"]},
-                       'escapechar':      {"type":     ["null", "string"],
-                                           "required": False},
-                       'stats':           {"type":     "boolean",
-                                           "required": False},
-                       'dry_run':         {"type":     "boolean"},
-                       'long_help':       {"type":     "boolean",
-                                           "required": False },
-                       'help':            {"type":     "boolean",
-                                           "required": False },
-                       'version':         {'type':     'string',
-                                           "required": False },
-                      },
+                         'files':           {"type":     "array"},
+                         'temp_dir':        {"required": False},
+                         'out_dir':         {"type":     ["null", "string"],
+                                             "required": False},
+                         'config_fn':       {"required": False},
+                         'config_name':     {"required": False},
+                         'col_names':       {"type":     "array",
+                                             "required": False},
+                         'key_cols':        {"type":     "array"},
+                         'ignore_cols':     {"type":     "array"},
+                         'compare_cols':    {"type":     "array"},
+                         'variables':       {"type":     "array"},
+                         'already_sorted':  {"type":     "boolean"},
+                         'already_uniq':    {"type":     "boolean"},
+                         'assignments':     {"type":     "array",
+                                             "required": False,
+                                             "properties": {
+                                                 "dest_file":       {"type":    "string"},
+                                                 "dest_field":      {"type":    "string"},
+                                                 "src_type":        {"type":    "string"},
+                                                 "src_val":         {"type":    "string"},
+                                                 "src_file":        {"type":    "string"},
+                                                 "src_field":       {"type":    "string"},
+                                                 "comments":        {"type":    "string"} } },
+                         'delimiter':       {"type":     ["null", "string"]},
+                         'hasheader':       {'type':     ["null", "boolean"]},
+                         'recdelimiter':    {"type":     ["null", "string"]},
+                         'quoting':         {'type':     ["null", "string"],
+                                             "enum":     ["quote_none", "quote_all",
+                                                          "quote_minimal", "quote_nonnumeric",
+                                                          "0", "1", "2", "3"]},
+                         'quotechar':       {"type":     ["null", "string"]},
+                         'escapechar':      {"type":     ["null", "string"],
+                                             "required": False},
+                         'stats':           {"type":     "boolean",
+                                             "required": False},
+                         'dry_run':         {"type":     "boolean"},
+                         'long_help':       {"type":     "boolean",
+                                             "required": False },
+                         'help':            {"type":     "boolean",
+                                             "required": False },
+                         'version':         {'type':     'string',
+                                             "required": False },
+                         },
                      'additionalProperties': False
                     }
 
@@ -550,9 +548,9 @@ def setup_config(args):
             config.add_iterable({key: default[key]})
 
     #--- fix correctables - this handles tabs, etc for delimiters:
-    if  config.cm_config.get('delimiter') is not None:
-         new_val = comm.dialect_del_fixer(config.cm_config.get('delimiter'))
-         config.add_iterable({'delimiter': new_val})
+    if config.cm_config.get('delimiter') is not None:
+        new_val = comm.dialect_del_fixer(config.cm_config.get('delimiter'))
+        config.add_iterable({'delimiter': new_val})
 
     #--- validate the consolidated config: ---
     config.validate()                   # validates using json schema
@@ -599,9 +597,11 @@ def validate_config(config):
     if 'assignments' in config:
         for assign in config['assignments']:
             if isinstance(assign['src_field'], list):
-                abort('Assignment src_field must be a string (refers to col_name) or an integer - it is a list')
+                abort('Assignment src_field must be a string (refers to col_name) '
+                      'or an integer - it is a list')
             if isinstance(assign['dest_field'], list):
-                abort('Assignment dest_field must be a string (refers to col_name) or an integer - it is a list')
+                abort('Assignment dest_field must be a string (refers to col_name)'
+                      'or an integer - it is a list')
 
 
 if __name__ == '__main__':
