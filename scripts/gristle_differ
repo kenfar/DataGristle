@@ -29,6 +29,9 @@ include:
       files
     - populating a batch_id in any or all files
 
+See gristle_differ on the wiki for the most thorough documentation here:
+    https://github.com/kenfar/DataGristle/wiki/gristle_differ
+
 Example 1: Simple Comparison
     $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
 
