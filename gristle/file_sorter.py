@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import os
-import sys
+import os, sys, subprocess
 from os.path import isfile, isdir, exists
 from os.path import dirname, basename
 from os.path import join  as pjoin
+from pprint import pprint as pp
 
 import envoy
 
@@ -33,7 +33,6 @@ class CSVSorter(object):
         assert key_fields_0off  is not None
 
         self.dialect   = dialect
-        self.sort_del  = self._get_sort_del(self.dialect.delimiter)
 
         if tmp_dir and not isdir(tmp_dir):
             raise ValueError, 'Invalid sort temp directory: %s' % tmp_dir
@@ -53,8 +52,10 @@ class CSVSorter(object):
             raise
 
         self.field_opt = ''
+        self.field_key_1off = []
         for field in key_fields_1off:
             self.field_opt += ' -k %s' % field
+            self.field_key_1off.append(field)
 
 
     def sort_file(self, in_fqfn, out_fqfn=None):
@@ -83,28 +84,55 @@ class CSVSorter(object):
         if not isfile(in_fqfn):
             raise ValueError, 'Invalid input file: %s' % in_fqfn
 
-        cmd = ''' sort  %s                 \
-                        --field-separator %s \
-                        -T  %s             \
-                        %s                 \
-                        -o  %s             \
-              ''' % (self.field_opt, self.sort_del, self.tmp_dir, in_fqfn, out_fqfn)
-        r = envoy.run(cmd)
-        if r.status_code != 0:
-            print cmd
-            print r.std_err
-            print r.std_out
-            raise IOError, 'Invalid sort status code: %d' % r.status_code
+        cmd = ['sort']
+        for field in self.field_key_1off:
+            cmd.append('-k')
+            cmd.append(str(field))
+        cmd.append('--field-separator')
+        cmd.append(self.dialect.delimiter)
+        cmd.append('-T')
+        cmd.append(self.tmp_dir)
+        cmd.append(in_fqfn)
+        cmd.append('-o')
+        cmd.append(out_fqfn)
+
+        p = subprocess.Popen(cmd,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
+        stdout, stderr = p.communicate()
+
+        if p.returncode != 0:
+            print 'Invalid sort return code: %s' % p.returncode
+            print 'delimiter: %s' % self.dialect.delimiter
+            raise IOError, 'invalid sort return code: %s' % p.returncode
+
+        # Old envoy code, if we want to ever go back for consistency with the rest
+        # of the code base.   It choked on pipes, and using a list for command input
+        # didn't seem to help.
+        #cmd = ''' sort  %s                 \
+        #                --field-separator %s \
+        #                -T  %s             \
+        #                %s                 \
+        #                -o  %s             \
+        #      ''' % (self.field_opt, self.sort_del, self.tmp_dir, in_fqfn, out_fqfn)
+        #r = envoy.run(cmd)
+        #if r.status_code != 0:
+        #    print cmd
+        #    print r.std_err
+        #    print r.std_out
+        #    raise IOError, 'Invalid sort status code: %d' % r.status_code
         return out_fqfn
 
 
     def _get_sort_del(self, delimiter):
         """ Gets a quoted, sort-acceptable delimiter given a regular delimiter.
+            Was necessary when passing tabs as delimiters through the shell.
         """
         if delimiter == '\t':
-            return "$'\t'"
+            return "$'\t'" # used for envoy
             #alternative, got stuck on envoy i think:
             #return ''' " `echo '\t'` " '''
         else:
-            return "'%s'" % delimiter
+            return "'%s'" % delimiter  # good for envoy, not subprocess
 
