@@ -67,6 +67,28 @@ class TestSort(object):
                 assert 0, 'too many rows returned'
         fileinput.close()
 
+    def test_sort_file_with_tab_delimiter(self):
+        join_fields = '0'
+        self.dialect.delimiter = '\t'
+        self.fqfn     = create_test_file(self.temp_dir, self.dialect.delimiter)
+        sorter  = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
+        outfile  = sorter.sort_file(self.fqfn)
+        assert outfile == self.fqfn + '.sorted'
+        for rec in fileinput.input(self.fqfn + '.sorted'):
+            fields = rec.split(self.dialect.delimiter)
+            print fields
+            if fileinput.lineno() == 1:
+                assert fields[0] == '1'
+            elif fileinput.lineno() == 2:
+                assert fields[0] == '2'
+            elif fileinput.lineno() == 3:
+                assert fields[0] == '3'
+            elif fileinput.lineno() == 4:
+                assert fields[0] == '4'
+            else:
+                assert 0, 'too many rows returned'
+        fileinput.close()
+
     def test_sort_file_alpha_combo(self):
         join_fields   = [1, 2]
         sorter        = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
@@ -96,13 +118,17 @@ class TestSort(object):
         assert basename(outfile) == basename(self.fqfn) + '.sorted'
 
 
-def create_test_file(temp_dir):
+def create_test_file(temp_dir, delimiter=','):
     fqfn = pjoin(temp_dir, 'foo.csv')
     with open(fqfn, 'w') as f:
-            f.write('4, aaa, a23\n')
-            f.write('2, bbb, a23\n')
-            f.write('1, bbb, b23\n')
-            f.write('3, aaa, b23\n')
+        f.write(delimiter.join(['4', 'aaa', 'a23']) + '\n')
+        #f.write('4, aaa, a23\n')
+        f.write(delimiter.join(['2', 'bbb', 'a23']) + '\n')
+        #f.write('2, bbb, a23\n')
+        f.write(delimiter.join(['1', 'bbb', 'b23']) + '\n')
+        #f.write('1, bbb, b23\n')
+        f.write(delimiter.join(['3', 'aaa', 'b23']) + '\n')
+        #f.write('3, aaa, b23\n')
     return fqfn
 
 
