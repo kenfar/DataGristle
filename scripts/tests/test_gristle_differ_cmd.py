@@ -16,7 +16,7 @@ import shutil
 import glob
 import csv
 from pprint  import pprint as pp
-from os.path import dirname, basename
+from os.path import dirname, basename, isfile, isdir, exists
 from os.path import join as pjoin
 import fileinput
 
@@ -86,7 +86,7 @@ class TestInvalidInput(object):
         # override init values:
         # following entry is invalid: assign field must be in colname list:
         self.config.add_assignment('chgnew', 'col9','copy',None,'old','col0')
-        self.config.write_config()
+        self.config.write_config(valid=False)
         cmd = ''' %s   \
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), self.config.config_fqfn)
@@ -121,6 +121,8 @@ class TestCommandLine(object):
                        ['new-row','13a','45b'],
                        ['same-row','8','18']]
         file2      = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+        assert isfile(file1)
+        assert isfile(file2)
 
         cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                  file1, file2, self.temp_dir)
@@ -232,16 +234,22 @@ class TestCommandLine(object):
                        ['same-row','8','18']]
         file2    = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
 
-        cmd = ''' %s %s %s -k 0 -c 2 \
-                  --delimiter '|' --quoting quote_none  --hasnoheader \
-                  --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
-                 file1, file2, self.temp_dir)
-        r = envoy.run(cmd)
+        # switching to subprocess here because envoy was choking on pipe
+        # delimiter
+        cmd = [pjoin(script_dir, 'gristle_differ'), file1, file2,
+               '-k', '0',
+               '-c', '2',
+               '--delimiter', '|',
+               '--quoting', 'quote_none',
+               '--hasnoheader',
+               '--temp-dir', self.temp_dir]
+        p = subprocess.Popen(cmd, close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
         print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print stdout
+        print stderr
 
-        assert r.status_code == 0
+        assert p.returncode == 0
         fn = basename(file2)
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
@@ -807,11 +815,18 @@ class Config(object):
                       'src_field':  src_field}
         self.config['assignments'].append(assignment)
 
-    def write_config(self):
+    def write_config(self, valid=True):
         config_yaml = yaml.safe_dump(self.config)
         print config_yaml
         with open(self.config_fqfn, 'w') as f:
             f.write(config_yaml)
+        # uncomment this code to capture copies of all valid configs
+        #if valid == True:
+        #    for i in range(50):
+        #        bkup_config_fn = '/tmp/test_config_%d.yml' % i
+        #        if not isfile(bkup_config_fn):
+        #            break
+        #    os.system('cp %s %s' % (self.config_fqfn, bkup_config_fn))
 
 
 
