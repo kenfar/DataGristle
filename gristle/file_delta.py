@@ -497,7 +497,7 @@ class DeltaAssignments(object):
                 self.seq[src_field]['last_val'] = self.seq[src_field]['start_val']
 
         # if any sequences are stil None - it's because of an empty old file
-        # or no valid starting sequences found in old file.  
+        # or no valid starting sequences found in old file.
         # Set empty file to 0 otherwise abort.
         for src_field in self.seq:
             if (self.seq[src_field]['last_val'] is None
