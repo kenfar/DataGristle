@@ -7,10 +7,10 @@
      - added read-limit argument.  This allows the tool to be easily run against a
        subset of a very large input file.
    * gristle_scalar
-     - removed from library.  There are better tools in other solutions can be used
+     - removed from toolkit.  There are better tools in other solutions can be used
        instead.  This tool may come back again later, but only if enormously rewritten.
    * gristle_filter
-     - removed from library.  There are better tools in other solutions can be used
+     - removed from toolkit.  There are better tools in other solutions can be used
        instead.  This tool may come back again later, but only if enormously rewritten.
    * minor:
      - gristle_md_reporter - slight formatting change: text descriptions of fields are

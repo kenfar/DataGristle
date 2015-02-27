@@ -14,13 +14,13 @@ v0.59 - 2015-01
 
 -  gristle\_scalar
 
-   -  removed from library. There are better tools in other solutions
+   -  removed from toolkit. There are better tools in other solutions
       can be used instead. This tool may come back again later, but only
       if enormously rewritten.
 
 -  gristle\_filter
 
-   -  removed from library. There are better tools in other solutions
+   -  removed from toolkit. There are better tools in other solutions
       can be used instead. This tool may come back again later, but only
       if enormously rewritten.
 
@@ -90,4 +90,3 @@ v0.53 - 2014-01
    distribution. 'Each' creates a separate distribution for every column
    within the csv file.
 -  travisci - added support and started using this testing service.
-
