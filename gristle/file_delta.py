@@ -80,7 +80,7 @@ class FileDelta(object):
 
     def _validate_fields(self):
         if len(self.join_fields) == 0:
-            raise ValueError, 'join fields are missing'
+            raise ValueError, 'key (join) fields are missing'
 
         # should add compare_fields to this check
         for field in self.ignore_fields:
@@ -386,6 +386,7 @@ class DeltaAssignments(object):
         """
         self.old_rec = old_rec
         self.new_rec = new_rec
+        #pp(self.assignments)
         if outtype in self.assignments:
             for dest_field in self.assignments[outtype]:
                 assigner = self.assignments[outtype][dest_field]
@@ -416,6 +417,7 @@ class DeltaAssignments(object):
         try:
             return self.special_values[src_val]
         except KeyError:
+            pp(self.special_values)
             abort('Invalid special value referenced in assignment: %s' % src_val)
 
 

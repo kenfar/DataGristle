@@ -11,15 +11,13 @@ import tempfile
 import random
 import csv
 import pytest
+import shutil
 from pprint import pprint as pp
 
 import test_tools
 
-sys.path.append('../../../../')
-#sys.path.append('/home/kenfar/Projects/datagristle_file_doer/lib/python2.7/site-packages')
-sys.path.append('/home/kenfar/Projects/datagristle_file_doer/lib/python2.7/site-packages')
+sys.path.append('../../../')
 mod = test_tools.load_script('gristle_processor')
-
 
 # shut off the printing of warnings & info statements from module
 #old_stdout = sys.stdout
@@ -35,7 +33,7 @@ class Test_ProcessDir(object):
 
     def setup_method(self, method):
         self.tmpdir    = tempfile.mkdtemp(prefix="gristle_processor_")
-        for i in range(100):
+        for i in range(20):
             suffix = '_2013-03-10_'
             create_file(self, age=None, suffix=suffix, mydir=self.tmpdir)
 
@@ -64,6 +62,8 @@ class Test_ProcessDir(object):
                          'action_phase': {'action_builtin': 'list' },
                     }
 
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmpdir)
 
     def test_bad_dir(self):
         """ProcessDir must raise an exception if the directory doesn't exist.
@@ -72,9 +72,6 @@ class Test_ProcessDir(object):
         self.kwargs['gathering_phase']['dir'] = '/lkj4j<F5>nmjfdskfd094kdnja'
         with pytest.raises(SystemExit):
             pd = mod.ProcessDir(self.kwargs)
-
-    def test_validate_schema(self):
-        pass # finish this
 
     def test_inclusion_phase(self):
         """Just checks to see if it can make it thru this phase.

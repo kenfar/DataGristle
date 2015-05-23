@@ -156,7 +156,7 @@ import logging
 import copy
 from  os.path import isfile, isdir, exists, dirname, basename
 from  os.path import join as pjoin
-#from  pprint  import pprint as pp
+from  pprint  import pprint as pp
 
 import cletus.cletus_config as conf
 
@@ -258,6 +258,7 @@ def delta_runner(config, dialect):
     ignore_off0  = convert_cols('key_cols', config['ignore_cols'])
 
     delta = gdelta.FileDelta(adj_out_dir, dialect)
+    pp(config)
     for col in keys_off0:
         delta.set_fields('join', col)
     for col in ignore_off0:
@@ -385,28 +386,28 @@ class ArgProcessor(comm.ArgProcessor):
 
         par_add_arg = self.parser.add_argument
         par_add_arg('-k', '--key-cols',
-                    default=[],
+                    default=None,
                     nargs='*',
                     help='Specify the columns that constitute a unique row with a comma-'
                          'delimited list of numbers using a 0-offset.  This is a '
                          'required option.')
         par_add_arg('-c', '--compare-cols',
                     nargs='*',
-                    default=[],
+                    default=None,
                     help=('Columns to compare - described by their position using a zero-offset.'
                           '  Mutually exclusive with ignore-cols'))
         par_add_arg('-i', '--ignore-cols',
                     nargs='*',
-                    default=[],
+                    default=None,
                     help=('Columns to ignore - described by their position using a zero-offset.'
                           ' Mutually exclusive with compare-cols'))
         par_add_arg('--col_names',
                     nargs='*',
-                    default=[],
+                    default=None,
                     help=('Column names - allows other cols to use names rather than offsets'))
         par_add_arg('--variables',
                     nargs='*',
-                    default=[],
+                    default=None,
                     help=('Variables to reference with assignments.  Format is "<name>:<value>"'))
 
         par_add_arg('--already-sorted',
@@ -512,12 +513,16 @@ def setup_config(args):
                          },
                      'additionalProperties': False
                     }
+    config_defaults = {'dry_run':      False,
+                       'key_cols':     [],
+                       'compare_cols': [],
+                       'ignore_cols':  [],
+                       'variables':    [],
+                       'col_names':    [],
+                       'quotechar':    None,
+                       'already_sorted': False}
 
     config        = conf.ConfigManager(config_schema)
-
-    #--- first add all args to namespace ---
-    #--- this is because the args have every possible key except for assignments --
-    #config.add_iterable(args) - problem - these empty vals end up overriding later
 
     #--- if the args refer to a config file load it now: ---
     if 'config_fn' in args and args['config_fn']:
@@ -525,35 +530,46 @@ def setup_config(args):
     elif 'config_name' in args and args['config_name']:
         config.add_file(app_name=APP_NAME,
                         config_fn='%s.yml' % args['config_name'])
+    #print("Config structure: ")
+    pp(config.cm_config)
+    #print("config['files']: %s" % config.cm_config.get('files', None))
+    print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
+    print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
+    print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
+    print("config['variables']: %s" % config.cm_config.get('variables', None))
+    print("config['col_names']: %s" % config.cm_config.get('col_names', None))
 
-    #--- next add a cleansed version of the args, in which we remove any ---
-    #--- with value of None.   We don't want those defaults to override  ---
-    #--- within the config file. ---
-    def none_remover(a_dict, a_key):
-        if isinstance(a_dict[a_key], list) and a_dict[a_key] == []:
-            a_dict.pop(a_key, None)
-        elif a_dict[a_key] is None:
-            a_dict.pop(a_key, None)
-    args_subset = dict(args)
-    for key in args_subset.keys():
-        if key in config.cm_config_file:
-            none_remover(args_subset, key)
-    config.add_iterable(args_subset)
+    #--- next add args
+    if args.get('files', None) == []:
+        args.pop('files')
+    #if args.get('variables', None) == []:
+    #    args.pop('files')
+    #if args.get('compare_cols', None) == []:
+    #    args.pop('compare_cols')
+    #if args.get('ignore_cols', None) == []:
+    #    args.pop('ignore_cols')
+    #if args.get('key_cols', None) == []:
+    #    args.pop('key_cols')
 
-    #--- assign defaults
-    default = {'dry_run':      False,
-               'ignore_cols':  [],
-               'compare_cols': [],
-               'quotechar':    None,
-               'already_sorted': False}
-    for key in default:
-        if key not in config.cm_config:
-            config.add_iterable({key: default[key]})
+    config.add_iterable(args)
+    print("config['files']: %s" % config.cm_config['files'])
+    print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
+    print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
+    print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
+    print("config['variables']: %s" % config.cm_config.get('variables', None))
+    print("config['col_names']: %s" % config.cm_config.get('col_names', None))
 
     #--- fix correctables - this handles tabs, etc for delimiters:
     if config.cm_config.get('delimiter') is not None:
         new_val = comm.dialect_del_fixer(config.cm_config.get('delimiter'))
         config.add_iterable({'delimiter': new_val})
+
+    #--- finally add defaults
+    config.add_defaults(config_defaults)
+    #print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
+    #print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
+    #print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
+    #print("args['files']: %s" % args.get('files', None))
 
     #--- validate the consolidated config: ---
     config.validate()                   # validates using json schema
@@ -579,7 +595,7 @@ def validate_config(config):
     """
 
     if len(config['files']) != 2:
-        abort("Error: Two file names must be provided as arguments")
+        abort("Error: Two file names must be provided, what was found: %s" % config['files'])
     elif not exists(config['files'][0]):
         abort("Error: The first file does not exist: %s" % config['files'][0])
     elif not exists(config['files'][1]):

@@ -56,12 +56,10 @@ scripts/gristle_determinator
 scripts/gristle_differ
 scripts/gristle_dir_merger
 scripts/gristle_file_converter
-scripts/gristle_filter
 scripts/gristle_freaker
 scripts/gristle_md_reporter
 scripts/gristle_metadata
 scripts/gristle_processor
-scripts/gristle_scalar
 scripts/gristle_slicer
 scripts/gristle_validator
 scripts/gristle_viewer

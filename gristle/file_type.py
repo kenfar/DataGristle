@@ -32,20 +32,27 @@ def get_quote_number(quote_name):
         Note that if a quote_number is accidently passed to this function, it
         will simply pass it through.
     """
-    if not comm.isnumeric(quote_name):
-        return csv.__dict__[quote_name.upper()]
-    elif get_quote_name(quote_name):
+    if quote_name is None:
+        return None
+    elif comm.isnumeric(quote_name):
         return int(quote_name)
     else:
-        raise ValueError, 'Invalid quote_name: %s' % quote_name
+        try:
+            return csv.__dict__[quote_name.upper()]
+        except KeyError:
+            raise ValueError, 'Invalid quote_name: %s' % quote_name
 
 def get_quote_name(quote_number):
     """ used to help applications look up quote numbers typically provided by
         users.
     """
+    if not comm.isnumeric(quote_number):
+        raise ValueError, 'Invalid quote_number: %s' % quote_number
+
     for key, value in csv.__dict__.items():
-        if value == quote_number:
+        if value == int(quote_number):
             return key
+    raise ValueError, 'Invalid quote_number: %s' % quote_number
 
 
 #------------------------------------------------------------------------------

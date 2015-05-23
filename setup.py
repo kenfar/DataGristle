@@ -14,7 +14,7 @@ def read_version():
     rec = read('gristle/_version.py')
     fields = rec.split('=')
     version = fields[1].strip()[1:-1]
-    assert version.count('.') == 2
+    assert version.count('.') == 1
     return version
 
 

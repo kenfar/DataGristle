@@ -33,14 +33,18 @@ from gristle.common import dict_coalesce
 
 
 
-def _generate_foobarbatz_file(recs, delimiter=False):
+def _generate_foobarbatz_file(recs, quoting='quote_none'):
     (fd, fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorIn_')
     fp         = os.fdopen(fd,"w")
     for rec in range(recs):
-        if delimiter:
-            rec = '"foo"|"bar"|"batz"|"1.9"|"2"|"%d"' % rec
+        if quoting == 'quote_all':
+            rec = '"foo","bar","batz","1.9","2","%d"' % rec
+        elif quoting == 'quote_nonnumeric':
+            rec = '"foo","bar","batz",1.9,2,%d' % rec
+        elif quoting == 'quote_none':
+            rec = 'foo,bar,batz,1.9,2,%d' % rec
         else:
-            rec = 'foo|bar|batz|1.9|2|%d' % rec
+            raise ValueError, "Invalid quoting: %s" % quoting
         fp.write('%s\n' % rec)
     fp.close()
     return fqfn
@@ -165,7 +169,7 @@ class TestFieldCount(object):
     def setup_method(self, method):
 
         self.pgm                   = fq_pgm
-        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_')
+        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_', delimiter=',')
         (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_')
         (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_')
 
@@ -202,7 +206,7 @@ class TestFieldCount(object):
     def test_good_field_cnt(self):
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --quoting 'quote_none'    \
                          --fieldcnt 7              \
                          --outgood %(outgood)s     \
@@ -229,7 +233,7 @@ class TestFieldCount(object):
         """
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
                          --outerr  %(outerr)s      \
@@ -251,7 +255,7 @@ class TestFieldCount(object):
     def test_bad_field_cnt(self):
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 70             \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -272,9 +276,9 @@ class TestFieldCount(object):
 
         orig_recs = []
         for rec in self.err_output:
-            fields = rec.split('|')
+            fields = rec.split(',')
             assert len(fields) == 8  # extra field for msg
-            orig_recs.append('|'.join(fields[:7]))
+            orig_recs.append(','.join(fields[:7]))
         assert orig_recs == self.data_7x7
 
 
@@ -283,7 +287,7 @@ class TestFieldCount(object):
         """
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 7              \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -319,7 +323,7 @@ class TestFieldCount(object):
                 valid_cnt        | 0
         """
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 70             \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -375,7 +379,7 @@ class TestFieldCount(object):
     def test_randomout_100(self):
         in_fqfn = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 6              \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -399,7 +403,7 @@ class TestFieldCount(object):
     def test_randomout_0(self):
         in_fqfn = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 6              \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -424,7 +428,7 @@ class TestFieldCount(object):
 
         in_fqfn = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 6              \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -493,7 +497,7 @@ class TestEmptyFile(object):
     def test_empty_stdin(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = "cat %s | %s -d'|' -f 5 --outgood %s --outerr %s" % \
+        cmd = "cat %s | %s -d',' -f 5 --outgood %s --outerr %s" % \
                 (self.empty_fqfn, fq_pgm, self.outgood_fqfn, self.outerr_fqfn)
         r = envoy.run(cmd)
         print r.std_out
@@ -519,7 +523,7 @@ class TestSchemaValidation(object):
     def setup_method(self, method):
 
         self.pgm                   = fq_pgm
-        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_')
+        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_', delimiter=',')
         (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_')
         (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_')
         self.schema_fqfn           = _generate_7x7_schema_file()
@@ -556,7 +560,7 @@ class TestSchemaValidation(object):
     def test_valid_schema_valid_data(self):
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --fieldcnt 7              \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -601,7 +605,7 @@ class TestValidatingTheValidator(object):
         self.schema_fqfn = _write_schema_file('foobarbatz', schema)
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --validschema %(schema)s  \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -630,7 +634,7 @@ class TestValidatingTheValidator(object):
         self.schema_fqfn = _write_schema_file('foobarbatz', schema)
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --validschema %(schema)s  \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -663,7 +667,7 @@ class TestValidatingTheValidator(object):
         self.schema_fqfn = _write_schema_file('foobarbatz', schema)
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
+                         -d ','                    \
                          --validschema %(schema)s  \
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
@@ -758,17 +762,17 @@ class TestCSVDialects(object):
 
     def test_quoted_csv(self):
         # create a big file with 10,000 recs
-        self.in_fqfn     = _generate_foobarbatz_file(100, delimiter=True)
+        self.in_fqfn     = _generate_foobarbatz_file(100, quoting='quote_nonnumeric')
         schema           = _generate_foobarbatz_schema()
         self.schema_fqfn = _write_schema_file('foobarbatz', schema)
 
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d '|'                    \
-                         --validschema %(schema)s  \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         -s                        \
+        self.cmd = """%(pgm)s %(in_fqfn)s           \
+                         -d ','                     \
+                         --validschema %(schema)s   \
+                         --quoting quote_nonnumeric \
+                         --outgood %(outgood)s      \
+                         --outerr  %(outerr)s       \
+                         -s                         \
                    """ % {'pgm':     self.pgm,
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
@@ -776,134 +780,6 @@ class TestCSVDialects(object):
                           'schema':  self.schema_fqfn}
         r = envoy.run(self.cmd)
         status_code, stdout, stderr, good_recs, err_recs = self.get_outputs(r)
-
-        assert status_code    == 0
-        assert len(err_recs)  == 0
-        assert len(good_recs) == 100
-
-
-
-    def test_header_vs_nonheader(self):
-        """Tests how program handles files with or without headers
-           and with hasheader or hasnoheader args.
-        """
-        self.in_fqfn     = os.path.join(data_dir, '3x3.csv')
-        self.schema_fqfn = os.path.join(data_dir, '3x3_schema.yml')
-
-        #---- noheader in file - no header arg - should figure it out
-        self.cmd1 = """%(pgm)s %(in_fqfn)s         \
-                         -d ','                    \
-                         --validschema %(schema)s  \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         -s                        \
-                   """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
-                          'in_fqfn': self.in_fqfn,
-                          'schema':  self.schema_fqfn}
-        r = envoy.run(self.cmd1)
-        status1, stdout1, stderr1, good_recs1, err_recs1 = self.get_outputs(r)
-
-        assert status1          == 0
-        assert len(err_recs1)   == 0
-        assert len(good_recs1)  == 3
-
-        #---- noheader in file - hasnoheader arg 
-        self.cmd2 = """%(pgm)s %(in_fqfn)s         \
-                         -d ','                    \
-                         --validschema %(schema)s  \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         --hasnoheader             \
-                         -s                        \
-                   """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
-                          'in_fqfn': self.in_fqfn,
-                          'schema':  self.schema_fqfn}
-        r = envoy.run(self.cmd2)
-        status2, stdout2, stderr2, good_recs2, err_recs2 = self.get_outputs(r)
-
-        assert status2          == 0
-        assert len(err_recs2)   == 0
-        assert len(good_recs2)  == 3
-
-
-        #---- header in file - header arg 
-        self.in_fqfn     = os.path.join(data_dir, '3x3_header.csv')
-        self.cmd3 = """%(pgm)s %(in_fqfn)s         \
-                         -d ','                    \
-                         --validschema %(schema)s  \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         --hasheader               \
-                         -s                        \
-                   """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
-                          'in_fqfn': self.in_fqfn,
-                          'schema':  self.schema_fqfn}
-        r = envoy.run(self.cmd3)
-        status3, stdout3, stderr3, good_recs3, err_recs3 = self.get_outputs(r)
-
-        assert status3          == 0
-        assert len(err_recs3)   == 0
-        assert len(good_recs3)  == 4
-
-        assert len(good_recs1) == len(good_recs2)  == len(good_recs3) - 1
-        assert len(err_recs1)  == len(err_recs2)   == len(err_recs3)
-        assert status1         == status2          == status3
-
-
-        #---- header in file - no header arg - should figure it out ---
-        self.in_fqfn     = os.path.join(data_dir, '3x3_header.csv')
-        self.cmd4 = """%(pgm)s %(in_fqfn)s         \
-                         -d ','                    \
-                         --validschema %(schema)s  \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         -s                        \
-                   """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
-                          'in_fqfn': self.in_fqfn,
-                          'schema':  self.schema_fqfn}
-        r = envoy.run(self.cmd4)
-        status4, stdout4, stderr4, good_recs4, err_recs4 = self.get_outputs(r)
-
-        assert status4          == 0
-        assert len(err_recs4)   == 0
-        assert len(good_recs4)  == 4
-
-        assert len(good_recs3) == len(good_recs4)
-        assert len(err_recs3)  == len(err_recs4)
-        assert status3         == status4
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        os.system('cat %s' % self.in_fqfn)
+        assert status_code == 0
 

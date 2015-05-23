@@ -9,6 +9,8 @@ from __future__ import division
 import sys
 import argparse
 import math
+import errno
+import csv
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
 
@@ -219,12 +221,12 @@ class ArgProcessor(object):
             default=None
             help='Specifies the input file(s). '
         #print 'default: %s' % default
-           
+
         self.parser.add_argument('files',
-                                default=default,
-                                nargs='*',
-                                #type=argparse.FileType('r'),
-                                help=help)
+                                 default=default,
+                                 nargs='*',
+                                 #type=argparse.FileType('r'),
+                                 help=help)
 
     def add_custom_args(self):
         """ Must be overriden by subclass with its argument additions.
@@ -280,25 +282,10 @@ def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader)
     Raises:
         sys.exit - if all files are empty
     """
-    if files[0] != '-':
-        for fn in files:
-            assert isfile(fn)
-            my_file   = file_type.FileTyper(fn ,
-                            delimiter          ,
-                            recdelimiter       ,
-                            hasheader          ,
-                            quoting=quotename  ,
-                            quote_char=quotechar,
-                            read_limit=5000    )
-            try:
-                my_file.analyze_file()
-                dialect = my_file.dialect
-                break
-            except file_type.IOErrorEmptyFile:
-                continue
-            else:
-                sys.exit(errno.ENODATA)
-    else:
+    assert isinstance(files, list)
+    dialect = None
+
+    if files[0] == '-':
         # dialect parameters needed for stdin - since the normal code can't
         # analyze this data.
         dialect                = csv.Dialect
@@ -307,6 +294,38 @@ def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader)
         dialect.quotechar      = quotechar
         dialect.lineterminator = '\n'                 # naive assumption
         dialect.hasheader      = hasheader
+    else:
+        for fn in files:
+            if not isfile(fn):
+                raise ValueError, 'file does not exist: %s' % fn
+            my_file   = file_type.FileTyper(fn ,
+                                            delimiter          ,
+                                            recdelimiter       ,
+                                            hasheader          ,
+                                            quoting=quotename  ,
+                                            quote_char=quotechar,
+                                            read_limit=5000    )
+            try:
+                my_file.analyze_file()
+                dialect = my_file.dialect
+                break
+            except file_type.IOErrorEmptyFile:
+                continue
+            else:
+                # todo: is this a typo?
+                sys.exit(errno.ENODATA)
+        # Don't exit with ENODATA unless all files are empty:
+        if dialect is None:
+            sys.exit(errno.ENODATA)
+
+    # validate quoting & assign defaults:
+    if dialect.quoting is None:
+        dialect.quoting = file_type.get_quote_number('quote_minimal')
+    assert dialect.quoting is not None and isnumeric(dialect.quoting)
+
+    # validate delimiter & assign defaults:
+    if dialect.delimiter is None:
+        raise ValueError, "Invalid Delimiter: %s" % dialect.delimiter
 
     return dialect
 
@@ -346,7 +365,7 @@ def abort(summary, details=None, rc=1):
 
 
 
-def colnames_to_coloff0(col_names, lookup_list):                        
+def colnames_to_coloff0(col_names, lookup_list):
     """ Returns a list of collection column positions with offset of 0 for a list of
         collection column names (optional) and a lookup list of col names and/or col
         offsets.
@@ -377,13 +396,13 @@ def colnames_to_coloff0(col_names, lookup_list):
 
     # extra edit to look for offsets not found within a colname listing:
     if colname_lookup:
-       for x in result:
-          if x >= colname_lookup_len:
-              raise KeyError, 'column number %s not found in colname list' % x
+        for x in result:
+            if x >= colname_lookup_len:
+                raise KeyError, 'column number %s not found in colname list' % x
 
     #assert isinstance(result, list)
     return result
-     
+
 
 
 
