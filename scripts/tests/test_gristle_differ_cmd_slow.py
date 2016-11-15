@@ -102,6 +102,15 @@ class TestMillionRows(object):
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.chgold'), self.dialect) == self.files.chg_cnt
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.chgnew'), self.dialect) == self.files.chg_cnt
 
+        #--- next copy all files to /tmp for later reference:
+        import shutil
+        shutil.copy(pjoin(self.temp_dir, 'new.csv.insert'), pjoin('/tmp', 'new.csv.insert'))
+        shutil.copy(pjoin(self.temp_dir, 'new.csv.insert'), pjoin('/tmp', 'new.csv.delete'))
+        shutil.copy(pjoin(self.temp_dir, 'new.csv.insert'), pjoin('/tmp', 'new.csv.same'))
+        shutil.copy(pjoin(self.temp_dir, 'new.csv.insert'), pjoin('/tmp', 'new.csv.chgold'))
+        shutil.copy(pjoin(self.temp_dir, 'new.csv.insert'), pjoin('/tmp', 'new.csv.chgnew'))
+        shutil.copy(config.config_fqfn, '/tmp')
+
         #--- next check that the assignments were applied:
 
         #--- delete file checks ---

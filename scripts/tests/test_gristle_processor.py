@@ -7,6 +7,7 @@
 import sys
 import os
 import time
+import datetime
 import tempfile
 import random
 import csv
@@ -294,7 +295,8 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate_nothing_but_date(self):
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = '^201[3-9][0-1][0-9][0-3][0-9]$'
-        file_name     = '20140101'
+        # create a date in format: YYYYMMDD
+        file_name     = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
                                     '%Y%m%d', 'lt', '10d') is True
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
@@ -306,7 +308,8 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate_simplest_date(self):
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = '201[3-9][0-1][0-9][0-3][0-9]'
-        file_name     = '20140101'
+        # create a date in format: YYYYMMDD
+        file_name     = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
                                     '%Y%m%d', 'lt', '10d') is True
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
@@ -318,7 +321,8 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate_anchored_simple_date(self):
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = '^201[3-9][0-1][0-9][0-3][0-9]$'
-        file_name     = '20140101'
+        # create a date in format: YYYYMMDD
+        file_name     = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
                                     '%Y%m%d', 'lt', '10d') is True
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
@@ -332,7 +336,8 @@ class TestFileAnalyzerFileNameDate(object):
 
     def test_filenamedate_op_argdate_with_simple_date_and_surrounding_chars(self):
         fa            = mod.FileAnalyzer({}, {})
-        file_name     = '_date-20140101_'
+        yyyymmdd      = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
+        file_name     = '_date-{}_'.format(yyyymmdd)
         filter_regex  = '_date-201[3-9][0-1][0-9][0-3][0-9]_'
         ext_regex     = '201[3-9][0-1][0-9][0-3][0-9]'
         assert fa._filenamedate_op_argdate(file_name, filter_regex, ext_regex,

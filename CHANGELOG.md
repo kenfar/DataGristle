@@ -1,4 +1,4 @@
-# v0.59 - 2015-04
+# v0.59 - 2016-11
    * gristle_differ
      - totally rewritten.  Can now handle very large files, perform post-transform
        transformations, handle more complex comparisons, and use column names rather 

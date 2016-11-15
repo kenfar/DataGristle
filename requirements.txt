@@ -8,6 +8,4 @@ cletus      == 1.0.10
 envoy       == 0.0.3
 py          == 1.4.25
 pytest      == 2.6.4
-tox         == 1.9.0
 validictory == 1.0.0
-wsgiref     == 0.1.2

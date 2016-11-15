@@ -67,6 +67,38 @@ class TestSort(object):
                 assert 0, 'too many rows returned'
         fileinput.close()
 
+    def test_sort_big_file_numeric(self):
+        join_fields = '0'
+        sorter  = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
+        outfile  = sorter.sort_file(self.fqfn)
+        assert outfile == self.fqfn + '.sorted'
+        for rec in fileinput.input(self.fqfn + '.sorted'):
+            fields = rec.split(',')
+            print fields
+            if fileinput.lineno() == 1:
+                assert fields[0] == '1'
+            elif fileinput.lineno() == 2:
+                assert fields[0] == '2'
+            elif fileinput.lineno() == 3:
+                assert fields[0] == '3'
+            elif fileinput.lineno() == 4:
+                assert fields[0] == '4'
+            elif fileinput.lineno() == 5:
+                assert fields[0] == '5'
+            elif fileinput.lineno() == 6:
+                assert fields[0] == '6'
+            elif fileinput.lineno() == 7:
+                assert fields[0] == '7'
+            elif fileinput.lineno() == 8:
+                assert fields[0] == '8'
+            elif fileinput.lineno() == 9:
+                assert fields[0] == '9'
+            elif fileinput.lineno() == 10:
+                assert fields[0] == '10'
+            else:
+                assert 0, 'too many rows returned'
+        fileinput.close()
+
     def test_sort_file_with_tab_delimiter(self):
         join_fields = '0'
         self.dialect.delimiter = '\t'
@@ -122,13 +154,26 @@ def create_test_file(temp_dir, delimiter=','):
     fqfn = pjoin(temp_dir, 'foo.csv')
     with open(fqfn, 'w') as f:
         f.write(delimiter.join(['4', 'aaa', 'a23']) + '\n')
-        #f.write('4, aaa, a23\n')
         f.write(delimiter.join(['2', 'bbb', 'a23']) + '\n')
-        #f.write('2, bbb, a23\n')
         f.write(delimiter.join(['1', 'bbb', 'b23']) + '\n')
-        #f.write('1, bbb, b23\n')
         f.write(delimiter.join(['3', 'aaa', 'b23']) + '\n')
-        #f.write('3, aaa, b23\n')
+    return fqfn
+
+def create_big_test_file(temp_dir, delimiter=','):
+    fqfn = pjoin(temp_dir, 'foo.csv')
+    with open(fqfn, 'w') as f:
+        f.write(delimiter.join(['4', 'aaa', 'a23']) + '\n')
+        f.write(delimiter.join(['2', 'bbb', 'a23']) + '\n')
+        f.write(delimiter.join(['10', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['1', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['2', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['9', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['3', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['8', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['4', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['7', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['6', 'bbb', 'b23']) + '\n')
+        f.write(delimiter.join(['5', 'aaa', 'b23']) + '\n')
     return fqfn
 
 

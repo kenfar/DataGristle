@@ -61,10 +61,6 @@ class CSVSorter(object):
     def sort_file(self, in_fqfn, out_fqfn=None):
         """ Sort input file giving output file.
 
-        Note that sort_file does not have very sophisticated csv-sorting
-        features: it doesn't recognize quoting or escaping, so control
-        characters in the data can throw off the record structure.
-
         Args:
             in_fn:  input file name
             out_fn: output file name.  Defaults to None.  If it is None
@@ -74,6 +70,16 @@ class CSVSorter(object):
         Raises:
             IOError: if the sort produces a non-zero return code
             ValueError: if the input file is invalid
+
+        Notes:
+           - that sort_file does not have very sophisticated csv-sorting
+             features: it doesn't recognize quoting or escaping, so control
+             characters in the data can throw off the record structure.
+           - there may be slight differences in this behavior
+             between linux and mac.
+           - fields are not sorted numerically - which does not matter since
+             data just must be in the same order for both versions of the
+             same file.
         """
 
         tmp_dir  = self.tmp_dir or dirname(in_fqfn)
@@ -87,7 +93,7 @@ class CSVSorter(object):
         cmd = ['sort']
         for field in self.field_key_1off:
             cmd.append('-k')
-            cmd.append(str(field))
+            cmd.append(str(field) + ',' + str(field))
         cmd.append('--field-separator')
         cmd.append(self.dialect.delimiter)
         cmd.append('-T')
@@ -107,21 +113,6 @@ class CSVSorter(object):
             print 'delimiter: %s' % self.dialect.delimiter
             raise IOError, 'invalid sort return code: %s' % p.returncode
 
-        # Old envoy code, if we want to ever go back for consistency with the rest
-        # of the code base.   It choked on pipes, and using a list for command input
-        # didn't seem to help.
-        #cmd = ''' sort  %s                 \
-        #                --field-separator %s \
-        #                -T  %s             \
-        #                %s                 \
-        #                -o  %s             \
-        #      ''' % (self.field_opt, self.sort_del, self.tmp_dir, in_fqfn, out_fqfn)
-        #r = envoy.run(cmd)
-        #if r.status_code != 0:
-        #    print cmd
-        #    print r.std_err
-        #    print r.std_out
-        #    raise IOError, 'Invalid sort status code: %d' % r.status_code
         return out_fqfn
 
 
