@@ -14,7 +14,9 @@ import fileinput
 import pytest
 import glob
 import errno
+import shutil
 from pprint import pprint as pp
+from os.path import join as pjoin, dirname
 
 import envoy
 import yaml
@@ -23,9 +25,9 @@ import yaml
 import test_tools
 
 # get pathing set for running code out of project structure & testing it via tox
-data_dir    = os.path.join(test_tools.get_app_root(), 'data')
-script_dir  = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-fq_pgm      = os.path.join(script_dir, 'gristle_validator')
+data_dir    = pjoin(test_tools.get_app_root(), 'data')
+script_dir  = dirname(os.path.dirname(os.path.realpath((__file__))))
+fq_pgm      = pjoin(script_dir, 'gristle_validator')
 sys.path.insert(0, test_tools.get_app_root())
 
 import gristle.common  as comm
@@ -33,8 +35,8 @@ from gristle.common import dict_coalesce
 
 
 
-def _generate_foobarbatz_file(recs, quoting='quote_none'):
-    (fd, fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorIn_')
+def _generate_foobarbatz_file(recs, dirname, quoting='quote_none'):
+    (fd, fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorIn_', dir=dirname)
     fp         = os.fdopen(fd,"w")
     for rec in range(recs):
         if quoting == 'quote_all':
@@ -95,15 +97,15 @@ def _generate_foobarbatz_schema():
     return schema
 
 
-def _write_schema_file(name, schema):
-    temp_fqfn = '/tmp/test_gristle_validator_%s_schema.yml' % name
+def _write_schema_file(name, schema, dirname):
+    temp_fqfn = pjoin(dirname, 'test_gristle_validator_%s_schema.yml' % name)
     with open(temp_fqfn, 'w') as schema_file:
         schema_file.write(yaml.dump(schema))
     return temp_fqfn
 
 
 
-def _generate_7x7_schema_file():
+def _generate_7x7_schema_file(dirname):
     schema    = {'items': []}
     col0      = {'title':     'col0',
                  'blank':     False,
@@ -155,7 +157,7 @@ def _generate_7x7_schema_file():
                  'pattern':   '\\b\d-\d'}
     schema['items'].append(col6)
 
-    return _write_schema_file('7x7', schema)
+    return _write_schema_file('7x7', schema, dirname)
 
 
 
@@ -168,17 +170,20 @@ class TestFieldCount(object):
 
     def setup_method(self, method):
 
-        self.pgm                   = fq_pgm
-        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_', delimiter=',')
-        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_')
-        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_')
+        self.tmp_dir = tempfile.mkdtemp(prefix='TestGristleValidator_')
+        self.pgm = fq_pgm
+        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_', 
+                                            delimiter=',', dirname=self.tmp_dir)
+        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_', dir=self.tmp_dir)
+        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_', dir=self.tmp_dir)
 
     def teardown_method(self, method):
-        test_tools.temp_file_remover(self.std_7x7_fqfn)
-        test_tools.temp_file_remover(self.outgood_fqfn)
-        test_tools.temp_file_remover(self.outerr_fqfn)
-        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
 
+        shutil.rmtree(self.tmp_dir)
+        ###test_tools.temp_file_remover(self.std_7x7_fqfn)
+        ###test_tools.temp_file_remover(self.outgood_fqfn)
+        ###test_tools.temp_file_remover(self.outerr_fqfn)
+        ###test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
 
     def get_outputs(self, response):
         print response.status_code
@@ -377,7 +382,7 @@ class TestFieldCount(object):
 
 
     def test_randomout_100(self):
-        in_fqfn = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
+        in_fqfn = _generate_foobarbatz_file(10000, dirname=self.tmp_dir)
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
                          --fieldcnt 6              \
@@ -401,7 +406,7 @@ class TestFieldCount(object):
 
 
     def test_randomout_0(self):
-        in_fqfn = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
+        in_fqfn = _generate_foobarbatz_file(10000, dirname=self.tmp_dir)
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
                          --fieldcnt 6              \
@@ -426,7 +431,7 @@ class TestFieldCount(object):
 
     def test_randomout_10(self):
 
-        in_fqfn = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
+        in_fqfn = _generate_foobarbatz_file(10000, dirname=self.tmp_dir)
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
                          --fieldcnt 6              \
@@ -453,21 +458,19 @@ class TestFieldCount(object):
 class TestEmptyFile(object):
 
     def setup_method(self, method):
+        self.tmp_dir = tempfile.mkdtemp(prefix='TestGristleValidator_')
         self.empty_fqfn            = self._generate_empty_file()
-        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorEmptyOutGood_')
-        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidatorEmptyOutErr_')
+        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorEmptyOutGood_', dir=self.tmp_dir)
+        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidatorEmptyOutErr_', dir=self.tmp_dir)
 
     def _generate_empty_file(self):
-        (fd, fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorEmptyIn_')
+        (fd, fqfn) = tempfile.mkstemp(prefix='TestGristleValidatorEmptyIn_', dir=self.tmp_dir)
         fp = os.fdopen(fd,"w")
         fp.close()
         return fqfn
 
     def teardown_method(self, method):
-        test_tools.temp_file_remover(self.empty_fqfn)
-        test_tools.temp_file_remover(self.outgood_fqfn)
-        test_tools.temp_file_remover(self.outerr_fqfn)
-        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
+        shutil.rmtree(self.tmp_dir)
 
     def test_empty_file(self):
         """ Should show proper handling of an empty file.
@@ -522,18 +525,16 @@ class TestSchemaValidation(object):
 
     def setup_method(self, method):
 
-        self.pgm                   = fq_pgm
-        self.std_7x7_fqfn, self.data_7x7  = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_', delimiter=',')
-        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_')
-        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_')
-        self.schema_fqfn           = _generate_7x7_schema_file()
+        self.tmp_dir = tempfile.mkdtemp(prefix='TestGristleValidator_')
+        self.pgm = fq_pgm
+        self.std_7x7_fqfn, self.data_7x7 = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_',
+                                           delimiter=',', dirname=self.tmp_dir)
+        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_', dir=self.tmp_dir)
+        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_', dir=self.tmp_dir)
+        self.schema_fqfn           = _generate_7x7_schema_file(self.tmp_dir)
 
     def teardown_method(self, method):
-        test_tools.temp_file_remover(self.std_7x7_fqfn)
-        test_tools.temp_file_remover(self.outgood_fqfn)
-        test_tools.temp_file_remover(self.outerr_fqfn)
-        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
-
+        shutil.rmtree(self.tmp_dir)
 
     def get_outputs(self, response):
         print response.status_code
@@ -594,15 +595,18 @@ class TestValidatingTheValidator(object):
 
     def setup_method(self, method):
 
+        self.tmp_dir = tempfile.mkdtemp(prefix='TestGristleValidator_')
         self.pgm                   = fq_pgm
-        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_')
-        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_')
+        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_', dir=self.tmp_dir)
+        (dummy, self.outerr_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_', dir=self.tmp_dir)
 
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmp_dir)
 
     def test_baseline(self):
-        self.in_fqfn     = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
+        self.in_fqfn     = _generate_foobarbatz_file(10000, dirname=self.tmp_dir)
         schema           = _generate_foobarbatz_schema()
-        self.schema_fqfn = _write_schema_file('foobarbatz', schema)
+        self.schema_fqfn = _write_schema_file('foobarbatz', schema, dirname=self.tmp_dir)
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
@@ -626,12 +630,12 @@ class TestValidatingTheValidator(object):
         assert len(self.good_output) == 10000
 
     def test_invalid_dg_type_dg_minimum_combo(self):
-        self.in_fqfn     = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
+        self.in_fqfn     = _generate_foobarbatz_file(10000, dirname=self.tmp_dir)
         schema           = _generate_foobarbatz_schema()
         for field in schema['items']:
             if 'dg_type' in field:
                 del field['dg_type']
-        self.schema_fqfn = _write_schema_file('foobarbatz', schema)
+        self.schema_fqfn = _write_schema_file('foobarbatz', schema, dirname=self.tmp_dir)
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
@@ -659,12 +663,12 @@ class TestValidatingTheValidator(object):
         assert len(self.good_output) == 0
 
     def test_invalid_dg_type(self):
-        self.in_fqfn     = _generate_foobarbatz_file(10000)  # create a big file with 10,000 recs
+        self.in_fqfn     = _generate_foobarbatz_file(10000, dirname=self.tmp_dir)
         schema           = _generate_foobarbatz_schema()
         for field in schema['items']:
             if 'dg_type' in field:
                 field['dg_type'] = 'string'
-        self.schema_fqfn = _write_schema_file('foobarbatz', schema)
+        self.schema_fqfn = _write_schema_file('foobarbatz', schema, dirname=self.tmp_dir)
 
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
@@ -690,14 +694,6 @@ class TestValidatingTheValidator(object):
         assert self.status_code      == 1
         assert len(self.err_output)  == 0
         assert len(self.good_output) == 0
-
-
-    def teardown_method(self, method):
-        test_tools.temp_file_remover(self.in_fqfn)
-        test_tools.temp_file_remover(self.schema_fqfn)
-        test_tools.temp_file_remover(self.outgood_fqfn)
-        test_tools.temp_file_remover(self.outerr_fqfn)
-        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
 
     def get_outputs(self, response):
         print response.status_code
@@ -725,21 +721,18 @@ class TestCSVDialects(object):
 
     def setup_method(self, method):
 
+        self.tmp_dir = tempfile.mkdtemp(prefix='TestGristleValidator_')
         self.pgm                    = fq_pgm
-        (dummy, self.outgood_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator3x3OutGood_')
-        (dummy, self.outerr_fqfn)   = tempfile.mkstemp(prefix='TestGristleValidator3x3OutErr_')
-        (dummy, self.outgood2_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator3x3OutGood2_')
-        (dummy, self.outerr2_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator3x3OutErr2_')
+        (dummy, self.outgood_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator3x3OutGood_', dir=self.tmp_dir)
+        (dummy, self.outerr_fqfn)   = tempfile.mkstemp(prefix='TestGristleValidator3x3OutErr_', dir=self.tmp_dir)
+        (dummy, self.outgood2_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator3x3OutGood2_', dir=self.tmp_dir)
+        (dummy, self.outerr2_fqfn)  = tempfile.mkstemp(prefix='TestGristleValidator3x3OutErr2_', dir=self.tmp_dir)
 
     def teardown_method(self, method):
         ###don't want to delete these - they're external files:
         ###test_tools.temp_file_remover(self.in_fqfn)
         ###test_tools.temp_file_remover(self.schema_fqfn)
-        test_tools.temp_file_remover(self.outgood_fqfn)
-        test_tools.temp_file_remover(self.outerr_fqfn)
-        test_tools.temp_file_remover(self.outgood2_fqfn)
-        test_tools.temp_file_remover(self.outerr2_fqfn)
-        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
+        shutil.rmtree(self.tmp_dir)
 
     def get_outputs(self, response):
         print response.status_code
@@ -762,9 +755,9 @@ class TestCSVDialects(object):
 
     def test_quoted_csv(self):
         # create a big file with 10,000 recs
-        self.in_fqfn     = _generate_foobarbatz_file(100, quoting='quote_nonnumeric')
+        self.in_fqfn     = _generate_foobarbatz_file(100, dirname=self.tmp_dir, quoting='quote_nonnumeric')
         schema           = _generate_foobarbatz_schema()
-        self.schema_fqfn = _write_schema_file('foobarbatz', schema)
+        self.schema_fqfn = _write_schema_file('foobarbatz', schema, dirname=self.tmp_dir)
 
         self.cmd = """%(pgm)s %(in_fqfn)s           \
                          -d ','                     \

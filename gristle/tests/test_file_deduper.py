@@ -32,9 +32,11 @@ class TestDeduping(object):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn     = create_test_file(self.temp_dir)
         self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False )
+        self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.out_dir)
 
     def test_dedup_file_1key_with_dups(self):
         sorted_fqfn   = create_sorted_test_file(self.temp_dir)
@@ -105,12 +107,11 @@ class TestDeduping(object):
         fileinput.close()
 
     def test_dedup_outfile(self):
-        out_dir       = tempfile.mkdtemp(prefix='gristle_out_')
         sorted_fqfn   = create_sorted_file_2keys_dups(self.temp_dir)
         joinfields    = [1,2]
-        sorter        = mod.CSVDeDuper(self.dialect, joinfields, out_dir)
+        sorter        = mod.CSVDeDuper(self.dialect, joinfields, self.out_dir)
         (out_fqfn, read_cnt, write_cnt)  = sorter.dedup_file(sorted_fqfn)
-        assert dirname(out_fqfn) == out_dir
+        assert dirname(out_fqfn) == self.out_dir
 
 def create_empty_test_file(temp_dir):
     fqfn = pjoin(temp_dir, 'foo.csv')

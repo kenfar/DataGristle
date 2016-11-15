@@ -166,7 +166,7 @@ class TestCommandLine(object):
 
 
     def test_empty_new_file(self):
-        """ 
+        """
         """
         file1_recs = [ ['del-row-1','4','14'],
                        ['del-row-2','6','16'],

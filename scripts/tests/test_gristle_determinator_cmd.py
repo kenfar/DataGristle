@@ -16,18 +16,24 @@ import envoy
 import csv
 import pytest
 import errno
+import shutil
 from pprint import pprint as pp
+from os.path import join as pjoin, dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data')
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import test_tools
+
 
 import gristle.file_type as file_type
-script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
+script_path = dirname(dirname(os.path.realpath((__file__))))
 
 
 
-def generate_test_file(delim, rec_list, quoted=False):
-    (fd, fqfn) = tempfile.mkstemp()
+def generate_test_file(delim, rec_list, quoted=False, dirname=None):
+    if dirname:
+        (fd, fqfn) = tempfile.mkstemp(dir=dirname)
+    else:
+        (fd, fqfn) = tempfile.mkstemp()
     fp = os.fdopen(fd,"w")
 
     for rec in rec_list:
@@ -76,11 +82,19 @@ def get_value(parsable_out, division, section, subsection, key):
 class Test_empty_file(object):
 
     def setup_method(self, method):
-        pass
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmp_dir)
+
+    def create_empty_file_with_header(self, fqfn):
+        with open(fqfn, 'w') as f:
+            f.write('col1, colb2, col3')
 
     def test_empty_file(self):
-        fqfn = os.path.join(data_dir, 'empty.csv')
-        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        fqfn = pjoin(self.tmp_dir, 'empty.csv')
+        test_tools.touch(fqfn)
+        cmd = '%s %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         print r.std_out
         print r.std_err
@@ -89,8 +103,9 @@ class Test_empty_file(object):
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     is None
 
     def test_empty_file_with_header(self):
-        fqfn = os.path.join(data_dir, 'empty_header.csv')
-        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
+        self.create_empty_file_with_header(fqfn)
+        cmd = '%s %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         print r.std_out
         print r.std_err
@@ -99,8 +114,9 @@ class Test_empty_file(object):
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     == 'True'
 
     def test_empty_file_with_header_and_hasheader_arg(self):
-        fqfn = os.path.join(data_dir, 'empty_header.csv')
-        cmd = '%s %s --outputformat=parsable --hasheader' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
+        self.create_empty_file_with_header(fqfn)
+        cmd = '%s %s --outputformat=parsable --hasheader' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         print r.std_out
         print r.std_err
@@ -115,6 +131,7 @@ class Test_empty_file(object):
 class Test_output_formatting_and_contents(object):
 
     def setup_method(self, method):
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
         recs = [ ['Alabama','8','18'],
                  ['Alaska','6','16'],
                  ['Arizona','6','14'],
@@ -123,7 +140,7 @@ class Test_output_formatting_and_contents(object):
         self.file_struct  = {}
         self.field_struct = {}
 
-        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
+        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dirname=self.tmp_dir)
         cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         #print r.std_out
@@ -162,6 +179,8 @@ class Test_output_formatting_and_contents(object):
                     self.field_struct[section][subsection] = {}
                 self.field_struct[section][subsection][key] = value
 
+    def teardown_method(self, teardown):
+        shutil.rmtree(self.tmp_dir)
 
     def test_file_info(self):
         assert self.file_struct['record_count']      == '5'
@@ -215,6 +234,7 @@ class Test_output_formatting_and_contents(object):
 class Test_read_limit(object):
 
     def setup_method(self, method):
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
         recs = [ ['Alabama','8','18'],
                  ['Alaska','6','16'],
                  ['Arizona','6','14'],
@@ -238,7 +258,7 @@ class Test_read_limit(object):
         self.file_struct  = {}
         self.field_struct = {}
 
-        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
+        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dirname=self.tmp_dir)
         cmd = '%s %s --read-limit 4 --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         print r.std_out
@@ -277,6 +297,9 @@ class Test_read_limit(object):
                     self.field_struct[section][subsection] = {}
                 self.field_struct[section][subsection][key] = value
 
+    def teardown_method(self, teardown):
+        shutil.rmtree(self.tmp_dir)
+
     def test_limits(self):
         assert 'est' in self.file_struct['record_count']
 
@@ -296,6 +319,7 @@ class Test_read_limit(object):
 class Test_max_freq(object):
 
     def setup_method(self, method):
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
         recs = [ ['Alabama','8','18'],
                  ['Alaska','6','16'],
                  ['Arizona','6','14'],
@@ -319,7 +343,7 @@ class Test_max_freq(object):
         self.file_struct  = {}
         self.field_struct = {}
 
-        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False)
+        fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dirname=self.tmp_dir)
         cmd = '%s %s --max-freq 10  --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
         print r.std_out
@@ -361,6 +385,9 @@ class Test_max_freq(object):
                 if subsection not in self.field_struct[section]:
                     self.field_struct[section][subsection] = {}
                 self.field_struct[section][subsection][key] = value
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmp_dir)
 
     def test_limits(self):
         assert self.file_struct['record_count']      == '19'

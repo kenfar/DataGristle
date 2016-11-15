@@ -36,9 +36,11 @@ class TestSort(object):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False) 
         self.fqfn     = create_test_file(self.temp_dir)
+        self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.out_dir)
 
     def test_sort_file_invalid_inputs(self):
         with pytest.raises(AssertionError):
@@ -142,11 +144,10 @@ class TestSort(object):
         fileinput.close()
 
     def test_sort_file_outdir(self):
-        out_dir = tempfile.mkdtemp(prefix='gristle_out_')
         join_fields   = [1, 2]
-        sorter        = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, out_dir)
+        sorter        = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.out_dir)
         outfile       = sorter.sort_file(self.fqfn)
-        assert dirname(outfile) == out_dir
+        assert dirname(outfile) == self.out_dir
         assert basename(outfile) == basename(self.fqfn) + '.sorted'
 
 

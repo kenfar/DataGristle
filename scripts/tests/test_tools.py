@@ -72,8 +72,12 @@ def temp_file_remover(fqfn_prefix):
           os.remove(temp_file)
 
 
-def generate_7x7_test_file(prefix, hasheader=False, delimiter='|'):
-    (fd, fqfn) = tempfile.mkstemp(prefix=prefix)
+def generate_7x7_test_file(prefix, hasheader=False, delimiter='|', dirname=None):
+
+    if dirname:
+        (fd, fqfn) = tempfile.mkstemp(prefix=prefix, dir=dirname)
+    else:
+        (fd, fqfn) = tempfile.mkstemp(prefix=prefix)
     dlm = delimiter
     data_7x7 = []
     if hasheader:

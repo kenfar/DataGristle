@@ -7,6 +7,7 @@
 import sys
 import os
 import tempfile
+from os.path import join as pjoin, dirname, basename, exists
 from sqlalchemy import exc
 import pytest
 
@@ -25,6 +26,8 @@ class TestSchema(object):
     def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
+        if exists(pjoin('/tmp', 'datagristle_metadata.log')):
+            os.remove(pjoin('/tmp', 'datagristle_metadata.log'))
 
     def test_schema_contents(self):
         row  = self.md.schema_tools.getter(schema_name='geoip')
@@ -110,6 +113,8 @@ class TestCollection(object):
     def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
+        if exists(pjoin('/tmp', 'datagristle_metadata.log')):
+            os.remove(pjoin('/tmp', 'datagristle_metadata.log'))
 
     def test_collection_row_count(self):
         assert len(self.md.collection_tools.lister()) == 1
@@ -220,6 +225,8 @@ class TestField(object):
     def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
+        if exists(pjoin('/tmp', 'datagristle_metadata.log')):
+            os.remove(pjoin('/tmp', 'datagristle_metadata.log'))
 
     def test_field_row_count(self):
         assert len(self.md.field_tools.lister()) == 6
@@ -269,6 +276,8 @@ class TestElement(object):
     def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
+        if exists(pjoin('/tmp', 'datagristle_metadata.log')):
+            os.remove(pjoin('/tmp', 'datagristle_metadata.log'))
 
     def test_element_misc(self):
 
@@ -301,6 +310,8 @@ class TestReports(object):
     def teardown_method(self, method):
         os.remove(os.path.join(self.tempdir, 'metadata.db'))
         os.rmdir(self.tempdir)
+        if exists(pjoin('/tmp', 'datagristle_metadata.log')):
+            os.remove(pjoin('/tmp', 'datagristle_metadata.log'))
 
     def test_get_data_dictionary(self):
 
@@ -317,7 +328,7 @@ def create_basic_metadata(md):
     """
 
     #--- add schema & struct_types ---
-    schema_id = md.schema_tools.setter(schema_name='geoip', 
+    schema_id = md.schema_tools.setter(schema_name='geoip',
                                        schema_desc='geoip data')
 
     #--- add elements ---
@@ -333,7 +344,7 @@ def create_basic_metadata(md):
     keys = ['schema_id','collection_name','collection_desc']
     v    = [schema_id, 'geolite_country','free maxmind geoip feed']
     kv = dict(zip(keys, v))
-    collection_id = md.collection_tools.setter(**kv) 
+    collection_id = md.collection_tools.setter(**kv)
     assert collection_id > 0
 
     #--- add each field ---
@@ -378,14 +389,11 @@ def content_rpt(md):
                   ON s.schema_id = c.schema_id               \
                 INNER JOIN field      f                      \
                   ON c.collection_id = f.collection_id       \
-          ''' 
+          '''
     result = md.engine.execute(rpt)
     print
-    #print 'final content report'
     print
     print '%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % ('sch_id', 'sch_name', 'coll_id', 'coll_name', 'field_id', 'field_name', 'field_ord')
     for row in result:
         print '%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % (row[0],row[1],row[2], row[3], row[4], row[5], row[6])
     print
-    #print os.path.join(self.tempdir, 'metadata.db')
-    #return result
