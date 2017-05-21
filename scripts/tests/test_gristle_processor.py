@@ -7,19 +7,18 @@
 import sys
 import os
 import time
+import datetime
 import tempfile
 import random
 import csv
 import pytest
+import shutil
 from pprint import pprint as pp
 
 import test_tools
 
-sys.path.append('../../../../')
-#sys.path.append('/home/kenfar/Projects/datagristle_file_doer/lib/python2.7/site-packages')
-sys.path.append('/home/kenfar/Projects/datagristle_file_doer/lib/python2.7/site-packages')
+sys.path.append('../../../')
 mod = test_tools.load_script('gristle_processor')
-
 
 # shut off the printing of warnings & info statements from module
 #old_stdout = sys.stdout
@@ -35,7 +34,7 @@ class Test_ProcessDir(object):
 
     def setup_method(self, method):
         self.tmpdir    = tempfile.mkdtemp(prefix="gristle_processor_")
-        for i in range(100):
+        for i in range(20):
             suffix = '_2013-03-10_'
             create_file(self, age=None, suffix=suffix, mydir=self.tmpdir)
 
@@ -64,6 +63,8 @@ class Test_ProcessDir(object):
                          'action_phase': {'action_builtin': 'list' },
                     }
 
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmpdir)
 
     def test_bad_dir(self):
         """ProcessDir must raise an exception if the directory doesn't exist.
@@ -72,9 +73,6 @@ class Test_ProcessDir(object):
         self.kwargs['gathering_phase']['dir'] = '/lkj4j<F5>nmjfdskfd094kdnja'
         with pytest.raises(SystemExit):
             pd = mod.ProcessDir(self.kwargs)
-
-    def test_validate_schema(self):
-        pass # finish this
 
     def test_inclusion_phase(self):
         """Just checks to see if it can make it thru this phase.
@@ -152,13 +150,16 @@ class Test_FileAnalyzer_misc(object):
 class Test_FileAnalyzer_check_times(object):
 
     def setup_method(self, method):
-        pass
+        self.tmpdir    = tempfile.mkdtemp(prefix="gristle_processor_")
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmpdir)
+
 
     def test_mtime_op_argdate_10s_vs_100sfile(self):
-        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_')
+        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_', dir=self.tmpdir)
         curr_time  = time.time()
         touch(fqfn, (curr_time-100, curr_time-100))
-        #file_analyzer = mod.FileAnalyzer('foo.txt', {}, {})
         file_analyzer = mod.FileAnalyzer({}, {})
         print '--- 0s ---'
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '0s')
@@ -166,21 +167,19 @@ class Test_FileAnalyzer_check_times(object):
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '10s')
 
     def test_mtime_op_argdate_200s_vs_100sfile(self):
-        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_')
+        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_', dir=self.tmpdir)
         curr_time  = time.time()
         touch(fqfn, (curr_time-100, curr_time-100))
-        #file_analyzer = mod.FileAnalyzer('foo.txt', {}, {})
         file_analyzer = mod.FileAnalyzer({}, {})
         print '--- 200s ---'
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '200s') is False
 
     def test_mtime_op_argdate_10dfile(self):
-        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_')
+        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_', dir=self.tmpdir)
         curr_time  = time.time()
         touch(fqfn, (curr_time-(86400*10), curr_time-(86400*10)))
-        #file_analyzer = mod.FileAnalyzer('foo.txt', {}, {})
         file_analyzer = mod.FileAnalyzer({}, {})
-        
+
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '200h')  is True
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '600h')  is False
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '11d')  is False
@@ -195,10 +194,9 @@ class Test_FileAnalyzer_check_times(object):
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '1y')  is False
 
     def test_atime_op_argdate_10dfile(self):
-        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_')
+        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_', dir=self.tmpdir)
         curr_time  = time.time()
         touch(fqfn, (curr_time-(86400*10), curr_time-(86400*10)))
-        #file_analyzer = mod.FileAnalyzer('foo.txt', {}, {})
         file_analyzer = mod.FileAnalyzer({}, {})
 
         assert file_analyzer._atime_op_argdate(fqfn, 'lt', '200h')  is True
@@ -217,14 +215,17 @@ class Test_FileAnalyzer_check_times(object):
 class TestFileAnalyzerFileNameDate(object):
 
     def setup_method(self, method):
-        pass
+        self.tmpdir    = tempfile.mkdtemp(prefix="gristle_processor_")
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmpdir)
 
     def make_file_date(self, days):
         mytime = time.localtime(time.time() - 86400 * days)
         return time.strftime('%Y-%m-%d', mytime)
 
     def create_file(self, age, suffix='_foo'):
-        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_', suffix=suffix)
+        (fd, fqfn) = tempfile.mkstemp(prefix='ProcessorTestIn_', suffix=suffix, dir=self.tmpdir)
         file_time  = time.time() - age
         touch(fqfn, (file_time, file_time))
         return fqfn
@@ -237,7 +238,6 @@ class TestFileAnalyzerFileNameDate(object):
     def test_file_with_no_date_through_filter_regex(self):
         fdate   = self.make_file_date(100)  # looks like '2014-03-14'
         fqfn    = self.create_file(age=86400*10, suffix='foo_%s_bear' % fdate)
-        #fa      = mod.FileAnalyzer(fqfn, {}, {})
         fa      = mod.FileAnalyzer({}, {})
         ext_regex     = fdate               # looks like '2014-03-14'
         filter_regex  = '_%s_' % ext_regex  # looks like '_2014-03-14_'
@@ -250,7 +250,6 @@ class TestFileAnalyzerFileNameDate(object):
         """
         fdate   = self.make_file_date(100)  # looks like '2014-03-14'
         fqfn    = self.create_file(age=86400*10, suffix='foo_%s_bear' % fdate)
-        #fa      = mod.FileAnalyzer(fqfn, {}, {})
         fa      = mod.FileAnalyzer({}, {})
         ext_regex     = 'food'              # won't match date
         filter_regex  = '_%s_' % fdate      # looks like '_2014-03-14_'
@@ -261,7 +260,6 @@ class TestFileAnalyzerFileNameDate(object):
     def test_bad_format(self):
         fdate   = self.make_file_date(100)  # looks like '2014-03-14'
         fqfn    = self.create_file(age=86400*10, suffix='foo_%s_bear' % fdate)
-        #fa      = mod.FileAnalyzer(fqfn, {}, {})
         fa      = mod.FileAnalyzer({}, {})
         ext_regex     = fdate               # looks like '2014-03-14'
         filter_regex  = '_%s_' % ext_regex  # looks like '_2014-03-14_'
@@ -271,7 +269,6 @@ class TestFileAnalyzerFileNameDate(object):
     def test_bad_op(self):
         fdate   = self.make_file_date(100)  # looks like '2014-03-14'
         fqfn    = self.create_file(age=86400*10, suffix='foo_%s_bear' % fdate)
-        #fa      = mod.FileAnalyzer(fqfn, {}, {})
         fa      = mod.FileAnalyzer({}, {})
         ext_regex     = fdate               # looks like '2014-03-14'
         filter_regex  = '_%s_' % ext_regex  # looks like '_2014-03-14_'
@@ -282,7 +279,6 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate(self):
         fdate         = self.make_file_date(100) # looks like '2014-03-14'
         fqfn          = self.create_file(age=86400*10, suffix='foo_%s_bear' % fdate)
-        #fa = mod.FileAnalyzer(fqfn, {}, {})
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = fdate               # looks like '2014-03-14'
         filter_regex  = '_%s_' % ext_regex  # looks like '_2014-03-14_'
@@ -297,7 +293,8 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate_nothing_but_date(self):
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = '^201[3-9][0-1][0-9][0-3][0-9]$'
-        file_name     = '20140101'
+        # create a date in format: YYYYMMDD
+        file_name     = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
                                     '%Y%m%d', 'lt', '10d') is True
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
@@ -309,7 +306,8 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate_simplest_date(self):
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = '201[3-9][0-1][0-9][0-3][0-9]'
-        file_name     = '20140101'
+        # create a date in format: YYYYMMDD
+        file_name     = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
                                     '%Y%m%d', 'lt', '10d') is True
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
@@ -321,7 +319,8 @@ class TestFileAnalyzerFileNameDate(object):
     def test_filenamedate_op_argdate_anchored_simple_date(self):
         fa = mod.FileAnalyzer({}, {})
         ext_regex     = '^201[3-9][0-1][0-9][0-3][0-9]$'
-        file_name     = '20140101'
+        # create a date in format: YYYYMMDD
+        file_name     = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
                                     '%Y%m%d', 'lt', '10d') is True
         assert fa._filenamedate_op_argdate(file_name, None, ext_regex,
@@ -335,7 +334,8 @@ class TestFileAnalyzerFileNameDate(object):
 
     def test_filenamedate_op_argdate_with_simple_date_and_surrounding_chars(self):
         fa            = mod.FileAnalyzer({}, {})
-        file_name     = '_date-20140101_'
+        yyyymmdd      = (datetime.datetime.utcnow() - datetime.timedelta(days=200)).date().isoformat().replace('-', '')
+        file_name     = '_date-{}_'.format(yyyymmdd)
         filter_regex  = '_date-201[3-9][0-1][0-9][0-3][0-9]_'
         ext_regex     = '201[3-9][0-1][0-9][0-3][0-9]'
         assert fa._filenamedate_op_argdate(file_name, filter_regex, ext_regex,

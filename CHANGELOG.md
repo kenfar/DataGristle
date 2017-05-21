@@ -1,3 +1,23 @@
+# v0.59 - 2016-11
+   * gristle_differ
+     - totally rewritten.  Can now handle very large files, perform post-transform
+       transformations, handle more complex comparisons, and use column names rather 
+       than just positions.
+   * gristle_determinator
+     - added read-limit argument.  This allows the tool to be easily run against a
+       subset of a very large input file.
+   * gristle_scalar
+     - removed from toolkit.  There are better tools in other solutions can be used
+       instead.  This tool may come back again later, but only if enormously rewritten.
+   * gristle_filter
+     - removed from toolkit.  There are better tools in other solutions can be used
+       instead.  This tool may come back again later, but only if enormously rewritten.
+   * minor:
+     - gristle_md_reporter - slight formatting change: text descriptions of fields are
+       now included, and column widths were tweaked.
+     - all utilities - a substantial performance improvement for large files when 
+       quoting information is not provided.
+
 # v0.58 - 2014-08
    * gristle_dir_merger
      - initial addition to toolkit.  Merges directories of files using a variety

@@ -45,8 +45,8 @@ def generate_test_file(delim, record_cnt):
 class TestCommandLine(object):
 
     def setup_method(self, method):
-        self.in_fqfn             = generate_test_file(delim='|', record_cnt=100)
-        self.empty_fqfn          = generate_test_file(delim='|', record_cnt=0)
+        self.in_fqfn             = generate_test_file(delim=',', record_cnt=100)
+        self.empty_fqfn          = generate_test_file(delim=',', record_cnt=0)
         (dummy, self.out_fqfn)   = tempfile.mkstemp(prefix='ViewerTestOut_') 
 
     def teardown_method(self, method):
@@ -110,7 +110,7 @@ class TestCommandLine(object):
 
 
     def test_full_multiple_files(self):
-        cmd = "%s %s %s -o %s -r 10 -d'|'" % (fq_pgm, self.in_fqfn, self.in_fqfn, self.out_fqfn)
+        cmd = "%s %s %s -o %s -r 10 -d','" % (fq_pgm, self.in_fqfn, self.in_fqfn, self.out_fqfn)
         r   = envoy.run(cmd)
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
@@ -123,7 +123,7 @@ class TestCommandLine(object):
 
 
     def test_full_multiple_empty_files(self):
-        cmd = "%s %s %s -o %s -r 10 -d'|'" % (fq_pgm, self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "%s %s %s -o %s -r 10 -d',' " % (fq_pgm, self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
         r   = envoy.run(cmd)
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):
@@ -134,7 +134,7 @@ class TestCommandLine(object):
 
 
     def dtest_full_multiple_empty_and_full_files(self):
-        cmd = "%s %s %s -o %s -r 10 -d'|'" % (fq_pgm, self.empty_fqfn, self.in_fqfn, self.out_fqfn)
+        cmd = "%s %s %s -o %s -r 10 -d','" % (fq_pgm, self.empty_fqfn, self.in_fqfn, self.out_fqfn)
         r   = envoy.run(cmd)
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):

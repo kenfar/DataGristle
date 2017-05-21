@@ -1,8 +1,13 @@
-appdirs     >= 1.2.0
-sqlalchemy  >= 0.8.4
-envoy       >= 0.0.2
-pytest      >= 2.5.2
-tox         >= 1.7.0
-validictory >= 0.9.3
-pyyaml      >= 3.10
-unittest2
+Flask==0.10.1
+Jinja2==2.7.3
+PyYAML==3.11
+SQLAlchemy==0.9.8
+Werkzeug==0.9.6
+appdirs==1.4.0
+cletus==1.0.10
+envoy==0.0.3
+py==1.4.25
+pytest==2.6.4
+tox==1.9.0
+validictory==1.0.0
+wsgiref==0.1.2

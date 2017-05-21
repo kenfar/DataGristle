@@ -16,27 +16,49 @@ import gristle.file_type  as mod
 
 
 
-def generate_test_file1(delim, quoting, record_cnt):
-    (fd, fqfn) = tempfile.mkstemp()
-    fp = os.fdopen(fd,"w") 
-    name_list = ['smith','jones','thompson','ritchie']
-    role_list = ['pm','programmer','dba','sysadmin','qa','manager']
-    proj_list = ['cads53','jefta','norma','us-cepa']
+class Testget_quote_number(object):
 
-    for i in range(record_cnt):
-        name = random.choice(name_list)
-        role = random.choice(role_list)
-        proj = random.choice(proj_list)
-        if quoting is True:
-           name = '"' + name + '"'
-           role = '"' + role + '"'
-           proj = '"' + proj + '"'
-        record = '''%(i)s%(delim)s%(proj)s%(delim)s%(role)s%(delim)s%(name)s\n''' % locals()
-        fp.write(record)
+    def test_lowercase(self):
+        assert mod.get_quote_number('quote_minimal') == 0
+        assert mod.get_quote_number('quote_all')  == 1
+        assert mod.get_quote_number('quote_none') == 3
+        assert mod.get_quote_number('quote_nonnumeric') == 2
 
-    fp.close()
-    return fqfn
+    def test_uppercase(self):
+        assert mod.get_quote_number('quote_minimal') \
+               == mod.get_quote_number('QUOTE_MINIMAL')
 
+    def test_number(self):
+        assert mod.get_quote_number(3) == 3
+        assert mod.get_quote_number('3') == 3
+
+    def test_none(self):
+        assert mod.get_quote_number(None) is None
+
+    def test_nonmatch(self):
+        with pytest.raises(ValueError):
+            mod.get_quote_number('quote_alot')
+
+
+class Testget_quote_name(object):
+
+    def test_number(self):
+        assert mod.get_quote_name(0) == 'QUOTE_MINIMAL'
+
+    def test_string(self):
+        assert mod.get_quote_name('0') == 'QUOTE_MINIMAL'
+
+    def test_none(self):
+        with pytest.raises(ValueError):
+            mod.get_quote_name(None)
+
+    def test_text(self):
+        with pytest.raises(ValueError):
+            mod.get_quote_name('QUOTE_MINIMAL')
+
+    def test_bad_number(self):
+        with pytest.raises(ValueError):
+            mod.get_quote_name(99)
 
 
 
@@ -55,7 +77,7 @@ class TestQuotedCSV(object):
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
-    def test_file_a01_Misc(self):
+    def test_file_misc(self):
         assert self.MyTest.record_cnt == self.record_cnt
         assert self.MyTest.field_cnt == 4
         assert self.MyTest.format_type == 'csv'
@@ -77,7 +99,7 @@ class TestNonQuotedCSV(object):
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
-    def test_file_b01_Misc(self):
+    def test_file_misc(self):
         assert self.MyTest.record_cnt == self.record_cnt
         assert self.MyTest.field_cnt == 4
         assert self.MyTest.format_type == 'csv'
@@ -99,11 +121,39 @@ class TestInternals(object):
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
-    def test_file_c01_RecordNumber(self):
-        assert self.MyTest._count_records() == self.record_cnt
+    def test_file_record_number_without_read_limit(self):
+        assert (self.record_cnt, False) == self.MyTest._count_records()
 
-    def test_file_c02_FormatType(self):
+    def test_file_record_number_with_read_limit(self):
+        self.MyTest = mod.FileTyper(self.test1_fqfn, read_limit=10)
+        self.MyTest.analyze_file()
+        (est_rec_cnt, est_flag) = self.MyTest._count_records()
+        assert est_flag is True
+        # it should normally be within 5-10% of 100
+        assert abs(115-est_rec_cnt) < 30
+
+    def test_file_format_type(self):
         assert self.MyTest._get_format_type() == 'csv'
 
 
 
+def generate_test_file1(delim, quoting, record_cnt):
+    (fd, fqfn) = tempfile.mkstemp()
+    fp = os.fdopen(fd,"w") 
+    name_list = ['smith','jones','thompson','ritchie']
+    role_list = ['pm','programmer','dba','sysadmin','qa','manager']
+    proj_list = ['cads53','jefta','norma','us-cepa']
+
+    for i in range(record_cnt):
+        name = random.choice(name_list)
+        role = random.choice(role_list)
+        proj = random.choice(proj_list)
+        if quoting is True:
+           name = '"' + name + '"'
+           role = '"' + role + '"'
+           proj = '"' + proj + '"'
+        record = '''%(i)s%(delim)s%(proj)s%(delim)s%(role)s%(delim)s%(name)s\n''' % locals()
+        fp.write(record)
+
+    fp.close()
+    return fqfn

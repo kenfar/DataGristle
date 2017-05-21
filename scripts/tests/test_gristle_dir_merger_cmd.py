@@ -50,7 +50,6 @@ class TestEmpties(object):
     """
 
     def setup_method(self, method):
-
         self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
         self.dest_dir   = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
 
@@ -584,6 +583,7 @@ class TestOnSymLinks(object):
 
     def teardown_method(self, method):
         shutil.rmtree(self.dest_dir)
+        shutil.rmtree(self.real_dir)
         rmtree_ignore_error(self.source_dir)
 
     def print_outputs(self, response):

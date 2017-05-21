@@ -1,3 +1,37 @@
+v0.59 - 2016-11
+===============
+
+-  gristle\_differ
+
+   -  totally rewritten. Can now handle very large files, perform
+      post-transform transformations, handle more complex comparisons,
+      and use column names rather than just positions.
+
+-  gristle\_determinator
+
+   -  added read-limit argument. This allows the tool to be easily run
+      against a subset of a very large input file.
+
+-  gristle\_scalar
+
+   -  removed from toolkit. There are better tools in other solutions
+      can be used instead. This tool may come back again later, but only
+      if enormously rewritten.
+
+-  gristle\_filter
+
+   -  removed from toolkit. There are better tools in other solutions
+      can be used instead. This tool may come back again later, but only
+      if enormously rewritten.
+
+-  minor:
+
+   -  gristle\_md\_reporter - slight formatting change: text
+      descriptions of fields are now included, and column widths were
+      tweaked.
+   -  all utilities - a substantial performance improvement for large
+      files when quoting information is not provided.
+
 v0.58 - 2014-08
 ===============
 
@@ -56,4 +90,3 @@ v0.53 - 2014-01
    distribution. 'Each' creates a separate distribution for every column
    within the csv file.
 -  travisci - added support and started using this testing service.
-

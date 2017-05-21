@@ -156,11 +156,72 @@ def rpt_field_analysis(**kwargs):
     """
 
     #-----  format and run query ------------------
-    sql2 = """ SELECT *                                       \
-               FROM rpt_field_analysis_v                      \
-               WHERE collection_id  = :collection_id          \
-                 AND analysis_id    = :analysis_id            \
+    sql1 = """ SELECT v.field_id, \
+                      v.field_name, \
+                      v.field_type, \
+                      v.field_order, \
+                      v.field_len, \
+                      v.fa_type, \
+                      v.fa_unique_cnt, \
+                      v.fa_known_cnt, \
+                      v.fa_unknown_cnt, \
+                      v.fa_min, \
+                      v.fa_max, \
+                      v.fa_mean, \
+                      v.fa_median, \
+                      v.fa_stddev, \
+                      v.fa_variance, \
+                      v.fa_min_len, \
+                      v.fa_max_len, \
+                      v.fa_mean_len, \
+                      v.fa_case, \
+                      f.field_desc                            \
+               FROM rpt_field_analysis_v v                    \
+                  INNER JOIN field f                          \
+                     ON v.collection_id = f.collection_id     \
+                    AND v.field_id      = f.field_id          \
+               WHERE v.collection_id  = :collection_id        \
+                 AND v.analysis_id    = :analysis_id          \
+               ORDER BY v.field_order                         \
           """
+
+
+    sql2 = """SELECT c.collection_id,      \
+                     ca.analysis_id,       \
+                     ca.ca_id,             \
+                     f.field_id,           \
+                     f.field_name,         \
+                     f.field_type,         \
+                     f.field_order,        \
+                     f.field_len,          \
+                     f.field_desc,         \
+                     fa.fa_type,           \
+                     fa.fa_unique_cnt,     \
+                     fa.fa_known_cnt,      \
+                     fa.fa_unknown_cnt,    \
+                     fa.fa_min,            \
+                     fa.fa_max,            \
+                     fa.fa_mean,           \
+                     fa.fa_median,         \
+                     fa.fa_stddev,         \
+                     fa.fa_variance,       \
+                     fa.fa_min_len,        \
+                     fa.fa_max_len,        \
+                     fa.fa_mean_len,       \
+                     fa.fa_case            \
+              FROM collection c                                 \
+                  LEFT OUTER JOIN collection_analysis ca        \
+                     ON c.collection_id = ca.collection_id      \
+                  INNER JOIN field f                            \
+                     ON c.collection_id = f.collection_id       \
+                  LEFT OUTER JOIN field_analysis fa             \
+                     ON f.field_id = fa.field_id                \
+               WHERE c.collection_id  = :collection_id          \
+                 AND ca.analysis_id   = :analysis_id            \
+             ORDER BY f.field_order                             \
+        """
+
+
     if 'field_id' in kwargs:
         sql2 += " AND field_id = :field_id "
         select_sql = text(sql2)
@@ -186,25 +247,27 @@ def rpt_field_analysis(**kwargs):
     print '================= Field Info ====================='
     for row in fa_rows:
         print
-        print '    ================= field_id: %s =====================' % row.field_id
-        print '    field_name:           %s' % row.field_name
-        print '    field_type:           %s' % row.field_type
-        print '    field_order:          %s' % row.field_order
-        ifprint(row.field_len, '    field_len:            %d', row.field_len)
-        ifprint(row.fa_type,   '    fa_type:              %s', row.fa_type)
-        ifprint(row.fa_unique_cnt,   '    fa_unique_cnt:        %d', row.fa_unique_cnt)
-        ifprint(row.fa_known_cnt,    '    fa_known_cnt:         %d', row.fa_known_cnt)
-        ifprint(row.fa_unknown_cnt,  '    fa_unknown_cnt:       %d', row.fa_unknown_cnt)
-        ifprint(row.fa_min,          '    fa_min:               %s', row.fa_min)
-        ifprint(row.fa_max,          '    fa_max:               %s', row.fa_max)
-        ifprint(row.fa_mean,         '    fa_mean:              %s', row.fa_mean)
-        ifprint(row.fa_median,       '    fa_median:            %s', row.fa_median)
-        ifprint(row.fa_stddev,       '    fa_stddev:            %s', row.fa_stddev)
-        ifprint(row.fa_variance,     '    fa_variance:          %s', row.fa_variance)
-        ifprint(row.fa_min_len,      '    fa_min_len:           %s', row.fa_min_len)
-        ifprint(row.fa_max_len,      '    fa_max_len:           %s', row.fa_max_len)
-        ifprint(row.fa_mean_len,     '    fa_mean_len:          %s', row.fa_mean_len)
-        ifprint(row.fa_case,         '    fa_case:              %s', row.fa_case)
+        print '---------------------------------------------------------'
+        print 'field_name:           %s' % row.field_name
+        print 'field_order:          %s' % row.field_order
+        print 'field_id:             %s' % row.field_id
+        print 'field_desc:           %s' % row.field_desc
+        print 'field_type:           %s' % row.field_type
+        ifprint(row.field_len,       'field_len:            %d', row.field_len)
+        ifprint(row.fa_type,         'fa_type:              %s', row.fa_type)
+        ifprint(row.fa_unique_cnt,   'fa_unique_cnt:        %d', row.fa_unique_cnt)
+        ifprint(row.fa_known_cnt,    'fa_known_cnt:         %d', row.fa_known_cnt)
+        ifprint(row.fa_unknown_cnt,  'fa_unknown_cnt:       %d', row.fa_unknown_cnt)
+        ifprint(row.fa_min,          'fa_min:               %s', row.fa_min)
+        ifprint(row.fa_max,          'fa_max:               %s', row.fa_max)
+        ifprint(row.fa_mean,         'fa_mean:              %s', row.fa_mean)
+        ifprint(row.fa_median,       'fa_median:            %s', row.fa_median)
+        ifprint(row.fa_stddev,       'fa_stddev:            %s', row.fa_stddev)
+        ifprint(row.fa_variance,     'fa_variance:          %s', row.fa_variance)
+        ifprint(row.fa_min_len,      'fa_min_len:           %s', row.fa_min_len)
+        ifprint(row.fa_max_len,      'fa_max_len:           %s', row.fa_max_len)
+        ifprint(row.fa_mean_len,     'fa_mean_len:          %s', row.fa_mean_len)
+        ifprint(row.fa_case,         'fa_case:              %s', row.fa_case)
 
         kwargs['field_id'] = row.field_id
         rpt_field_value(**kwargs)
@@ -225,13 +288,13 @@ def rpt_field_value(**kwargs):
     fv_rows  = result.fetchall()
     if len(fv_rows):
         print
-        print '        --------------- Field Values ---------------'
+        print 'Field Known Values'
         row_cnt = 0
         for row in fv_rows:
             row_cnt += 1
-            if row_cnt > 200:
+            if row_cnt > 40:
                 break
-            ifprint(row.fv_value,  '        %-20.20s             %s',
+            ifprint(row.fv_value,  '        %-40.40s             %s',
                     row.fv_value, row.fv_desc)
 
 
@@ -253,13 +316,13 @@ def rpt_field_freq(**kwargs):
     fav_rows  = result.fetchall()
     if len(fav_rows):
         print
-        print '        --------------- Value Counts ---------------'
+        print 'Top Values'
         row_cnt = 0
         for row in fav_rows:
             row_cnt += 1
-            if row_cnt > 200:
+            if row_cnt > 20:
                 break
-            ifprint(row.fav_value,  '        %-20.20s             %d', 
+            ifprint(row.fav_value,  '        %-40.40s             %d', 
                     row.fav_value, row.fav_count)
 
 

@@ -72,20 +72,24 @@ def temp_file_remover(fqfn_prefix):
           os.remove(temp_file)
 
 
-def generate_7x7_test_file(prefix, hasheader=False):
-    (fd, fqfn) = tempfile.mkstemp(prefix=prefix)
+def generate_7x7_test_file(prefix, hasheader=False, delimiter='|', dirname=None):
 
+    if dirname:
+        (fd, fqfn) = tempfile.mkstemp(prefix=prefix, dir=dirname)
+    else:
+        (fd, fqfn) = tempfile.mkstemp(prefix=prefix)
+    dlm = delimiter
     data_7x7 = []
     if hasheader:
-        data_7x7.append('col0|col1|col2|col3|col4|col5|col6')
+        data_7x7.append('col0%(dlm)scol1%(dlm)scol2%(dlm)scol3%(dlm)scol4%(dlm)scol5%(dlm)scol6' % locals())
 
-    data_7x7.append('0-0|0-1|0-2|0-3|0-4|0-5|0-6')
-    data_7x7.append('1-0|1-1|1-2|1-3|1-4|1-5|1-6')
-    data_7x7.append('2-0|2-1|2-2|2-3|2-4|2-5|2-6')
-    data_7x7.append('3-0|3-1|3-2|3-3|3-4|3-5|3-6')
-    data_7x7.append('4-0|4-1|4-2|4-3|4-4|4-5|4-6')
-    data_7x7.append('5-0|5-1|5-2|5-3|5-4|5-5|5-6')
-    data_7x7.append('6-0|6-1|6-2|6-3|6-4|6-5|6-6')
+    data_7x7.append('0-0%(dlm)s0-1%(dlm)s0-2%(dlm)s0-3%(dlm)s0-4%(dlm)s0-5%(dlm)s0-6' % locals())
+    data_7x7.append('1-0%(dlm)s1-1%(dlm)s1-2%(dlm)s1-3%(dlm)s1-4%(dlm)s1-5%(dlm)s1-6' % locals())
+    data_7x7.append('2-0%(dlm)s2-1%(dlm)s2-2%(dlm)s2-3%(dlm)s2-4%(dlm)s2-5%(dlm)s2-6' % locals())
+    data_7x7.append('3-0%(dlm)s3-1%(dlm)s3-2%(dlm)s3-3%(dlm)s3-4%(dlm)s3-5%(dlm)s3-6' % locals())
+    data_7x7.append('4-0%(dlm)s4-1%(dlm)s4-2%(dlm)s4-3%(dlm)s4-4%(dlm)s4-5%(dlm)s4-6' % locals())
+    data_7x7.append('5-0%(dlm)s5-1%(dlm)s5-2%(dlm)s5-3%(dlm)s5-4%(dlm)s5-5%(dlm)s5-6' % locals())
+    data_7x7.append('6-0%(dlm)s6-1%(dlm)s6-2%(dlm)s6-3%(dlm)s6-4%(dlm)s6-5%(dlm)s6-6' % locals())
 
     fp = os.fdopen(fd,"w")
     for rec in data_7x7:

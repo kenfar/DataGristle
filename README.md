@@ -10,19 +10,19 @@ codebase allows it to be easily extended to with custom code to handle that
 always challenging last 20%.
 
 Current Status:  Strong support for easy analysis, simple transformations of
-csv files, ability to create data dictionaries, and emerging data quality 
-capabilities.
+csv files, ability to create data dictionaries, change detection, and emerging
+data quality capabilities.
 
 More info is on the DataGristle wiki here: 
    https://github.com/kenfar/DataGristle/wiki
 
 
-#Next Steps:  
+# Next Steps:  
 
    * attractive PDF output of gristle_determinator.py
    * metadata database population
 
-#Its objectives include:
+# Its objectives include:
 
    * multi-platform (unix, linux, mac os, windows with effort) 
    * multi-language (primarily python)
@@ -36,7 +36,7 @@ More info is on the DataGristle wiki here:
      analysis with heavier-weight tools.
 
 
-#Installation
+# Installation
 
    * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
 
@@ -49,39 +49,48 @@ More info is on the DataGristle wiki here:
 
        ~~~
        $ mkdir ~\Downloads
-       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.53.tar.gz
+       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.59.tar.gz
        $ tar -xvf easy_install datagristle
        $ cd ~\Downloads\datagristle-*
        $ python setup.py install
        ~~~
       
 
-#Dependencies
+# Dependencies
 
    * Python 2.6 or Python 2.7
 
 
-#Mature Utilities Provided in This Release:
+# Utilities Provided in This Release:
 
    * gristle_slicer
        - Used to extract a subset of columns and rows out of an input file.
    * gristle_freaker
        - Produces a frequency distribution of multiple columns from input file.
-   * gristle_viewer
-       - Shows one record from a file at a time - formatted based on metadata. 
    * gristle_determinator
        - Identifies file formats, generates metadata, prints file analysis report
        - This is the most mature - and also used by the other utilities so that 
          you generally do not need to enter file structure info.
+   * gristle_differ
+       - Allows two identically-structured files to be compared by key columns
+         and split into same, inserts, deletes, chgold and chgnew files.
+       - The user can configure which columns are included in the comparison.
+       - Post delta transformations can include assign sequence numbers, copying
+         field values, etc.
    * gristle_validator
        - Validates csv files by confirming that all records have the right number
          of fields, and by apply a json schema full of requirements to each record.
    * gristle_dir_merger
        - Used to consolidate large directories with options to control matching
          criteria as well as matching actions.
+   * gristle_processor
+       - Used to apply actions, like delete, compress, etc, to files based on
+         very flexible criteria.
+   * gristle_viewer
+       - Shows one record from a file at a time - formatted based on metadata. 
 
 
-#gristle_validator
+# gristle_validator
     Splits a csv file into two separate files based on how records pass or fail
     validation checks:
        - Field count - checks the number of fields in each record against the
@@ -142,7 +151,7 @@ More info is on the DataGristle wiki here:
     
 
 
-#gristle_slicer
+# gristle_slicer
     Extracts subsets of input files based on user-specified columns and rows.
     The input csv file can be piped into the program through stdin or identified
     via a command line option.  The output will default to stdout, or redirected
@@ -169,7 +178,7 @@ More info is on the DataGristle wiki here:
                     dialect info (delimiter, quoting) provided manually)
      
 
-#gristle_freaker
+# gristle_freaker
     Creates a frequency distribution of values from columns of the input file
     and prints it out in columns - the first being the unique key and the last 
     being the count of occurances.
@@ -209,7 +218,7 @@ More info is on the DataGristle wiki here:
                     This output is repeated for each column.
 
 
-#gristle_viewer
+# gristle_viewer
     Displays a single record of a file, one field per line, with field names 
     displayed as labels to the left of the field values.  Also allows simple 
     navigation between records.
@@ -224,7 +233,7 @@ More info is on the DataGristle wiki here:
                     adds explicit csv dialect overrides.
                            
 
-#gristle_determinator
+# gristle_determinator
     Analyzes the structures and contents of csv files in the end producing a 
     report of its findings.  It is intended to speed analysis of csv files by
     automating the most common and frequently-performed analysis tasks.  It's
@@ -323,7 +332,52 @@ More info is on the DataGristle wiki here:
                 0                                        x 37 occurrences
 
 
-#gristle_metadata
+# gristle_differ
+    gristle_differ compares two files, typically an old and a new file, based 
+    on explicit keys in a way that is far more accurate than diff.  It can also
+    compare just subsets of columns, and perform post-delta transforms to 
+    populate fields with static values, values from other fields, variables
+    from the command line, or incrementing sequence numbers.
+
+    Examples:
+
+       $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
+
+            - Sorts both files on columns 0 & 2
+            - Dedupes both files on column 0
+            - Compares all fields except fields 19,22, and 23
+            - Automatically determines the csv dialect
+            - Produces the following files:
+               - file1.dat.insert
+               - file1.dat.delete
+               - file1.dat.same
+               - file1.dat.chgnew
+               - file1.dat.chgold
+
+       $ gristle_differ file0.dat file1.dat --key-cols '0' --compare_cols '1,2,3,4,5,6,7' -d '|'
+
+            - Sorts both files on columns 0 
+            - Dedupes both files on column 0
+            - Compares fields 1,2,3,4,5,6,7
+            - Uses '|' as the field delimiter
+            - Produces the same output file names as example 1.
+
+
+       $ gristle_differ file0.dat file1.dat --config-fn ./foo.yml  \
+                   --variables batchid:919 --variables pkid:82304
+
+            - Produces the same output file names as example 1.
+            - But in this case it gets the majority of its configuration items from
+              the config file ('foo.yml').  This could include key columns, comparison
+              columns, ignore columns, post-delta transformations, and other information.
+	    - The two variables options are used to pass in user-defined variables that
+              can be referenced by the post-delta transformations.  The batchid will get
+              copied into a batch_id column for every file, and the pkid is a sequence
+              that will get incremented and used for new rows in the insert, delete and
+              chgnew files.
+
+
+# gristle_metadata
     Gristle_metadata provides a command-line interface to the metadata database.
     It's mostly useful for scripts, but also useful for occasional direct
     command-line access to the metadata.
@@ -336,7 +390,7 @@ More info is on the DataGristle wiki here:
                     prompts the user for all fields necessary.
                            
 
-#gristle_md_reporter
+# gristle_md_reporter
     Gristle_md_reporter allows the user to create data dictionary reports that
     combine information about the collection and fields along with field value
     descriptions and frequencies.
@@ -351,7 +405,7 @@ More info is on the DataGristle wiki here:
                     only shows field-level information for field_id 3.
 
 
-#gristle_dir_merger
+# gristle_dir_merger
     Gristle_dir_merger consolidates directory structures of files.  Is both fast
     and flexible with a variety of options for choosing which file to use based
     on full (name and md5) and partial matches (name only) .
@@ -386,13 +440,13 @@ More info is on the DataGristle wiki here:
 
 
 
-#Licensing
+# Licensing
 
    * Gristle uses the BSD license - see the separate LICENSE file for further 
      information
 
 
-#Copyright
+# Copyright
 
-   * Copyright 2011,2012,2013,2014 Ken Farmer
+   * Copyright 2011,2012,2013,2014,2015 Ken Farmer
 

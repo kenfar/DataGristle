@@ -48,7 +48,9 @@ optional arguments:
                         Specify a quoted single-column field delimiter. This
                         may be determined automatically by the program.
   --quoting QUOTING     Specify field quoting - generally only used for stdin
-                        data.  The default is False.
+                        data.  The default is to have the program determine
+                        quoting.   Valid values include quote_none, quote_all,
+                        quote_minimal and quote_nonnumeric.
   --quotechar QUOTECHAR
                         Specify field quoting character - generally only used
                         for stdin data.  Default is double-quote
@@ -95,11 +97,11 @@ Copyright 2011,2012,2013,2014 Ken Farmer
 
 #--- standard modules ------------------
 from __future__ import division
-import sys
+import sys, os
 import argparse
 import csv
-import os
 import random
+from os.path import dirname, basename, isdir, isfile, exists
 import errno
 #from pprint import pprint as pp
 import validictory as valid
@@ -112,9 +114,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
 #--- gristle modules -------------------
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append('../')     # allows running from project structure
-sys.path.append('../../')  # allows running from project structure
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import gristle.file_type           as file_type
 import gristle.common              as common
 
@@ -279,7 +279,11 @@ class OutputHandler(object):
         if msg:
             record.append(msg)
 
-        self.writer.writerow(record)
+        try:
+            self.writer.writerow(record)
+        except csv.Error:
+            print 'Invalid record: %s' % record
+            raise
 
     def close(self):
         self.outfile.close()
@@ -300,45 +304,26 @@ class InputHandler(object):
         # a. use explicitely provided values if available
         # b. use values from metadata if available
         # c. use values from analysis of file - if len(files) == 1
-        self.dialect = self._get_dialect(files, delimiter, quoting, quotechar,
-                                         recdelimiter, hasheader)
+        #self.dialect = self._get_dialect(files, delimiter, quoting, quotechar,
+        #                                 recdelimiter, hasheader)
+        self.dialect = common.get_dialect(files,
+                                          delimiter,
+                                          quoting,
+                                          quotechar,
+                                          recdelimiter,
+                                          hasheader)
 
-        if self.files[0] == '-':
+        if files[0] == '-':
             if os.isatty(0):  # checks if data was pipped into stdin
-                raise ValueError, "No files or stdin provided"
+                #raise ValueError, "No files or stdin provided"
+                sys.exit(errno.ENODATA)
             else:
                 self.infile = sys.stdin
                 self.files_read = 1
         else:
-            self.infile     = self.files[0]
+            self.infile     = open(files[0], 'r')
             self.files_read = 1
         self.csv_reader  = csv.reader(self.infile, dialect=self.dialect)
-
-
-    def _get_dialect(self, files, delimiter, quoting, quotechar,
-                     recdelimiter, hasheader):
-        if len(files) == 1 and files[0] != '-':
-            my_file   = file_type.FileTyper(files[0].name,
-                                            delimiter   ,
-                                            recdelimiter,
-                                            hasheader)
-            try:
-                my_file.analyze_file()
-            except file_type.IOErrorEmptyFile:
-                sys.exit(errno.ENODATA)
-            dialect                = my_file.dialect
-        else:
-            # dialect parameters needed for stdin - since the normal code can't
-            # analyze this data.
-            dialect                = csv.Dialect
-            dialect.delimiter      = delimiter
-            dialect.quoting        = quoting
-            dialect.quotechar      = quotechar
-            dialect.lineterminator = '\n'                 # naive assumption
-            dialect.hasheader      = hasheader
-
-        return dialect
-
 
     def get_next(self):
         """ Returns the next input record.   Can handle data piped in as well
@@ -624,7 +609,6 @@ def get_args():
     parser.add_argument('files',
            default=['-'],
            nargs='*',
-           type=argparse.FileType('r'),
            help='Specifies the input file.  The default is stdin.  Multiple '
                 'filenames can be provided.')
     parser.add_argument('-o', '--outgood',
@@ -648,9 +632,10 @@ def get_args():
            help=('Specify a quoted single-column field delimiter. This may be'
                  'determined automatically by the program.'))
     parser.add_argument('--quoting',
-           default=False,
+           default=None,
+           choices=[None, 'quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
            help='Specify field quoting - generally only used for stdin data.'
-                '  The default is False.')
+                '  The default is to have the program determine quoting.')
     parser.add_argument('--quotechar',
            default='"',
            help='Specify field quoting character - generally only used for '
@@ -703,15 +688,18 @@ def get_args():
         print __doc__
         sys.exit(0)
 
-    if args.files[0] != '-':
-        if len(args.files) > 1 and not args.delimiter:
-            parser.error('Please provide delimiter when reading multiple input files')
-    else:   # stdin
+    if args.files[0] == '-':  # stdin
         if not args.delimiter:
             parser.error('Please provide delimiter when piping data into program via stdin')
+        if not args.quoting:
+            args.quoting = 'quote_minimal'
+    else:
+        if len(args.files) > 1 and not args.delimiter:
+            parser.error('Please provide delimiter when reading multiple input files')
 
     if args.randomout > 100 or args.randomout < -1:
         parser.error('Valid values for randomout are from 0 to 100')
+
 
     return args
 
