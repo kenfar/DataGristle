@@ -17,20 +17,21 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
-from __future__ import division
 import collections
 import csv
 
-import gristle.field_type as typer
+import datagristle.field_type as typer
+from typing import List
+
 
 #--- CONSTANTS -----------------------------------------------------------
 
 MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
 
 
-def get_field_names(filename,
+def get_field_names(filename: str,
                     dialect,
-                    col_number=None):
+                    col_number=None) -> List[str]:
     """ Determines names of fields
         Inputs:
         Outputs:
@@ -38,10 +39,10 @@ def get_field_names(filename,
           - if the file is empty it will return None
     """
     reader = csv.reader(open(filename, 'r'), dialect=dialect)
-    try:
-        field_names = reader.next()
-    except StopIteration:
-        return None              # empty file
+    for field_names in reader:
+        break
+    else:
+        return None
 
     if col_number is None:       # get names for all fields
         final_names = []
@@ -148,7 +149,7 @@ def get_field_freq(filename,
     invalid_row_cnt = 0
 
     row_cnt = 0
-    with open(filename, 'rb') as infile:
+    with open(filename, 'rt') as infile:
         reader = csv.reader(infile, dialect)
         for fields in reader:
             row_cnt += 1
@@ -159,7 +160,7 @@ def get_field_freq(filename,
             except IndexError:
                 invalid_row_cnt += 1
             if max_freq_size > -1 and len(freq) >= max_freq_size:
-                print '      WARNING: freq dict is too large - will trunc'
+                print('      WARNING: freq dict is too large - will trunc')
                 truncated = True
                 break
             elif read_limit > -1 and row_cnt >= read_limit:

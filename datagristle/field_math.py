@@ -21,8 +21,7 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
-from __future__ import division
-import gristle.field_type as field_type
+import datagristle.field_type as field_type
 import math
 
 
@@ -277,7 +276,7 @@ def number(val):
     elif is_float(val):
         return float(val)
     else:
-        raise ValueError, '%s is not numeric' % val
+        raise ValueError('%s is not numeric' % val)
 
 def is_float(x):
     try:

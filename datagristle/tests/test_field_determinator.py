@@ -10,13 +10,15 @@ import tempfile
 import random
 import csv
 import pytest
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.field_determinator  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+import datagristle.field_determinator  as mod
 
 
 
-def generate_test_file(delim, record_cnt, quoting):
+def generate_test_file(delim, record_cnt):
     """ generic file generator used by multiple test classes
     """
     (fd, fqfn) = tempfile.mkstemp()
@@ -37,7 +39,6 @@ def generate_test_file(delim, record_cnt, quoting):
            fields.append('d')
         else:
            fields.append('E')
-        #print '%d - %s' % (i, fields[len(fields)-1]) 
 
         fields.append('bbbbb')                        # field 2: lower col
         fields.append('CCC')                          # field 3: upper col
@@ -57,34 +58,32 @@ class FileAndTestManager(object):
     """
 
     def print_field(self, field_no):
-        print 'type:      %s' % self.MyFields.field_types[field_no]
-        #print 'int mean:: %f' % self.MyFields.field_mean[field_no]
-        print 'freq:     '
-        print self.MyFields.field_freqs[field_no]
+        print('type:      %s' % self.MyFields.field_types[field_no])
+        print('freq:     ')
+        print(self.MyFields.field_freqs[field_no])
 
     def customSettings(self):
         """ gets run from setup_method()
         """
-        self.quoting                  = False
+        self.quoting                  = csv.QUOTE_NONE
         self.overrides                = None
 
     def setup_method(self, method):
-   
+
         self.customSettings()
 
         self.record_cnt               = 100
         self.dialect                  = csv.Dialect
-        self.dialect.quoting          = self.quoting
-        self.dialect.quotechar        = '"'      
+        self.dialect.quoting          = csv.QUOTE_NONE
+        self.dialect.quotechar        = '"'
         self.dialect.has_header       = False
         self.dialect.delimiter        = '|'
         self.dialect.skipinitialspace = False
-        self.dialect.lineterminator   = '\n'   
+        self.dialect.lineterminator   = '\n'
         self.format_type              = 'csv'
         self.field_cnt                = 7
-        self.test1_fqfn    = generate_test_file(self.dialect.delimiter, 
-                                                self.record_cnt,
-                                                self.dialect.quoting)
+        self.test1_fqfn    = generate_test_file(self.dialect.delimiter,
+                                                self.record_cnt)
         self.id_col                   = 0
         self.very_mixed_col           = 1
         self.lower_col                = 2
@@ -249,7 +248,6 @@ class FileAndTestManager(object):
         """
         self.MyFields.analyze_fields(None, self.overrides)
 
-        ####print self.MyFields.get_top_freq_values(fieldno=5, limit=10)
         assert self.MyFields.field_mean[self.float_col]               is not None
 
     def test_deter_field_6_extra_string(self):

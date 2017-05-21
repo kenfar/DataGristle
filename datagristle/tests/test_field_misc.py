@@ -9,9 +9,12 @@ import os
 import tempfile
 import random
 import csv
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.field_misc  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+
+import datagristle.field_misc  as mod
 
 
 
@@ -57,7 +60,7 @@ class Test_get_field_freq(object):
         self.dialect                  = csv.Dialect
         self.dialect.delimiter        = '|'
         self.dialect.skipinitialspace = False
-        self.dialect.quoting          = False           #naive default!
+        self.dialect.quoting          = csv.QUOTE_NONE  #naive default!
         self.dialect.quotechar        = '"'             #naive default!
         self.dialect.lineterminator   = '\n'            #naive default!
         self.dialect.has_header       = False
@@ -113,7 +116,7 @@ class TestGetFieldNames(object):
         self.dialect                  = csv.Dialect
         self.dialect.delimiter        = ','
         self.dialect.skipinitialspace = False
-        self.dialect.quoting          = True            #naive default!
+        self.dialect.quoting          = csv.QUOTE_ALL   #naive default!
         self.dialect.quotechar        = '"'             #naive default!
         self.dialect.lineterminator   = '\n'            #naive default!
         self.dialect.has_header       = True

@@ -26,8 +26,8 @@ sys.path.insert(0, dirname('../'))
 sys.path.insert(0, dirname('../../'))
 sys.path.append('../../../../')
 
-import gristle.file_sorter          as mod
-from gristle.csvhelper import create_dialect
+import datagristle.file_sorter          as mod
+from datagristle.csvhelper import create_dialect
 
 
 class TestSort(object):
@@ -56,7 +56,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '1'
             elif fileinput.lineno() == 2:
@@ -76,7 +76,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '1'
             elif fileinput.lineno() == 2:
@@ -110,7 +110,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(self.dialect.delimiter)
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '1'
             elif fileinput.lineno() == 2:
@@ -130,7 +130,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '4'
             elif fileinput.lineno() == 2:

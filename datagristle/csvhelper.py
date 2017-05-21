@@ -5,8 +5,6 @@
     Copyright 2011 Ken Farmer
 """
 
-from __future__ import division
-
 #--- standard modules ------------------
 import collections
 import csv
@@ -36,7 +34,7 @@ def get_quote_number(quote_name):
     elif get_quote_name(quote_name):
         return int(quote_name)
     else:
-        raise ValueError, 'Invalid quote_name: %s' % quote_name
+        raise ValueError('Invalid quote_name: %s' % quote_name)
 
 def get_quote_name(quote_number):
     """ used to help applications look up quote numbers typically provided by
@@ -63,7 +61,7 @@ def create_dialect(delimiter,
 
     if quoting not in [csv.QUOTE_NONE, csv.QUOTE_MINIMAL, csv.QUOTE_ALL,
                        csv.QUOTE_NONNUMERIC]:
-        raise ValueError, 'Invalid quoting value: %s' % quoting
+        raise ValueError('Invalid quoting value: %s' % quoting)
     dialect.quoting          = quoting
 
     dialect.quotechar        = quotechar

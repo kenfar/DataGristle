@@ -17,12 +17,11 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
-from __future__ import division
 from pprint import pprint
 
-import gristle.field_type   as typer
-import gristle.field_math   as mather
-import gristle.field_misc   as miscer
+import datagristle.field_type   as typer
+import datagristle.field_math   as mather
+import datagristle.field_misc   as miscer
 
 #------------------------------------------------------------------------------
 # override miscer.get_field_freq max dictionary size defaults:
@@ -120,7 +119,7 @@ class FieldDeterminator(object):
         self.max_freq_number     = max_freq_number
 
         if self.verbose:
-            print 'Field Analysis Progress: '
+            print('Field Analysis Progress: ')
 
         for f_no in range(self.field_cnt):
             if field_number is not None:  # optional analysis of a single field
@@ -128,7 +127,7 @@ class FieldDeterminator(object):
                     continue
 
             if self.verbose:
-                print '   Analyzing field: %d' % f_no
+                print('   Analyzing field: %d' % f_no)
 
             self.field_names[f_no]   = miscer.get_field_names(self.filename,
                                                               self.dialect,

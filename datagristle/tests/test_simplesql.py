@@ -14,7 +14,7 @@ from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, CheckConstraint
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.simplesql   as simplesql
+import datagristle.simplesql   as simplesql
 
 #---------------------------------------------------------
 # test classes included here:

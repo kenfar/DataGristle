@@ -10,9 +10,12 @@ import os
 import tempfile
 import random
 import pytest
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.field_type  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+
+import datagristle.field_type  as mod
 
 
 
@@ -158,6 +161,7 @@ class TestGetType(object):
 class TestGetFieldType(object):
 
     def setup_method(self, method):
+        # the following are either lists of values or dictionaries of frequency distributions
         self.type_0a = []
         self.type_0b = {}
         self.type_1a = {'Texas':   4}

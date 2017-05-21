@@ -19,7 +19,6 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
-from __future__ import division
 import datetime
 import collections
 import math
@@ -103,7 +102,7 @@ def get_field_type(values):
                 type_freq[i] += values[key]
             except TypeError:                # values is a list
                 type_freq[i] += 1
-    type_list = type_freq.keys()
+    type_list = list(type_freq.keys())
 
     # try simple rules:
     result = _get_field_type_rule(type_list)
@@ -197,7 +196,7 @@ def _get_field_type_probability(type_freq):
     """ Determines type of field based on the type of the vast majority of
         values.
     """
-    total = sum(type_freq.itervalues())
+    total = sum(type_freq.values())
 
     # if the sample-size is too small, then we can't be sure:
     if total < 10:

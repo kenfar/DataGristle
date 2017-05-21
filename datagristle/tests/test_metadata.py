@@ -12,7 +12,7 @@ from sqlalchemy import exc
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.metadata  as mod
+import datagristle.metadata  as mod
 
 
 
@@ -152,7 +152,6 @@ class TestCollection(object):
                'collection_desc':'a1'}
         collection_id = self.md.collection_tools.setter(**kva)
         assert collection_id != 0
-        #print '\ndeletion by partial_uk'
         assert self.md.collection_tools.deleter(collection_name='a') == 0
 
 
@@ -237,7 +236,6 @@ class TestField(object):
                                               field_name='field-a')) == 8
 
     def test_field_select_nonexisting_row(self):
-        print 'kenstuff:'
         assert self.md.field_tools.getter(schema_id=self.schema_id, 
                                       collection_id=self.collection_id,
                                       field_name='blahFooBar') is None
@@ -391,9 +389,11 @@ def content_rpt(md):
                   ON c.collection_id = f.collection_id       \
           '''
     result = md.engine.execute(rpt)
-    print
-    print
-    print '%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % ('sch_id', 'sch_name', 'coll_id', 'coll_name', 'field_id', 'field_name', 'field_ord')
+    print('')
+    print('')
+    print('%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % ('sch_id', 'sch_name', 'coll_id',
+    'coll_name', 'field_id', 'field_name', 'field_ord'))
     for row in result:
-        print '%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % (row[0],row[1],row[2], row[3], row[4], row[5], row[6])
-    print
+        print('%-5.5s,  %-20.20s,  %-5.5s, %-20.20s, %-5.5s, %-20.20s, %-5.5s' % (row[0],row[1],row[2], row[3], row[4],
+        row[5], row[6]))
+    print('')

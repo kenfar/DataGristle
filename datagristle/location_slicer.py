@@ -34,7 +34,6 @@
 """
 
 #--- standard modules ------------------
-from __future__ import division
 import sys
 
 
@@ -56,9 +55,14 @@ def is_sequence(val):
     """ test whether or not val is a squence - list or tuple
             input:  val
             output:  True or False
-            issues: may not work correctly in Python3 - I think strings may support __iter__.
     """
-    return (hasattr(val, "__iter__") or (not hasattr(val, "strip") and hasattr(val, "__getitem__")))
+    ### old python2 version - didn't work with python3 since strings startd to support __iter__
+    ###return (hasattr(val, "__iter__") or (not hasattr(val, "strip") and hasattr(val, "__getitem__")))
+
+    if type(val) in (list, tuple):
+        return True
+    else:
+        return False
 
 
 
@@ -91,6 +95,7 @@ class SpecProcessor(object):
         """
         if not is_sequence(spec):
             raise ValueError('spec argument is not a sequence object')
+        print(type(spec))
 
         def _is_invalid_part(part):
             try:
@@ -112,7 +117,7 @@ class SpecProcessor(object):
                     if _is_invalid_part(parts[1]):
                         raise ValueError('spec is non-numeric')
                 if (parts[0] != '' and parts[1] != ''):
-                    if int(parts[1]) >= 0:  
+                    if int(parts[1]) >= 0:
                         if int(parts[0]) >= int(parts[1]):
                             raise ValueError('spec is an invalid range')
             elif len(parts) > 2:
@@ -133,7 +138,7 @@ class SpecProcessor(object):
         """
         if loc_max is None: 
             if self.has_negatives:
-                raise ValueError, 'adjust_specs missing count - and has negative specs'
+                raise ValueError('adjust_specs missing count - and has negative specs')
         self.location_max = loc_max
         adj_spec = []
         for item in self.orig_spec:

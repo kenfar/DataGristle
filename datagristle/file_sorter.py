@@ -35,12 +35,12 @@ class CSVSorter(object):
         self.dialect   = dialect
 
         if tmp_dir and not isdir(tmp_dir):
-            raise ValueError, 'Invalid sort temp directory: %s' % tmp_dir
+            raise ValueError('Invalid sort temp directory: %s' % tmp_dir)
         else:
             self.tmp_dir = tmp_dir
 
         if out_dir and not isdir(out_dir):
-            raise ValueError, 'Invalid sort output directory: %s' % out_dir
+            raise ValueError('Invalid sort output directory: %s' % out_dir)
         else:
             self.out_dir = out_dir
 
@@ -48,7 +48,7 @@ class CSVSorter(object):
         try:
             key_fields_1off = [ int(x)+1 for x in key_fields_0off ]
         except ValueError:
-            print 'Error: invalid non-numeric sort key: %s' % key_fields_0off
+            print('Error: invalid non-numeric sort key: %s' % key_fields_0off)
             raise
 
         self.field_opt = ''
@@ -88,7 +88,7 @@ class CSVSorter(object):
             out_fqfn = pjoin(out_dir, basename(in_fqfn) + '.sorted')
 
         if not isfile(in_fqfn):
-            raise ValueError, 'Invalid input file: %s' % in_fqfn
+            raise ValueError('Invalid input file: %s' % in_fqfn)
 
         cmd = ['sort']
         for field in self.field_key_1off:
@@ -109,9 +109,9 @@ class CSVSorter(object):
         stdout, stderr = p.communicate()
 
         if p.returncode != 0:
-            print 'Invalid sort return code: %s' % p.returncode
-            print 'delimiter: %s' % self.dialect.delimiter
-            raise IOError, 'invalid sort return code: %s' % p.returncode
+            print('Invalid sort return code: %s' % p.returncode)
+            print('delimiter: %s' % self.dialect.delimiter)
+            raise IOError('invalid sort return code: %s' % p.returncode)
 
         return out_fqfn
 

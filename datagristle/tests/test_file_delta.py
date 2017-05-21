@@ -29,8 +29,8 @@ sys.path.insert(0, dirname('../'))
 sys.path.insert(0, dirname('../../'))
 sys.path.append('../../../../')
 
-import gristle.file_delta           as mod
-from gristle.csvhelper import create_dialect
+import datagristle.file_delta           as mod
+from datagristle.csvhelper import create_dialect
 
 LOG_NAME    = 'main'
 
@@ -141,11 +141,11 @@ class TestAssignment(object):
         with open(fqfn, 'w') as f:
              f.write('3,o,oo,ooo\n')
              f.write('5,o,oo,ooo\n')
-       
+
         dass.get_sequence_starts(self.dialect, fqfn)
-        print '---- post sequence_starts seq dict: -----'
-        print dass.seq
-        print '---- post sequence_starts print-done: -----'
+        print('---- post sequence_starts seq dict: -----')
+        print(dass.seq)
+        print('---- post sequence_starts print-done: -----')
 
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['6', 'b', 'c', 'd']
@@ -169,11 +169,11 @@ class TestAssignment(object):
              f.write('3,o,2,ooo\n')
              f.write('5,o,4,ooo\n')
              f.write('5,o,6,ooo\n')
-       
+
         dass.get_sequence_starts(self.dialect, fqfn)
-        print '---- post sequence_starts seq dict: -----'
-        print dass.seq
-        print '---- post sequence_starts print-done: -----'
+        print('---- post sequence_starts seq dict: -----')
+        print(dass.seq)
+        print('---- post sequence_starts print-done: -----')
 
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['6', 'b', '7', 'd']
@@ -191,11 +191,11 @@ class TestAssignment(object):
         fqfn    = pjoin(self.temp_dir, 'old.csv')
         with open(fqfn, 'w') as f:
              pass
-       
+
         dass.get_sequence_starts(self.dialect, fqfn)
-        print '---- post sequence_starts seq dict: -----'
-        print dass.seq
-        print '---- post sequence_starts print-done: -----'
+        print('---- post sequence_starts seq dict: -----')
+        print(dass.seq)
+        print('---- post sequence_starts print-done: -----')
 
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['1', 'b', 'c', 'd']

@@ -10,9 +10,12 @@ import random
 import atexit
 import shutil
 import pytest
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.file_type  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+
+import datagristle.file_type  as mod
 
 
 
@@ -66,10 +69,10 @@ class TestQuotedCSV(object):
 
     def setup_method(self, method):
         self.record_cnt = 100
-        self.delimiter     = '|'
-        self.quoting       = True
-        self.test1_fqfn    = generate_test_file1(self.delimiter, 
-                                                 self.quoting, self.record_cnt)
+        self.delimiter  = '|'
+        self.quoting    = True
+        self.test1_fqfn = generate_test_file1(self.delimiter,
+                                              self.quoting, self.record_cnt)
         # run FileTyper without csv dialect info:
         self.MyTest        = mod.FileTyper(self.test1_fqfn)
         self.MyTest.analyze_file()
@@ -89,10 +92,9 @@ class TestNonQuotedCSV(object):
 
     def setup_method(self, method):
         self.record_cnt = 100
-        self.delimiter     = '|'
-        self.quoting       = True
-        self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, 
-                          self.record_cnt)
+        self.delimiter  = '|'
+        self.quoting    = True
+        self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, self.record_cnt)
         self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 
@@ -111,10 +113,9 @@ class TestInternals(object):
 
     def setup_method(self, method):
         self.record_cnt = 100
-        self.delimiter     = '|'
-        self.quoting       = False
-        self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, 
-                          self.record_cnt)
+        self.delimiter  = '|'
+        self.quoting    = False
+        self.test1_fqfn = generate_test_file1(self.delimiter, self.quoting, self.record_cnt)
         self.MyTest     = mod.FileTyper(self.test1_fqfn, None, None, None)
         self.MyTest.analyze_file()
 

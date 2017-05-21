@@ -15,8 +15,8 @@ from os.path import isdir, isfile, exists
 from os.path import join as pjoin
 
 
-from gristle._version import __version__
-import file_type
+from datagristle._version import __version__
+import datagristle.file_type
 
 
 
@@ -45,7 +45,7 @@ def get_common_key(count_dict):
          >>> boat, 60
     """
     sorted_keys  = (sorted(count_dict, key=count_dict.get))
-    total_values = sum(count_dict.itervalues())
+    total_values = sum(count_dict.values())
     most_common_key       = sorted_keys[-1]
     most_common_key_value = count_dict[sorted_keys[-1]]
     most_common_pct       = most_common_key_value / total_values 
@@ -72,7 +72,7 @@ def dict_coalesce(struct, key, default=None):
 
 def ifprint(value, string, *args):
     if value is not None:
-        print string % args
+        print(string % args)
 
 
 class ArgProcessor(object):
@@ -97,7 +97,7 @@ class ArgProcessor(object):
         self.args       = self.parser.parse_args()
 
         if self.args.long_help:
-            print long_desc
+            print(long_desc)
             sys.exit(0)
 
         #if self.args.files[0] == '-':  # stdin
@@ -297,7 +297,7 @@ def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader)
     else:
         for fn in files:
             if not isfile(fn):
-                raise ValueError, 'file does not exist: %s' % fn
+                raise ValueError('file does not exist: %s' % fn)
             my_file   = file_type.FileTyper(fn ,
                                             delimiter          ,
                                             recdelimiter       ,
@@ -325,7 +325,7 @@ def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader)
 
     # validate delimiter & assign defaults:
     if dialect.delimiter is None:
-        raise ValueError, "Invalid Delimiter: %s" % dialect.delimiter
+        raise ValueError("Invalid Delimiter: %s" % dialect.delimiter)
 
     return dialect
 
@@ -343,8 +343,8 @@ def abort(summary, details=None, rc=1):
     print('=' * 79)
 
     #---prints message within = characters, assumes it is kinda short:
-    print '=== ',
-    print '%-69.69s' % summary,
+    print('=== ', end='')
+    print('%-69.69s' % summary, end='')
     print(' ===')
     if 'logger' in vars() and logger:
         logger.critical(summary)
@@ -352,9 +352,9 @@ def abort(summary, details=None, rc=1):
     #---prints exception msg, breaks it into multiple lines:
     if details:
         for i in range(int(math.ceil(len(details)/68))):
-            print '=== ',
-            print '%-69.69s' % details[i*68:(i*68)+68],
-            print ' ==='
+            print('=== ', end='')
+            print('%-69.69s' % details[i*68:(i*68)+68], end='')
+            print(' ===')
     if 'logger' in vars() and logger:
         logger.critical(details)
 
@@ -392,13 +392,13 @@ def colnames_to_coloff0(col_names, lookup_list):
     try:
         result         =  [int(x) if isnumeric(x) else colname_lookup[x] for x in lookup_list]
     except KeyError:
-        raise KeyError, 'Column name not found in colname list'
+        raise KeyError('Column name not found in colname list')
 
     # extra edit to look for offsets not found within a colname listing:
     if colname_lookup:
         for x in result:
             if x >= colname_lookup_len:
-                raise KeyError, 'column number %s not found in colname list' % x
+                raise KeyError('column number %s not found in colname list' % x)
 
     #assert isinstance(result, list)
     return result

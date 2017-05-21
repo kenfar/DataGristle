@@ -12,9 +12,11 @@ import os
 import tempfile
 import random
 from pprint import pprint
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.field_math  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+import datagristle.field_math  as mod
 
 
 
@@ -137,7 +139,6 @@ class TestGetDictMedian(object):
         self.mymed         =  mod.GetDictMedian()
 
     def test_math_a02_dicts(self):
-        #print self.mymed.run(self.med_dict_1)
         assert self.mymed.run(self.dict_1) == self.dict_1a
         assert self.mymed.run(self.dict_2) == self.dict_2a
         assert self.mymed.run(self.dict_3) == self.dict_3a

@@ -9,8 +9,6 @@
     Copyright 2011 Ken Farmer
 """
 
-from __future__ import division
-
 #--- standard modules ------------------
 import fileinput
 import collections
@@ -20,6 +18,7 @@ from pprint import pprint
 
 #--- datagristle modules ------------------
 import common as comm
+#import datagristle.common as comm
 
 
 def get_quote_number(quote_name):
@@ -40,19 +39,19 @@ def get_quote_number(quote_name):
         try:
             return csv.__dict__[quote_name.upper()]
         except KeyError:
-            raise ValueError, 'Invalid quote_name: %s' % quote_name
+            raise ValueError('Invalid quote_name: %s' % quote_name)
 
 def get_quote_name(quote_number):
     """ used to help applications look up quote numbers typically provided by
         users.
     """
     if not comm.isnumeric(quote_number):
-        raise ValueError, 'Invalid quote_number: %s' % quote_number
+        raise ValueError('Invalid quote_number: %s' % quote_number)
 
     for key, value in csv.__dict__.items():
         if value == int(quote_number):
             return key
-    raise ValueError, 'Invalid quote_number: %s' % quote_number
+    raise ValueError('Invalid quote_number: %s' % quote_number)
 
 
 #------------------------------------------------------------------------------
@@ -99,7 +98,7 @@ class FileTyper(object):
             of whether or it it is delimited, what the delimiter is, etc.
         """
         if os.path.getsize(self.fqfn) == 0:
-            raise IOErrorEmptyFile, "Empty File"
+            raise IOErrorEmptyFile("Empty File")
 
         if self._delimiter:                                 #delimiter overridden
             self.dialect                  = csv.Dialect
@@ -138,11 +137,11 @@ class FileTyper(object):
             Then performs additional processing to try to improve accuracy of
             quoting.
         """
-        csvfile = open(self.fqfn, "rb")
+        csvfile = open(self.fqfn, "rt")
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(50000))
         except:
-            raise IOError, 'could not analyse file - you may want to provide explicit csv delimiter, quoting, etc'
+            raise IOError('could not analyse file - you may want to provide explicit csv delimiter, quoting, etc')
         csvfile.close()
 
         # See if we can improve quoting accuracy:
@@ -179,7 +178,7 @@ class FileTyper(object):
                         quoted_cnt += 1
             quoted_field_cnt[quoted_cnt] += 1
 
-            if fileinput.lineno > 1000:
+            if fileinput.lineno() > 1000:
                 break
         fileinput.close()
 
@@ -230,7 +229,7 @@ class FileTyper(object):
             try:
                 return csv.Sniffer().has_header(sample)
             except:
-                raise IOError, 'Could not complete header analysis.  It may help to provide explicit header info'
+                raise IOError('Could not complete header analysis.  It may help to provide explicit header info')
         else:
             return has_header
 
@@ -249,7 +248,7 @@ class FileTyper(object):
                 rec_len = len(rec)
                 break
         else:
-            print 'file_type._get_field_cnt - DEPRECATED FUNCTIONALITY'
+            print('file_type._get_field_cnt - DEPRECATED FUNCTIONALITY')
             # csv module can't handle multi-column delimiters:
             for rec in fileinput.input(self.fqfn):
                 fields = rec[:-1].split(self._delimiter)
@@ -308,7 +307,7 @@ class FileTyper(object):
             # fastest method, should be helpful if the read_limit is very high
             # but can miscount rows if newlines are in a field
             estimated = True
-            infile  = open(self.fqfn, 'rb')
+            infile  = open(self.fqfn, 'rt')
             for rec in infile:
                 byte_cnt += len(rec)
                 rec_cnt  += 1
@@ -323,7 +322,7 @@ class FileTyper(object):
 
         else:
             # much slower method, but most accurate
-            with open(self.fqfn, 'rb') as infile:
+            with open(self.fqfn, 'rt') as infile:
                 reader = csv.reader(infile, self.dialect)
                 for row in reader:
                     rec_cnt += 1
