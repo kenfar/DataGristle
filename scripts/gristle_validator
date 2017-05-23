@@ -115,8 +115,8 @@ signal(SIGPIPE, SIG_DFL)
 
 #--- gristle modules -------------------
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
-import gristle.file_type           as file_type
-import gristle.common              as common
+import datagristle.file_type           as file_type
+import datagristle.common              as common
 
 
 def main():
@@ -223,10 +223,10 @@ def write_stats(stats, input_cnt, valid_cnt, invalid_cnt):
     """ Writes input, output, and validation counts to stdout.
     """
     if stats:
-        print
-        print 'input_cnt        | %d ' % input_cnt
-        print 'invalid_cnt      | %d ' % invalid_cnt
-        print 'valid_cnt        | %d ' % valid_cnt
+        print('')
+        print('input_cnt        | %d ' % input_cnt)
+        print('invalid_cnt      | %d ' % invalid_cnt)
+        print('valid_cnt        | %d ' % valid_cnt)
 
 
 def load_schema(schema_file):
@@ -282,7 +282,7 @@ class OutputHandler(object):
         try:
             self.writer.writerow(record)
         except csv.Error:
-            print 'Invalid record: %s' % record
+            print('Invalid record: %s' % record)
             raise
 
     def close(self):
@@ -306,7 +306,7 @@ class InputHandler(object):
         # c. use values from analysis of file - if len(files) == 1
         #self.dialect = self._get_dialect(files, delimiter, quoting, quotechar,
         #                                 recdelimiter, hasheader)
-        self.dialect = common.get_dialect(files,
+        self.dialect = file_type.get_dialect(files,
                                           delimiter,
                                           quoting,
                                           quotechar,
@@ -330,7 +330,7 @@ class InputHandler(object):
             as multiple input files.   All data is assumed to be csv files.
         """
         try:
-            rec = self.csv_reader.next()
+            rec = self.csv_reader.__next__()
             self.rec_cnt += 1
         except StopIteration:
             if self.files_read < len(self.files): # another file to read!
@@ -363,8 +363,8 @@ class RecValidator(object):
         if rec_schema:
             try:
                 valid_validator = ValidateTheValidator(self.rec_schema)
-            except ValueError, error:
-                print error
+            except ValueError as error:
+                print(error)
                 sys.exit(1)
 
 
@@ -402,7 +402,7 @@ class RecValidator(object):
 
         try:
             valid.validate(record, self.rec_schema)
-        except ValueError, error:
+        except ValueError(error):
             self.error = error
             return False
         else:
@@ -425,18 +425,18 @@ class RecValidator(object):
                 if col_info['dg_type'] == 'integer':
                     try:
                         int(record[index])
-                    except ValueError, error:
+                    except ValueError(error):
                         msg = self._msg_formatter(index, 'dg_type:integer', record[index], col_info)
                         return msg
-                    except IndexError, error:
+                    except IndexError(error):
                         return 'Failed to validate field due to parsing error.  Wrong delimiter?'
                 elif col_info['dg_type'] == 'float':
                     try:
                         float(record[index])
-                    except ValueError, error:
+                    except ValueError(error):
                         msg = self._msg_formatter(index, 'dg_type:float', record[index], col_info)
                         return msg
-                    except IndexError, error:
+                    except IndexError(error):
                         return 'Failed to validate field due to parsing error.  Wrong delimiter?'
 
         return None
@@ -467,18 +467,18 @@ class RecValidator(object):
                     if caster(record[index]) < caster(col_info['dg_minimum']):
                         msg = self._msg_formatter(index, 'dg_minimum', record[index], col_info)
                         return msg
-                except ValueError, error:
+                except ValueError(error):
                     return error
-                except IndexError, error:
+                except IndexError(error):
                     return 'Failed to validate field due to parsing error.  Wrong delimiter?'
             elif 'dg_maximum' in col_info:
                 try:
                     if caster(record[index]) > caster(col_info['dg_maximum']):
                         msg = self._msg_formatter(index, 'dg_maximum', record[index], col_info)
                         return msg
-                except ValueError, error:
+                except ValueError(error):
                     return error
-                except IndexError, error:
+                except IndexError(error):
                     return 'Failed to validate field due to parsing error.  Wrong delimiter?'
 
         return None
@@ -525,9 +525,9 @@ class ValidateTheValidator(object):
             running _validate_field for each field validation set.
         """
         if 'items' not in self.schema:
-            raise ValueError, "Error: invalid schema, missing 'items' key"
+            raise ValueError("Error: invalid schema, missing 'items' key")
         if len(self.schema.keys()) != 1:
-            raise ValueError, "Error: invalid schema, incorrect number of 'items' keys"
+            raise ValueError("Error: invalid schema, incorrect number of 'items' keys")
         for field_validators in self.schema['items']:
             self._validate_field(field_validators)
 
@@ -551,7 +551,7 @@ class ValidateTheValidator(object):
         def limit_checker(limit):
             if limit in field_validators:
                 if 'dg_type' not in field_validators:
-                    raise ValueError, "Error: invalid schema, %s but no dg_type" % limit
+                    raise ValueError("Error: invalid schema, %s but no dg_type" % limit)
                 else:
                     try:
                         if field_validators['dg_type'] == 'integer':
@@ -559,9 +559,9 @@ class ValidateTheValidator(object):
                         elif field_validators['dg_type'] == 'float':
                             float(field_validators[limit])
                         else:
-                            raise ValueError, "Error: invalid schema, %s requires a numeric dg_type" % limit
-                    except ValueError, error:
-                        raise ValueError, "Error: invalid schema, %s not of dg_type" % limit
+                            raise ValueError("Error: invalid schema, %s requires a numeric dg_type" % limit)
+                    except ValueError as error:
+                        raise ValueError("Error: invalid schema, %s not of dg_type" % limit)
 
         limit_checker('dg_minimum')
         limit_checker('dg_maximum')
@@ -575,18 +575,18 @@ class ValidateTheValidator(object):
 
         if v_key not in self.valid_keys:
             if v_key in self.unsupported_keys:
-                raise ValueError, 'Error:  invalid schema, unsupported key value: %s' % v_key
+                raise ValueError('Error:  invalid schema, unsupported key value: %s' % v_key)
             else:
-                raise ValueError, 'Error:  invalid schema, unknown key value: %s' % v_key
+                raise ValueError('Error:  invalid schema, unknown key value: %s' % v_key)
         if v_key == 'required':
             if v_value not in [True, False]:
-                raise ValueError, 'Error:  invalid schema, unknown value for required: %s' % v_value
+                raise ValueError('Error:  invalid schema, unknown value for required: %s' % v_value)
         if v_key == 'blank':
             if v_value not in [True, False]:
-                raise ValueError, 'Error:  invalid schema, unknown value for blank: %s' % v_value
+                raise ValueError('Error:  invalid schema, unknown value for blank: %s' % v_value)
         if v_key == 'dg_type':
             if v_value not in ['integer', 'float', 'string']:
-                raise ValueError, 'Error:  invalid schema, unknown value for dg_type: %s' % v_value
+                raise ValueError('Error:  invalid schema, unknown value for dg_type: %s' % v_value)
 
 
 
@@ -685,7 +685,7 @@ def get_args():
     args = parser.parse_args()
 
     if args.long_help:
-        print __doc__
+        print(__doc__)
         sys.exit(0)
 
     if args.files[0] == '-':  # stdin

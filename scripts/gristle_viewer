@@ -45,13 +45,12 @@
 #       6.  fix broken pipes in this program or others
 
 #--- standard modules ------------------
-from __future__ import division
 import os
 import sys
 import optparse
 import csv
 import fileinput
-from pprint import pprint 
+from pprint import pprint
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
@@ -61,28 +60,29 @@ signal(SIGPIPE,SIG_DFL)
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gristle.file_type           as file_type 
-import gristle.field_determinator  as field_determinator
-import gristle.field_type          as field_type
+import datagristle.file_type           as file_type
+import datagristle.field_determinator  as field_determinator
+import datagristle.field_type          as field_type
 
 debug = False
 
+
 def main():
-    """ Analyzes file then displays a single record and allows simple 
+    """ Analyzes file then displays a single record and allows simple
         navigation between records.
     """
     (opts, files) = get_opts_and_args()
 
     if not os.path.exists(files[0]):
-        print 'ERROR: file %s does not exist' % files[0]
+        print('ERROR: file %s does not exist' % files[0])
         sys.exit(1)
     if len(files) == 1:
         try:
             if os.path.getsize(files[0]) == 0:
-                print 'ERROR: file %s is empty' % files[0]
+                print('ERROR: file %s is empty' % files[0])
                 sys.exit(1)
         except OSError:
-            print 'ERROR: file %s has issues' % files[0]
+            print('ERROR: file %s has issues' % files[0])
             sys.exit(1)
 
     dialect, my_fields    = get_input_file_info(files, opts)
@@ -92,7 +92,7 @@ def main():
                       opts.recnum,
                       dialect)
         if rec is None:
-            print 'No record found'
+            print('No record found')
             return
 
         display_rec(rec, my_fields, opts.output)
@@ -113,14 +113,14 @@ def main():
         elif field_type._get_type(response) == 'integer':
             opts.recnum = int(response)
         else:
-            print 'Invalid response, please enter q, p, n, t, or a specific record number'
+            print('Invalid response, please enter q, p, n, t, or a specific record number')
 
     return 0
 
 
 
 def get_input_file_info(input_files, opts):
-    """ Gets information about csv dialect and field info from input files 
+    """ Gets information about csv dialect and field info from input files
         and user-supplied options.
 
         Supports manual csv dialect creation - which is necessary
@@ -149,7 +149,7 @@ def get_input_file_info(input_files, opts):
         return 1
 
     if debug:
-        print '---- input dialect -----'
+        print('---- input dialect -----')
         pprint(vars(dialect))
 
     my_fields  = field_determinator.FieldDeterminator(input_files[0]      ,
@@ -261,7 +261,7 @@ def get_opts_and_args():
     (opts, files) = parser.parse_args()
 
     if opts.long_help:
-        print __doc__
+        print(__doc__)
         sys.exit(0)
 
     if not files:

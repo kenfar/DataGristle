@@ -12,7 +12,7 @@ import os
 from pprint import pprint
 
 #--- datagristle modules ------------------
-import common as comm
+import datagristle.common as comm
 
 QUOTE_NONE       = csv.QUOTE_NONE
 QUOTE_MINIMAL    = csv.QUOTE_MINIMAL

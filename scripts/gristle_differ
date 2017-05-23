@@ -166,11 +166,12 @@ sys.path.append('../')
 sys.path.append('../../')
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 
-import gristle.common       as comm
-from   gristle.common  import abort
-import gristle.file_delta   as gdelta
-import gristle.file_sorter  as gsorter
-import gristle.file_deduper as gdeduper
+import datagristle.common       as comm
+from   datagristle.common  import abort
+import datagristle.file_type    as gftype
+import datagristle.file_delta   as gdelta
+import datagristle.file_sorter  as gsorter
+import datagristle.file_deduper as gdeduper
 
 #Ignore SIG_PIPE and don't throw exceptions on it... 
 #(http://docs.python.org/library/signal.html)
@@ -212,23 +213,23 @@ def main():
             and os.path.getsize(config['files'][1]) == 0):
         return 1
 
-    dialect = comm.get_dialect(config['files'], config['delimiter'], config['quoting'],
-                               config['quotechar'], config['recdelimiter'], config['hasheader'])
+    dialect = gftype.get_dialect(config['files'], config['delimiter'], config['quoting'],
+                                 config['quotechar'], config['recdelimiter'], config['hasheader'])
 
     delta   = delta_runner(config, dialect)
 
     if config['stats']:
-        print
-        print 'Read Stats:'
-        print '   File0/oldfile records:  %d' % delta.old_read_cnt
-        print '   File1/newfile records:  %d' % delta.new_read_cnt
-        print
-        print 'Write Stats:'
-        print '   *.delete records:       %d' % delta.out_counts['delete']
-        print '   *.insert records:       %d' % delta.out_counts['insert']
-        print '   *.same records:         %d' % delta.out_counts['same']
-        print '   *.chgold records:       %d' % delta.out_counts['chgold']
-        print '   *.chgnew records:       %d' % delta.out_counts['chgnew']
+        print('')
+        print('Read Stats:')
+        print('   File0/oldfile records:  %d' % delta.old_read_cnt)
+        print('   File1/newfile records:  %d' % delta.new_read_cnt)
+        print('')
+        print('Write Stats:')
+        print('   *.delete records:       %d' % delta.out_counts['delete'])
+        print('   *.insert records:       %d' % delta.out_counts['insert'])
+        print('   *.same records:         %d' % delta.out_counts['same'])
+        print('   *.chgold records:       %d' % delta.out_counts['chgold'])
+        print('   *.chgnew records:       %d' % delta.out_counts['chgnew'])
 
     return 0
 
@@ -247,9 +248,9 @@ def delta_runner(config, dialect):
     def convert_cols(col_title, cols):
         try:
             off0     = comm.colnames_to_coloff0(config['col_names'], cols)
-        except (KeyError, ValueError), e:
-            print e
-            print 'Column lookup list: %s' % ','.join(cols)
+        except (KeyError, ValueError) as e:
+            print(e)
+            print('Column lookup list: %s' % ','.join(cols))
             abort('Invalid config cols for %s: ' % col_title)
         return off0
 

@@ -20,21 +20,22 @@ import glob
 import errno
 import shutil
 from pprint import pprint as pp
+from os.path import dirname, join as pjoin
 
 import envoy
 import yaml
 
 #--- gristle modules -------------------
-import test_tools as tt
-
-# get pathing set for running code out of project structure & testing it via tox
-data_dir    = os.path.join(tt.get_app_root(), 'data')
-script_dir  = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-PGM         = os.path.join(script_dir, 'gristle_dir_merger')
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as tt
+script_dir = dirname(dirname(os.path.realpath((__file__))))
+data_dir   = pjoin(dirname(script_dir), 'data')
+PGM        = pjoin(script_dir, 'gristle_dir_merger')
 sys.path.insert(0, tt.get_app_root())
 
-import gristle.common  as comm
-from gristle.common import dict_coalesce
+import datagristle.common  as comm
+from datagristle.common import dict_coalesce
+
 
 def rmtree_ignore_error(path):
     """ Have to do this a lot, moving this into a function to save lines of code.
@@ -58,9 +59,9 @@ class TestEmpties(object):
         shutil.rmtree(self.dest_dir)
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
     def test_empty_to_empty(self):
 
@@ -72,7 +73,7 @@ class TestEmpties(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print '\n command: %s' % self.cmd
+        print('\n command: %s' % self.cmd)
 
         r = envoy.run(self.cmd)
         self.get_outputs(r)
@@ -91,7 +92,7 @@ class TestEmpties(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print '\n command: %s' % self.cmd
+        print('\n command: %s' % self.cmd)
 
         r = envoy.run(self.cmd)
         self.get_outputs(r)
@@ -124,17 +125,17 @@ class TestEmpties(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print '\n command: %s' % self.cmd
+        print('\n command: %s' % self.cmd)
 
         r = envoy.run(self.cmd)
         self.get_outputs(r)
 
-        print 'dest_dir: %s' % self.dest_dir
-        print os.listdir(self.dest_dir)
-        print 'dest sub dir: %s' % os.path.join(self.dest_dir, 'mysubdir')
-        print 'dest sub contents: '
+        print('dest_dir: %s' % self.dest_dir)
+        print(os.listdir(self.dest_dir))
+        print('dest sub dir: %s' % os.path.join(self.dest_dir, 'mysubdir'))
+        print('dest sub contents: ')
         #print os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
-        print 'is a file? %s' % os.path.isfile(os.path.join(self.dest_dir, 'mysubdir'))
+        print('is a file? %s' % os.path.isfile(os.path.join(self.dest_dir, 'mysubdir')))
 
         assert r.status_code      == 0
         assert 'mysubdir' in os.listdir(self.dest_dir)
@@ -411,10 +412,10 @@ class TestMatchOnNameAndMd5Extras(object):
         rmtree_ignore_error(self.source_dir)
 
     def get_outputs(self, response):
-        print ' '.join(response.command)
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(' '.join(response.command))
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
     def assert_results(self, envoy_result, source_files=None, dest_files=None,
                        source_subdir_exists=False):
@@ -504,9 +505,9 @@ class TestActionUseBoth(object):
         rmtree_ignore_error(self.source_dir)
 
     def print_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
     def assert_results(self, envoy_result, source_files=None, dest_files=None,
                        source_subdir_exists=False):
@@ -587,9 +588,9 @@ class TestOnSymLinks(object):
         rmtree_ignore_error(self.source_dir)
 
     def print_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
     def assert_results(self, envoy_result, source_files=None, dest_files=None,
                        source_subdir_exists=False):
@@ -671,9 +672,9 @@ class TestDryRun(object):
         shutil.rmtree(self.dest_dir)
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
     def test_nonempty_subdir_to_nonempty_dir(self):
         """      starting dirs & files:
@@ -702,7 +703,7 @@ class TestDryRun(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print '\n command: %s' % self.cmd
+        print('\n command: %s' % self.cmd)
 
         r = envoy.run(self.cmd)
         self.get_outputs(r)
@@ -727,9 +728,9 @@ class TestDeepDirectory(object):
         rmtree_ignore_error(self.source_dir)
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
     def test_basics(self):
         """      starting dirs & files:
@@ -866,7 +867,7 @@ def get_cmd(source_dir, dest_dir, match_on, on_match, on_partial_match=None):
                      --log-level         debug                \
                      -r                                       \
                """ % locals()
-        print '\n command: %s' % cmd
+        print('\n command: %s' % cmd)
         return cmd
 
 
@@ -900,9 +901,9 @@ def assert_results(env_result, source_dir, dest_dir, source_files=None, dest_fil
 
 
 def print_outputs(response):
-    print response.status_code
-    print response.std_out
-    print response.std_err
+    print(response.status_code)
+    print(response.std_out)
+    print(response.std_err)
 
 
 

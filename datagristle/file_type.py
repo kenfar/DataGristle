@@ -5,20 +5,22 @@
     todo:
       - explore details around quoting flags - they seem very inaccurate
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011 Ken Farmer
 """
 
 #--- standard modules ------------------
+import os
+import sys
 import fileinput
 import collections
 import csv
-import os
+import errno
+from os.path import isfile
 from pprint import pprint
 
 #--- datagristle modules ------------------
-import common as comm
-#import datagristle.common as comm
+import datagristle.common as comm
 
 
 def get_quote_number(quote_name):
@@ -267,7 +269,7 @@ class FileTyper(object):
         """
         # our solution isn't accurate enough to show yet, so for now just 
         # set to 'csv':
-        return 'csv' 
+        return 'csv'
 
         #todo:  make this smarter:
         #       - Since we're not using a csv dialect we could have control 
@@ -332,8 +334,80 @@ class FileTyper(object):
 
 
 
+def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader):
+    """ Gets a csv dialect for a csv file or set of attributes.
+
+    If files are provided and are not '-' -then use files and run file_type.FileTyper
+    to get csv - while passing rest of args to FileTyper.  Otherwise, manually construct
+    csv dialect from non-files arguments.
+
+    Args:
+        files: a list of files to analyze.  Analyze the minimum number of recs
+               from the first file to determine delimiter.
+        delimiter: a single character
+        quotename: one of QUOTE_MINIMAL, QUOTE_NONE, QUOTE_ALL, QUOTE_NONNUMERIC
+        quotechar: a single character
+        recdelimiter: a single character
+        hasheader: a boolean
+    Returns:
+        csv dialect object
+    Raises:
+        sys.exit - if all files are empty
+    """
+    assert isinstance(files, list)
+    dialect = None
+
+    if files[0] == '-':
+        # dialect parameters needed for stdin - since the normal code can't
+        # analyze this data.
+        dialect                = csv.Dialect
+        dialect.delimiter      = delimiter
+        dialect.quoting        = get_quote_number(quotename)
+        dialect.quotechar      = quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
+        dialect.hasheader      = hasheader
+    else:
+        for fn in files:
+            if not isfile(fn):
+                raise ValueError('file does not exist: %s' % fn)
+            my_file   = FileTyper(fn ,
+                                  delimiter          ,
+                                  recdelimiter       ,
+                                  hasheader          ,
+                                  quoting=quotename  ,
+                                  quote_char=quotechar,
+                                  read_limit=5000    )
+            try:
+                my_file.analyze_file()
+                dialect = my_file.dialect
+                break
+            except IOErrorEmptyFile:
+                continue
+            else:
+                # todo: is this a typo?
+                sys.exit(errno.ENODATA)
+        # Don't exit with ENODATA unless all files are empty:
+        if dialect is None:
+            sys.exit(errno.ENODATA)
+
+    # validate quoting & assign defaults:
+    if dialect.quoting is None:
+        dialect.quoting = file_type.get_quote_number('quote_minimal')
+    assert dialect.quoting is not None and comm.isnumeric(dialect.quoting)
+
+    # validate delimiter & assign defaults:
+    if dialect.delimiter is None:
+        raise ValueError("Invalid Delimiter: %s" % dialect.delimiter)
+
+    return dialect
+
+
 
 class IOErrorEmptyFile(IOError):
     """Error due to empty file
     """
     pass
+
+
+
+

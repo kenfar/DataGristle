@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
 
@@ -11,18 +11,21 @@ import random
 import csv
 import pytest
 from pprint import pprint as pp
+from os.path import dirname, join as pjoin
 
-import test_tools
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
+pgm_path = dirname(dirname(os.path.realpath((__file__))))
+mod = test_tools.load_script(pjoin(pgm_path, 'gristle_freaker'))
 
-mod = test_tools.load_script('gristle_freaker')
 
-
-
+# Taken out because I actually want those prints sometimes, plus it
+# won't work with wb on python3 anyhow
 # shut off the printing of warnings & info statements from module
-old_stdout = sys.stdout
-old_stderr = sys.stderr
-null       = open(os.devnull, 'wb')
-sys.stdout = sys.stderr = null
+#old_stdout = sys.stdout
+#old_stderr = sys.stderr
+#null       = open(os.devnull, 'wb')
+#sys.stdout = sys.stderr = null
 
 
 def generate_col_freaker_dependencies():
@@ -65,7 +68,7 @@ class Test_build_freq(object):
     def setup_method(self, method):
         self.dialect                = csv.Dialect
         self.dialect.delimiter      = '|'
-        self.dialect.quoting        = True
+        self.dialect.quoting        = csv.QUOTE_MINIMAL
         self.dialect.quotechar      = '"'
         self.dialect.has_header     = False
         self.dialect.lineterminator = '\n'
@@ -258,7 +261,6 @@ class Test_dict_sorter(object):
     def test_fs_03_empty_file(self):
         field_freq = {}
         out_freq = self.col_freak._dict_sorter(field_freq, sortcol=1, revorder=True)
-        #print out_freq
         assert out_freq == []
 
 

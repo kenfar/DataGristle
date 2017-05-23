@@ -22,7 +22,8 @@ import envoy
 import yaml
 
 #--- gristle modules -------------------
-import test_tools
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
 
 # get pathing set for running code out of project structure & testing it via tox
 data_dir    = pjoin(test_tools.get_app_root(), 'data')
@@ -30,8 +31,8 @@ script_dir  = dirname(os.path.dirname(os.path.realpath((__file__))))
 fq_pgm      = pjoin(script_dir, 'gristle_validator')
 sys.path.insert(0, test_tools.get_app_root())
 
-import gristle.common  as comm
-from gristle.common import dict_coalesce
+import datagristle.common  as comm
+from datagristle.common import dict_coalesce
 
 
 
@@ -46,7 +47,7 @@ def _generate_foobarbatz_file(recs, dirname, quoting='quote_none'):
         elif quoting == 'quote_none':
             rec = 'foo,bar,batz,1.9,2,%d' % rec
         else:
-            raise ValueError, "Invalid quoting: %s" % quoting
+            raise ValueError("Invalid quoting: %s" % quoting)
         fp.write('%s\n' % rec)
     fp.close()
     return fqfn
@@ -186,9 +187,9 @@ class TestFieldCount(object):
         ###test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
         good_recs = []
         for rec in fileinput.input(self.outgood_fqfn):
@@ -220,12 +221,12 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
-        print '\n command: %s' % self.cmd
+        print('\n command: %s' % self.cmd)
 
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code      == 0
         assert len(self.err_output)  == 0
@@ -246,11 +247,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code     == 0
         assert len(self.err_output) == 0
@@ -269,11 +270,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code      == errno.EBADMSG
         assert len(self.err_output)  == 7
@@ -302,11 +303,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code      == 0
         assert len(self.err_output)  == 0
@@ -338,11 +339,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code == errno.EBADMSG
         assert len(self.err_output)  >  0
@@ -394,11 +395,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': in_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code      == 0
         assert len(self.err_output)  == 0
@@ -418,11 +419,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': in_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code      == 0
         assert len(self.err_output)  == 0
@@ -443,11 +444,11 @@ class TestFieldCount(object):
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': in_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
+        print(self.std_out)
+        print(self.std_err)
 
         assert self.status_code == 0
         assert len(self.err_output)  == 0
@@ -480,8 +481,8 @@ class TestEmptyFile(object):
                                                        self.outgood_fqfn,
                                                        self.outerr_fqfn)
         r = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == errno.ENODATA
 
         out_recs  = []
@@ -503,8 +504,8 @@ class TestEmptyFile(object):
         cmd = "cat %s | %s -d',' -f 5 --outgood %s --outerr %s" % \
                 (self.empty_fqfn, fq_pgm, self.outgood_fqfn, self.outerr_fqfn)
         r = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == errno.ENODATA
 
         out_recs  = []
@@ -537,9 +538,9 @@ class TestSchemaValidation(object):
         shutil.rmtree(self.tmp_dir)
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
         good_recs = []
         for rec in fileinput.input(self.outgood_fqfn):
@@ -572,12 +573,12 @@ class TestSchemaValidation(object):
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn,
                           'schema':  self.schema_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
-        print self.std_out
-        print self.std_err
-        print self.err_output
+        print(self.std_out)
+        print(self.std_err)
+        print(self.err_output)
 
         assert self.status_code      == 0
         assert len(self.err_output)  == 0
@@ -620,7 +621,7 @@ class TestValidatingTheValidator(object):
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
         #pp(self.err_output)
@@ -649,7 +650,7 @@ class TestValidatingTheValidator(object):
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
 
@@ -682,7 +683,7 @@ class TestValidatingTheValidator(object):
                           'outerr':  self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
-        print self.cmd
+        print(self.cmd)
         r = envoy.run(self.cmd)
         self.get_outputs(r)
 
@@ -696,9 +697,9 @@ class TestValidatingTheValidator(object):
         assert len(self.good_output) == 0
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
         good_recs = []
         for rec in fileinput.input(self.outgood_fqfn):
@@ -735,9 +736,9 @@ class TestCSVDialects(object):
         shutil.rmtree(self.tmp_dir)
 
     def get_outputs(self, response):
-        print response.status_code
-        print response.std_out
-        print response.std_err
+        print(response.status_code)
+        print(response.std_out)
+        print(response.std_err)
 
         good_recs = []
         for rec in fileinput.input(self.outgood_fqfn):

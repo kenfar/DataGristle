@@ -11,21 +11,22 @@ import random
 import csv
 import pytest
 from pprint import pprint as pp
+from os.path import dirname, join as pjoin
 
-import test_tools
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-mod = test_tools.load_script('gristle_freaker')
+pgm_path = dirname(dirname(os.path.realpath((__file__))))
+mod = test_tools.load_script(pjoin(pgm_path, 'gristle_freaker'))
 
 
 gen_rec_number     = 1000000   # 1 Million
 
 # shut off the printing of warnings & info statements from module
-old_stdout = sys.stdout
-old_stderr = sys.stderr
-null       = open(os.devnull, 'wb')
-sys.stdout = sys.stderr = null
-
+#old_stdout = sys.stdout
+#old_stderr = sys.stderr
+#null       = open(os.devnull, 'wb')
+#sys.stdout = sys.stderr = null
 
 
 # create test plan
@@ -34,7 +35,7 @@ sys.stdout = sys.stderr = null
 def generate_col_freaker_dependencies():
     dialect                = csv.Dialect
     dialect.delimiter      = '|'
-    dialect.quoting        = True
+    dialect.quoting        = csv.QUOTE_MINIMAL
     dialect.quotechar      = '"'
     dialect.has_header     = False
     dialect.lineterminator = '\n'
@@ -71,7 +72,7 @@ class Test_build_freq(object):
     def setup_method(self, method):
         self.dialect                = csv.Dialect
         self.dialect.delimiter      = '|'
-        self.dialect.quoting        = True
+        self.dialect.quoting        = csv.QUOTE_MINIMAL
         self.dialect.quotechar      = '"'
         self.dialect.has_header     = False
         self.dialect.lineterminator = '\n'

@@ -11,11 +11,15 @@ import random
 import csv
 import optparse
 import pytest
+from os.path import dirname, join as pjoin
 from pprint import pprint as pp
-import test_tools
 
-mod = test_tools.load_script('gristle_file_converter')
+pgm_path = dirname(dirname(os.path.realpath(__file__)))
+root_path = dirname(pgm_path)
+sys.path.insert(0, root_path)
 
+import datagristle.test_tools as test_tools
+mod = test_tools.load_script(pjoin(pgm_path, 'gristle_file_converter'))
 
 
 

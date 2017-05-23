@@ -14,20 +14,15 @@ import csv
 import pytest
 import shutil
 from pprint import pprint as pp
+from os.path import dirname, join as pjoin
 
-import test_tools
+pgm_path = dirname(dirname(os.path.realpath(__file__)))
+root_path = dirname(pgm_path)
 
-sys.path.append('../../../')
-mod = test_tools.load_script('gristle_processor')
+sys.path.insert(0, root_path)
+import datagristle.test_tools as test_tools
 
-# shut off the printing of warnings & info statements from module
-#old_stdout = sys.stdout
-#old_stderr = sys.stderr
-#null       = open(os.devnull, 'wb')
-#sys.stdout = sys.stderr = null
-
-
-
+mod = test_tools.load_script(pjoin(pgm_path, 'gristle_processor'))
 
 
 class Test_ProcessDir(object):
@@ -161,9 +156,9 @@ class Test_FileAnalyzer_check_times(object):
         curr_time  = time.time()
         touch(fqfn, (curr_time-100, curr_time-100))
         file_analyzer = mod.FileAnalyzer({}, {})
-        print '--- 0s ---'
+        print('--- 0s ---')
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '0s')
-        print '--- 10s ---'
+        print('--- 10s ---')
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '10s')
 
     def test_mtime_op_argdate_200s_vs_100sfile(self):
@@ -171,7 +166,7 @@ class Test_FileAnalyzer_check_times(object):
         curr_time  = time.time()
         touch(fqfn, (curr_time-100, curr_time-100))
         file_analyzer = mod.FileAnalyzer({}, {})
-        print '--- 200s ---'
+        print('--- 200s ---')
         assert file_analyzer._mtime_op_argdate(fqfn, 'lt', '200s') is False
 
     def test_mtime_op_argdate_10dfile(self):
@@ -422,7 +417,7 @@ class Test_get_regex_substring(object):
 
 
 def touch(fname, times=None):
-    with file(fname, 'a'):
+    with open(fname, 'a'):
         os.utime(fname, times)
 
 def make_file_date(self, days):

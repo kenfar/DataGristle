@@ -22,15 +22,16 @@ import yaml as yaml
 import envoy
 
 #--- gristle modules -------------------
-import test_tools
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
 
 # get script_diring set for running code out of project structure & testing it via tox
 script_dir   = dirname(dirname(os.path.realpath((__file__))))
 sys.path.insert(0, test_tools.get_app_root())
 
-import gristle.common  as comm
-import gristle.csvhelper as csvhelp
-from gristle.common import dict_coalesce
+import datagristle.common  as comm
+import datagristle.csvhelper as csvhelp
+from datagristle.common import dict_coalesce
 
 FIELDS = {'pkid':0, 'vid':1, 'from_epoch':2, 'to_epoch':3, 'foo':4, 'bar':5, 'del_flag':6,
           'gor':7, 'org':8, 'horn':9, 'mook':10, 'hostname':11}
@@ -46,9 +47,9 @@ class TestMillionRows(object):
         self.dialect    = csvhelp.create_dialect(',', csvhelp.QUOTE_NONE, False)
 
         start_time = time.time()
-        print '\ncreating test files - starting'
+        print('\ncreating test files - starting')
         self.files = CreateTestFiles(1000000, self.temp_dir)
-        print 'creating test files - done with duration of %d seconds' % int(time.time() - start_time)
+        print('creating test files - done with duration of %d seconds' % int(time.time() - start_time))
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -85,11 +86,11 @@ class TestMillionRows(object):
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn,
                      start_time)
         r = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
-        print 'running gristle_differ - starting'
-        print 'running gristle_differ - done with duration of %d seconds' % int(time.time() - start_time)
-        print 'running assertions     - starting'
+        print(r.std_out)
+        print(r.std_err)
+        print('running gristle_differ - starting')
+        print('running gristle_differ - done with duration of %d seconds' % int(time.time() - start_time))
+        print('running assertions     - starting')
         self._print_counts()
 
         #--- first check return code
@@ -158,10 +159,10 @@ class TestMillionRows(object):
         actual_same_cnt   = get_file_count(pjoin(self.temp_dir, 'new.csv.same'), self.dialect)
         actual_chgold_cnt = get_file_count(pjoin(self.temp_dir, 'new.csv.chgold'), self.dialect)
         actual_chgnew_cnt = get_file_count(pjoin(self.temp_dir, 'new.csv.chgnew'), self.dialect)
-        print 'inserts - expected: %10d - found: %d' % (self.files.insert_cnt, actual_insert_cnt)
-        print 'deletes - expected: %10d - found: %d' % (self.files.delete_cnt, actual_delete_cnt)
-        print 'sames   - expected: %10d - found: %d' % (self.files.same_cnt, actual_same_cnt)
-        print 'chg     - expected: %10d - found: %d and %d' % (self.files.chg_cnt, actual_chgold_cnt, actual_chgnew_cnt)
+        print('inserts - expected: %10d - found: %d' % (self.files.insert_cnt, actual_insert_cnt))
+        print('deletes - expected: %10d - found: %d' % (self.files.delete_cnt, actual_delete_cnt))
+        print('sames   - expected: %10d - found: %d' % (self.files.same_cnt, actual_same_cnt))
+        print('chg     - expected: %10d - found: %d and %d' % (self.files.chg_cnt, actual_chgold_cnt, actual_chgnew_cnt))
 
 
 def get_min_id(min_id, curr_id):
@@ -206,7 +207,6 @@ class Config(object):
 
     def add_property(self, kwargs):
         for key in kwargs:
-            #print key
             self.config[key] = kwargs[key]
 
     def add_assignment(self, dest_file, dest_field, src_type, src_val, src_file, src_field):

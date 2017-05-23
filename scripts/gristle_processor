@@ -47,8 +47,8 @@ signal(SIGPIPE, SIG_DFL)
 
 #--- gristle modules -------------------
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import gristle.file_type           as file_type
-import gristle.common              as comm
+import datagristle.file_type           as file_type
+import datagristle.common              as comm
 
 
 logger = None
@@ -195,7 +195,7 @@ class FileActioner(object):
         if os.path.isfile(fqfn):
             try:
                 os.remove(fqfn)
-            except OSError, e:
+            except OSError as e:
                 if e[0] == errno.ENOENT:
                     logger.warning('Delete failed - file already gone: %s' % fqfn)
                 else:
@@ -203,7 +203,7 @@ class FileActioner(object):
         elif os.path.isdir(fqfn):
             try:
                 shutil.rmtree(fqfn)
-            except OSError, e:
+            except OSError as e:
                 if e[0] == errno.ENOENT:
                     logger.warning('Delete failed - dir already gone: %s' % fqfn)
                 else:
@@ -211,7 +211,7 @@ class FileActioner(object):
 
     def _action_list(self, fqfn):
         logger.debug('%s on file %s' % ('list', self.file_name))
-        print fqfn
+        print(fqfn)
 
 
 
@@ -625,18 +625,18 @@ def abort(summary, details, rc=1):
     print('=' * 79)
 
     #---prints message within = characters, assumes it is kinda short:
-    print '=== ',
-    print '%-69.69s' % summary,
+    print('=== ', end='')
+    print('%-69.69s' % summary, end='')
     print(' ===')
     if logger:
         logger.critical(summary)
 
     #---prints exception msg, breaks it into multiple lines:
     for i in range(int(math.ceil(len(details)/68))):
-        print '=== ',
-        print '%-69.69s' % details[i*68:(i*68)+68],
-        print ' ==='
-    if logger: 
+        print('=== ', end='')
+        print('%-69.69s' % details[i*68:(i*68)+68], end='')
+        print(' ===')
+    if logger:
         logger.critical(details)
 
     #---prints bottom line:
@@ -823,7 +823,7 @@ def get_args():
     args = parser.parse_args()
 
     if args.long_help:
-        print __doc__
+        print(__doc__)
         sys.exit(0)
 
 

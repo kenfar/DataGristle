@@ -21,10 +21,10 @@ from pprint import pprint as pp
 from os.path import join as pjoin, dirname
 
 sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
-import test_tools
+import datagristle.test_tools as test_tools
 
 
-import gristle.file_type as file_type
+import datagristle.file_type as file_type
 script_path = dirname(dirname(os.path.realpath((__file__))))
 
 
@@ -96,8 +96,8 @@ class Test_empty_file(object):
         test_tools.touch(fqfn)
         cmd = '%s %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == errno.ENODATA
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'record_count')  is None
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     is None
@@ -107,8 +107,8 @@ class Test_empty_file(object):
         self.create_empty_file_with_header(fqfn)
         cmd = '%s %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'record_count')  == '1'
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     == 'True'
@@ -118,8 +118,8 @@ class Test_empty_file(object):
         self.create_empty_file_with_header(fqfn)
         cmd = '%s %s --outputformat=parsable --hasheader' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'record_count')  == '1'
         assert get_value(r.std_out, 'file_analysis_results', 'main', 'main', 'hasheader')     == 'True'
@@ -218,7 +218,7 @@ class Test_output_formatting_and_contents(object):
         assert self.field_struct['field_1']['main']['wrong_field_cnt'] == '0'
         assert self.field_struct['field_1']['main']['mean']            == '8.2'
         assert self.field_struct['field_1']['main']['median']          == '6.0'
-        assert self.field_struct['field_1']['main']['std_dev']         == '5.74108003776'
+        assert self.field_struct['field_1']['main']['std_dev']         == '5.74108003776293'
         assert self.field_struct['field_1']['main']['variance']        == '32.96'
 
     def test_top_value_info(self):
@@ -261,8 +261,8 @@ class Test_read_limit(object):
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dirname=self.tmp_dir)
         cmd = '%s %s --read-limit 4 --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
 
         mydialect                = csv.Dialect
@@ -346,8 +346,8 @@ class Test_max_freq(object):
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dirname=self.tmp_dir)
         cmd = '%s %s --max-freq 10  --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         r    = envoy.run(cmd)
-        print r.std_out
-        print r.std_err
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
 
         mydialect                = csv.Dialect

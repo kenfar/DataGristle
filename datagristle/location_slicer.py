@@ -95,7 +95,7 @@ class SpecProcessor(object):
         """
         if not is_sequence(spec):
             raise ValueError('spec argument is not a sequence object')
-        print(type(spec))
+        ###print(type(spec))
 
         def _is_invalid_part(part):
             try:

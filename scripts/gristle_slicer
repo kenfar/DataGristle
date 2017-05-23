@@ -78,6 +78,7 @@
 #--- standard modules ------------------
 from __future__ import division
 import sys
+import io
 import optparse
 import csv
 import fileinput
@@ -93,8 +94,8 @@ signal(SIGPIPE,SIG_DFL)
 # set up a custom path - just for running unittests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gristle.file_type           as file_type
-import gristle.location_slicer     as slicer
+import datagristle.file_type           as file_type
+import datagristle.location_slicer     as slicer
 
 debug = False
 
@@ -112,7 +113,7 @@ def main():
 
     if files:
         if not os.path.exists(files[0]):
-            print 'ERROR: file %s does not exist' % files[0]
+            print('ERROR: file %s does not exist' % files[0])
             sys.exit(1)
 
     dialect              = get_input_file_info(files, opts)
@@ -122,16 +123,28 @@ def main():
        = setup_slicer(opts, files, dialect)
 
     rec_cnt  = -1
-    for rec in csv.reader(fileinput.input(files), dialect):
-        rec_cnt += 1
-        if not rec:
-            break
-        new_rec  = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                               rec, incl_col_slicer, excl_col_slicer)
-        if new_rec:
-            write_rec(csv_writer, new_rec, rec_cnt)
+    def read_recs(reader):
+        nonlocal rec_cnt
+        for rec in reader:
+            rec_cnt += 1
+            new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
+                                rec, incl_col_slicer, excl_col_slicer)
+            if new_rec:
+                write_rec(csv_writer, new_rec, rec_cnt)
 
-    fileinput.close()
+    if files:
+        for filename in files:
+            with open(filename, 'rt', newline='', encoding='utf-8') as infile:
+                reader = csv.reader(infile, dialect=dialect)
+                read_recs(reader)
+    elif not os.isatty(0):
+        input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
+        reader = csv.reader(input_stream, dialect=dialect)
+        read_recs(reader)
+    else:
+        print('ERROR: no data found')
+
+
     if opts.output != '-':
         outfile.close()
 
@@ -172,7 +185,7 @@ def get_input_file_info(input_files, opts):
             return 1
 
     if debug:
-        print '---- input dialect -----'
+        print('---- input dialect -----')
         pprint(vars(dialect))
 
     return dialect
@@ -186,7 +199,7 @@ def get_output_file_info(opts, dialect):
     if opts.output == '-':
         outfile = sys.stdout
     else:
-        outfile = open(opts.output, "wb")
+        outfile = open(opts.output, "wt", encoding='utf-8')
 
     csv_writer = csv.writer(outfile, dialect=dialect)
     return outfile, csv_writer
@@ -218,7 +231,7 @@ def setup_slicer(opts, files, dialect):
     col_cnt = None
     if incl_rec_slicer.has_negatives or excl_rec_slicer.has_negatives:
         if not files and not opts.rec_count:
-            print 'negative record slicing with stdin requires record_count option'
+            print('negative record slicing with stdin requires record_count option')
             return 2
         else:
             rec_cnt, col_cnt = get_file_counts(files, dialect, rec=True)
@@ -227,7 +240,7 @@ def setup_slicer(opts, files, dialect):
 
     if incl_col_slicer.has_negatives or excl_col_slicer.has_negatives:
         if not files and not opts.column_count:
-            print 'negative column slicing with stdin requires column_count option'
+            print('negative column slicing with stdin requires column_count option')
             return 2
         elif not col_cnt:
             dummy, col_cnt = get_file_counts(files, dialect, col=True)
@@ -260,7 +273,7 @@ def get_file_counts(files, dialect, rec=False, col=False):
     elif col:
         return None, field_cnt
     else:
-        print 'logic error in get_file_counts - '
+        print('logic error in get_file_counts - ')
         sys.exit(1)
 
 
@@ -322,13 +335,13 @@ def write_rec(outfile, fields, row_cnt):
     try:
         outfile.writerow(fields)
     except csv.Error as e:
-        print
+        print('')
         print('ERROR from csv module')
         print('This could be a problem with dirty data.  Consider providing'
               ' quoting and delimiter manually or inspecting file with'
               ' gristle_validator.')
         print('Error encountered on input row: %d (offset from 0)' % row_cnt)
-        print
+        print('')
         raise
 
 
@@ -394,7 +407,7 @@ def get_opts_and_args():
     (opts, files) = parser.parse_args()
 
     if opts.long_help:
-        print __doc__
+        print(__doc__)
         sys.exit(0)
 
     if not opts.delimiter:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-   See the file "LICENSE" for the full license governing this code. 
+   See the file "LICENSE" for the full license governing this code.
    Copyright 2011,2012,2013 Ken Farmer
 """
 
@@ -12,9 +12,13 @@ import csv
 import optparse
 import pytest
 from pprint import pprint as pp
-import test_tools
+from os.path import dirname, join as pjoin
 
-mod = test_tools.load_script('gristle_differ')
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
+
+pgm_path = dirname(dirname(os.path.realpath((__file__))))
+mod = test_tools.load_script(pjoin(pgm_path, 'gristle_differ'))
 
 
 class Test_get_assign_with_offsets_for_names(object):

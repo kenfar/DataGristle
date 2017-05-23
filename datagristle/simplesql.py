@@ -15,7 +15,6 @@
     Copyright 2011,2012,2013 Ken Farmer
 """
 
-from __future__ import division
 from sqlalchemy import exc
 from sqlalchemy import UniqueConstraint
 #from pprint import pprint
