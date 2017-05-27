@@ -44,7 +44,7 @@ class TestMillionRows(object):
     """
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect(',', csvhelp.QUOTE_NONE, False)
+        self.dialect    = csvhelp.create_dialect(',', csv.QUOTE_NONE, False)
 
         start_time = time.time()
         print('\ncreating test files - starting')
@@ -62,7 +62,7 @@ class TestMillionRows(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':','})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': sorted(FIELDS, key=FIELDS.get)})
         config.add_property({'key_cols':  ['pkid']})
         config.add_property({'ignore_cols': ['vid','from_epoch','to_epoch','hostname']})

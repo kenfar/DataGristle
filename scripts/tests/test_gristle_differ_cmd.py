@@ -38,7 +38,7 @@ class TestInvalidInput(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect('|', csvhelp.QUOTE_NONE, False)
+        self.dialect    = csvhelp.create_dialect('|', csv.QUOTE_NONE, False)
         self.dialect.delimiter = '\t'
         file1_recs = [ ['chg-row','4','14'],
                        ['del-row','6','16'],
@@ -52,7 +52,7 @@ class TestInvalidInput(object):
         self.config   = Config(self.temp_dir)
         self.config.add_property({'delimiter':'tab'})
         self.config.add_property({'hasheader':False})
-        self.config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        self.config.add_property({'quoting':csv.QUOTE_NONE})
         self.config.add_property({'col_names': ['col0', 'col1', 'col2']})
         self.config.add_property({'key_cols': ['0']})
         self.config.add_property({'compare_cols': ['2']})
@@ -101,7 +101,7 @@ class TestCommandLine(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect('|', csvhelp.QUOTE_NONE, False)
+        self.dialect    = csvhelp.create_dialect('|', csv.QUOTE_NONE, False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -294,7 +294,7 @@ class TestCommandLine(object):
         """
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'hasheader':False})
         config.write_config()
 
@@ -344,7 +344,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -385,7 +385,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -429,7 +429,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'variables': ['foo:bar', 'baz:gorilla']})
@@ -479,7 +479,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -524,7 +524,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['1']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -578,7 +578,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['1']})
         config.add_property({'variables': ['foo:7']})
@@ -625,7 +625,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0', '1']})
         config.add_property({'compare_cols': ['2','3']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -665,7 +665,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': ['col0', 'col1', 'col2']})
         config.add_property({'key_cols': ['col0']})
         config.add_property({'compare_cols': ['col2']})
@@ -706,7 +706,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': ['col0', 'col1', 'col2', 'col3']})
         config.add_property({'key_cols': ['col0']})
         config.add_property({'ignore_cols': ['col1', 3]})
@@ -747,7 +747,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': ['col0', 'col1', 'col2']})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
