@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Used to hold all common  general-purpose functions and classes
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011 Ken Farmer
 """
 import sys
@@ -11,11 +11,13 @@ import errno
 import csv
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
+from typing import List, Dict, Any, Optional, Tuple, Union
 
 from datagristle._version import __version__
 
 
-def isnumeric(number):
+
+def isnumeric(number: Any) -> bool:
     """ Tests whether or not the input is numeric.
         Args:
            - number:  a string containing a number that may be either an integer
@@ -29,7 +31,8 @@ def isnumeric(number):
         return False
 
 
-def get_common_key(count_dict):
+
+def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float]:
     """  Provides the most common key in a dictionary as well as its frequency
          expressed as a percentage.  For example:
          cd = ['car':    7
@@ -43,12 +46,12 @@ def get_common_key(count_dict):
     total_values = sum(count_dict.values())
     most_common_key       = sorted_keys[-1]
     most_common_key_value = count_dict[sorted_keys[-1]]
-    most_common_pct       = most_common_key_value / total_values
+    most_common_pct       = most_common_key_value / total_values  # type: ignore
     return most_common_key, most_common_pct
 
 
 
-def coalesce(default, *args):
+def coalesce(default: Any, *args):
     """ Returns the first non-None value.
         If no non-None args exist, then return default.
     """
@@ -58,14 +61,14 @@ def coalesce(default, *args):
     return default
 
 
-def dict_coalesce(struct, key, default=None):
+def dict_coalesce(struct: Dict, key: Any, default: Any=None):
     try:
         return struct[key]
     except KeyError:
         return default
 
 
-def ifprint(value, string, *args):
+def ifprint(value, string: str, *args):
     if value is not None:
         print(string % args)
 
@@ -188,7 +191,7 @@ class ArgProcessor(object):
         self.parser.add_argument('--config-fn',
                 help=help_info)
 
-    def add_option_logging(self, help_msg=None):
+    def add_option_logging(self, help_msg: str=None):
         """
         """
         self.parser.add_argument('--log-level',
@@ -204,8 +207,7 @@ class ArgProcessor(object):
                             dest='log_to_console',
                             help='Turns off printing of logs to the console')
 
-
-    def add_positional_file_args(self, stdin=True):
+    def add_positional_file_args(self, stdin: bool=True):
         """
         """
         if stdin is True:
@@ -234,6 +236,7 @@ class ArgProcessor(object):
         pass
 
 
+
 class DelimiterAction(argparse.Action):
     """ An argparse delimiter action to fix unprintable delimiter values.
     """
@@ -242,7 +245,8 @@ class DelimiterAction(argparse.Action):
         setattr(namespace, self.dest, val)
 
 
-def dialect_del_fixer(values):
+
+def dialect_del_fixer(values: str) -> str:
     """ Fix unprintable delimiter values provided as CLI args
     """
     if values == '\\t':
@@ -257,12 +261,10 @@ def dialect_del_fixer(values):
 
 
 
-
-def abort(summary, details=None, rc=1):
+def abort(summary: str, details: Optional[str]=None, rc: int=1) -> None:
     """ Creates formatted error message within a box of = characters
         then exits.
     """
-
     #---prints top line:
     print('=' * 79)
 
@@ -270,8 +272,6 @@ def abort(summary, details=None, rc=1):
     print('=== ', end='')
     print('%-69.69s' % summary, end='')
     print(' ===')
-    if 'logger' in vars() and logger:
-        logger.critical(summary)
 
     #---prints exception msg, breaks it into multiple lines:
     if details:
@@ -279,8 +279,6 @@ def abort(summary, details=None, rc=1):
             print('=== ', end='')
             print('%-69.69s' % details[i*68:(i*68)+68], end='')
             print(' ===')
-    if 'logger' in vars() and logger:
-        logger.critical(details)
 
     #---prints bottom line:
     print('=' * 79)
@@ -289,7 +287,7 @@ def abort(summary, details=None, rc=1):
 
 
 
-def colnames_to_coloff0(col_names, lookup_list):
+def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[int]:
     """ Returns a list of collection column positions with offset of 0 for a list of
         collection column names (optional) and a lookup list of col names and/or col
         offsets.
@@ -307,9 +305,6 @@ def colnames_to_coloff0(col_names, lookup_list):
            - output will always be a list of integers
            - input column offsets can be integers (0) or strings ('0')
     """
-    assert isinstance(col_names, list)
-    assert isinstance(lookup_list, list)
-
     colname_lookup = dict((element, offset) for offset, element in enumerate(col_names))
     colname_lookup_len = len(colname_lookup)
 
@@ -324,10 +319,4 @@ def colnames_to_coloff0(col_names, lookup_list):
             if x >= colname_lookup_len:
                 raise KeyError('column number %s not found in colname list' % x)
 
-    #assert isinstance(result, list)
     return result
-
-
-
-
-

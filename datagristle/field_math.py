@@ -202,7 +202,7 @@ def get_clean_freq_dist_for_text(values):
 
 
 
-def number(val) -> bool:
+def number(val) -> Union[int, float]:
     if is_int(val):
         return int(val)
     elif is_float(val):

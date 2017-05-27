@@ -21,7 +21,7 @@ import collections
 import csv
 
 import datagristle.field_type as typer
-from typing import List
+from typing import List, Union
 from pprint import pprint as pp
 
 
@@ -31,7 +31,7 @@ MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
 
 def get_field_names(filename: str,
                     dialect,
-                    col_number=None) -> List[str]:
+                    col_number=None) -> Union[str, List[str]]:
     """ Determines names of fields
         Inputs:
         Outputs:

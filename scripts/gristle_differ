@@ -150,10 +150,11 @@ Copyright 2011,2012,2013,2014,2015 Ken Farmer
 
 """
 #--- standard modules ------------------
-from __future__ import division
 import sys, os
 import logging
 import copy
+import csv
+from typing import List, Union, Dict, Any, Tuple
 from  os.path import isfile, isdir, exists, dirname, basename
 from  os.path import join as pjoin
 from  pprint  import pprint as pp
@@ -235,7 +236,7 @@ def main():
 
 
 
-def delta_runner(config, dialect):
+def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDelta:
     """ sets up config items for delta class,
         prepares input files,
         instantiates delta class and runs comparison
@@ -305,7 +306,7 @@ def delta_runner(config, dialect):
 
 
 
-def get_assign_with_offsets_for_names(col_names, config):
+def get_assign_with_offsets_for_names(col_names: List[str], config: Dict[str, Any]) -> Dict[str, Any]:
     """ Return assignment config section after converting col names to offsets.
 
     Args:
@@ -325,7 +326,7 @@ def get_assign_with_offsets_for_names(col_names, config):
         if asgn.get("dest_field", None) is not None:
             asgn["dest_field_orig"] = asgn["dest_field"]
             asgn["dest_field"]      = comm.colnames_to_coloff0(col_names, [asgn["dest_field"]])[0]
-    #assert isinstance(new_config, list)
+    assert isinstance(new_config, list)
     return new_config
 
 
@@ -433,7 +434,7 @@ class ArgProcessor(comm.ArgProcessor):
         #self.add_option_logging()  # removing temporarily
 
 
-def setup_config(args):
+def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
     """ Manages config file reading, config consolidation and config validation.
 
     Used to consolidate CLI args & config file items into a single config
@@ -580,7 +581,7 @@ def setup_config(args):
 
 
 
-def validate_config(config):
+def validate_config(config: Dict[str, Any]):
     """ Provide additional validation of config.
 
     Purpose is to provide additional validation beyond what's done by JSON

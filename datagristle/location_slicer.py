@@ -59,7 +59,7 @@ def is_sequence(val):
     ### old python2 version - didn't work with python3 since strings startd to support __iter__
     ###return (hasattr(val, "__iter__") or (not hasattr(val, "strip") and hasattr(val, "__getitem__")))
 
-    if type(val) in (list, tuple):
+    if isinstance(val, list) or isinstance(val, tuple):
         return True
     else:
         return False
@@ -71,13 +71,13 @@ class SpecProcessor(object):
     def __init__(self, spec, spec_name):
 
         self._spec_validator(spec)      # will raise exceptions if any exist
-        self.orig_spec     = spec
-        self.spec_name     = spec_name
+        self.orig_spec = spec
+        self.spec_name = spec_name
         self.has_negatives = self._is_negative_spec(spec)
-        self.adj_spec           = None  # spec with negatives converted
+        self.adj_spec = None  # spec with negatives converted
 
         # set by calling program if it finds negative specs
-        self.location_max       = None
+        self.location_max = None
 
 
     def _is_negative_spec(self, spec):
@@ -95,7 +95,6 @@ class SpecProcessor(object):
         """
         if not is_sequence(spec):
             raise ValueError('spec argument is not a sequence object')
-        ###print(type(spec))
 
         def _is_invalid_part(part):
             try:
@@ -110,12 +109,10 @@ class SpecProcessor(object):
                 if _is_invalid_part(parts[0]):
                     raise ValueError('spec is non-numeric')
             elif len(parts) == 2:
-                if parts[0] != '':
-                    if _is_invalid_part(parts[0]):
-                        raise ValueError('spec is non-numeric')
-                if parts[1] != '':
-                    if _is_invalid_part(parts[1]):
-                        raise ValueError('spec is non-numeric')
+                if parts[0] != '' and _is_invalid_part(parts[0]):
+                    raise ValueError('spec is non-numeric')
+                if parts[1] != '' and _is_invalid_part(parts[1]):
+                    raise ValueError('spec is non-numeric')
                 if (parts[0] != '' and parts[1] != ''):
                     if int(parts[1]) >= 0:
                         if int(parts[0]) >= int(parts[1]):
@@ -186,9 +183,8 @@ class SpecProcessor(object):
             # excl critieria provided it will be None.
             return False
         else:
-            for item in self.adj_spec:
-                if self._spec_item_evaluator(item, int_location):
-                    return True
+            if any([self._spec_item_evaluator(x, int_location) for x in self.adj_spec]):
+                 return True
 
         return False
 
@@ -213,7 +209,7 @@ class SpecProcessor(object):
                 else:
                     return True
             else:
-                if ((parts[0] != '' and location < int(parts[0])) 
+                if ((parts[0] != '' and location < int(parts[0]))
                 or ( parts[1] != '' and location >= int(parts[1]))):
                     return False
                 else:

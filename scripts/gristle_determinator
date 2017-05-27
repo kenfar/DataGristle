@@ -234,25 +234,25 @@ def main():
     """ Allows users to directly call determinator from command line
     """
     (opts, files) = get_opts_and_args()
-    md_man        = None
+    md_man = None
 
     # turn off verbose if parsable output is going to stdout
     if opts.outputformat == 'parsable' and not opts.output:
         opts.verbose = False  # don't mix data and info
 
     if opts.metadata:
-        md_man    = MetadataManager(opts.schema_id, opts.collection_id)
+        md_man = MetadataManager(opts.schema_id, opts.collection_id)
 
 
-    out_writer    = OutputWriter(output_filename=opts.output,
-                                 output_format=opts.outputformat)
+    out_writer = OutputWriter(output_filename=opts.output,
+                              output_format=opts.outputformat)
 
-    my_file       = file_type.FileTyper(files[0],
-                                       opts.delimiter,
-                                       None,
-                                       opts.hasheader,
-                                       quoting=csv.QUOTE_MINIMAL,
-                                       read_limit=opts.read_limit)
+    my_file = file_type.FileTyper(files[0],
+                                  opts.delimiter,
+                                  None,
+                                  opts.hasheader,
+                                  quoting=csv.QUOTE_MINIMAL,
+                                  read_limit=opts.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
@@ -289,7 +289,8 @@ def main():
         md_man.write_field_results(my_fields, opts.column_number)
 
     out_writer.terminate()
-    return 0
+
+
 
 
 class MetadataManager(object):

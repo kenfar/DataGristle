@@ -122,7 +122,6 @@ Copyright 2014 Ken Farmer
 """
 
 #--- standard modules ------------------
-from __future__ import division
 import sys
 import argparse
 import os
