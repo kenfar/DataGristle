@@ -175,7 +175,7 @@ class FieldDeterminator(object):
 
             if self.field_types[f_no] in ['integer','float']:
                 self.field_mean[f_no]   = mather.get_mean(self.field_freqs[f_no])
-                self.field_median[f_no] = mather.GetDictMedian().run(self.field_freqs[f_no])
+                self.field_median[f_no] = mather.get_median(self.field_freqs[f_no])
                 (self.variance[f_no], self.stddev[f_no])   \
                    =  mather.get_variance_and_stddev(self.field_freqs[f_no],
                                                      self.field_mean[f_no])

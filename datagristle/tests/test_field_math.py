@@ -19,6 +19,79 @@ sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import datagristle.field_math  as mod
 
 
+class TestGetMedian(object):
+
+    def test_empty(self):
+        values = []
+        assert mod.get_median(values) == None
+
+    def test_single_value(self):
+        values = [(3, 1)]
+        assert mod.get_median(values) == 3
+
+    def test_single_entry_two_occurances(self):
+        values = [(3, 2)]
+        assert mod.get_median(values) == 3
+
+    def test_single_entry_three_occurances(self):
+        values = [(3, 3)]
+        assert mod.get_median(values) == 3
+
+    def test_two_entries_with_one_occurence_each(self):
+        values = [(1, 1), (2, 1)]
+        assert mod.get_median(values) == 1.5
+
+    def test_even_number_of_values_with_one_occurances_each(self):
+        values = [(1, 1), (2, 1), (6, 1), (5, 1), (4, 1), (3, 1)]
+        assert mod.get_median(values) == 3.5
+
+    def test_even_number_of_values_with_three_occurances_each(self):
+        values = [(1, 3), (2, 3), (6, 3), (5, 3), (4, 3), (3, 3)]
+        assert mod.get_median(values) == 3.5
+
+    def test_odd_number_of_values_with_one_occurances_each(self):
+        values = [(1, 1), (2, 1), (5, 1), (4, 1), (3, 1)]
+        assert mod.get_median(values) == 3
+
+    def test_odd_number_of_values_with_three_occurances_each(self):
+        values = [(1, 3), (2, 3), (6, 3), (5, 3), (4, 3), (3, 3)]
+        assert mod.get_median(values) == 3.5
+
+    def test_odd_number_with_skew(self):
+        values = [(1, 10), (2, 4), (6, 3), (5, 2), (4, 1), (3, 1)]
+        assert mod.get_median(values) == 2
+
+    def test_even_number_with_skew(self):
+        values = [(1, 10), (2, 4), (6, 3), (5, 2), (4, 1)]
+        assert mod.get_median(values) == 1.5
+
+    def test_odds_and_even_numbers(self):
+        values = [(-1, 1), (1, 1)]
+        assert mod.get_median(values) == 0
+
+    def test_floats(self):
+        values = [(0.1, 1), (0.3, 1)]
+        assert mod.get_median(values) == 0.2
+
+    def test_alpha_values(self):
+        values = [('foo', 1), (4, 1)]
+        assert mod.get_median(values) == 4
+
+    def test_none_values(self):
+        values = [(None, 1), (4, 1)]
+        assert mod.get_median(values) == 4
+
+    def test_dictionary(self):
+        values = {1: 1, 2:1}
+        assert mod.get_median(values) == 1.5
+
+    def test_types(self):
+        assert type(mod.get_median({10:4, 100:86}))  is float
+        assert type(mod.get_median({1:1})) is float
+
+
+
+
 
 class Test_get_variance_and_stddev(object):
 
@@ -105,7 +178,7 @@ class Test_get_variance_and_stddev(object):
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
         assert mod.get_variance_and_stddev(list_1)      == list_1a
 
-        list_1   = {'2':'2'}
+        list_1   = {'2':2}
         list_1a  = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
         assert mod.get_variance_and_stddev(list_1)      == list_1a
@@ -116,166 +189,68 @@ class Test_get_variance_and_stddev(object):
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
         assert mod.get_variance_and_stddev(list_1)      == list_1a
 
-    def test_math_ignoring_bad_value(self):
+    def deprecatedtest_math_ignoring_bad_value(self):
         list_1   = {2:2, 3:'foo'}
         list_1a  = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
         assert mod.get_variance_and_stddev(list_1)      == list_1a
 
 
-class TestGetDictMedian(object):
-
-    def setup_method(self, method):
-        # suffix of 'a' indicates the answer
-        self.dict_1   = {}
-        self.dict_1a  = None
-        self.dict_2   = {'1':1, '2':1, '3':1, '4':1, '100':99 }
-        self.dict_2a  = 100
-        self.dict_3   = {'2':3, '4':3}
-        self.dict_3a  = 3
-        self.dict_4   = {'1':3, '4':1}
-        self.dict_4a  = 1
-
-        self.mymed         =  mod.GetDictMedian()
-
-    def test_math_a02_dicts(self):
-        assert self.mymed.run(self.dict_1) == self.dict_1a
-        assert self.mymed.run(self.dict_2) == self.dict_2a
-        assert self.mymed.run(self.dict_3) == self.dict_3a
-        assert self.mymed.run(self.dict_4) == self.dict_4a
-
-
-
-class Test_get_tuple_list(object):
-    def setup_method(self, method):
-        self.mymed         =  mod.GetDictMedian()
-
-    def test_math_b01_emptiness(self):
-        self.dict_1        = {}
-        self.dict_1a       = None
-        assert self.mymed.run(self.dict_1) == self.dict_1a 
-
-    def test_math_b02(self):
-        self.dict_2        = {'8': 3, '1': 2, '4': 4}
-        self.dict_2a       = [('1',2),('4',4),('8',3)]
-        tup_list = self.mymed._get_tuple_list(self.dict_2)
-        assert sorted(tup_list) == sorted(self.dict_2a)
-
-    def test_math_b03(self):
-        self.dict_3        = {'8':1, '1':1, '4':1 }
-        self.dict_3a       = [('1',1),('4',1),('8',1)]
-        tup_list = self.mymed._get_tuple_list(self.dict_3)
-        assert sorted(tup_list) == self.dict_3a
-
-
-
-class Test_get_numeric_tuple_list(object):
-    def setup_method(self, method):
-        # suffix of 'a' indicates the answer
-        self.mymed         =  mod.GetDictMedian()
-        self.list_1        = []
-        self.list_1a       = []
-        self.list_2        = [('8','1')]
-        self.list_2a       = [(8,1)]
-        self.list_3        = [('8',1),(1,'1'),('4','1')]
-        self.list_3a       = [(8,1),(1,1),(4,1)]
-        self.list_4        = [('8','1'),('a',1),(4,'b')]
-        self.list_4a       = [(8,1)]
-
-    def test_math_c01(self):
-        assert self.mymed._get_numeric_tuple_list(self.list_1) == self.list_1a
-        assert self.mymed._get_numeric_tuple_list(self.list_2) == self.list_2a
-        assert self.mymed._get_numeric_tuple_list(self.list_3) == self.list_3a
-        assert self.mymed._get_numeric_tuple_list(self.list_4) == self.list_4a
-
-
-class Test_get_median_subs(object):
-    def setup_method(self, method):
-        # suffix of 'a' indicates the answer
-        self.mymed         =  mod.GetDictMedian()
-    def test_math_d01(self):
-        assert self.mymed._get_median_subs(0) == (0,0)
-        assert self.mymed._get_median_subs(1) == (0,0)
-        assert self.mymed._get_median_subs(2) == (0,1)
-        assert self.mymed._get_median_subs(3) == (1,1)
-        assert self.mymed._get_median_subs(4) == (1,2)
-        assert self.mymed._get_median_subs(5) == (2,2)
-        assert self.mymed._get_median_subs(6) == (2,3)
-        assert self.mymed._get_median_subs(7) == (3,3)
-        assert self.mymed._get_median_subs(8) == (3,4)
-
-
-class Test_get_median_keys(object):
-    """ Desc: test the ability to provide a sorted list of tuples and a key
-              and have the function go through the keys, and key occurances,
-    """
-    def setup_method(self, method):
-        # suffix of 'a' indicates the answer
-        self.mymed         =  mod.GetDictMedian()
-        self.med_1         = [(1,1),(4,1),(4,1)]
-        self.med_2         = [(1,1),(4,1),(8,1)]
-        self.med_3         = [(1,1)]
-        self.hard_1        = [(1,6),(4,1),(8,1)]
-        self.hard_2        = [(1,5),(4,1),(8,1)]
-        self.hard_3        = [(1,2),(4,1),(8,1),(10,1),(99,1),(99,1)]
-
-    def test_math_e01(self):
-        assert self.mymed._get_median_keys(self.med_1,  1) == 4
-        assert self.mymed._get_median_keys(self.med_2,  1) == 4
-        assert self.mymed._get_median_keys(self.med_3,  0) == 1
-        assert self.mymed._get_median_keys(self.hard_1, 1) == 1
-        assert self.mymed._get_median_keys(self.hard_2, 3) == 1
-        assert self.mymed._get_median_keys(self.hard_3, 3) == 8
-
 
 
 class TestGetMean(object):
 
-    def setup_method(self, method):
-        self.empty_dict_1  = {}
-        self.empty_dict_2  = {'blah':2}
-        self.easy_dict   = {'8': 3, '1': 2, '3': 4}
-        self.unk_dict    = {'UNK':1, 'unknown':3, ' ':99, '8':4, '2':2 }
-        self.med_dict_1  = {'10':4, '100':86 }
-        self.med_dict_3  = {2:1,3:1,9:1,12:1,13:1,15:1,
-                            17:1,19:1,22:1,23:1,25:1}
+    def test_none(self):
+        assert mod.get_mean(None) is None
 
-    def test_math_f01_emptiness(self):
-        assert mod.get_mean(self.empty_dict_1) is None
-        assert mod.get_mean(self.empty_dict_2) is None
+    def test_emptiness(self):
+        assert mod.get_mean({}) is None
 
-    def test_math_f03_small_sets(self):
-        pass
+    def test_alpha_values(self):
+        assert mod.get_mean({'blah':2}) == 0
 
-    def test_math_f04_medium_sets(self):
-        assert mod.get_mean(self.med_dict_1)  == 96.00
-        result = '%.4f' % mod.get_mean(self.med_dict_3)
+    def test_mean_of_numbers_in_string_format(self):
+        assert mod.get_mean({'10':4, '100':86})  == 96.00
+
+    def test_mean_of_ints(self):
+        assert mod.get_mean({10:4, 100:86})  == 96.00
+
+    def test_list_of_tuples(self):
+        assert mod.get_mean([(10,4), (15, 4)]) == 12.5
+
+    def test_mean_of_floats(self):
+        assert mod.get_mean({2.5:4, 10:1})  == 4.0
+
+    def test_mean_of_numbers_in_string_format(self):
+        test_dict  = {2:1,3:1,9:1,12:1,13:1,15:1,17:1,19:1,22:1,23:1,25:1}
+        result = '%.4f' % mod.get_mean(test_dict)
         assert result  == str(14.5455)
 
+    def test_types(self):
+        assert mod.get_mean({10:4, 100:86})  == 96.00
+        assert mod.get_mean({1:1})  == 1
 
 
-class Test_get_mean_length(object):
 
-    def setup_method(self, method):
-        self.empty_dict_1 = {}
-        self.easy_dict    = {'8': 3, '1': 2, '3': 4}
-        self.unk_dict     = {'UNK':1, 'unknown':3, ' ':99, '8':4, '2':2 }
-        self.med_dict_1   = {'aaa':1, 'a':3 }
+class TestGetMeanLength(object):
 
-    def test_math_g01_emptiness(self):
-        assert mod.get_mean_length(self.empty_dict_1) is None
+    def test_empty(self):
+        assert mod.get_mean_length({}) is None
 
-    def test_math_g02_unknowns(self):
-        assert mod.get_mean_length(self.unk_dict)    == 1
+    def test_none(self):
+        assert mod.get_mean_length(None) is None
 
-    def test_math_g03_easy_list(self):
-        pass
+    def test_unknowns(self):
+        assert mod.get_mean_length({'UNK':1, 'unknown':3, ' ':99, '':99, 'a':4, 'b':2}) == 1
 
-    def test_math_g04_small_sets(self):
-        pass
+    def test_easy_singles(self):
+        assert mod.get_mean_length({'abc':1, 'abcdefg':1}) == 5
 
-    def test_math_g05_medium_sets(self):
-        assert mod.get_mean_length(self.med_dict_1)  == 1.5
+    def test_easy_multiples(self):
+        assert mod.get_mean_length({'abc':99, 'abcdef':1}) == 3.03
+
+    def test_list_of_tuples(self):
+        assert mod.get_mean_length([('abc',99), ('abcdef',1)]) == 3.03
 
 
 
