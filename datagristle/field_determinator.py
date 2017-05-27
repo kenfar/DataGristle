@@ -17,6 +17,7 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
+from operator import itemgetter
 from pprint import pprint
 
 import datagristle.field_type   as typer
@@ -185,6 +186,7 @@ class FieldDeterminator(object):
                 self.variance[f_no]     = None
                 self.stddev[f_no]       = None
 
+
     def get_known_values(self, fieldno):
         """ returns a frequency-distribution dictionary that is the
             self.field_freqs with unknown values removed.
@@ -214,25 +216,15 @@ class FieldDeterminator(object):
                         [['ca',120],
                          ['ny',89],
                          ['tx',71]]
-             Issues:
-                   - need to test with array with just 1 row, seems to be blowing up
-                     probably an off by 1 error, no time to diagnose now.
         """
-        sort_list = sorted(self.field_freqs[fieldno],
-                           key=self.field_freqs[fieldno].get)
-        sub           = len(sort_list) - 1
-        count         = 0
-        rev_sort_list = []
-        while sub >= 0:
-            freq  = self.field_freqs[fieldno][sort_list[sub]]
-            rev_sort_list.append([sort_list[sub], freq])
-            count += 1
-            sub   -= 1
-            if limit is not None:
-                if count >= limit:
-                    break
+        sorted_values = sorted(list(self.field_freqs[fieldno].items()), key=itemgetter(1),
+                               reverse=True)
+        if limit:
+            return sorted_values[:limit]
+        else:
+            return sorted_values
 
-        return rev_sort_list
+
 
 
 class IOErrorEmptyFile(IOError):
