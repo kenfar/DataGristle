@@ -31,14 +31,14 @@ script_dir   = dirname(dirname(os.path.realpath((__file__))))
 sys.path.insert(0, test_tools.get_app_root())
 
 import datagristle.common  as comm
-import datagristle.csvhelper as csvhelp
+import datagristle.csvhelper as csvhelper
 from datagristle.common import dict_coalesce
 
 class TestInvalidInput(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect('|', csv.QUOTE_NONE, False)
+        self.dialect    = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, hasheader=False)
         self.dialect.delimiter = '\t'
         file1_recs = [ ['chg-row','4','14'],
                        ['del-row','6','16'],
@@ -101,7 +101,7 @@ class TestCommandLine(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect('|', csv.QUOTE_NONE, False)
+        self.dialect    = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, hasheader=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)

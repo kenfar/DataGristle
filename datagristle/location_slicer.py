@@ -24,8 +24,7 @@
         - numbers omitted default to end of record in that direction:
             - ':50' - is from 0 to 50
             - '20:' is from 20 to end of record
-        - negative values are adjusted to their positive values after using
-          the location_max value by the spec_adjuster function.
+        - negative values are adjusted to their positive values
 
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
@@ -33,11 +32,11 @@
     Copyright 2011,2012,2013 Ken Farmer
 """
 
-#--- standard modules ------------------
 import sys
+from typing import List, Dict, Tuple, Union, Any, Optional
 
 
-def is_negative_spec(*specs):
+def is_negative_spec(*specs: List[List[str]]) -> bool:
     """ Checks for negative values in a variable number of spec lists
         Each spec list can have multiple strings.  Each string within each
         list will be searched for a '-' sign.
@@ -51,7 +50,7 @@ def is_negative_spec(*specs):
 
 
 
-def is_sequence(val):
+def is_sequence(val: Any) -> bool:
     """ test whether or not val is a squence - list or tuple
             input:  val
             output:  True or False
@@ -59,7 +58,7 @@ def is_sequence(val):
     ### old python2 version - didn't work with python3 since strings startd to support __iter__
     ###return (hasattr(val, "__iter__") or (not hasattr(val, "strip") and hasattr(val, "__getitem__")))
 
-    if isinstance(val, list) or isinstance(val, tuple):
+    if isinstance(val, (list, tuple)):
         return True
     else:
         return False
@@ -68,19 +67,16 @@ def is_sequence(val):
 
 class SpecProcessor(object):
 
-    def __init__(self, spec, spec_name):
+    def __init__(self, spec: str, spec_name: str) -> None:
 
         self._spec_validator(spec)      # will raise exceptions if any exist
         self.orig_spec = spec
         self.spec_name = spec_name
         self.has_negatives = self._is_negative_spec(spec)
-        self.adj_spec = None  # spec with negatives converted
-
-        # set by calling program if it finds negative specs
-        self.location_max = None
+        self.adj_spec: List[Optional[str]] = None  # spec with negatives converted
 
 
-    def _is_negative_spec(self, spec):
+    def _is_negative_spec(self, spec: str) -> bool:
         """ Checks for negative values in a single spec lists.
             Each string within the list will be searched for a '-' sign.
         """
@@ -90,7 +86,7 @@ class SpecProcessor(object):
         return False
 
 
-    def _spec_validator(self, spec):
+    def _spec_validator(self, spec: str) -> bool:
         """ Checks for any invalid specifications.
         """
         if not is_sequence(spec):
@@ -122,7 +118,7 @@ class SpecProcessor(object):
         return True
 
 
-    def spec_adjuster(self, loc_max=None):
+    def spec_adjuster(self, loc_max: Optional[int]=None) -> None:
         """ Reads through a single spec (ie, record inclusion spec, column
             exclusion spec, etc) and remaps any negative values to their positive
             equiv.
@@ -133,11 +129,10 @@ class SpecProcessor(object):
             Outputs:
                 - none
         """
-        if loc_max is None: 
+        if loc_max is None:
             if self.has_negatives:
                 raise ValueError('adjust_specs missing count - and has negative specs')
-        self.location_max = loc_max
-        adj_spec = []
+        adj_spec: List[Optional[str]] = []
         for item in self.orig_spec:
             parts = item.split(':')
             new_parts = []
@@ -153,10 +148,10 @@ class SpecProcessor(object):
         self.adj_spec = adj_spec
 
 
-    def spec_evaluator(self, location):
-        """ Evaluates a location (column number or record number) against 
+    def spec_evaluator(self, location: int) -> bool:
+        """ Evaluates a location (column number or record number) against
             a specifications list.  Description:
-               - uses the python string slicing formats to specify valid ranges 
+               - uses the python string slicing formats to specify valid ranges
                 (all offset from 0):
                - 4, 5, 9 = location 4, 5, and 9
                - 1:3     = location 1 & 2 (end - 1)
@@ -189,7 +184,7 @@ class SpecProcessor(object):
         return False
 
 
-    def _spec_item_evaluator(self, item, location):
+    def _spec_item_evaluator(self, item: str, location: int) -> bool:
         """ evaluates a single item against a location
             inputs:
                 - item in form of string like one of these:

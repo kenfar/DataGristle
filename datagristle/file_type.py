@@ -92,7 +92,7 @@ class FileTyper(object):
         self.record_cnt           = None
         self.record_cnt_is_est    = None
         self.csv_quoting          = None
-        self.dialect              = None
+        self.dialect: Optional[csv.Dialect] = None
         self.read_limit           = read_limit
 
     def analyze_file(self):

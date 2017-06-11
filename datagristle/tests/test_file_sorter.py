@@ -23,14 +23,14 @@ from pprint import pprint as pp
 sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import datagristle.file_sorter as mod
-from datagristle.csvhelper import create_dialect
+import datagristle.csvhelper as csvhelper
 
 
 class TestSort(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
-        self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
+        self.dialect  = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
         self.fqfn     = create_test_file(self.temp_dir)
         self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 

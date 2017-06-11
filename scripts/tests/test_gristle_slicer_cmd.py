@@ -81,6 +81,9 @@ class Test7x7File(object):
             print('Status Code:  %d' % r.status_code)
             print(r.std_out)
             print(r.std_err)
+        #fixme
+        print(r.std_out)
+        print(r.std_err)
         p_recs = []
         for rec in fileinput.input(self.out_fqfn):
             p_recs.append(rec[:-1])
@@ -236,6 +239,8 @@ class TestEmptyFile(object):
         """
         cmd = '%s %s -o %s -r 15:20' % (fq_pgm, self.empty_fqfn, self.out_fqfn)
         r = envoy.run(cmd)
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         out_recs  = []
         for rec in fileinput.input(self.out_fqfn):

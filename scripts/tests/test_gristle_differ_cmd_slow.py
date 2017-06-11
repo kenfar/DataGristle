@@ -30,7 +30,7 @@ script_dir   = dirname(dirname(os.path.realpath((__file__))))
 sys.path.insert(0, test_tools.get_app_root())
 
 import datagristle.common  as comm
-import datagristle.csvhelper as csvhelp
+import datagristle.csvhelper as csvhelper
 from datagristle.common import dict_coalesce
 
 FIELDS = {'pkid':0, 'vid':1, 'from_epoch':2, 'to_epoch':3, 'foo':4, 'bar':5, 'del_flag':6,
@@ -44,7 +44,7 @@ class TestMillionRows(object):
     """
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect(',', csv.QUOTE_NONE, False)
+        self.dialect    = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
 
         start_time = time.time()
         print('\ncreating test files - starting')

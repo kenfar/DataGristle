@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" 
+"""
     Extracts subsets of input files based on user-specified columns and rows.
     The input csv file can be piped into the program through stdin or identified
     via a command line option.  The output will default to stdout, or redirected
@@ -71,18 +71,18 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
 
-
-#--- standard modules ------------------
 import sys
 import io
 import optparse
 import csv
 import fileinput
 import os
-from pprint import pprint
+from pprint import pprint as pp
+import typing
+from typing import List, Union, Tuple, Dict, Any, Optional, IO, TextIO
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
@@ -95,8 +95,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import datagristle.file_type           as file_type
 import datagristle.location_slicer     as slicer
+import datagristle.csvhelper           as csvhelper
 
 debug = False
+
 
 def main():
     """ runs all processes:
@@ -115,31 +117,39 @@ def main():
             print('ERROR: file %s does not exist' % files[0])
             sys.exit(1)
 
-    dialect              = get_input_file_info(files, opts)
+    try:
+        dialect = get_input_file_info(files, opts)
+    except file_type.IOErrorEmptyFile:
+        print('ERROR: empty file')
+        sys.exit(0)
     outfile, csv_writer  = get_output_file_info(opts, dialect)
 
     (incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer) \
        = setup_slicer(opts, files, dialect)
 
     rec_cnt  = -1
-    def read_recs(reader):
+    def processor(reader):
         nonlocal rec_cnt
-        for rec in reader:
-            rec_cnt += 1
-            new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                                rec, incl_col_slicer, excl_col_slicer)
-            if new_rec:
-                write_rec(csv_writer, new_rec, rec_cnt)
+        try:
+            for rec in reader:
+                rec_cnt += 1
+                new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
+                                    rec, incl_col_slicer, excl_col_slicer)
+                if new_rec:
+                    write_rec(csv_writer, new_rec, rec_cnt)
+        except file_type.IOErrorEmptyFile:
+            print('ERROR: empty file')
+            sys.exit(0)
 
     if files:
         for filename in files:
             with open(filename, 'rt', newline='', encoding='utf-8') as infile:
                 reader = csv.reader(infile, dialect=dialect)
-                read_recs(reader)
+                processor(reader)
     elif not os.isatty(0):
         input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
         reader = csv.reader(input_stream, dialect=dialect)
-        read_recs(reader)
+        processor(reader)
     else:
         print('ERROR: no data found')
 
@@ -151,7 +161,9 @@ def main():
 
 
 
-def get_input_file_info(input_files, opts):
+
+#fixme: figure out typing: argparse namespace
+def get_input_file_info(input_files: List[str], opts: Any) -> csvhelper.Dialect:
     """ Sets up input files based upon options and files.
 
         Supports manual csv dialect creation - which is necessary
@@ -170,31 +182,34 @@ def get_input_file_info(input_files, opts):
             - dialect
     """
     if opts.delimiter:
-        dialect                 = csv.Dialect
-        dialect.delimiter       = opts.delimiter
-        dialect.quoting         = file_type.get_quote_number(opts.quoting)
-        dialect.quotechar       = '"'
-        dialect.lineterminator  = '\n'
+        dialect = csvhelper.Dialect(delimiter=opts.delimiter,
+                                    hasheader=False,
+                                    quoting=file_type.get_quote_number(opts.quoting),
+                                    quotechar='"',
+                                    lineterminator='\n')
     else:
         assert input_files
-        my_file                 = file_type.FileTyper(input_files[0])
+        my_file = file_type.FileTyper(input_files[0])
         try:
-            dialect             = my_file.analyze_file()
+            dialect = my_file.analyze_file()
         except file_type.IOErrorEmptyFile:
-            return 1
+            raise
 
     if debug:
         print('---- input dialect -----')
-        pprint(vars(dialect))
+        pp(vars(dialect))
 
     return dialect
 
 
 
-def get_output_file_info(opts, dialect):
+#fixme: figure out typing: argparse namespace
+def get_output_file_info(opts: Any,
+                         dialect: csv.Dialect) -> Tuple[IO[Any], Any]:
     """ Sets up output file based upon options:
         Returns output file object
     """
+    outfile: IO[Any] = None
     if opts.output == '-':
         outfile = sys.stdout
     else:
@@ -205,7 +220,14 @@ def get_output_file_info(opts, dialect):
 
 
 
-def setup_slicer(opts, files, dialect):
+#fixme: figure out typing: argparse namespace
+def setup_slicer(opts,
+                 files: List[str],
+                 dialect: csv.Dialect) \
+    -> Tuple[slicer.SpecProcessor,
+             slicer.SpecProcessor,
+             slicer.SpecProcessor,
+             slicer.SpecProcessor]:
     """  Sets up the 4 slicer objects: inclusion & exclusion for
          rec and column.
 
@@ -230,19 +252,17 @@ def setup_slicer(opts, files, dialect):
     col_cnt = None
     if incl_rec_slicer.has_negatives or excl_rec_slicer.has_negatives:
         if not files and not opts.rec_count:
-            print('negative record slicing with stdin requires record_count option')
-            return 2
+            raise ValueError('ERROR: negative record slicing with stdin requires record_count option')
         else:
-            rec_cnt, col_cnt = get_file_counts(files, dialect, rec=True)
+            rec_cnt, col_cnt = get_file_counts(files, dialect, get_rec_cnt=True)
     incl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
     excl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
 
     if incl_col_slicer.has_negatives or excl_col_slicer.has_negatives:
         if not files and not opts.column_count:
-            print('negative column slicing with stdin requires column_count option')
-            return 2
+            raise ValueError('negative column slicing with stdin requires column_count option')
         elif not col_cnt:
-            dummy, col_cnt = get_file_counts(files, dialect, col=True)
+            dummy, col_cnt = get_file_counts(files, dialect, get_col_cnt=True)
     incl_col_slicer.spec_adjuster(loc_max=col_cnt)
     excl_col_slicer.spec_adjuster(loc_max=col_cnt)
 
@@ -250,7 +270,10 @@ def setup_slicer(opts, files, dialect):
 
 
 
-def get_file_counts(files, dialect, rec=False, col=False):
+def get_file_counts(files: List[str],
+                    dialect: csv.Dialect,
+                    get_rec_cnt: bool=False,
+                    get_col_cnt: bool=False) -> Tuple[Optional[int], int]:
     """ Gets record and column counts for input files.
         - Counts have an offset of 0
         - if rec is True then it will read entire input file to get
@@ -260,16 +283,16 @@ def get_file_counts(files, dialect, rec=False, col=False):
           get a field count.  And it will return None for rec count,
           and the field count from the first record.
     """
-    assert rec is True or col is True
+    assert get_rec_cnt is True or get_col_cnt is True
     rec_cnt   = -1
-    for rec in csv.reader(fileinput.input(files), dialect):
+    for record in csv.reader(fileinput.input(files), dialect):
         rec_cnt  += 1
-        field_cnt = len(rec) -1
-        if not rec and rec_cnt > -1:
+        field_cnt = len(record) -1
+        if not get_rec_cnt and rec_cnt > -1:
             break
-    if rec:
+    if get_rec_cnt:
         return rec_cnt, field_cnt
-    elif col:
+    elif get_col_cnt:
         return None, field_cnt
     else:
         print('logic error in get_file_counts - ')
@@ -279,8 +302,12 @@ def get_file_counts(files, dialect, rec=False, col=False):
 
 
 
-def process_rec(rec_number, incl_rec_slicer, excl_rec_slicer,
-                 rec, incl_col_slicer, excl_col_slicer):
+def process_rec(rec_number: int,
+                incl_rec_slicer: slicer.SpecProcessor,
+                excl_rec_slicer: slicer.SpecProcessor,
+                rec: List[str],
+                incl_col_slicer: slicer.SpecProcessor,
+                excl_col_slicer: slicer.SpecProcessor) -> Optional[List[str]]:
     """ Evaluates all the specifications against a single record
         from the input file.  First it applies inclusion & exclusion
         specifications against the record, then it applies inclusion
@@ -322,7 +349,8 @@ def process_rec(rec_number, incl_rec_slicer, excl_rec_slicer,
 
 
 
-def write_rec(outfile, fields, row_cnt):
+# fixme: typing
+def write_rec(outfile: Any, fields: List[str], row_cnt: int) -> None:
     """ Writes record to output object - using the same dialect as the input
         file.
         Input:
@@ -345,7 +373,8 @@ def write_rec(outfile, fields, row_cnt):
 
 
 
-def get_opts_and_args():
+# fixme: typing
+def get_opts_and_args() -> Tuple[optparse.Values, List[str]]:
     """ gets opts & args and returns them
         Input:
             - command line args & options

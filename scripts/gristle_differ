@@ -260,7 +260,6 @@ def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDel
     ignore_off0  = convert_cols('key_cols', config['ignore_cols'])
 
     delta = gdelta.FileDelta(adj_out_dir, dialect)
-    pp(config)
     for col in keys_off0:
         delta.set_fields('join', col)
     for col in ignore_off0:
@@ -306,7 +305,8 @@ def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDel
 
 
 
-def get_assign_with_offsets_for_names(col_names: List[str], config: Dict[str, Any]) -> Dict[str, Any]:
+def get_assign_with_offsets_for_names(col_names: List[str],
+                                      assign_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """ Return assignment config section after converting col names to offsets.
 
     Args:
@@ -318,20 +318,25 @@ def get_assign_with_offsets_for_names(col_names: List[str], config: Dict[str, An
         KeyError - if colname from config not in col_names
                  - or if col position from config beyond col_name list
     """
-    new_config = copy.deepcopy(config)
-    for asgn in new_config:
+    new_assign_config: List[Dict[str, Any]] = copy.deepcopy(assign_config)
+    for asgn in new_assign_config:
         if asgn.get("src_field", None) is not None:
             asgn["src_field_orig"]  = asgn["src_field"]
             asgn["src_field"]       = comm.colnames_to_coloff0(col_names, [asgn["src_field"]])[0]
         if asgn.get("dest_field", None) is not None:
             asgn["dest_field_orig"] = asgn["dest_field"]
             asgn["dest_field"]      = comm.colnames_to_coloff0(col_names, [asgn["dest_field"]])[0]
-    assert isinstance(new_config, list)
-    return new_config
+    return new_assign_config
 
 
 
-def prep_file(filename, dialect, key_cols, temp_dir, out_dir, already_sorted, already_uniq):
+def prep_file(filename: str,
+              dialect: csv.Dialect,
+              key_cols: List[int],
+              temp_dir: str,
+              out_dir: str,
+              already_sorted: bool,
+              already_uniq: bool) -> Tuple[str, int]:
     """ Set up a file for the delta class comparison.
 
     Args:
@@ -533,7 +538,7 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
         config.add_file(app_name=APP_NAME,
                         config_fn='%s.yml' % args['config_name'])
     #print("Config structure: ")
-    pp(config.cm_config)
+    #pp(config.cm_config)
     #print("config['files']: %s" % config.cm_config.get('files', None))
     print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
     print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
@@ -581,7 +586,7 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 
-def validate_config(config: Dict[str, Any]):
+def validate_config(config: Dict[str, Any]) -> None:
     """ Provide additional validation of config.
 
     Purpose is to provide additional validation beyond what's done by JSON

@@ -50,6 +50,7 @@ import sys
 import optparse
 import csv
 import fileinput
+from typing import List, Optional, Any, Tuple
 from pprint import pprint
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
@@ -85,7 +86,7 @@ def main():
             print('ERROR: file %s has issues' % files[0])
             sys.exit(1)
 
-    dialect, my_fields    = get_input_file_info(files, opts)
+    dialect, my_fields  = get_input_file_info(files, opts)
 
     while True:
         rec = get_rec(files,
@@ -115,11 +116,11 @@ def main():
         else:
             print('Invalid response, please enter q, p, n, t, or a specific record number')
 
-    return 0
 
 
-
-def get_input_file_info(input_files, opts):
+#fixme: typing
+def get_input_file_info(input_files: List[str], opts) \
+        -> Tuple[csv.Dialect, field_determinator.FieldDeterminator]:
     """ Gets information about csv dialect and field info from input files
         and user-supplied options.
 
@@ -138,15 +139,14 @@ def get_input_file_info(input_files, opts):
         Returns:
             - dialect
             - my_fields
+        Raises:
+            - file_type.IOErrorEmptyFile
     """
     assert input_files
-    my_file    = file_type.FileTyper(input_files[0],
-                                     delimiter=opts.delimiter,
-                                     quoting=file_type.get_quote_number(opts.quoting))
-    try:
-        dialect             = my_file.analyze_file()
-    except file_type.IOErrorEmptyFile:
-        return 1
+    my_file = file_type.FileTyper(input_files[0],
+                                  delimiter=opts.delimiter,
+                                  quoting=file_type.get_quote_number(opts.quoting))
+    dialect = my_file.analyze_file()
 
     if debug:
         print('---- input dialect -----')
@@ -163,11 +163,13 @@ def get_input_file_info(input_files, opts):
 
 
 
-def display_rec(rec, my_fields, outfile_name):
+def display_rec(rec: str,
+                my_fields: field_determinator.FieldDeterminator,
+                outfile_name: str) -> None:
     """ Displays a single record
     """
     # figure out label length for formatting:
-    field_names = []
+    field_names: List[str] = []
     if my_fields:
         max_v_len = 0
         for v in my_fields.field_names.values():
@@ -198,7 +200,7 @@ def display_rec(rec, my_fields, outfile_name):
 
 
 
-def get_rec(files, recnum, dialect):
+def get_rec(files: List[str], recnum: int, dialect: csv.Dialect) -> Optional[List[Any]]:
     """ Gets a single record from a file
         Since it reads from the begining of the file it can take a while to get
         to records at the end of a large file
@@ -211,7 +213,7 @@ def get_rec(files, recnum, dialect):
 
     found = None
     i     = 0
-    for row in csv.reader(fileinput.input(files), dialect): 
+    for row in csv.reader(fileinput.input(files), dialect):
         if i == recnum:
             found = row
             break
