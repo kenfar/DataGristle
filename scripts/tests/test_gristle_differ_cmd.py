@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
-
 
 import sys
 import os
@@ -24,21 +23,22 @@ import yaml as yaml
 import envoy
 
 #--- gristle modules -------------------
-import test_tools
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
 
 # get script_diring set for running code out of project structure & testing it via tox
 script_dir   = dirname(dirname(os.path.realpath((__file__))))
 sys.path.insert(0, test_tools.get_app_root())
 
-import gristle.common  as comm
-import gristle.csvhelper as csvhelp
-from gristle.common import dict_coalesce
+import datagristle.common  as comm
+import datagristle.csvhelper as csvhelper
+from datagristle.common import dict_coalesce
 
 class TestInvalidInput(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect('|', csvhelp.QUOTE_NONE, False)
+        self.dialect    = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, hasheader=False)
         self.dialect.delimiter = '\t'
         file1_recs = [ ['chg-row','4','14'],
                        ['del-row','6','16'],
@@ -52,7 +52,7 @@ class TestInvalidInput(object):
         self.config   = Config(self.temp_dir)
         self.config.add_property({'delimiter':'tab'})
         self.config.add_property({'hasheader':False})
-        self.config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        self.config.add_property({'quoting':csv.QUOTE_NONE})
         self.config.add_property({'col_names': ['col0', 'col1', 'col2']})
         self.config.add_property({'key_cols': ['0']})
         self.config.add_property({'compare_cols': ['2']})
@@ -74,9 +74,9 @@ class TestInvalidInput(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), self.config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code != 0
 
 
@@ -91,9 +91,9 @@ class TestInvalidInput(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), self.config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code != 0
 
 
@@ -101,7 +101,7 @@ class TestCommandLine(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect    = csvhelp.create_dialect('|', csvhelp.QUOTE_NONE, False)
+        self.dialect    = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, hasheader=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -127,9 +127,9 @@ class TestCommandLine(object):
         cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                  file1, file2, self.temp_dir)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
 
         assert len(glob.glob(file1)) == 1
@@ -179,9 +179,9 @@ class TestCommandLine(object):
         cmd = ''' %s %s %s -k 0 -c 1 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                  file1, file2, self.temp_dir)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
 
         assert r.status_code == 0
         fn = basename(file2)
@@ -206,9 +206,9 @@ class TestCommandLine(object):
         cmd = ''' %s %s %s -k 0 -c 1 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                  file1, file2, self.temp_dir)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
 
         assert r.status_code == 0
         assert len(glob.glob(file1)) == 1
@@ -245,9 +245,9 @@ class TestCommandLine(object):
                '--temp-dir', self.temp_dir]
         p = subprocess.Popen(cmd, close_fds=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
-        print '------- std_out ------'
-        print stdout
-        print stderr
+        print('------- std_out ------')
+        print(stdout)
+        print(stderr)
 
         assert p.returncode == 0
         fn = basename(file2)
@@ -276,9 +276,9 @@ class TestCommandLine(object):
                   --delimiter tab --quoting quote_none  --hasnoheader \
                   --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'), file1, file2, self.temp_dir)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
 
         assert r.status_code == 0
         fn = basename(file2)
@@ -294,7 +294,7 @@ class TestCommandLine(object):
         """
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'hasheader':False})
         config.write_config()
 
@@ -314,9 +314,9 @@ class TestCommandLine(object):
                   --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'), file1, file2,
                                       config.config_fqfn, self.temp_dir)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -344,7 +344,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -355,9 +355,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -385,7 +385,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -397,9 +397,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -409,7 +409,7 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.delete'),
                                  self.dialect)[0][1] == 'd'
 
@@ -429,7 +429,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'variables': ['foo:bar', 'baz:gorilla']})
@@ -443,9 +443,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -455,10 +455,10 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.delete'),
                                  self.dialect)[0][1] == 'bar'
-        print get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect)
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.insert'),
                                  self.dialect)[0][3] == 'gorilla'
 
@@ -479,7 +479,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -491,9 +491,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -503,7 +503,7 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'),
                                  self.dialect)[0][1] == 'chg-row'
 
@@ -524,7 +524,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['1']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -537,9 +537,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -549,16 +549,16 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-        print 'get file contents - insert: '
-        print get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect)
-        print 'get file contents - delete: '
-        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
-        print 'get file contents - same '
-        print get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect)
-        print 'get file contents - chgold '
-        print get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect)
-        print 'get file contents - chgnew '
-        print get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect)
+        print('get file contents - insert: ')
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
+        print('get file contents - delete: ')
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
+        print('get file contents - same ')
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
+        print('get file contents - chgold ')
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.chgold'), self.dialect))
+        print('get file contents - chgnew ')
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.insert'),
                                  self.dialect)[0][2] == '4'
 
@@ -578,7 +578,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['1']})
         config.add_property({'variables': ['foo:7']})
@@ -591,9 +591,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -603,8 +603,8 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-        print 'get file contents - insert: '
-        print get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect)
+        print('get file contents - insert: ')
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.insert'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.insert'),
                                  self.dialect)[0][2] == '8'
 
@@ -625,7 +625,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'key_cols': ['0', '1']})
         config.add_property({'compare_cols': ['2','3']})
         config.add_property({'temp_dir': self.temp_dir})
@@ -636,9 +636,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -665,7 +665,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': ['col0', 'col1', 'col2']})
         config.add_property({'key_cols': ['col0']})
         config.add_property({'compare_cols': ['col2']})
@@ -677,9 +677,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -706,7 +706,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': ['col0', 'col1', 'col2', 'col3']})
         config.add_property({'key_cols': ['col0']})
         config.add_property({'ignore_cols': ['col1', 3]})
@@ -718,9 +718,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -747,7 +747,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'hasheader':False})
-        config.add_property({'quoting':csvhelp.QUOTE_NONE})
+        config.add_property({'quoting':csv.QUOTE_NONE})
         config.add_property({'col_names': ['col0', 'col1', 'col2']})
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
@@ -760,9 +760,9 @@ class TestCommandLine(object):
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
         r = envoy.run(cmd)
-        print '------- std_out ------'
-        print r.std_out
-        print r.std_err
+        print('------- std_out ------')
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         fn = basename(file2)
 
@@ -772,7 +772,7 @@ class TestCommandLine(object):
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'), self.dialect))
         assert 1 == len(get_file_contents(pjoin(self.temp_dir, fn+'.same'), self.dialect))
 
-        print get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect)
+        print(get_file_contents(pjoin(self.temp_dir, fn+'.delete'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn+'.chgnew'),
                                  self.dialect)[0][1] == 'chg-row'
 
@@ -801,7 +801,7 @@ class Config(object):
 
     def add_property(self, kwargs):
         for key in kwargs:
-            print key
+            print(key)
             self.config[key] = kwargs[key]
 
     def add_assignment(self, dest_file, dest_field, src_type, src_val, src_file, src_field):
@@ -817,7 +817,7 @@ class Config(object):
 
     def write_config(self, valid=True):
         config_yaml = yaml.safe_dump(self.config)
-        print config_yaml
+        print(config_yaml)
         with open(self.config_fqfn, 'w') as f:
             f.write(config_yaml)
         # uncomment this code to capture copies of all valid configs

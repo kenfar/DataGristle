@@ -17,12 +17,12 @@
     See the file "LICENSE" for the full license governing this code. 
     Copyright 2011,2012,2013 Ken Farmer
 """
-from __future__ import division
+from operator import itemgetter
 from pprint import pprint
 
-import gristle.field_type   as typer
-import gristle.field_math   as mather
-import gristle.field_misc   as miscer
+import datagristle.field_type   as typer
+import datagristle.field_math   as mather
+import datagristle.field_misc   as miscer
 
 #------------------------------------------------------------------------------
 # override miscer.get_field_freq max dictionary size defaults:
@@ -120,7 +120,7 @@ class FieldDeterminator(object):
         self.max_freq_number     = max_freq_number
 
         if self.verbose:
-            print 'Field Analysis Progress: '
+            print('Field Analysis Progress: ')
 
         for f_no in range(self.field_cnt):
             if field_number is not None:  # optional analysis of a single field
@@ -128,7 +128,7 @@ class FieldDeterminator(object):
                     continue
 
             if self.verbose:
-                print '   Analyzing field: %d' % f_no
+                print('   Analyzing field: %d' % f_no)
 
             self.field_names[f_no]   = miscer.get_field_names(self.filename,
                                                               self.dialect,
@@ -176,7 +176,7 @@ class FieldDeterminator(object):
 
             if self.field_types[f_no] in ['integer','float']:
                 self.field_mean[f_no]   = mather.get_mean(self.field_freqs[f_no])
-                self.field_median[f_no] = mather.GetDictMedian().run(self.field_freqs[f_no])
+                self.field_median[f_no] = mather.get_median(self.field_freqs[f_no])
                 (self.variance[f_no], self.stddev[f_no])   \
                    =  mather.get_variance_and_stddev(self.field_freqs[f_no],
                                                      self.field_mean[f_no])
@@ -185,6 +185,7 @@ class FieldDeterminator(object):
                 self.field_median[f_no] = None
                 self.variance[f_no]     = None
                 self.stddev[f_no]       = None
+
 
     def get_known_values(self, fieldno):
         """ returns a frequency-distribution dictionary that is the
@@ -215,25 +216,15 @@ class FieldDeterminator(object):
                         [['ca',120],
                          ['ny',89],
                          ['tx',71]]
-             Issues:
-                   - need to test with array with just 1 row, seems to be blowing up
-                     probably an off by 1 error, no time to diagnose now.
         """
-        sort_list = sorted(self.field_freqs[fieldno],
-                           key=self.field_freqs[fieldno].get)
-        sub           = len(sort_list) - 1
-        count         = 0
-        rev_sort_list = []
-        while sub >= 0:
-            freq  = self.field_freqs[fieldno][sort_list[sub]]
-            rev_sort_list.append([sort_list[sub], freq])
-            count += 1
-            sub   -= 1
-            if limit is not None:
-                if count >= limit:
-                    break
+        sorted_values = sorted(list(self.field_freqs[fieldno].items()), key=itemgetter(1),
+                               reverse=True)
+        if limit:
+            return sorted_values[:limit]
+        else:
+            return sorted_values
 
-        return rev_sort_list
+
 
 
 class IOErrorEmptyFile(IOError):

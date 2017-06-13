@@ -17,18 +17,19 @@ import subprocess
 import imp
 import envoy
 import pytest
+from os.path import dirname, join as pjoin
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
 
-script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-fq_pgm      = os.path.join(script_path, 'gristle_viewer')
-
-import test_tools
+script_path = dirname(dirname(os.path.realpath((__file__))))
+fq_pgm      = pjoin(script_path, 'gristle_viewer')
 
 
 
 def generate_test_file(delim, record_cnt):
     (fd, fqfn) = tempfile.mkstemp(prefix='ViewerTestIn_')
-    fp = os.fdopen(fd,"w") 
- 
+    fp = os.fdopen(fd,"w")
+
     for i in range(record_cnt):
         fields = []
         fields.append(str(i))
@@ -47,7 +48,7 @@ class TestCommandLine(object):
     def setup_method(self, method):
         self.in_fqfn             = generate_test_file(delim=',', record_cnt=100)
         self.empty_fqfn          = generate_test_file(delim=',', record_cnt=0)
-        (dummy, self.out_fqfn)   = tempfile.mkstemp(prefix='ViewerTestOut_') 
+        (dummy, self.out_fqfn)   = tempfile.mkstemp(prefix='ViewerTestOut_')
 
     def teardown_method(self, method):
         os.remove(self.in_fqfn)
@@ -59,6 +60,10 @@ class TestCommandLine(object):
 
         cmd = '%s %s -r 10 -o %s' % (fq_pgm, self.in_fqfn, self.out_fqfn)
         r   = envoy.run(cmd)
+        print(r.std_out)
+        print(r.std_err)
+        assert r.status_code == 0
+
         p_recs = []
         for rec in fileinput.input(self.out_fqfn):
             p_recs.append(rec)
@@ -91,6 +96,9 @@ class TestCommandLine(object):
         p_outrecs = []
         cmd = '%s %s -r 999 -o %s' % (fq_pgm, self.in_fqfn, self.out_fqfn)
         r   = envoy.run(cmd)
+        print(r.std_out)
+        print(r.std_err)
+        assert r.status_code == 0
         for rec in fileinput.input(self.out_fqfn):
             p_outrecs.append(rec)
         fileinput.close()

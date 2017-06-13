@@ -35,7 +35,6 @@
     Copyright 2011,2012,2013 Ken Farmer
 """
 
-from __future__ import division
 import appdirs
 import os
 from sqlalchemy import (Table, Column, Boolean, Integer, String, Float,
@@ -45,8 +44,8 @@ from sqlalchemy import (Table, Column, Boolean, Integer, String, Float,
 from sqlalchemy import exc
 import datetime
 from pprint import pprint as pp
-import simplesql
 import logging
+import datagristle.simplesql as simplesql
 
 
 
@@ -89,7 +88,7 @@ class GristleMetaData(object):
         else:
             user_data_dir = db_dir
         if not os.path.exists(user_data_dir):
-            print 'data dir (%s) missing - it will be created' % user_data_dir
+            print('data dir (%s) missing - it will be created' % user_data_dir)
             os.makedirs(user_data_dir)
 
         self.fqdb_name  = os.path.join(user_data_dir, db_name)
@@ -249,8 +248,8 @@ class SchemaTools(simplesql.TableTools):
             result = connection.execute(sql,
                                         schema_name=kwargs['schema_name'],
                                         schema_desc=kwargs['schema_desc'])
-        except exc.IntegrityError, e:
-            raise ValueError, 'Insert failed. %s' % e.message
+        except exc.IntegrityError as e:
+            raise ValueError('Insert failed. %s' % e.message)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -283,8 +282,8 @@ class SchemaTools(simplesql.TableTools):
                                         schema_name=kwargs['schema_name'],
                                         schema_desc=kwargs['schema_desc'],
                                         schema_id=kwargs['schema_id'])
-        except exc.IntegrityError, e:
-            raise ValueError, 'Update failed. %s' % e.message
+        except exc.IntegrityError as e:
+            raise ValueError('Update failed. %s' % e.message)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -296,11 +295,11 @@ class SchemaTools(simplesql.TableTools):
 
         missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
         if missing_col_list:
-            raise ValueError, 'mandatory columns missing: %s' % missing_col_list
+            raise ValueError('mandatory columns missing: %s' % missing_col_list)
 
         if (kwargs['schema_name'] is None
         or kwargs['schema_name'].strip() == ''):
-            raise ValueError, 'schema_name may not be blank'
+            raise ValueError('schema_name may not be blank')
 
 
 
@@ -483,9 +482,9 @@ class FieldTools(simplesql.TableTools):
                                         field_order=vkwargs['field_order'],
                                         field_type=vkwargs['field_type'],
                                         field_len=vkwargs['field_len'])
-        except exc.IntegrityError, e:
-            print sql
-            raise ValueError, 'Insert failed. %s' % e.message
+        except exc.IntegrityError as e:
+            print(sql)
+            raise ValueError('Insert failed. %s' % e.message)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -529,9 +528,9 @@ class FieldTools(simplesql.TableTools):
                                         field_type=vkwargs['field_type'],
                                         field_len=vkwargs['field_len'],
                                         element_name=vkwargs['element_name'])
-        except exc.IntegrityError, e:
-            print sql
-            raise ValueError, 'Insert failed. %s' % e.message
+        except exc.IntegrityError as e:
+            print(sql)
+            raise ValueError('Insert failed. %s' % e.message)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -542,7 +541,7 @@ class FieldTools(simplesql.TableTools):
         """
         missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
         if missing_col_list:
-            raise ValueError, 'mandatory columns missing: %s' % missing_col_list
+            raise ValueError('mandatory columns missing: %s' % missing_col_list)
 
         if (kwargs['element_name'] == 'None'
         or kwargs['element_name'] == ''):
@@ -559,32 +558,32 @@ class FieldTools(simplesql.TableTools):
 
         if (kwargs['field_name'] is None
         or kwargs['field_name'].strip() == ''):
-            raise ValueError, 'field_name may not be blank'
+            raise ValueError('field_name may not be blank')
 
         if kwargs['element_name']:
             if (kwargs['field_type'] or kwargs['field_len']):
-                raise ValueError, 'field_type and field_len must be blank if element_name is provided'
+                raise ValueError('field_type and field_len must be blank if element_name is provided')
 
         if kwargs['field_type'] not in ['string', 'int']:
-            raise ValueError, 'field_type of %s is invalid.  Must be either string or int' \
-                % kwargs['field_type']
+            raise ValueError('field_type of %s is invalid.  Must be either string or int' \
+                % kwargs['field_type'])
 
         try:
             if (kwargs['field_len'] and len(kwargs['field_len']) > 0):
                 if int(kwargs['field_len'])  < 1:
-                    raise ValueError, 'Field_len if provided must be > 0'
+                    raise ValueError('Field_len if provided must be > 0')
         except ValueError:
-            raise ValueError, 'Field_len must be a non-zero integer'
+            raise ValueError('Field_len must be a non-zero integer')
 
         if kwargs['field_type'] == 'int' and kwargs['field_len']:
-            raise ValueError, 'field_len must not be provided for field_type of int.'
+            raise ValueError('field_len must not be provided for field_type of int.')
 
         try:
             if kwargs['field_order']:
                 if int(kwargs['field_order'])  < 0:
-                    raise ValueError, 'Field_order if provided must be >= 0'
+                    raise ValueError('Field_order if provided must be >= 0')
         except ValueError:
-            raise ValueError, 'Field_order must be a non-negative integer'
+            raise ValueError('Field_order must be a non-negative integer')
 
         return kwargs
 
@@ -622,7 +621,7 @@ class FieldValueTools(simplesql.TableTools):
         """
         missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
         if missing_col_list:
-            raise ValueError, 'mandatory columns missing: %s' % missing_col_list
+            raise ValueError('mandatory columns missing: %s' % missing_col_list)
         return kwargs
 
 
@@ -657,8 +656,8 @@ class FieldValueTools(simplesql.TableTools):
                                         fv_value=kwargs['fv_value'],
                                         fv_desc=kwargs['fv_desc'],
                                         fv_issues=kwargs['fv_issues'])
-        except exc.IntegrityError, e:
-            raise ValueError, 'Insert failed. %s' % e.message
+        except exc.IntegrityError as e:
+            raise ValueError('Insert failed. %s' % e.message)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -690,9 +689,9 @@ class FieldValueTools(simplesql.TableTools):
                                         fv_value=vkwargs['fv_value'],
                                         fv_desc=vkwargs['fv_desc'],
                                         fv_issues=vkwargs['fv_issues'])
-        except exc.IntegrityError, e:
-            print sql
-            raise ValueError, 'Insert failed. %s' % e.message
+        except exc.IntegrityError as e:
+            print(sql)
+            raise ValueError('Insert failed. %s' % e.message)
         else:
             return (result.lastrowid,
                     result.rowcount)

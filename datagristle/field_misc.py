@@ -17,31 +17,32 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013 Ken Farmer
 """
-from __future__ import division
 import collections
 import csv
 
-import gristle.field_type as typer
+import datagristle.field_type as typer
+from typing import List, Union
+from pprint import pprint as pp
 
-#--- CONSTANTS -----------------------------------------------------------
 
 MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
 
 
-def get_field_names(filename,
+
+def get_field_names(filename: str,
                     dialect,
-                    col_number=None):
+                    col_number=None) -> Union[str, List[str]]:
     """ Determines names of fields
         Inputs:
         Outputs:
         Misc:
           - if the file is empty it will return None
     """
-    reader = csv.reader(open(filename, 'r'), dialect=dialect)
-    try:
-        field_names = reader.next()
-    except StopIteration:
-        return None              # empty file
+    reader = csv.reader(open(filename, newline=''), dialect=dialect)
+    for field_names in reader:
+        break
+    else:
+        return None
 
     if col_number is None:       # get names for all fields
         final_names = []
@@ -75,38 +76,29 @@ def get_case(field_type, values):
           - empty values list/dict results in 'unknown' result
         To do:
           - add consistency factor
-        Test coverage:
-          - complete, via test harness
     """
-    freq = collections.defaultdict(int)
     case = None
 
     if field_type != 'string':
         return 'n/a'
 
-    # count occurances of each case field_type in values:
-    for key in values:
-        if typer.is_unknown(key):
-            freq['unk']    += 1
-        elif typer.is_integer(key):     # will be ignoring these
-            freq['number'] += 1
-        elif typer.is_float(key):       # will be ignoring these
-            freq['number'] += 1
-        elif key.islower():
-            freq['lower'] += 1
-        elif key.isupper():
-            freq['upper'] += 1
-        else:
-            freq['mixed'] += 1
+    is_unknown = typer.is_unknown
+    is_integer = typer.is_integer
+    is_float   = typer.is_float
+    clean_values = [x for x in values if not is_unknown(x) and not is_integer(x) and not is_float(x)]
+
+    lower_cnt = len([x for x in clean_values if x.islower()])
+    upper_cnt = len([x for x in clean_values if x.isupper()])
+    mixed_cnt = len([x for x in clean_values if not x.isupper() and not x.islower()])
 
     # evaluate frequency distribution:
-    if 'mixed' in freq:
+    if mixed_cnt:
         case = 'mixed'
-    elif ('lower' in freq and 'upper' not in freq):
+    elif lower_cnt and not upper_cnt:
         case = 'lower'
-    elif ('lower' not in freq and 'upper' in freq):
+    elif upper_cnt and not lower_cnt:
         case = 'upper'
-    elif ('lower' in freq and 'upper' in freq):
+    elif upper_cnt and lower_cnt:
         case = 'mixed'
     else:
         case = 'unknown'
@@ -143,12 +135,12 @@ def get_field_freq(filename,
         Issues:
             - has limited checking for wrong number of fields in rec
     """
-    freq            = collections.defaultdict(int)
-    truncated       = False
+    freq = {}
+    truncated = False
     invalid_row_cnt = 0
 
     row_cnt = 0
-    with open(filename, 'rb') as infile:
+    with open(filename, 'rt') as infile:
         reader = csv.reader(infile, dialect)
         for fields in reader:
             row_cnt += 1
@@ -156,10 +148,12 @@ def get_field_freq(filename,
                 continue
             try:
                 freq[fields[field_number].strip()] += 1
+            except KeyError:
+                freq[fields[field_number].strip()] = 1
             except IndexError:
                 invalid_row_cnt += 1
             if max_freq_size > -1 and len(freq) >= max_freq_size:
-                print '      WARNING: freq dict is too large - will trunc'
+                print('      WARNING: freq dict is too large - will trunc')
                 truncated = True
                 break
             elif read_limit > -1 and row_cnt >= read_limit:
@@ -179,31 +173,33 @@ def get_min(value_type, values):
           - dictionary or list of string values
         Outputs:
           - the single minimum value of the appropriate type
-
-        Test Coverage:
-          - complete via test harness
-
     """
     assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
 
-    known_vals = []
-    for val in values:
-        if not typer.is_unknown(val):
-            try:
-                if value_type == 'integer':
-                    known_vals.append(int(val))
-                elif value_type == 'float':
-                    known_vals.append(float(val))
-                else:
-                    known_vals.append(val)
-            except ValueError:
-                pass                       # ignore invalid values
+    if value_type == 'integer':
+        myfunc = int
+    elif value_type == 'float':
+        myfunc = float
+    else:
+        myfunc = str
 
-    # next return the minimum value
+
+    def transform(val):
+        try:
+            result = myfunc(val)
+        except ValueError:
+            pass # just drop any invalid data
+        else:
+            return result
+
     try:
-        return str(min(known_vals))
+        minimum = str(min([transform(x) for x in values if not typer.is_unknown(x)]))
     except ValueError:
         return None
+    else:
+        return minimum
+
+
 
 
 
@@ -216,30 +212,31 @@ def get_max(value_type, values):
           - dictionary or list of string values
         Outputs:
           - the single maximum value of the appropriate type
-
-        Test Coverage:
-          - complete via test harness
-
     """
     assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
 
-    known_vals = []
-    for val in values:
-        if not typer.is_unknown(val):
-            try:
-                if value_type == 'integer':
-                    known_vals.append(int(val))
-                elif value_type == 'float':
-                    known_vals.append(float(val))
-                else:
-                    known_vals.append(val)
-            except ValueError:
-                pass                       # ignore invalid values
+    if value_type == 'integer':
+        myfunc = int
+    elif value_type == 'float':
+        myfunc = float
+    else:
+        myfunc = str
+
+
+    def transform(val):
+        try:
+            result = myfunc(val)
+        except ValueError:
+            pass # just drop any invalid data
+        else:
+            return result
 
     try:
-        return str(max(known_vals))
+        maximum = str(max([transform(x) for x in values if not typer.is_unknown(x)]))
     except ValueError:
         return None
+    else:
+        return maximum
 
 
 
@@ -253,13 +250,7 @@ def get_max_length(values):
           - the single maximum value
     """
     max_length = 0
-
-    for value in values:
-        if not typer.is_unknown(value):
-            if len(value) > max_length:
-                max_length = len(value)
-
-    return max_length
+    return max([len(value) for value in values if not typer.is_unknown(value)]) or max_length
 
 
 
@@ -267,20 +258,11 @@ def get_min_length(values):
     """ Returns the minimum length value of the input.   If
         no values found besides unknown it will just return 999999
 
-        Inputs:
-          - dictionary or list of string values
-        Outputs:
-          - the single minimum value
+    Inputs:
+       - dictionary or list of string values
+    Outputs:
+       - the single minimum value
     """
     min_length = 999999
-
-    for value in values:
-        if not typer.is_unknown(value):
-            if len(value) < min_length:
-                min_length = len(value)
-
-    return min_length
-
-
-
+    return min([len(value) for value in values if not typer.is_unknown(value)]) or min_length
 

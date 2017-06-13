@@ -11,7 +11,7 @@ import pytest
 #import test_tools
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.location_slicer  as mod
+import datagristle.location_slicer  as mod
 
 
 

@@ -22,8 +22,9 @@ sys.path.insert(0, dirname('../'))
 sys.path.insert(0, dirname('../../'))
 sys.path.append('../../../../')
 
-import gristle.file_deduper         as mod
-from gristle.csvhelper import create_dialect
+import datagristle.file_deduper         as mod
+#from datagristle.csvhelper import create_dialect
+from datagristle.csvhelper import Dialect
 
 
 class TestDeduping(object):
@@ -31,7 +32,7 @@ class TestDeduping(object):
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn     = create_test_file(self.temp_dir)
-        self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False )
+        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
         self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 
     def teardown_method(self, method):
@@ -47,7 +48,7 @@ class TestDeduping(object):
         assert read_cnt > write_cnt
         for rec in fileinput.input(out_fqfn):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '4'
             elif fileinput.lineno() == 2:
@@ -75,7 +76,7 @@ class TestDeduping(object):
         assert read_cnt == write_cnt
         for rec in fileinput.input(out_fqfn):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '4'
             elif fileinput.lineno() == 2:
@@ -97,7 +98,7 @@ class TestDeduping(object):
         assert read_cnt > write_cnt
         for rec in fileinput.input(out_fqfn):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '4'
             elif fileinput.lineno() == 2:

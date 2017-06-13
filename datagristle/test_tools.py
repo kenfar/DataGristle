@@ -99,6 +99,6 @@ def generate_7x7_test_file(prefix, hasheader=False, delimiter='|', dirname=None)
 
 
 def touch(fname, times=None):
-    with file(fname, 'a'):
+    with open(fname, 'a'):
         os.utime(fname, times)
 

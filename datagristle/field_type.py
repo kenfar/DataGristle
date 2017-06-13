@@ -13,16 +13,14 @@
       - replace get_types freq length logic with something that says, if all
         types are basically numeric, choose float
       - consistency metric
-      - leverage list comprehensions more
       - change returned data format to be based on field
 
     See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
-from __future__ import division
 import datetime
-import collections
 import math
+from itertools import groupby
 #import pprint
 
 
@@ -73,15 +71,15 @@ DATE_FORMATS = [ # <scope>, <pattern>, <format>
 
 def get_field_type(values):
     """ Determines the type of every item in the value list or dictionary,
-        then consolidates that into a single output type.  This is used to 
+        then consolidates that into a single output type.  This is used to
         determine what type to convert an entire field into - often within
         a database.
 
-        Input 
+        Input
          - a list or dictionary of strings
 
         Output:
-         - a single value what type the data can be safetly converted into.
+         - a single value what type the data can be safely converted into.
 
         Types identified (and returned) include:
           - unknown
@@ -89,30 +87,31 @@ def get_field_type(values):
           - integer
           - float
           - timestamp
-
-        Test Coverage:
-          - complete via test harness
     """
-    type_freq  = collections.defaultdict(int)
+    if values is None:
+        return 'unknown'
 
-    # count occurances of each type:
-    for key in values:
-        i = _get_type(key)
-        if i != 'unknown':                   # NOTE: unknown is filtered out
-            try:                             # values is a dict
-                type_freq[i] += values[key]
-            except TypeError:                # values is a list
-                type_freq[i] += 1
-    type_list = type_freq.keys()
+    type_freq = {}
 
-    # try simple rules:
-    result = _get_field_type_rule(type_list)
+    if isinstance(values, list):
+        transformed_values = [_get_type(x) for x in values]
+        sorted_values = sorted(transformed_values)
+        type_freq = { key:len(list(group)) for key, group in groupby(sorted_values) }
+    else:
+        values = list(values.items())
+        keyfunc = lambda t: (t[0])
+        sorted_values = sorted(values, key=keyfunc)
+        for key, rows in groupby(sorted_values, keyfunc):
+            type_freq[_get_type(key)] = sum(row[1] for row in rows)
+
+    clean_type_list = [x for x in type_freq if x != 'unknown']
+
+    result = _get_field_type_rule(clean_type_list)
     if result:
         return result
 
-    # try probabilities:
     result = _get_field_type_probability(type_freq)
-    return (result or 'unknown')
+    return result or 'unknown'
 
 
 
@@ -130,7 +129,7 @@ def _get_type(value):
         Test Coverage:
           - complete via test harness
     """
-    dtc_status, dummy, dummy  = is_timestamp(value)
+    dtc_status, dummy, dummy = is_timestamp(value)
     if dtc_status:
         return 'timestamp'
     elif is_unknown(value):
@@ -143,6 +142,7 @@ def _get_type(value):
         return 'string'
     else:
         return 'string'
+
 
 
 def _get_field_type_rule(type_list):
@@ -193,19 +193,16 @@ def _get_field_type_rule(type_list):
         return None
 
 
+
 def _get_field_type_probability(type_freq):
     """ Determines type of field based on the type of the vast majority of
         values.
     """
-    total = sum(type_freq.itervalues())
+    total = sum(type_freq.values())
+    type_pct = {x:type_freq[x]/total for x in type_freq}
 
-    # if the sample-size is too small, then we can't be sure:
     if total < 10:
         return 'unknown'
-
-    type_pct  = collections.defaultdict(int)
-    for key in type_freq:
-        type_pct[key] = type_freq[key] / total
 
     for key in type_pct:
         if type_pct[key] >= 0.95:
@@ -261,7 +258,7 @@ def is_integer(value):
           - complete, via test harness
     """
     try:
-        i            = float(value)
+        i = float(value)
         fract, dummy = math.modf(i)
         if fract > 0:
             return False
@@ -291,7 +288,7 @@ def is_float(value):
           - complete, via test harness
     """
     try:
-        i            = float(value)
+        i = float(value)
         fract, dummy = math.modf(i)
         if fract == 0:
             return False
@@ -323,34 +320,30 @@ def is_unknown(value):
         3         is False
         3.3       is False
         None      is False
-        Test coverage:
-          - complete, via test harness
     """
     unk_vals = ['na', 'n/a', 'unk', 'unknown', '']
     try:
-        if value.strip().lower() in unk_vals:
-            return True
-        else:
-            return False
+        return value.strip().lower() in unk_vals
     except AttributeError:
         return False
     except TypeError:
         return False
 
 
+
 def is_timestamp(time_str):
     """ Determine if arg is a timestamp and if so what format
 
-        Args:
-           time_str - character string that may be a date, time, epoch or combo
-        Returns:
-           status   - True if date/time False if not
-           scope    - kind of timestamp
-           pattern  - date mask
+    Args:
+        time_str - character string that may be a date, time, epoch or combo
+    Returns:
+        status   - True if date/time False if not
+        scope    - kind of timestamp
+        pattern  - date mask
 
-        To do:
-           - consider overrides to default date min & max epoch limits
-           - consider consolidating epoch checks with rest of checks
+    To do:
+        - consider overrides to default date min & max epoch limits
+        - consider consolidating epoch checks with rest of checks
     """
     non_date = (False, None, None)
     if len(time_str) > DATE_MAX_LEN:

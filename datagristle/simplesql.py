@@ -15,7 +15,6 @@
     Copyright 2011,2012,2013 Ken Farmer
 """
 
-from __future__ import division
 from sqlalchemy import exc
 from sqlalchemy import UniqueConstraint
 #from pprint import pprint
@@ -135,34 +134,29 @@ class TableTools(object):
         try:
             ins_sql = self._table.insert()
             result = ins_sql.execute(kw_insert)
-            #print kw_insert
             if result.rowcount == 0:
                 raise KeyError    # by missing column
             else:
                 return  result.lastrowid
-        except exc.IntegrityError, except_detail:
+        except exc.IntegrityError as except_detail:
             # possibly caused by violation of primary key constraint
             # possibly caused by violation of check or fk key constraint
-            # print 'insert exception'
-            # print e
-            #print except_detail
             kw_update = {}
             for key in kw.keys():
                 if kw[key] not in self.update_defaulted:
                     kw_update[key] = kw[key]
             upd_sql      = self._table.update()
             upd_sql      = self._create_where(upd_sql, kw_update)
-            #print kw_update
-	    try:
+            try:
                 result = upd_sql.execute(kw_update)
-            except exc.IntegrityError, except_detail:
-	        print 'insert failed, update failed'
-		print except_detail
-		raise
+            except exc.IntegrityError as except_detail:
+                print('insert failed, update failed')
+                print(except_detail)
+                raise
             if result.rowcount == 0:       # this is the only way to catch
-                print 'update exception'
-                print except_detail        # might want to get rid of this
-                print result
+                print('update exception')
+                print(except_detail)        # might want to get rid of this
+                print(result)
                 # usually constraint violations
                 raise exc.IntegrityError (upd_sql, kw_update, None)
             return 0
@@ -207,9 +201,9 @@ class TableTools(object):
                                   == filter_col[constraint])
             if where is None:
                 if not self._get_unique_constraints():
-                    raise KeyError, 'no pk provided but table lacks a uk'
+                    raise KeyError('no pk provided but table lacks a uk')
                 else:
-                    raise KeyError, 'no pk or uk provided'
+                    raise KeyError('no pk or uk provided')
 
         if where is None:
             raise KeyError

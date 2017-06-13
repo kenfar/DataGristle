@@ -150,10 +150,11 @@ Copyright 2011,2012,2013,2014,2015 Ken Farmer
 
 """
 #--- standard modules ------------------
-from __future__ import division
 import sys, os
 import logging
 import copy
+import csv
+from typing import List, Union, Dict, Any, Tuple
 from  os.path import isfile, isdir, exists, dirname, basename
 from  os.path import join as pjoin
 from  pprint  import pprint as pp
@@ -166,11 +167,12 @@ sys.path.append('../')
 sys.path.append('../../')
 sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 
-import gristle.common       as comm
-from   gristle.common  import abort
-import gristle.file_delta   as gdelta
-import gristle.file_sorter  as gsorter
-import gristle.file_deduper as gdeduper
+import datagristle.common       as comm
+from   datagristle.common  import abort
+import datagristle.file_type    as gftype
+import datagristle.file_delta   as gdelta
+import datagristle.file_sorter  as gsorter
+import datagristle.file_deduper as gdeduper
 
 #Ignore SIG_PIPE and don't throw exceptions on it... 
 #(http://docs.python.org/library/signal.html)
@@ -212,29 +214,29 @@ def main():
             and os.path.getsize(config['files'][1]) == 0):
         return 1
 
-    dialect = comm.get_dialect(config['files'], config['delimiter'], config['quoting'],
-                               config['quotechar'], config['recdelimiter'], config['hasheader'])
+    dialect = gftype.get_dialect(config['files'], config['delimiter'], config['quoting'],
+                                 config['quotechar'], config['recdelimiter'], config['hasheader'])
 
     delta   = delta_runner(config, dialect)
 
     if config['stats']:
-        print
-        print 'Read Stats:'
-        print '   File0/oldfile records:  %d' % delta.old_read_cnt
-        print '   File1/newfile records:  %d' % delta.new_read_cnt
-        print
-        print 'Write Stats:'
-        print '   *.delete records:       %d' % delta.out_counts['delete']
-        print '   *.insert records:       %d' % delta.out_counts['insert']
-        print '   *.same records:         %d' % delta.out_counts['same']
-        print '   *.chgold records:       %d' % delta.out_counts['chgold']
-        print '   *.chgnew records:       %d' % delta.out_counts['chgnew']
+        print('')
+        print('Read Stats:')
+        print('   File0/oldfile records:  %d' % delta.old_read_cnt)
+        print('   File1/newfile records:  %d' % delta.new_read_cnt)
+        print('')
+        print('Write Stats:')
+        print('   *.delete records:       %d' % delta.out_counts['delete'])
+        print('   *.insert records:       %d' % delta.out_counts['insert'])
+        print('   *.same records:         %d' % delta.out_counts['same'])
+        print('   *.chgold records:       %d' % delta.out_counts['chgold'])
+        print('   *.chgnew records:       %d' % delta.out_counts['chgnew'])
 
     return 0
 
 
 
-def delta_runner(config, dialect):
+def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDelta:
     """ sets up config items for delta class,
         prepares input files,
         instantiates delta class and runs comparison
@@ -247,9 +249,9 @@ def delta_runner(config, dialect):
     def convert_cols(col_title, cols):
         try:
             off0     = comm.colnames_to_coloff0(config['col_names'], cols)
-        except (KeyError, ValueError), e:
-            print e
-            print 'Column lookup list: %s' % ','.join(cols)
+        except (KeyError, ValueError) as e:
+            print(e)
+            print('Column lookup list: %s' % ','.join(cols))
             abort('Invalid config cols for %s: ' % col_title)
         return off0
 
@@ -258,7 +260,6 @@ def delta_runner(config, dialect):
     ignore_off0  = convert_cols('key_cols', config['ignore_cols'])
 
     delta = gdelta.FileDelta(adj_out_dir, dialect)
-    pp(config)
     for col in keys_off0:
         delta.set_fields('join', col)
     for col in ignore_off0:
@@ -304,7 +305,8 @@ def delta_runner(config, dialect):
 
 
 
-def get_assign_with_offsets_for_names(col_names, config):
+def get_assign_with_offsets_for_names(col_names: List[str],
+                                      assign_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """ Return assignment config section after converting col names to offsets.
 
     Args:
@@ -316,20 +318,25 @@ def get_assign_with_offsets_for_names(col_names, config):
         KeyError - if colname from config not in col_names
                  - or if col position from config beyond col_name list
     """
-    new_config = copy.deepcopy(config)
-    for asgn in new_config:
+    new_assign_config: List[Dict[str, Any]] = copy.deepcopy(assign_config)
+    for asgn in new_assign_config:
         if asgn.get("src_field", None) is not None:
             asgn["src_field_orig"]  = asgn["src_field"]
             asgn["src_field"]       = comm.colnames_to_coloff0(col_names, [asgn["src_field"]])[0]
         if asgn.get("dest_field", None) is not None:
             asgn["dest_field_orig"] = asgn["dest_field"]
             asgn["dest_field"]      = comm.colnames_to_coloff0(col_names, [asgn["dest_field"]])[0]
-    #assert isinstance(new_config, list)
-    return new_config
+    return new_assign_config
 
 
 
-def prep_file(filename, dialect, key_cols, temp_dir, out_dir, already_sorted, already_uniq):
+def prep_file(filename: str,
+              dialect: csv.Dialect,
+              key_cols: List[int],
+              temp_dir: str,
+              out_dir: str,
+              already_sorted: bool,
+              already_uniq: bool) -> Tuple[str, int]:
     """ Set up a file for the delta class comparison.
 
     Args:
@@ -432,7 +439,7 @@ class ArgProcessor(comm.ArgProcessor):
         #self.add_option_logging()  # removing temporarily
 
 
-def setup_config(args):
+def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
     """ Manages config file reading, config consolidation and config validation.
 
     Used to consolidate CLI args & config file items into a single config
@@ -531,7 +538,7 @@ def setup_config(args):
         config.add_file(app_name=APP_NAME,
                         config_fn='%s.yml' % args['config_name'])
     #print("Config structure: ")
-    pp(config.cm_config)
+    #pp(config.cm_config)
     #print("config['files']: %s" % config.cm_config.get('files', None))
     print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
     print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
@@ -579,7 +586,7 @@ def setup_config(args):
 
 
 
-def validate_config(config):
+def validate_config(config: Dict[str, Any]) -> None:
     """ Provide additional validation of config.
 
     Purpose is to provide additional validation beyond what's done by JSON

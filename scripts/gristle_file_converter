@@ -18,11 +18,11 @@
 """
 
 #--- standard modules ------------------
-from __future__ import division
 import sys
 import optparse
 import csv
 import os
+from os.path import dirname
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
@@ -31,17 +31,17 @@ signal(SIGPIPE,SIG_DFL)
 
 #--- gristle modules -------------------
 # lets get pathing set for running code out of project structure & testing it via tox
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 
 
-import gristle.file_type           as file_type 
+import datagristle.file_type           as file_type
 
 
 #------------------------------------------------------------------------------
 # Command-line section 
 #------------------------------------------------------------------------------
 def main():
-    """ Analyzes the file to automatically determine input file csv 
+    """ Analyzes the file to automatically determine input file csv
         characteristics.  Then reads one record at a time and writes it
         out.
 
@@ -61,18 +61,19 @@ def main():
     fields = in_file.readline()
     while fields:
 
-        if (in_file.read_cnt == 1 
+        if (in_file.read_cnt == 1
         and in_dialect.has_header
         and not out_dialect.has_header):
             pass
         else:
-            out_file.writeline(fields)        
+            out_file.writeline(fields)
 
         fields = in_file.readline()
 
     out_file.terminate()
 
-    return 0     
+    return 0
+
 
 
 class InFileHandler(object):
@@ -89,18 +90,18 @@ class InFileHandler(object):
         self.in_file     = open(self.file,'r')
         self.eof         = False
         if self.dialect.auto:
-            self.reader  = csv.reader(self.in_file, 
+            self.reader  = csv.reader(self.in_file,
                                      delimiter=self.dialect.delimiter,
                                      quoting=self.dialect.quote_type)
 
     def readline(self):
         """ Public method that handles reading.
-            It will return None if EOF is hit, otherwise will return a good 
-            record consisting of a list of fields - even if this means that 
+            It will return None if EOF is hit, otherwise will return a good
+            record consisting of a list of fields - even if this means that
             it will have to skip multiple bad or partial records.
             Note that it will use the CSV module if possible, otherwise will
             manually remove quotes, line terminators, etc.
-        """   
+        """
         while True:
             rec = self._readrec()
             if rec:
@@ -119,7 +120,7 @@ class InFileHandler(object):
         assert self.eof is False
         if self.dialect.auto:
             try:
-                in_rec = self.reader.next()
+                in_rec = self.reader.__next__()
             except StopIteration:
                 in_rec = None
         else:
@@ -170,7 +171,7 @@ class InFileHandler(object):
         """
         if self.dialect.recdelimiter:
             if rec.count(self.dialect.recdelimiter) != 1:
-                print 'bad rec found with len of %s and looks like %s' % (len(rec), rec)
+                print('bad rec found with len of %s and looks like %s' % (len(rec), rec))
                 self.bad_cnt += 1
                 return None
             else:
@@ -191,7 +192,7 @@ class OutFileHandler(object):
 
     def __init__(self, output, dialect):
         """ Sets up environment to write files.  Will write to stdout if a file
-            name was not provided.  Will use csv module if the delimiter is 
+            name was not provided.  Will use csv module if the delimiter is
             just a single character.
         """
         self.dialect        = dialect
@@ -202,7 +203,7 @@ class OutFileHandler(object):
         else:
             self.out_file   = sys.stdout
         if len(self.dialect.delimiter) == 1:
-            self.csv_writer = csv.writer(self.out_file, 
+            self.csv_writer = csv.writer(self.out_file,
                                          delimiter=self.dialect.delimiter,
                                          quoting=self.dialect.quote_type)
 
@@ -235,7 +236,7 @@ class OutFileHandler(object):
             handled by csv module.
         """
         return '%s%s' % (rec, self.dialect.lineterminator)
-      
+
     def _add_quotes(self, fields):
         """ Add quotes around each field if the dialect indicates the fields 
             are quoted.  It will use the quotechar also defined in the dialect.
@@ -244,7 +245,7 @@ class OutFileHandler(object):
             NOTE: it quotes every single field - not just strings! """
         # pylint: disable=W0612
         if self.dialect.quoting:
-            quotechar  = self.dialect.quotechar  
+            quotechar  = self.dialect.quotechar
             new_fields = []
             for field in fields:
                 new_fields.append('%(quotechar)s%(field)s%(quotechar)s' % locals())
@@ -422,9 +423,9 @@ class CommandLineParser(object):
             if (len(self.files) > 1 and not self.opts.delimiter):
                 self.parser.error('Please provide delimiter when piping data into '
                              'program via stdin or reading multiple input files')
-        else: 
+        else:
             self.parser.error('Input file argument is missing')
-    
+
         if len(self.files) > 1:
             self.parser.error('Too many file names provided')
 
@@ -439,7 +440,7 @@ class CustomCSV(csv.Dialect):
         """ do not run validation process - so that multi-char delimiters can
             be kept.
         """
-        pass 
+        pass
 # pylint: enable=W0231
 
 

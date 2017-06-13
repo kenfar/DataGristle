@@ -32,14 +32,14 @@ class CSVDeDuper(object):
         try:
             self.key_fields_0off = [int(x) for x in key_fields_0off]
         except ValueError:
-            print 'Error: invalid non-numeric sort key: %s' % key_fields_0off
+            print('Error: invalid non-numeric sort key: %s' % key_fields_0off)
             raise
 
         if out_dir:
             if isdir(out_dir):
                 self.out_dir = out_dir
             else:
-                raise ValueError, 'Invalid sort output directory: %s' % out_dir
+                raise ValueError('Invalid sort output directory: %s' % out_dir)
         else:
             self.out_dir = None
 
@@ -74,7 +74,7 @@ class CSVDeDuper(object):
         last_rec  = None
         write_cnt = 0
         read_cnt  = 0
-        with open(in_fqfn, 'rb') as infile:
+        with open(in_fqfn, 'rt') as infile:
             reader = csv.reader(infile, self.dialect)
             for rec in reader:
                 read_cnt += 1

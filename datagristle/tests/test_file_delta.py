@@ -29,8 +29,9 @@ sys.path.insert(0, dirname('../'))
 sys.path.insert(0, dirname('../../'))
 sys.path.append('../../../../')
 
-import gristle.file_delta           as mod
-from gristle.csvhelper import create_dialect
+import datagristle.file_delta           as mod
+#from datagristle.csvhelper import create_dialect
+from datagristle.csvhelper import Dialect
 
 LOG_NAME    = 'main'
 
@@ -40,7 +41,7 @@ class TestAssignment(object):
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn     = create_test_file(self.temp_dir)
-        self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
+        self.dialect  = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -83,7 +84,7 @@ class TestAssignment(object):
         dass.set_assignment('insert', 2, 'literal', 'foo')
         dass.assign('delete', cur_rec, old_rec, new_rec)
         assert cur_rec == ['a', 'b', 'c', 'd']
-        
+
     def test_assign_literal_to_rec(self):
         old_rec = ['o0', 'o1', 'o2', 'o3']
         new_rec = ['n0', 'n1', 'n2', 'n3']
@@ -92,7 +93,7 @@ class TestAssignment(object):
         dass.set_assignment('insert', 2, 'literal', 'foo')
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['a', 'b', 'foo', 'd']
-        
+
     def test_assign_copy_oldfield_to_rec(self):
         old_rec = ['o0', 'o1', 'o2', 'o3']
         new_rec = ['n0', 'n1', 'n2', 'n3']
@@ -141,11 +142,11 @@ class TestAssignment(object):
         with open(fqfn, 'w') as f:
              f.write('3,o,oo,ooo\n')
              f.write('5,o,oo,ooo\n')
-       
+
         dass.get_sequence_starts(self.dialect, fqfn)
-        print '---- post sequence_starts seq dict: -----'
-        print dass.seq
-        print '---- post sequence_starts print-done: -----'
+        print('---- post sequence_starts seq dict: -----')
+        print(dass.seq)
+        print('---- post sequence_starts print-done: -----')
 
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['6', 'b', 'c', 'd']
@@ -169,11 +170,11 @@ class TestAssignment(object):
              f.write('3,o,2,ooo\n')
              f.write('5,o,4,ooo\n')
              f.write('5,o,6,ooo\n')
-       
+
         dass.get_sequence_starts(self.dialect, fqfn)
-        print '---- post sequence_starts seq dict: -----'
-        print dass.seq
-        print '---- post sequence_starts print-done: -----'
+        print('---- post sequence_starts seq dict: -----')
+        print(dass.seq)
+        print('---- post sequence_starts print-done: -----')
 
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['6', 'b', '7', 'd']
@@ -191,11 +192,11 @@ class TestAssignment(object):
         fqfn    = pjoin(self.temp_dir, 'old.csv')
         with open(fqfn, 'w') as f:
              pass
-       
+
         dass.get_sequence_starts(self.dialect, fqfn)
-        print '---- post sequence_starts seq dict: -----'
-        print dass.seq
-        print '---- post sequence_starts print-done: -----'
+        print('---- post sequence_starts seq dict: -----')
+        print(dass.seq)
+        print('---- post sequence_starts print-done: -----')
 
         dass.assign('insert', cur_rec, old_rec, new_rec)
         assert cur_rec == ['1', 'b', 'c', 'd']
@@ -218,7 +219,7 @@ class TestComparisonHelpers(object):
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn     = create_test_file(self.temp_dir)
-        self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
+        self.dialect  = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -243,7 +244,7 @@ class TestComparisonHelpers(object):
 
 #        with pytest.raises(ValueError):
  #           delta.set_fields('join', '6,7')
-       
+
 
     def test_key_match_equal(self):
         delta         = mod.FileDelta(self.temp_dir, self.dialect)
@@ -350,7 +351,7 @@ class TestComparison(object):
         self.temp_dir  = tempfile.mkdtemp(prefix='gristle_test_')
         self.old_fqfn  = pjoin(self.temp_dir, 'old.csv')
         self.new_fqfn  = pjoin(self.temp_dir, 'new.csv')
-        self.dialect   = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
+        self.dialect   = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)

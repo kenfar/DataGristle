@@ -10,9 +10,11 @@ import random
 import atexit
 import shutil
 import pytest
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.common  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+import datagristle.common  as mod
 
 
 class TestFunctions(object):

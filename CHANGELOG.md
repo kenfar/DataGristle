@@ -1,3 +1,6 @@
+# v0.1.1 - 2017-05
+   * upgraded to use python3.6
+
 # v0.59 - 2016-11
    * gristle_differ
      - totally rewritten.  Can now handle very large files, perform post-transform

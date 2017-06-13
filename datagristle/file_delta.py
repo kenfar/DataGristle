@@ -9,8 +9,8 @@ import csv
 import collections
 from pprint import pprint as pp
 
-import gristle.common as comm
-from gristle.common import abort as abort
+import datagristle.common as comm
+from datagristle.common import abort as abort
 
 OUTPUT_TYPES = ['insert', 'delete', 'same', 'chgnew', 'chgold']
 
@@ -76,16 +76,16 @@ class FileDelta(object):
         elif field_type == 'ignore':
             self.ignore_fields.extend([ int(x) for x in split_fields if x is not None])
         else:
-            raise ValueError, 'Invalid field_type value: %s' % field_type
+            raise ValueError('Invalid field_type value: %s' % field_type)
 
     def _validate_fields(self):
         if len(self.join_fields) == 0:
-            raise ValueError, 'key (join) fields are missing'
+            raise ValueError('key (join) fields are missing')
 
         # should add compare_fields to this check
         for field in self.ignore_fields:
             if field in self.join_fields:
-                raise ValueError, 'invalid ignore_fields value: %s' % field
+                raise ValueError('invalid ignore_fields value: %s' % field)
 
         # should also confirm that compare_fields or ignore_fields are populated,
         # not both
@@ -235,7 +235,7 @@ class FileDelta(object):
         """
         try:
             last_rec     = self.new_rec
-            self.new_rec = self.new_csv.next()
+            self.new_rec = self.new_csv.__next__()
             if last_rec is None: # first read priming
                 last_rec = self.new_rec
             if len(last_rec) != len(self.new_rec):
@@ -245,7 +245,7 @@ class FileDelta(object):
                     self.new_read_cnt += 1
                     break # good
                 if self.new_rec[key] < last_rec[key]:
-                    print self.new_rec
+                    print(self.new_rec)
                     abort('new file is not sorted correctly')
         except StopIteration:
             self.new_rec = None
@@ -260,7 +260,7 @@ class FileDelta(object):
         """
         try:
             last_rec     = self.old_rec
-            self.old_rec = self.old_csv.next()
+            self.old_rec = self.old_csv.__next__()
             if last_rec is None: # first read priming
                 last_rec = self.old_rec
             if len(last_rec) != len(self.old_rec):
@@ -270,7 +270,7 @@ class FileDelta(object):
                     self.old_read_cnt += 1
                     break # good
                 if self.old_rec[key] < last_rec[key]:
-                    print self.old_rec
+                    print(self.old_rec)
                     abort('old file is not sorted correctly')
         except StopIteration:
             self.old_rec = None
@@ -317,17 +317,17 @@ class DeltaAssignments(object):
             sys.exit if sequence assignment is invalid
         """
         if dest_file not in ['insert', 'delete', 'chgold', 'chgnew']:
-            raise ValueError, 'Invalid dest_file: %s' % dest_file
+            raise ValueError('Invalid dest_file: %s' % dest_file)
         if not comm.isnumeric(dest_field):
-            raise ValueError, 'Invalid dest_field: %s' % dest_field
+            raise ValueError('Invalid dest_field: %s' % dest_field)
         if src_type not in ['literal', 'copy', 'sequence', 'special']:
-            raise ValueError, 'Invalid src_type of %s' % src_type
+            raise ValueError('Invalid src_type of %s' % src_type)
         if src_type in ['literal', 'lookup'] and src_val is None:
-            raise ValueError, 'Missing src_val'
+            raise ValueError('Missing src_val')
         if src_type == 'copy' and (src_file is None or src_field is None):
-            raise ValueError, 'Missing src_file or src_field'
+            raise ValueError('Missing src_file or src_field')
         if src_file not in [None, 'old', 'new']:
-            raise ValueError, 'Invalid src_file: %s' % src_file
+            raise ValueError('Invalid src_file: %s' % src_file)
 
         if dest_file not in self.assignments:
             self.assignments[dest_file] = {}
@@ -400,8 +400,8 @@ class DeltaAssignments(object):
                         outrec[dest_field]  = self._get_seq_value(assigner['src_field'])
                     elif assigner['src_type'] == 'special':
                         outrec[dest_field]  = self._get_special_value(assigner['src_val'])
-                except ValueError, e:
-                    abort(e)
+                except ValueError as err:
+                    abort(err)
         return outrec
 
 
@@ -432,16 +432,16 @@ class DeltaAssignments(object):
             ValueError if args are invalid
         """
         if not self.old_rec:
-            raise ValueError, 'Assign-Copy refers to non-existing old_rec - invalid config'
+            raise ValueError('Assign-Copy refers to non-existing old_rec - invalid config')
         try:
             if src_file == 'old':
                 return self.old_rec[src_field]
             elif src_file == 'new':
                 return self.new_rec[src_field]
             else:
-                raise ValueError, 'Invalid src_file value: %s' % src_file
+                raise ValueError('Invalid src_file value: %s' % src_file)
         except IndexError:
-            raise ValueError, 'Assign-Copy refers to non-existing field - invalid config or record'
+            raise ValueError('Assign-Copy refers to non-existing field - invalid config or record')
 
 
     def _get_seq_value(self, src_field):
@@ -473,7 +473,7 @@ class DeltaAssignments(object):
             return # all sequences already have a starting val
 
         old_rec_cnt = 0
-        with open(old_fqfn, 'rb') as infile:
+        with open(old_fqfn, 'rt') as infile:
             reader = csv.reader(infile, dialect)
             for rec in reader:
                 old_rec_cnt += 1

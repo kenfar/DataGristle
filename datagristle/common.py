@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 """ Used to hold all common  general-purpose functions and classes
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011 Ken Farmer
 """
-from __future__ import division
-
 import sys
 import argparse
 import math
@@ -13,14 +11,13 @@ import errno
 import csv
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
+from typing import List, Dict, Any, Optional, Tuple, Union
+
+from datagristle._version import __version__
 
 
-from gristle._version import __version__
-import file_type
 
-
-
-def isnumeric(number):
+def isnumeric(number: Any) -> bool:
     """ Tests whether or not the input is numeric.
         Args:
            - number:  a string containing a number that may be either an integer
@@ -34,7 +31,8 @@ def isnumeric(number):
         return False
 
 
-def get_common_key(count_dict):
+
+def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float]:
     """  Provides the most common key in a dictionary as well as its frequency
          expressed as a percentage.  For example:
          cd = ['car':    7
@@ -45,15 +43,15 @@ def get_common_key(count_dict):
          >>> boat, 60
     """
     sorted_keys  = (sorted(count_dict, key=count_dict.get))
-    total_values = sum(count_dict.itervalues())
+    total_values = sum(count_dict.values())
     most_common_key       = sorted_keys[-1]
     most_common_key_value = count_dict[sorted_keys[-1]]
-    most_common_pct       = most_common_key_value / total_values 
+    most_common_pct       = most_common_key_value / total_values  # type: ignore
     return most_common_key, most_common_pct
 
 
 
-def coalesce(default, *args):
+def coalesce(default: Any, *args):
     """ Returns the first non-None value.
         If no non-None args exist, then return default.
     """
@@ -63,16 +61,16 @@ def coalesce(default, *args):
     return default
 
 
-def dict_coalesce(struct, key, default=None):
+def dict_coalesce(struct: Dict, key: Any, default: Any=None):
     try:
         return struct[key]
     except KeyError:
         return default
 
 
-def ifprint(value, string, *args):
+def ifprint(value, string: str, *args):
     if value is not None:
-        print string % args
+        print(string % args)
 
 
 class ArgProcessor(object):
@@ -97,7 +95,7 @@ class ArgProcessor(object):
         self.args       = self.parser.parse_args()
 
         if self.args.long_help:
-            print long_desc
+            print(long_desc)
             sys.exit(0)
 
         #if self.args.files[0] == '-':  # stdin
@@ -193,7 +191,7 @@ class ArgProcessor(object):
         self.parser.add_argument('--config-fn',
                 help=help_info)
 
-    def add_option_logging(self, help_msg=None):
+    def add_option_logging(self, help_msg: str=None):
         """
         """
         self.parser.add_argument('--log-level',
@@ -209,8 +207,7 @@ class ArgProcessor(object):
                             dest='log_to_console',
                             help='Turns off printing of logs to the console')
 
-
-    def add_positional_file_args(self, stdin=True):
+    def add_positional_file_args(self, stdin: bool=True):
         """
         """
         if stdin is True:
@@ -239,6 +236,7 @@ class ArgProcessor(object):
         pass
 
 
+
 class DelimiterAction(argparse.Action):
     """ An argparse delimiter action to fix unprintable delimiter values.
     """
@@ -247,7 +245,8 @@ class DelimiterAction(argparse.Action):
         setattr(namespace, self.dest, val)
 
 
-def dialect_del_fixer(values):
+
+def dialect_del_fixer(values: str) -> str:
     """ Fix unprintable delimiter values provided as CLI args
     """
     if values == '\\t':
@@ -262,101 +261,24 @@ def dialect_del_fixer(values):
 
 
 
-def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader):
-    """ Gets a csv dialect for a csv file or set of attributes.
-
-    If files are provided and are not '-' -then use files and run file_type.FileTyper
-    to get csv - while passing rest of args to FileTyper.  Otherwise, manually construct
-    csv dialect from non-files arguments.
-
-    Args:
-        files: a list of files to analyze.  Analyze the minimum number of recs
-               from the first file to determine delimiter.  
-        delimiter: a single character
-        quotename: one of QUOTE_MINIMAL, QUOTE_NONE, QUOTE_ALL, QUOTE_NONNUMERIC
-        quotechar: a single character
-        recdelimiter: a single character
-        hasheader: a boolean
-    Returns:
-        csv dialect object
-    Raises:
-        sys.exit - if all files are empty
-    """
-    assert isinstance(files, list)
-    dialect = None
-
-    if files[0] == '-':
-        # dialect parameters needed for stdin - since the normal code can't
-        # analyze this data.
-        dialect                = csv.Dialect
-        dialect.delimiter      = delimiter
-        dialect.quoting        = file_type.get_quote_number(quotename)
-        dialect.quotechar      = quotechar
-        dialect.lineterminator = '\n'                 # naive assumption
-        dialect.hasheader      = hasheader
-    else:
-        for fn in files:
-            if not isfile(fn):
-                raise ValueError, 'file does not exist: %s' % fn
-            my_file   = file_type.FileTyper(fn ,
-                                            delimiter          ,
-                                            recdelimiter       ,
-                                            hasheader          ,
-                                            quoting=quotename  ,
-                                            quote_char=quotechar,
-                                            read_limit=5000    )
-            try:
-                my_file.analyze_file()
-                dialect = my_file.dialect
-                break
-            except file_type.IOErrorEmptyFile:
-                continue
-            else:
-                # todo: is this a typo?
-                sys.exit(errno.ENODATA)
-        # Don't exit with ENODATA unless all files are empty:
-        if dialect is None:
-            sys.exit(errno.ENODATA)
-
-    # validate quoting & assign defaults:
-    if dialect.quoting is None:
-        dialect.quoting = file_type.get_quote_number('quote_minimal')
-    assert dialect.quoting is not None and isnumeric(dialect.quoting)
-
-    # validate delimiter & assign defaults:
-    if dialect.delimiter is None:
-        raise ValueError, "Invalid Delimiter: %s" % dialect.delimiter
-
-    return dialect
-
-
-
-
-
-
-def abort(summary, details=None, rc=1):
+def abort(summary: str, details: Optional[str]=None, rc: int=1) -> None:
     """ Creates formatted error message within a box of = characters
         then exits.
     """
-
     #---prints top line:
     print('=' * 79)
 
     #---prints message within = characters, assumes it is kinda short:
-    print '=== ',
-    print '%-69.69s' % summary,
+    print('=== ', end='')
+    print('%-69.69s' % summary, end='')
     print(' ===')
-    if 'logger' in vars() and logger:
-        logger.critical(summary)
 
     #---prints exception msg, breaks it into multiple lines:
     if details:
         for i in range(int(math.ceil(len(details)/68))):
-            print '=== ',
-            print '%-69.69s' % details[i*68:(i*68)+68],
-            print ' ==='
-    if 'logger' in vars() and logger:
-        logger.critical(details)
+            print('=== ', end='')
+            print('%-69.69s' % details[i*68:(i*68)+68], end='')
+            print(' ===')
 
     #---prints bottom line:
     print('=' * 79)
@@ -365,7 +287,7 @@ def abort(summary, details=None, rc=1):
 
 
 
-def colnames_to_coloff0(col_names, lookup_list):
+def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[int]:
     """ Returns a list of collection column positions with offset of 0 for a list of
         collection column names (optional) and a lookup list of col names and/or col
         offsets.
@@ -383,27 +305,18 @@ def colnames_to_coloff0(col_names, lookup_list):
            - output will always be a list of integers
            - input column offsets can be integers (0) or strings ('0')
     """
-    assert isinstance(col_names, list)
-    assert isinstance(lookup_list, list)
-
     colname_lookup = dict((element, offset) for offset, element in enumerate(col_names))
     colname_lookup_len = len(colname_lookup)
 
     try:
         result         =  [int(x) if isnumeric(x) else colname_lookup[x] for x in lookup_list]
     except KeyError:
-        raise KeyError, 'Column name not found in colname list'
+        raise KeyError('Column name not found in colname list')
 
     # extra edit to look for offsets not found within a colname listing:
     if colname_lookup:
         for x in result:
             if x >= colname_lookup_len:
-                raise KeyError, 'column number %s not found in colname list' % x
+                raise KeyError('column number %s not found in colname list' % x)
 
-    #assert isinstance(result, list)
     return result
-
-
-
-
-

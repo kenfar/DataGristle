@@ -14,10 +14,12 @@ import subprocess
 import envoy
 import inspect
 from pprint import pprint as pp
+from os.path import dirname, join as pjoin
 
-import test_tools
-script_dir = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-data_dir   = os.path.join(test_tools.get_app_root(), 'data')
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import datagristle.test_tools as test_tools
+script_dir = dirname(dirname(os.path.realpath((__file__))))
+data_dir   = pjoin(dirname(script_dir), 'data')
 
 
 
@@ -57,9 +59,9 @@ class TestCSVDialect(object):
                                            in_fqfn, self.out_fqfn)
         r =  envoy.run(cmd)
         self.get_outputs()
-        print self.out_recs
-        print r.std_out
-        print r.std_err
+        print(self.out_recs)
+        print(r.std_out)
+        print(r.std_err)
         assert len(self.out_recs) == 3
         assert r.status_code == 0
 
@@ -70,7 +72,7 @@ class TestCSVDialect(object):
                                            in_fqfn, self.out_fqfn)
         r =  envoy.run(cmd)
         self.get_outputs()
-        print self.out_recs
+        print(self.out_recs)
         assert len(self.out_recs) == 3
         assert r.status_code == 0
 
@@ -80,7 +82,7 @@ class TestCSVDialect(object):
                                            in_fqfn, self.out_fqfn)
         r =  envoy.run(cmd)
         self.get_outputs()
-        print self.out_recs
+        print(self.out_recs)
         assert len(self.out_recs) == 3
         assert r.status_code == 0
 
@@ -90,7 +92,7 @@ class TestCSVDialect(object):
                                            in_fqfn, self.out_fqfn)
         r =  envoy.run(cmd)
         self.get_outputs()
-        print self.out_recs
+        print(self.out_recs)
         assert len(self.out_recs) == 3
         assert r.status_code == 0
 
@@ -129,8 +131,8 @@ class TestCommandLine(object):
         records =  p.communicate()[0]
         #for record in records.split('\n'):
         #    print record
-        print 'returncode:'
-        print p.returncode
+        print('returncode:')
+        print(p.returncode)
         # We've got different messages here that mean essentially the same
         # thing, which you get depends on platform.
         assert os.strerror(p.returncode).lower() in ['no data available',
@@ -262,9 +264,9 @@ class TestCommandLine(object):
                               stdout=subprocess.PIPE,
                               close_fds=True,
                               shell=True)
-        records =  p.communicate()[0]
+        records =  cleaner(p.communicate()[0])
         for record in records.split('\n'):
-            print record
+            print(record)
 
         assert p.returncode == 0
         for rec in fileinput.input(self.out_fqfn):
@@ -330,4 +332,14 @@ class TestCommandLine(object):
 
         fileinput.close()
         p.stdin.close()
+
+
+
+def cleaner(val):
+    if val is None:
+        return ''
+    elif type(val) is bytes:
+        return val.decode()
+    else:
+        return val
 

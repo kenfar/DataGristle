@@ -53,8 +53,8 @@
 """
 
 #--- standard modules ------------------
-from __future__ import division
 import sys
+import io
 import optparse
 import csv
 from collections import defaultdict
@@ -63,6 +63,7 @@ import fileinput
 import os
 import errno
 from pprint import pprint as pp      # just used for debugging
+from typing import Dict, List, Tuple, Union, Any, Optional
 
 # Ignore SIG_PIPE and don't throw exceptions on it... 
 # (http://docs.python.org/library/signal.html)
@@ -74,8 +75,7 @@ signal(SIGPIPE, SIG_DFL)
 # lets get pathing set for running code out of project structure 
 # & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import gristle.file_type            as file_type
-
+import datagristle.file_type            as file_type
 
 
 
@@ -152,7 +152,7 @@ def main():
 
 
 
-def get_dialect(opts, files):
+def get_dialect(opts, files: List[str]):
     """ Determine the csv dialect properties for the input file(s).
         If there's only a single input file and the gristle_file_type module
         was imported - then use that to determine csv dialect.  Otherwise, rely
@@ -171,7 +171,7 @@ def get_dialect(opts, files):
             # all values are being set to defaults just to get csv reader to 
             # work - no actual data will be read
             dialect                = csv.Dialect
-            dialect.quoting        = 3
+            dialect.quoting        = csv.QUOTE_NONE
             dialect.delimiter      = ','
             dialect.lineterminator = '\n'                 # naive assumption
         else:
@@ -183,7 +183,7 @@ def get_dialect(opts, files):
         # analyze this data.
         dialect                = csv.Dialect
         dialect.delimiter      = opts.delimiter
-        dialect.quoting        = opts.quoting
+        dialect.quoting        = csv.QUOTE_MINIMAL if opts.quoting else csv.QUOTE_NONE
         dialect.quotechar      = opts.quotechar
         dialect.has_header     = opts.hasheader
         dialect.lineterminator = '\n'                     # naive assumption
@@ -196,8 +196,16 @@ def get_dialect(opts, files):
 
 class ColFreaker(object):
 
-    def __init__(self, files, dialect, col_type, number, sampling_method,
-                 sampling_rate, sort_order, sort_col, max_key_len):
+    def __init__(self,
+                 files: List[str],
+                 dialect: csv.Dialect,
+                 col_type: str,
+                 number: int,
+                 sampling_method: str,
+                 sampling_rate: float,
+                 sort_order: str,
+                 sort_col: int,
+                 max_key_len: int) -> None:
         self.files           = files
         self.dialect         = dialect
         self.col_type        = col_type
@@ -210,10 +218,10 @@ class ColFreaker(object):
         self.col_len         = None
         self.field_freq      = None
         self.sort_freq       = None
-        self.truncated       = None
+        self.truncated: bool= None
         self.read_cnt        = 0
 
-    def create_freq_from_column_set(self, col_set):
+    def create_freq_from_column_set(self, col_set: List[int]):
 
         #----- calculate field lengths -----
         self.build_freq(col_set)
@@ -229,7 +237,7 @@ class ColFreaker(object):
         self.col_len.trunc_all_col_lengths(self.max_key_len)
 
 
-    def build_freq(self, columns):
+    def build_freq(self, columns: List[int]):
         """ Inputs:
                 - files           - list of files to open
                 - dialect         - csv dialect object
@@ -248,33 +256,47 @@ class ColFreaker(object):
         self.read_cnt = 0
         freq_cnt   = 0
         self.field_freq = {}
-        self.truncated  = False
-        for record in csv.reader(fileinput.input(self.files), self.dialect):
-            if not record:
-                break
-            self.read_cnt += 1
-            if (self.read_cnt == 1 and self.dialect.has_header):
-                continue
-            if self.sampling_method == 'interval':
-                if self.read_cnt % self.sampling_rate != 0:
+        self.truncated = False
+
+        def read_recs(reader):
+            nonlocal freq_cnt
+            for record in reader:
+                self.read_cnt += 1
+                if (self.read_cnt == 1 and self.dialect.has_header):
                     continue
-            key = self._create_key(record, columns)
-            if key is not ():
-                try:
-                    self.field_freq[key] += 1
-                except KeyError:
-                    self.field_freq[key] = 1
-                    freq_cnt += 1
-                    if freq_cnt >= self.number:
-                        self.truncated = True
-                        print 'WARNING: freq dict is too large - will truncate'
-                        break
-        fileinput.close()
+                if self.sampling_method == 'interval':
+                    if self.read_cnt % self.sampling_rate != 0:
+                        continue
+                key = self._create_key(record, columns)
+                if key is not ():
+                    try:
+                        self.field_freq[key] += 1
+                    except KeyError:
+                        self.field_freq[key] = 1
+                        freq_cnt += 1
+                        if freq_cnt >= self.number:
+                            self.truncated = True
+                            print('WARNING: freq dict is too large - will truncate')
+                            break
+
+        if self.files:
+            for filename in self.files:
+                with open(filename, 'rt', newline='', encoding='utf-8') as infile:
+                    reader = csv.reader(infile, dialect=self.dialect)
+                    read_recs(reader)
+        elif not os.isatty(0):
+            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
+            reader = csv.reader(input_stream, dialect=self.dialect)
+            read_recs(reader)
+        else:
+            print('ERROR: no data found')
 
 
 
 
-    def _create_key(self, field_list, required_field_indexes):
+    def _create_key(self,
+                    field_list: List[str],
+                    required_field_indexes: List[int]) -> Tuple[str, ...]:
         """ input:
                 - field_list  - a single record in the form of a list of fields
                 - requird_fields - identifies which fields to put into output key
@@ -294,7 +316,10 @@ class ColFreaker(object):
             return tuple(key)
 
 
-    def _dict_sorter(self, field_freq, sortcol, revorder):
+    def _dict_sorter(self,
+                     field_freq: Dict[Tuple[str], int],
+                     sortcol: int,
+                     revorder: bool) -> List[Tuple[Tuple[str], int]]:
         """ Inputs:
                 - field_freq - a dictionary of tuples in which each tuple consists
                                 of two parts: a key tuple and value.
@@ -310,7 +335,7 @@ class ColFreaker(object):
         """
         assert revorder in [True, False]
         assert sortcol in [0, 1]
-        sort_freq = sorted(field_freq.iteritems(),
+        sort_freq = sorted(field_freq.items(),
                         key=operator.itemgetter(sortcol),
                         reverse=revorder)
         return sort_freq
@@ -327,7 +352,7 @@ class ColumnLengthTracker(object):
     def __init__(self):
         self.max_dict   = defaultdict(int)
 
-    def add_val(self, col_num, value):
+    def add_val(self, col_num: int, value: str):
         """ Update tracked max length for a given column if the new value
             is greater than the old value.
             Inputs:
@@ -339,7 +364,7 @@ class ColumnLengthTracker(object):
         if len(value) > self.max_dict[col_num]:
             self.max_dict[col_num] = len(value)
 
-    def add_all_values(self, freq_list):
+    def add_all_values(self, freq_list: Dict[Tuple[str], int]):
         """ Step through a dictionary in which the key is a tuple of 1-many
             parts, and the value is the count.  For each part of the key call
             the add_val function to then store the max length.
@@ -349,7 +374,7 @@ class ColumnLengthTracker(object):
             for index, key in enumerate(keys):
                 self.add_val(index, key)
 
-    def trunc_all_col_lengths(self, maxkeylen):
+    def trunc_all_col_lengths(self, maxkeylen: int):
         """ Gradually reduces the length of columns, reducing the longest one
             before the shorter ones.
         """
@@ -357,7 +382,7 @@ class ColumnLengthTracker(object):
             max_key = max(self.max_dict, key=self.max_dict.get)
             self.max_dict[max_key] -= 1
 
-    def _get_tot_col_len(self):
+    def _get_tot_col_len(self) -> int:
         """ Returns the total column length by adding together to the longest
             column value of each column.
         """
@@ -376,6 +401,7 @@ def write_output(freq, output, col_len, write_limit, col_label=None):
     """
     if output == '-':
         outfile = sys.stdout
+        #outfile = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', newline='')
     else:
         outfile = open(output, 'a')
 
@@ -433,7 +459,7 @@ class CommandLineParser(object):
         self.opts, self.files = self.parser.parse_args()
 
         if self.opts.long_help:
-            print __doc__
+            print(__doc__)
             sys.exit(0)
 
         self._validate_sampling()

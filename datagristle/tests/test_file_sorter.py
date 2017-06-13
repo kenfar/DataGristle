@@ -20,21 +20,17 @@ import envoy
 import pytest
 from pprint import pprint as pp
 
-
-# foo modules:
-sys.path.insert(0, dirname('../'))
-sys.path.insert(0, dirname('../../'))
-sys.path.append('../../../../')
-
-import gristle.file_sorter          as mod
-from gristle.csvhelper import create_dialect
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+import datagristle.file_sorter as mod
+import datagristle.csvhelper as csvhelper
 
 
 class TestSort(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
-        self.dialect  = create_dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False) 
+        self.dialect  = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
         self.fqfn     = create_test_file(self.temp_dir)
         self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 
@@ -56,7 +52,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '1'
             elif fileinput.lineno() == 2:
@@ -76,7 +72,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '1'
             elif fileinput.lineno() == 2:
@@ -110,7 +106,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(self.dialect.delimiter)
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '1'
             elif fileinput.lineno() == 2:
@@ -130,7 +126,7 @@ class TestSort(object):
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
-            print fields
+            print(fields)
             if fileinput.lineno() == 1:
                 assert fields[0] == '4'
             elif fileinput.lineno() == 2:

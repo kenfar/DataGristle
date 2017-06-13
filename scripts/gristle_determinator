@@ -21,7 +21,7 @@ Usage: gristle_determinator [file] [misc options]
                           Restrict analysis to a single column (field number) -
                           using a zero-offset
     --read-limit=READ_LIMIT
-                      
+
     --max-freq=MAX_FREQ
                           Specify a maximum number of entries for freq
                           dictionary. This is applied separately to each column.
@@ -197,7 +197,6 @@ Copyright 2011,2012,2013 Ken Farmer
 """
 
 #--- standard modules ------------------
-from __future__ import division
 import sys
 import os
 import optparse
@@ -214,9 +213,9 @@ signal(SIGPIPE,SIG_DFL)
 # lets get pathing set for running code out of project structure & testing it via tox
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gristle.file_type           as file_type
-import gristle.field_determinator  as field_determinator
-import gristle.metadata            as metadata
+import datagristle.file_type           as file_type
+import datagristle.field_determinator  as field_determinator
+import datagristle.metadata            as metadata
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
@@ -235,25 +234,25 @@ def main():
     """ Allows users to directly call determinator from command line
     """
     (opts, files) = get_opts_and_args()
-    md_man        = None
+    md_man = None
 
     # turn off verbose if parsable output is going to stdout
     if opts.outputformat == 'parsable' and not opts.output:
         opts.verbose = False  # don't mix data and info
 
     if opts.metadata:
-        md_man    = MetadataManager(opts.schema_id, opts.collection_id)
+        md_man = MetadataManager(opts.schema_id, opts.collection_id)
 
 
-    out_writer    = OutputWriter(output_filename=opts.output,
-                                 output_format=opts.outputformat)
+    out_writer = OutputWriter(output_filename=opts.output,
+                              output_format=opts.outputformat)
 
-    my_file       = file_type.FileTyper(files[0],
-                                       opts.delimiter,
-                                       None,
-                                       opts.hasheader,
-                                       quoting=csv.QUOTE_MINIMAL,
-                                       read_limit=opts.read_limit)
+    my_file = file_type.FileTyper(files[0],
+                                  opts.delimiter,
+                                  None,
+                                  opts.hasheader,
+                                  quoting=csv.QUOTE_MINIMAL,
+                                  read_limit=opts.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
@@ -290,7 +289,8 @@ def main():
         md_man.write_field_results(my_fields, opts.column_number)
 
     out_writer.terminate()
-    return 0
+
+
 
 
 class MetadataManager(object):
@@ -302,12 +302,12 @@ class MetadataManager(object):
         self.md                  = metadata.GristleMetaData()
 
         if self.md.collection_tools.getter(collection_id=collection_id) is None:
-            print 'ERROR: schema_id / collection_id (%d / %d) does not exist' \
-                   % (schema_id, collection_id)
+            print('ERROR: schema_id / collection_id (%d / %d) does not exist' \
+                   % (schema_id, collection_id))
             sys.exit(1)
         else:
-            print self.md.collection_tools.getter(schema_id=schema_id,
-                                                  collection_id=collection_id)
+            print(self.md.collection_tools.getter(schema_id=schema_id,
+                                                  collection_id=collection_id))
 
         self.instance_id = self.md.instance_tools.get_instance_id(self.schema_id)
         self.analysis_profile_id = self.md.analysis_profile_tools.get_analysis_profile_id(\
@@ -646,7 +646,7 @@ def get_opts_and_args():
     (opts, files) = parser.parse_args()
 
     if opts.long_help:
-        print __doc__
+        print(__doc__)
         sys.exit(0)
 
     # validate opts

@@ -1,28 +1,31 @@
 #!/usr/bin/env python
 """
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
-
 
 import sys
 import os
 import tempfile
 import random
 import pytest
+from os.path import dirname
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import gristle.field_type  as mod
+sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
+
+import datagristle.field_type  as mod
 
 
 
-class Test_is_integer(object):
+class TestIsInteger(object):
 
     def test_is_integer_basics(self):
         assert mod.is_integer('3')
         assert mod.is_integer('-3')
         assert mod.is_integer(3)
         assert mod.is_integer(-3)
+        assert mod.is_integer(3.0)
         assert mod.is_integer('b')        is False
         assert mod.is_integer('')         is False
         assert mod.is_integer(' ')        is False
@@ -33,11 +36,12 @@ class Test_is_integer(object):
         assert mod.is_integer(None)       is False
 
 
-class Test_is_float(object):
+class TestIsFloat(object):
 
     def test_is_float_basics(self):
         assert mod.is_float('33.22')
         assert mod.is_float(44.55)
+        assert mod.is_float(44.0)        is False
         assert mod.is_float(3)           is False
         assert mod.is_float(0.0)         is False
         assert mod.is_float(0)           is False
@@ -51,7 +55,7 @@ class Test_is_float(object):
         assert mod.is_float(None)        is False
 
 
-class Test_is_string(object):
+class TestIsString(object):
 
     def test_is_string_basics(self):
         assert mod.is_string('b')
@@ -66,7 +70,7 @@ class Test_is_string(object):
         assert mod.is_string(3.3)         is False
         assert mod.is_string(None)        is False
 
-class Test_is_unknown(object):
+class TestIsUnknown(object):
 
     def test_is_unknown_basics(self):
         assert mod.is_unknown('')
@@ -88,7 +92,7 @@ class Test_is_unknown(object):
         assert mod.is_unknown(None)        is False
 
 
-class Test_is_timestamp(object):
+class TestIsTimestamp(object):
 
     def runner(self, date):
         result, scope, pattern = mod.is_timestamp(date)
@@ -155,53 +159,46 @@ class TestGetType(object):
         assert mod._get_type('blah') == 'string'
 
 
-class TestGetFieldType(object):
 
-    def setup_method(self, method):
-        self.type_0a = []
-        self.type_0b = {}
-        self.type_1a = {'Texas':   4}
-        self.type_1b = ['1']
-        self.type_2a = ['n/a', 'Texas']
-        self.type_2b = ['n/a', '55']
-        self.type_2c = ['n/a', '55.5']
-        self.type_2d = ['n/a', '']
-        self.type_2e = ['n/a', '1310527566.7']
-        self.type_2f = ['4.3', '1310527566.7']
-        self.type_3a = {'n/a':   3,
-                        '0':     2,
-                        '1.1':   4}
-        self.type_3b = {'n/a':   3,
-                        '0':     2,
-                        'blah':  4}
-        self.type_4 = {'n/a':   3,
-                       'blah':  2,
-                       '0':     2,
-                       '1.1':   4}
-        self.type_5 = {'n/a':     1,
-                       'blah':  999,
-                       '0':       1,
-                       '1.1':     1,
-                       '2011-04': 1}
+class TestGetFieldType(object):
 
 
     def test_get_field_type_basics(self):
-        assert mod.get_field_type(self.type_0a) == 'unknown'
-        assert mod.get_field_type(self.type_0b) == 'unknown'
-        assert mod.get_field_type(self.type_1a) == 'string'
-        assert mod.get_field_type(self.type_1b) == 'integer'
-        assert mod.get_field_type(self.type_2a) == 'string'
-        assert mod.get_field_type(self.type_2b) == 'integer'
-        assert mod.get_field_type(self.type_2c) == 'float'
-        assert mod.get_field_type(self.type_2d) == 'unknown'
-        assert mod.get_field_type(self.type_2e) == 'timestamp'
-        assert mod.get_field_type(self.type_2f) == 'float'
-        assert mod.get_field_type(self.type_3a) == 'float'
-        assert mod.get_field_type(self.type_3b) == 'unknown'
-        assert mod.get_field_type(self.type_4)  == 'unknown'
+        assert mod.get_field_type(None)         == 'unknown'
+        assert mod.get_field_type([])           == 'unknown'
+        assert mod.get_field_type({})           == 'unknown'
+        assert mod.get_field_type({'Texas': 4}) == 'string'
+        assert mod.get_field_type(['1'])        == 'integer'
+        assert mod.get_field_type(['n/a', 'Texas']) == 'string'
+        assert mod.get_field_type(['n/a', '55']) == 'integer'
+        assert mod.get_field_type(['n/a', '55.5']) == 'float'
+        assert mod.get_field_type(['n/a', ''])  == 'unknown'
+        assert mod.get_field_type(['n/a', '1310527566.7']) == 'timestamp'
+        assert mod.get_field_type(['4.3', '1310527566.7']) == 'float'
+
+        test_data = {'n/a':   3,
+                     '0':     2,
+                     '1.1':   4}
+        assert mod.get_field_type(test_data) == 'float'
+
+        test_data = {'n/a':   3,
+                     '0':     2,
+                     'blah':  4}
+        assert mod.get_field_type(test_data) == 'unknown'
+
+        test_data = {'n/a':   3,
+                     'blah':  2,
+                     '0':     2,
+                     '1.1':   4}
+        assert mod.get_field_type(test_data)  == 'unknown'
 
     def test_get_field_type_mostly_strings(self):
-        assert mod.get_field_type(self.type_5)  == 'string'
+        test_data = {'n/a':     1,
+                     'blah':  999,
+                     '0':       1,
+                     '1.1':     1,
+                     '2011-04': 1}
+        assert mod.get_field_type(test_data)  == 'string'
 
 
 

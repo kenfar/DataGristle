@@ -12,8 +12,9 @@ import random
 import time
 import subprocess
 import pytest
+from os.path import dirname
 
-script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
+script_path = dirname(dirname(os.path.realpath((__file__))))
 
 
 
@@ -53,7 +54,7 @@ class TestCommandLine(object):
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
                              close_fds=True)
-        p_output = p.communicate()[0]
+        p_output = cleaner(p.communicate()[0])
         p_recs   = p_output[:-1].split('\n')
         for rec in p_recs:
             assert rec.count(',') == 3
@@ -68,7 +69,7 @@ class TestCommandLine(object):
                               close_fds=True,
                               shell=True)
 
-        p_output = p.communicate()[0]
+        p_output = cleaner(p.communicate()[0])
         p_recs   = p_output[:-1].split('\n')
         for rec in p_recs:
             assert rec.count(',') == 3
@@ -81,8 +82,18 @@ class TestCommandLine(object):
         p =  subprocess.Popen(cmd,
                               stdout=subprocess.PIPE,
                               shell=True)
-        p_output  = p.communicate()[0]
+        p_output  = cleaner(p.communicate()[0])
         out_recs  = p_output[:-1].split('\n')
         if not out_recs:
             pytest.fail('produced output when input was empty')
+
+
+
+def cleaner(val):
+    if val is None:
+        return ''
+    elif type(val) is bytes:
+        return val.decode()
+    else:
+        return val
 

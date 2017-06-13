@@ -5,21 +5,22 @@
     todo:
       - explore details around quoting flags - they seem very inaccurate
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011 Ken Farmer
 """
 
-from __future__ import division
-
 #--- standard modules ------------------
+import os
+import sys
 import fileinput
 import collections
 import csv
-import os
+import errno
+from os.path import isfile
 from pprint import pprint
 
 #--- datagristle modules ------------------
-import common as comm
+import datagristle.common as comm
 
 
 def get_quote_number(quote_name):
@@ -40,19 +41,19 @@ def get_quote_number(quote_name):
         try:
             return csv.__dict__[quote_name.upper()]
         except KeyError:
-            raise ValueError, 'Invalid quote_name: %s' % quote_name
+            raise ValueError('Invalid quote_name: %s' % quote_name)
 
 def get_quote_name(quote_number):
     """ used to help applications look up quote numbers typically provided by
         users.
     """
     if not comm.isnumeric(quote_number):
-        raise ValueError, 'Invalid quote_number: %s' % quote_number
+        raise ValueError('Invalid quote_number: %s' % quote_number)
 
     for key, value in csv.__dict__.items():
         if value == int(quote_number):
             return key
-    raise ValueError, 'Invalid quote_number: %s' % quote_number
+    raise ValueError('Invalid quote_number: %s' % quote_number)
 
 
 #------------------------------------------------------------------------------
@@ -91,7 +92,7 @@ class FileTyper(object):
         self.record_cnt           = None
         self.record_cnt_is_est    = None
         self.csv_quoting          = None
-        self.dialect              = None
+        self.dialect: Optional[csv.Dialect] = None
         self.read_limit           = read_limit
 
     def analyze_file(self):
@@ -99,7 +100,7 @@ class FileTyper(object):
             of whether or it it is delimited, what the delimiter is, etc.
         """
         if os.path.getsize(self.fqfn) == 0:
-            raise IOErrorEmptyFile, "Empty File"
+            raise IOErrorEmptyFile("Empty File")
 
         if self._delimiter:                                 #delimiter overridden
             self.dialect                  = csv.Dialect
@@ -138,11 +139,11 @@ class FileTyper(object):
             Then performs additional processing to try to improve accuracy of
             quoting.
         """
-        csvfile = open(self.fqfn, "rb")
+        csvfile = open(self.fqfn, "rt")
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(50000))
         except:
-            raise IOError, 'could not analyse file - you may want to provide explicit csv delimiter, quoting, etc'
+            raise IOError('could not analyse file - you may want to provide explicit csv delimiter, quoting, etc')
         csvfile.close()
 
         # See if we can improve quoting accuracy:
@@ -179,7 +180,7 @@ class FileTyper(object):
                         quoted_cnt += 1
             quoted_field_cnt[quoted_cnt] += 1
 
-            if fileinput.lineno > 1000:
+            if fileinput.lineno() > 1000:
                 break
         fileinput.close()
 
@@ -230,7 +231,7 @@ class FileTyper(object):
             try:
                 return csv.Sniffer().has_header(sample)
             except:
-                raise IOError, 'Could not complete header analysis.  It may help to provide explicit header info'
+                raise IOError('Could not complete header analysis.  It may help to provide explicit header info')
         else:
             return has_header
 
@@ -249,7 +250,7 @@ class FileTyper(object):
                 rec_len = len(rec)
                 break
         else:
-            print 'file_type._get_field_cnt - DEPRECATED FUNCTIONALITY'
+            print('file_type._get_field_cnt - DEPRECATED FUNCTIONALITY')
             # csv module can't handle multi-column delimiters:
             for rec in fileinput.input(self.fqfn):
                 fields = rec[:-1].split(self._delimiter)
@@ -268,7 +269,7 @@ class FileTyper(object):
         """
         # our solution isn't accurate enough to show yet, so for now just 
         # set to 'csv':
-        return 'csv' 
+        return 'csv'
 
         #todo:  make this smarter:
         #       - Since we're not using a csv dialect we could have control 
@@ -308,7 +309,7 @@ class FileTyper(object):
             # fastest method, should be helpful if the read_limit is very high
             # but can miscount rows if newlines are in a field
             estimated = True
-            infile  = open(self.fqfn, 'rb')
+            infile  = open(self.fqfn, 'rt')
             for rec in infile:
                 byte_cnt += len(rec)
                 rec_cnt  += 1
@@ -323,7 +324,7 @@ class FileTyper(object):
 
         else:
             # much slower method, but most accurate
-            with open(self.fqfn, 'rb') as infile:
+            with open(self.fqfn, 'rt') as infile:
                 reader = csv.reader(infile, self.dialect)
                 for row in reader:
                     rec_cnt += 1
@@ -333,8 +334,80 @@ class FileTyper(object):
 
 
 
+def get_dialect(files, delimiter, quotename, quotechar, recdelimiter, hasheader):
+    """ Gets a csv dialect for a csv file or set of attributes.
+
+    If files are provided and are not '-' -then use files and run file_type.FileTyper
+    to get csv - while passing rest of args to FileTyper.  Otherwise, manually construct
+    csv dialect from non-files arguments.
+
+    Args:
+        files: a list of files to analyze.  Analyze the minimum number of recs
+               from the first file to determine delimiter.
+        delimiter: a single character
+        quotename: one of QUOTE_MINIMAL, QUOTE_NONE, QUOTE_ALL, QUOTE_NONNUMERIC
+        quotechar: a single character
+        recdelimiter: a single character
+        hasheader: a boolean
+    Returns:
+        csv dialect object
+    Raises:
+        sys.exit - if all files are empty
+    """
+    assert isinstance(files, list)
+    dialect = None
+
+    if files[0] == '-':
+        # dialect parameters needed for stdin - since the normal code can't
+        # analyze this data.
+        dialect                = csv.Dialect
+        dialect.delimiter      = delimiter
+        dialect.quoting        = get_quote_number(quotename)
+        dialect.quotechar      = quotechar
+        dialect.lineterminator = '\n'                 # naive assumption
+        dialect.hasheader      = hasheader
+    else:
+        for fn in files:
+            if not isfile(fn):
+                raise ValueError('file does not exist: %s' % fn)
+            my_file   = FileTyper(fn ,
+                                  delimiter          ,
+                                  recdelimiter       ,
+                                  hasheader          ,
+                                  quoting=quotename  ,
+                                  quote_char=quotechar,
+                                  read_limit=5000    )
+            try:
+                my_file.analyze_file()
+                dialect = my_file.dialect
+                break
+            except IOErrorEmptyFile:
+                continue
+            else:
+                # todo: is this a typo?
+                sys.exit(errno.ENODATA)
+        # Don't exit with ENODATA unless all files are empty:
+        if dialect is None:
+            sys.exit(errno.ENODATA)
+
+    # validate quoting & assign defaults:
+    if dialect.quoting is None:
+        dialect.quoting = file_type.get_quote_number('quote_minimal')
+    assert dialect.quoting is not None and comm.isnumeric(dialect.quoting)
+
+    # validate delimiter & assign defaults:
+    if dialect.delimiter is None:
+        raise ValueError("Invalid Delimiter: %s" % dialect.delimiter)
+
+    return dialect
+
+
 
 class IOErrorEmptyFile(IOError):
     """Error due to empty file
     """
     pass
+
+
+
+

@@ -14,10 +14,16 @@ import pytest
 import shutil
 import envoy
 from pprint import pprint as pp
+from os.path import dirname, join as pjoin
 
-import test_tools
+pgm_path = dirname(dirname(os.path.realpath(__file__)))
+root_path = dirname(pgm_path)
 
-mod = test_tools.load_script('gristle_dir_merger')
+sys.path.insert(0, root_path)
+import datagristle.test_tools as test_tools
+
+mod = test_tools.load_script(pjoin(pgm_path, 'gristle_dir_merger'))
+
 
 
 class TestCreateUniqueFileName(object):
@@ -63,7 +69,7 @@ class TestCreateUniqueFileName(object):
 
 
 def touch(fname, times=None):
-    with file(fname, 'a'):
+    with open(fname, 'a'):
         os.utime(fname, times)
 
 
