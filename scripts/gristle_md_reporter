@@ -35,30 +35,19 @@ optional arguments (some may be required, depending on report):
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013,2014 Ken Farmer
+Copyright 2011,2012,2013,2014,2017 Ken Farmer
 """
-
-#--- standard modules ------------------
 import sys
 import argparse
-import os
-from pprint import pprint as pp
+from signal import signal, SIGPIPE, SIG_DFL
 
 from sqlalchemy import (text)
 
+from datagristle.common import ifprint    # pylint: disable=E0611
+import datagristle.metadata as metadata
+
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
-from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL)
-
-
-#--- gristle modules -------------------
-# lets get pathing set for running code out of project structure & testing it via tox
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from gristle.common import coalesce
-from gristle.common import ifprint    # pylint: disable=E0611
-import gristle.metadata               as metadata
-
+signal(SIGPIPE, SIG_DFL)
 
 
 def main():
@@ -66,12 +55,12 @@ def main():
             - gets opts & args
             - runs command
     """
-    args         = get_args()
-    dargs        = vars(args)
-    my_md        = metadata.GristleMetaData()
+    args = get_args()
+    dargs = vars(args)
+    my_md = metadata.GristleMetaData()
 
-    reports = {'datadictionary'    : rpt_datadict ,
-               'dd'                : rpt_datadict }
+    reports = {'datadictionary':rpt_datadict,
+               'dd':rpt_datadict}
 
     # eliminate any Nones so they don't confuse _create_where
     # alternatively change _create_where so that it checks for None pk/uks
@@ -84,8 +73,7 @@ def main():
     function = reports['dd']
 
     # run the function:
-    result = function(**dargs)
-    if result:
+    if function(**dargs):
         return 0
     else:
         return 1
@@ -100,7 +88,7 @@ def rpt_datadict(**kwargs):
         kwargs['analysis_id'] = get_analysis_id(kwargs['md'],
                                                 kwargs['collection_id'])
     if not rpt_collection_analysis(**kwargs):
-       return False
+        return False
 
     rpt_field_analysis(**kwargs)
     return True
@@ -118,33 +106,33 @@ def rpt_collection_analysis(**kwargs):
                 AND analysis_id    = :analysis_id            \
           """
     select_sql = text(sql)
-    result     = kwargs['md'].engine.execute(select_sql,
-                                             collection_id=kwargs['collection_id'],
-                                             analysis_id=kwargs['analysis_id'])
-    coll_rows  = result.fetchall()
-    if len(coll_rows) == 0:
-        print 'Error: no collection found'
+    result = kwargs['md'].engine.execute(select_sql,
+                                         collection_id=kwargs['collection_id'],
+                                         analysis_id=kwargs['analysis_id'])
+    coll_rows = result.fetchall()
+    if not coll_rows:
+        print('Error: no collection found')
         return False
     else:
-        print
-        print '================= Schema and Collection Info ====================='
+        print('')
+        print('================= Schema and Collection Info =====================')
         for row in coll_rows:
-            print 'schema_id:                %d' % row.schema_id
-            print 'schema_name:              %s' % row.schema_name
-            print 'collection_id:            %d' % row.collection_id
-            print 'collection_name:          %s' % row.collection_name
-            print 'instance_id:              %d' % row.instance_id
-            print 'instance_name:            %s' % row.instance_name
-            print 'analysis_id:              %d' % row.analysis_id
-            print 'analysis_timestamp:       %s' % row.analysis_timestamp
-            print 'ca_id:                    %d' % row.ca_id
-            print 'ca_name:                  %s' % row.ca_name
-            print 'ca_location:              %s' % row.ca_location
-            print 'ca_row_cnt:               %d' % row.ca_row_cnt
-            print 'ca_delimiter:             %s' % row.ca_delimiter
-            print 'ca_hasheader:             %s' % row.ca_hasheader
-            print 'ca_quoting:               %s' % row.ca_quoting
-            print 'ca_quote_char:            %s' % row.ca_quote_char
+            print('schema_id:                %d' % row.schema_id)
+            print('schema_name:              %s' % row.schema_name)
+            print('collection_id:            %d' % row.collection_id)
+            print('collection_name:          %s' % row.collection_name)
+            print('instance_id:              %d' % row.instance_id)
+            print('instance_name:            %s' % row.instance_name)
+            print('analysis_id:              %d' % row.analysis_id)
+            print('analysis_timestamp:       %s' % row.analysis_timestamp)
+            print('ca_id:                    %d' % row.ca_id)
+            print('ca_name:                  %s' % row.ca_name)
+            print('ca_location:              %s' % row.ca_location)
+            print('ca_row_cnt:               %d' % row.ca_row_cnt)
+            print('ca_delimiter:             %s' % row.ca_delimiter)
+            print('ca_hasheader:             %s' % row.ca_hasheader)
+            print('ca_quoting:               %s' % row.ca_quoting)
+            print('ca_quote_char:            %s' % row.ca_quote_char)
         return True
 
 
@@ -224,34 +212,34 @@ def rpt_field_analysis(**kwargs):
     if 'field_id' in kwargs:
         sql2 += " AND field_id = :field_id "
         select_sql = text(sql2)
-        result     = kwargs['md'].engine.execute(select_sql,
-                                                 collection_id=kwargs['collection_id'],
-                                                 analysis_id=kwargs['analysis_id'],
-                                                 field_id=kwargs['field_id'])
+        result = kwargs['md'].engine.execute(select_sql,
+                                             collection_id=kwargs['collection_id'],
+                                             analysis_id=kwargs['analysis_id'],
+                                             field_id=kwargs['field_id'])
     elif 'field_name' in kwargs:
         sql2 += " AND field_name = :field_name "
         select_sql = text(sql2)
-        result     = kwargs['md'].engine.execute(select_sql,
-                                                 collection_id=kwargs['collection_id'],
-                                                 analysis_id=kwargs['analysis_id'],
-                                                 field_name=kwargs['field_name'])
+        result = kwargs['md'].engine.execute(select_sql,
+                                             collection_id=kwargs['collection_id'],
+                                             analysis_id=kwargs['analysis_id'],
+                                             field_name=kwargs['field_name'])
     else:
         select_sql = text(sql2)
-        result     = kwargs['md'].engine.execute(select_sql,
-                                                 collection_id=kwargs['collection_id'],
-                                                 analysis_id=kwargs['analysis_id'])
-    fa_rows  = result.fetchall()
+        result = kwargs['md'].engine.execute(select_sql,
+                                             collection_id=kwargs['collection_id'],
+                                             analysis_id=kwargs['analysis_id'])
+    fa_rows = result.fetchall()
 
-    print
-    print '================= Field Info ====================='
+    print('')
+    print('================= Field Info =====================')
     for row in fa_rows:
-        print
-        print '---------------------------------------------------------'
-        print 'field_name:           %s' % row.field_name
-        print 'field_order:          %s' % row.field_order
-        print 'field_id:             %s' % row.field_id
-        print 'field_desc:           %s' % row.field_desc
-        print 'field_type:           %s' % row.field_type
+        print('')
+        print('---------------------------------------------------------')
+        print('field_name:           %s' % row.field_name)
+        print('field_order:          %s' % row.field_order)
+        print('field_id:             %s' % row.field_id)
+        print('field_desc:           %s' % row.field_desc)
+        print('field_type:           %s' % row.field_type)
         ifprint(row.field_len,       'field_len:            %d', row.field_len)
         ifprint(row.fa_type,         'fa_type:              %s', row.fa_type)
         ifprint(row.fa_unique_cnt,   'fa_unique_cnt:        %d', row.fa_unique_cnt)
@@ -277,23 +265,23 @@ def rpt_field_analysis(**kwargs):
 def rpt_field_value(**kwargs):
     """ Prints field value descriptions.
     """
-    fv_sql = """ SELECT *                                       \
-                 FROM field_value fv                            \
-                 WHERE field_id       = :field_id               \
+    fv_sql = """ SELECT *                     \
+                 FROM field_value fv          \
+                 WHERE field_id = :field_id   \
              """
     select_sql = text(fv_sql)
-    result     = kwargs['md'].engine.execute(select_sql,
-                                             field_id=kwargs['field_id'])
-    fv_rows  = result.fetchall()
-    if len(fv_rows):
-        print
-        print 'Field Known Values'
+    result = kwargs['md'].engine.execute(select_sql,
+                                         field_id=kwargs['field_id'])
+    fv_rows = result.fetchall()
+    if fv_rows:
+        print('')
+        print('Field Known Values')
         row_cnt = 0
         for row in fv_rows:
             row_cnt += 1
             if row_cnt > 40:
                 break
-            ifprint(row.fv_value,  '        %-40.40s             %s',
+            ifprint(row.fv_value, '        %-40.40s             %s',
                     row.fv_value, row.fv_desc)
 
 
@@ -310,18 +298,18 @@ def rpt_field_freq(**kwargs):
                  ORDER BY fav.fav_count DESC                    \
              """
     select_sql = text(fv_sql)
-    result     = kwargs['md'].engine.execute(select_sql,
-                                             field_id=kwargs['field_id'])
-    fav_rows  = result.fetchall()
-    if len(fav_rows):
-        print
-        print 'Top Values'
+    result = kwargs['md'].engine.execute(select_sql,
+                                         field_id=kwargs['field_id'])
+    fav_rows = result.fetchall()
+    if fav_rows:
+        print('')
+        print('Top Values')
         row_cnt = 0
         for row in fav_rows:
             row_cnt += 1
             if row_cnt > 20:
                 break
-            ifprint(row.fav_value,  '        %-40.40s             %d', 
+            ifprint(row.fav_value, '        %-40.40s             %d',
                     row.fav_value, row.fav_count)
 
 
@@ -344,9 +332,9 @@ def get_analysis_id(md, collection_id):
                     ON inst.instance_id = anal.instance_id \
               WHERE collection_id  = :collection_id        \
           """
-    select_sql  = text(sql)
-    result      = md.engine.execute(select_sql, collection_id=collection_id)
-    anal_rows   = result.fetchall()
+    select_sql = text(sql)
+    result = md.engine.execute(select_sql, collection_id=collection_id)
+    anal_rows = result.fetchall()
     try:
         return anal_rows[0].analysis_id
     except IndexError:  # no rows found
@@ -361,40 +349,36 @@ def get_args():
         Output:
             - args namespace
     """
+    use = ('\n'
+           '\ngristle_md_reporter is used to provide command-line reporting'
+           ' with the gristle metadata database.'
+           '\n'
+           '\ngristle_md_reporter -r [report]'
+           '\n')
 
-    use = ''' \n\
-       \n gristle_md_reporter is used to provide command-line reporting        \
-            with the gristle metadata database.                                \
-       \n                                                                      \
-       \n gristle_md_reporter -r [report]                                      \
-       \n                                                                      \
-       '''
-
-    parser  = argparse.ArgumentParser(description=use,
-                                      formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(description=use,
+                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--long-help',
-           default=False,
-           action='store_true',
-           help='Print verbose help and exit.')
-
+                        default=False,
+                        action='store_true',
+                        help='Print verbose help and exit.')
     parser.add_argument('--report', '-r',
-           choices=['dd','datadictionary'],
-           help='Report to be produced'),
-
-    parser.add_argument('--schema_id'      , '--si',
-           help='id of schema')
-    parser.add_argument('--schema_name'    , '--sn')
-    parser.add_argument('--collection_id'  , '--ci',
-           type=int)
+                        choices=['dd', 'datadictionary'],
+                        help='Report to be produced')
+    parser.add_argument('--schema_id', '--si',
+                        help='id of schema')
+    parser.add_argument('--schema_name', '--sn')
+    parser.add_argument('--collection_id', '--ci',
+                        type=int)
     parser.add_argument('--collection_name', '--cn')
-    parser.add_argument('--field_id'       , '--fi',
-           type=int)
-    parser.add_argument('--field_name'     , '--fn')
+    parser.add_argument('--field_id', '--fi',
+                        type=int)
+    parser.add_argument('--field_name', '--fn')
 
     args = parser.parse_args()
 
     if args.long_help:
-        print __doc__
+        print(__doc__)
         sys.exit(0)
     elif not args.report:
         parser.error('Report must be provided')
@@ -408,4 +392,3 @@ def get_args():
 
 if __name__ == '__main__':
     sys.exit(main())
-

@@ -15,23 +15,23 @@
             number of fields
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
-import collections
 import csv
-
-import datagristle.field_type as typer
-from typing import List, Union
+from typing import List, Union, Dict, Tuple, Any, Optional
 from pprint import pprint as pp
 
+import datagristle.field_type as typer
+import datagristle.csvhelper as csvhelper
+import datagristle.common as common
 
-MAX_FREQ_SIZE_DEFAULT  = 1000000     # limits entries within freq dictionaries
+MAX_FREQ_SIZE_DEFAULT = 1000000     # limits entries within freq dictionaries
 
 
 
-def get_field_names(filename: str,
-                    dialect,
-                    col_number=None) -> Union[str, List[str]]:
+def get_field_name(filename: str,
+                   dialect: csvhelper.Dialect,
+                   col_number: int) -> str:
     """ Determines names of fields
         Inputs:
         Outputs:
@@ -42,28 +42,42 @@ def get_field_names(filename: str,
     for field_names in reader:
         break
     else:
-        return None
+        raise EOFError
 
-    if col_number is None:       # get names for all fields
-        final_names = []
-        for col_sub in range(len(field_names)):
-            if dialect.has_header:
-                final_names.append(field_names[col_sub].strip())
-            else:
-                final_names.append('field_%d' % col_sub)
-        return final_names
-    else:                        # get name for single field
-        final_name = ''
+    final_name = ''
+    if dialect.has_header:
+        final_name = field_names[col_number].strip()
+    else:
+        final_name = 'field_%d' % col_number
+    return final_name
+
+
+
+def get_field_names(filename: str,
+                    dialect) -> List[str]:
+    """ Determines names of fields
+        Inputs:
+        Outputs:
+        Misc:
+          - if the file is empty it will return None
+    """
+    reader = csv.reader(open(filename, newline=''), dialect=dialect)
+    for field_names in reader:
+        break
+    else:
+        raise EOFError
+
+    final_names = []
+    for col_sub in range(len(field_names)):
         if dialect.has_header:
-            final_name = field_names[col_number].strip()
+            final_names.append(field_names[col_sub].strip())
         else:
-            final_name = 'field_%d' % col_number
-        return final_name
+            final_names.append('field_%d' % col_sub)
+    return final_names
 
 
 
-
-def get_case(field_type, values):
+def get_case(field_type: str, values: common.StrFreqType) -> str:
     """ Determines the case of a list or dictionary of values.
         Args:
           - type:    if not == 'string', will return 'n/a'
@@ -84,12 +98,13 @@ def get_case(field_type, values):
 
     is_unknown = typer.is_unknown
     is_integer = typer.is_integer
-    is_float   = typer.is_float
-    clean_values = [x for x in values if not is_unknown(x) and not is_integer(x) and not is_float(x)]
+    is_float = typer.is_float
+    clean_values = [x for x in values if not is_unknown(x[0])
+                    and not is_integer(x[0]) and not is_float(x[0])]
 
-    lower_cnt = len([x for x in clean_values if x.islower()])
-    upper_cnt = len([x for x in clean_values if x.isupper()])
-    mixed_cnt = len([x for x in clean_values if not x.isupper() and not x.islower()])
+    lower_cnt = sum([x[1] for x in clean_values if x[0].islower()])
+    upper_cnt = sum([x[1] for x in clean_values if x[0].isupper()])
+    mixed_cnt = sum([x[1] for x in clean_values if not x[0].isupper() and not x[0].islower()])
 
     # evaluate frequency distribution:
     if mixed_cnt:
@@ -107,11 +122,11 @@ def get_case(field_type, values):
 
 
 
-def get_field_freq(filename,
-                   dialect,
-                   field_number,
-                   max_freq_size=MAX_FREQ_SIZE_DEFAULT,
-                   read_limit=-1):
+def get_field_freq(filename: str,
+                   dialect: csvhelper.Dialect,
+                   field_number: int,
+                   max_freq_size: int = MAX_FREQ_SIZE_DEFAULT,
+                   read_limit: int = -1) -> Tuple[Dict[Any, int], bool, int]:
     """ Collects a frequency distribution for a single field by reading the
         file provided.
 
@@ -164,7 +179,7 @@ def get_field_freq(filename,
 
 
 
-def get_min(value_type, values):
+def get_min(value_type: str, values: common.FreqType) -> Optional[str]:
     """ Returns the minimum value of the input.  Ignores unknown values, if
         no values found besides unknown it will just return 'None'
 
@@ -193,7 +208,7 @@ def get_min(value_type, values):
             return result
 
     try:
-        minimum = str(min([transform(x) for x in values if not typer.is_unknown(x)]))
+        minimum = str(min([transform(x[0]) for x in values if not typer.is_unknown(x[0])]))
     except ValueError:
         return None
     else:
@@ -203,7 +218,7 @@ def get_min(value_type, values):
 
 
 
-def get_max(value_type, values):
+def get_max(value_type: str, values: common.FreqType) -> Optional[Any]:
     """ Returns the maximum value of the input.  Ignores unknown values, if
         no values found besides unknown it will just return 'None'
 
@@ -222,7 +237,6 @@ def get_max(value_type, values):
     else:
         myfunc = str
 
-
     def transform(val):
         try:
             result = myfunc(val)
@@ -232,7 +246,7 @@ def get_max(value_type, values):
             return result
 
     try:
-        maximum = str(max([transform(x) for x in values if not typer.is_unknown(x)]))
+        maximum = str(max([transform(x[0]) for x in values if not typer.is_unknown(x[0])]))
     except ValueError:
         return None
     else:
@@ -240,7 +254,7 @@ def get_max(value_type, values):
 
 
 
-def get_max_length(values):
+def get_max_length(values: common.StrFreqType) -> int:
     """ Returns the maximum length value of the input.   If
         no values found besides unknown it will just return 'None'
 
@@ -250,11 +264,11 @@ def get_max_length(values):
           - the single maximum value
     """
     max_length = 0
-    return max([len(value) for value in values if not typer.is_unknown(value)]) or max_length
+    return max([len(value[0]) for value in values if not typer.is_unknown(value[0])]) or max_length
 
 
 
-def get_min_length(values):
+def get_min_length(values: common.StrFreqType) -> int:
     """ Returns the minimum length value of the input.   If
         no values found besides unknown it will just return 999999
 
@@ -264,5 +278,4 @@ def get_min_length(values):
        - the single minimum value
     """
     min_length = 999999
-    return min([len(value) for value in values if not typer.is_unknown(value)]) or min_length
-
+    return min([len(value[0]) for value in values if not typer.is_unknown(value[0])]) or min_length

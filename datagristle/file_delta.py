@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 
-import os
-import sys
-from os.path import isfile, isdir, exists
-from os.path import dirname, basename
+from os.path import isfile
+from os.path import basename
 from os.path import join  as pjoin
 import csv
-import collections
 from pprint import pprint as pp
+from typing import Dict, Tuple, List, Union, Any, Optional, IO
 
 import datagristle.common as comm
 from datagristle.common import abort as abort
+import datagristle.csvhelper as csvhelper
 
 OUTPUT_TYPES = ['insert', 'delete', 'same', 'chgnew', 'chgold']
+
+FieldPositionsType = List[int]
+RecordType = List[str]
+
 
 
 class FileDelta(object):
@@ -27,27 +30,29 @@ class FileDelta(object):
         ValueError: if the same field is referenced by ignore_fields and key_fields
     """
 
-    def __init__(self, out_dir, dialect):
-        """
-        """
-        self.out_dir         = out_dir
-        self.dialect         = dialect
-        self.join_fields     = []
-        self.compare_fields  = []
-        self.ignore_fields   = []
-        self.dry_run         = False
-        self.old_rec         = None
-        self.new_rec         = None
+    def __init__(self,
+                 out_dir: str,
+                 dialect: csvhelper.Dialect) -> None:
+        self.out_dir = out_dir
+        self.dialect = dialect
+        self.join_fields: FieldPositionsType = []
+        self.compare_fields: FieldPositionsType = []
+        self.ignore_fields: FieldPositionsType = []
+        self.dry_run: bool = False
+        self.old_rec: List[str] = None
+        self.new_rec: List[str] = None
 
         self.new_read_cnt = 0
         self.old_read_cnt = 0
-        self.out_file     = {}
-        self.out_fqfn     = {}
-        self.out_writer   = {}
-        self.out_counts   = collections.defaultdict(int)
-        self.dass         = DeltaAssignments()
+        self.out_file: Dict[str, IO[str]] = {}
+        self.out_fqfn: Dict[str, str] = {}
+        self.out_writer: Dict[str, Any] = {}
+        self.out_counts: Dict[str, int] = {}
+        self.dass = DeltaAssignments()
 
-    def set_fields(self, field_type, *fields):
+    def set_fields(self,
+                   field_type: str,
+                   *fields: Any) -> None:
         """ Assign fields to joins, compares and ignores lists.
 
         Args:
@@ -70,16 +75,16 @@ class FileDelta(object):
             split_fields = fields
 
         if field_type == 'join':
-            self.join_fields.extend([ int(x) for x in split_fields if x is not None])
+            self.join_fields.extend([int(x) for x in split_fields if x is not None])
         elif field_type == 'compare':
-            self.compare_fields.extend([ int(x) for x in split_fields if x is not None])
+            self.compare_fields.extend([int(x) for x in split_fields if x is not None])
         elif field_type == 'ignore':
-            self.ignore_fields.extend([ int(x) for x in split_fields if x is not None])
+            self.ignore_fields.extend([int(x) for x in split_fields if x is not None])
         else:
             raise ValueError('Invalid field_type value: %s' % field_type)
 
-    def _validate_fields(self):
-        if len(self.join_fields) == 0:
+    def _validate_fields(self) -> None:
+        if not self.join_fields:
             raise ValueError('key (join) fields are missing')
 
         # should add compare_fields to this check
@@ -91,7 +96,10 @@ class FileDelta(object):
         # not both
 
 
-    def compare_files(self, old_fqfn, new_fqfn, dry_run=False):
+    def compare_files(self,
+                      old_fqfn: str,
+                      new_fqfn: str,
+                      dry_run: bool = False) -> None:
         """ Reads two sorted csv files, compares them based on a key, and
         writes results out to five output files.
 
@@ -111,20 +119,20 @@ class FileDelta(object):
         assert isfile(new_fqfn)
 
         compare_fields = self.compare_fields
-        ignore_fields  = self.ignore_fields
+        ignore_fields = self.ignore_fields
 
         self._validate_fields()
 
         # set up input csv readers
-        old_f           = open(old_fqfn, 'r')
-        self.old_csv    = csv.reader(old_f,    dialect=self.dialect)
-        new_f           = open(new_fqfn, 'r')
-        self.new_csv    = csv.reader(new_f,    dialect=self.dialect)
+        old_f = open(old_fqfn, 'r')
+        self.old_csv = csv.reader(old_f, dialect=self.dialect)
+        new_f = open(new_fqfn, 'r')
+        self.new_csv = csv.reader(new_f, dialect=self.dialect)
 
         # set up output files, counts and writers
         for outtype in OUTPUT_TYPES:
-            self.out_fqfn[outtype]   = pjoin(self.out_dir, self._get_name(new_fqfn, outtype))
-            self.out_file[outtype]   = open(self.out_fqfn[outtype], 'w')
+            self.out_fqfn[outtype] = pjoin(self.out_dir, self._get_name(new_fqfn, outtype))
+            self.out_file[outtype] = open(self.out_fqfn[outtype], 'w')
             self.out_writer[outtype] = csv.writer(self.out_file[outtype],
                                                   dialect=self.dialect)
         # prime the main loop
@@ -160,7 +168,9 @@ class FileDelta(object):
         for filename in self.out_file:
             self.out_file[filename].close()
 
-    def _get_name(self, in_fn, out_type):
+    @staticmethod
+    def _get_name(in_fn: str,
+                  out_type: str) -> str:
         """ Gets the formatted name of an output file.
         Args:
             in_fn: input file name
@@ -181,7 +191,7 @@ class FileDelta(object):
         return out_fn + '.' + out_type
 
 
-    def _key_match(self):
+    def _key_match(self) -> str:
         """ Determines if an old-file record matches a new-file record based
             on all the join-keys.
         Args:
@@ -197,7 +207,9 @@ class FileDelta(object):
                 return 'old-greater'
         return 'equal'
 
-    def _data_match(self, ignore_fields, compare_fields):
+    def _data_match(self,
+                    ignore_fields: FieldPositionsType,
+                    compare_fields: FieldPositionsType) -> bool:
         """ Determines if an old-file record matches a new-file record based
             on the non-join-keys.
         Args:
@@ -213,7 +225,7 @@ class FileDelta(object):
             result:  a boolean, if True the columns matched
         """
         # todo: pre-calc the list of fields to actually compare
-        for index in range(len(self.new_rec)):
+        for index, _ in enumerate(self.new_rec):
             if index in self.join_fields:
                 continue
             elif index in ignore_fields:
@@ -225,7 +237,8 @@ class FileDelta(object):
         else:
             return True
 
-    def _read_new_csv(self):
+
+    def _read_new_csv(self) -> None:
         """ Reads next rec from new file into self.new_rec
         Args:    None
         Returns: Nothing
@@ -234,7 +247,7 @@ class FileDelta(object):
             - Will assign None to self.new_rec at eof
         """
         try:
-            last_rec     = self.new_rec
+            last_rec = self.new_rec
             self.new_rec = self.new_csv.__next__()
             if last_rec is None: # first read priming
                 last_rec = self.new_rec
@@ -250,7 +263,8 @@ class FileDelta(object):
         except StopIteration:
             self.new_rec = None
 
-    def _read_old_csv(self):
+
+    def _read_old_csv(self) -> None:
         """ Reads next rec from new file into self.old_rec
         Args:    None
         Returns: Nothing
@@ -259,7 +273,7 @@ class FileDelta(object):
             - Will assign None to self.old_rec at eof
         """
         try:
-            last_rec     = self.old_rec
+            last_rec = self.old_rec
             self.old_rec = self.old_csv.__next__()
             if last_rec is None: # first read priming
                 last_rec = self.old_rec
@@ -275,14 +289,19 @@ class FileDelta(object):
         except StopIteration:
             self.old_rec = None
 
-    def _writer(self, outtype, outrec):
+    def _writer(self,
+                outtype: str,
+                outrec: RecordType) -> None:
         """" Run post-delta assignment then write record.
         Args:
             outtype - one of insert, delete, chgnew, chgold, same
             outrec - output list
         Returns: nothing
         """
-        self.out_counts[outtype] += 1
+        try:
+            self.out_counts[outtype] += 1
+        except KeyError:
+            self.out_counts[outtype] = 1
         if not self.dry_run:
             adj_rec = self.dass.assign(outtype, outrec, self.old_rec, self.new_rec)
             self.out_writer[outtype].writerow(adj_rec)
@@ -293,14 +312,18 @@ class DeltaAssignments(object):
     """ Manages the post-delta transformations (aka assignments).
     """
 
-    def __init__(self):
-        self.assignments    = {} # supports minor transformations
-        self.special_values = {}
-        self.seq            = {}
+    def __init__(self) -> None:
+        self.assignments: Dict[str, Dict] = {} # supports minor transformations
+        self.special_values: Dict[str, str] = {}
+        self.seq: Dict[int, Dict[str, Any]] = {}
 
-    def set_assignment(self, dest_file, dest_field, src_type,
-                       src_val=None, src_file=None, src_field=None,
-                       comment=None, dest_field_orig=None, src_field_orig=None):
+    def set_assignment(self,
+                       dest_file: str,
+                       dest_field: int,
+                       src_type: str,
+                       src_val: str = None,
+                       src_file: str = None,
+                       src_field: int = None) -> None:
         """ Write instructions for the assignment of a csv field in an output file.
 
         Args:
@@ -316,6 +339,10 @@ class DeltaAssignments(object):
             ValueError if args are invalid
             sys.exit if sequence assignment is invalid
         """
+        if dest_field:
+            assert int(dest_field)
+        if src_field:
+            assert int(src_field)
         if dest_file not in ['insert', 'delete', 'chgold', 'chgnew']:
             raise ValueError('Invalid dest_file: %s' % dest_file)
         if not comm.isnumeric(dest_field):
@@ -338,9 +365,9 @@ class DeltaAssignments(object):
         if src_type == 'sequence':
             # note that seq validation does not check to see if same sequence was
             # refeenced twice with two different values.
-            if (src_file is not None and src_field is not None):
-                tmp_val = None  # will get assigned based on file & field 
-            elif (src_file is not None or src_field is not None):
+            if src_file is not None and src_field is not None:
+                tmp_val = None  # will get assigned based on file & field
+            elif src_file is not None or src_field is not None:
                 abort('Invalid sequence assignment config: src_file or src_field is None')
             elif src_val is None:
                 tmp_val = 0
@@ -360,7 +387,9 @@ class DeltaAssignments(object):
             self.seq[src_field] = {'start_val': tmp_val, 'last_val':  tmp_val}
 
 
-    def set_special_values(self, name, value):
+    def set_special_values(self,
+                           name: str,
+                           value: str) -> None:
         """ Set special name-value for later assignment.
 
         Args:
@@ -371,7 +400,11 @@ class DeltaAssignments(object):
         self.special_values[name] = value
 
 
-    def assign(self, outtype, outrec, old_rec, new_rec):
+    def assign(self,
+               outtype: str,
+               outrec: RecordType,
+               old_rec: RecordType,
+               new_rec: RecordType) -> RecordType:
         """ Apply all assignment for a single rec.
 
         Args:
@@ -386,26 +419,25 @@ class DeltaAssignments(object):
         """
         self.old_rec = old_rec
         self.new_rec = new_rec
-        #pp(self.assignments)
         if outtype in self.assignments:
             for dest_field in self.assignments[outtype]:
                 assigner = self.assignments[outtype][dest_field]
                 try:
-                    if assigner['src_type']   == 'literal':
-                        outrec[dest_field]  = assigner['src_val']
+                    if assigner['src_type'] == 'literal':
+                        outrec[dest_field] = assigner['src_val']
                     elif assigner['src_type'] == 'copy':
-                        outrec[dest_field]  = self._get_copy_value(assigner['src_file'],
-                                                                assigner['src_field'])
+                        outrec[dest_field] = self._get_copy_value(assigner['src_file'],
+                                                                  assigner['src_field'])
                     elif assigner['src_type'] == 'sequence':
-                        outrec[dest_field]  = self._get_seq_value(assigner['src_field'])
+                        outrec[dest_field] = self._get_seq_value(assigner['src_field'])
                     elif assigner['src_type'] == 'special':
-                        outrec[dest_field]  = self._get_special_value(assigner['src_val'])
+                        outrec[dest_field] = self._get_special_value(assigner['src_val'])
                 except ValueError as err:
                     abort(err)
         return outrec
 
 
-    def _get_special_value(self, src_val):
+    def _get_special_value(self, src_val: str) -> str:
         """ Get special variable value.
         Args:
             src_val - name of special variable
@@ -421,7 +453,7 @@ class DeltaAssignments(object):
             abort('Invalid special value referenced in assignment: %s' % src_val)
 
 
-    def _get_copy_value(self, src_file, src_field):
+    def _get_copy_value(self, src_file: str, src_field: int) -> str:
         """" Get copy value from old or new source file.
         Args:
             src_file:  one of old, new
@@ -444,29 +476,31 @@ class DeltaAssignments(object):
             raise ValueError('Assign-Copy refers to non-existing field - invalid config or record')
 
 
-    def _get_seq_value(self, src_field):
+    def _get_seq_value(self, src_field: int) -> str:
         """ Get the next sequence value from the source field.
         Args:
             src_field: zero-offset reference to field.
         Returns:
             sequence value
         """
-        self.seq[src_field]['last_val']  += 1
+        self.seq[src_field]['last_val'] += 1
         return str(self.seq[src_field]['last_val'])
 
 
-    def get_sequence_starts(self, dialect, old_fqfn):
+    def set_sequence_starts(self,
+                            dialect: csvhelper.Dialect,
+                            old_fqfn: str) -> None:
         """ Sets all sequences to their starting values.
 
         Args:
             dialect: csv dialect of input files
             old_fqfn: fully-qualified old file name
         Returns:
-            nothing
+            None
         Raises:
             sys.exit: if invalid values found in csv sequence field
         """
-        for key in self.seq.keys():
+        for key in self.seq:
             if self.seq[key]['start_val'] is None:
                 break
         else:
@@ -509,5 +543,3 @@ class DeltaAssignments(object):
                     self.seq[src_field]['start_val'] = 0
                 else:
                     abort('Logic Error: no starting sequence found in old file')
-
-

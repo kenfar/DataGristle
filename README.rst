@@ -1,7 +1,8 @@
 | Datagristle is a toolbox of tough and flexible data connectors and
-analyzers.
+  analyzers.
 | It's kind of an interactive mix between ETL and data analysis
-optimized for rapid analysis and manipulation of a wide variety of data.
+  optimized for rapid analysis and manipulation of a wide variety of
+  data.
 
 It's neither an enterprise ETL tool, nor an enterprise analysis,
 reporting, or data mining tool. It's intended to be an easily-adopted
@@ -41,25 +42,14 @@ Its objectives include:
 Installation
 ============
 
--  Using `pip <http://www.pip-installer.org/en/latest/>`__ (preferred)
-   or
-   `easyinstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`__:
+-  Using `pip <http://www.pip-installer.org/en/latest/>`__:
 
-   :sub:`~` $ pip install datagristle $ easy\_install datagristle
-   :sub:`~`
-
--  Or install manually from
-   `pypi <https://pypi.python.org/pypi/datagristle>`__:
-
-   :sub:`~` $ mkdir ~$ wget
-   https://pypi.python.org/packages/source/d/datagristle/datagristle-0.53.tar.gz
-   $ tar -xvf easy\_install datagristle $ cd ~-\* $ python setup.py
-   install :sub:`~`
+   :sub:`~` $ pip install datagristle :sub:`~`
 
 Dependencies
 ============
 
--  Python 2.6 or Python 2.7
+-  Python 3.6
 
 Utilities Provided in This Release:
 ===================================
@@ -489,6 +479,15 @@ gristle\_dir\_merger
                files that have changed in both directories, but always want to
                use the source files.
 
+Development & Testing
+=====================
+
+-  If you're going to test directly out of the source code then set up
+   the pathing to point to the parent directory. If using
+   virtualenvwrapper then just run:
+
+   -  $ add2virtualenv .
+
 Licensing
 =========
 
@@ -498,5 +497,4 @@ Licensing
 Copyright
 =========
 
--  Copyright 2011,2012,2013,2014 Ken Farmer
-
+-  Copyright 2011,2012,2013,2014,2015,2017 Ken Farmer

@@ -126,10 +126,10 @@ Keyword arguments:
                         delimiter the pgm will automatically determine it.
   --recdelimiter RECDELIMITER
                         Specify a quoted end-of-record delimiter.
-  --hasheader           Indicate that there is a header in the file. This is a
+  --has-header          Indicate that there is a header in the file. This is a
                         standard datagristle option - but not yet supported
                         within this pgm.
-  --hasnoheader         Indicate that there is no header in the file.  This is
+  --has-no-header       Indicate that there is no header in the file.  This is
                         a standard datagristle option - but not yet supported
                         within this pgm.
   -V, --version         Show program's version number and exits.
@@ -146,26 +146,19 @@ either of two ways:
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
     http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013,2014,2015 Ken Farmer
+Copyright 2011,2012,2013,2014,2015,2017 Ken Farmer
 
 """
-#--- standard modules ------------------
-import sys, os
+import sys
 import logging
 import copy
 import csv
+import os
+from  os.path import exists, dirname, basename
+from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Union, Dict, Any, Tuple
-from  os.path import isfile, isdir, exists, dirname, basename
-from  os.path import join as pjoin
-from  pprint  import pprint as pp
 
 import cletus.cletus_config as conf
-
-#--- gristle modules -------------------
-# lets get pathing set for running code out of project structure & testing it via tox
-sys.path.append('../')
-sys.path.append('../../')
-sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 
 import datagristle.common       as comm
 from   datagristle.common  import abort
@@ -174,12 +167,11 @@ import datagristle.file_delta   as gdelta
 import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
 
-#Ignore SIG_PIPE and don't throw exceptions on it... 
+#Ignore SIG_PIPE and don't throw exceptions on it...
 #(http://docs.python.org/library/signal.html)
-from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL)
+signal(SIGPIPE, SIG_DFL)
 
-APP_NAME='gristle_differ'
+APP_NAME = basename(__file__)
 logging.basicConfig()
 
 
@@ -205,8 +197,8 @@ def main():
             "   example:  gristle_differ file0rdat file1.dat --compare-cols '0, 1' --ignore_cols '19,22,33'"
             "\n\n")
     arg_processor = ArgProcessor(desc, __doc__)
-    args          = vars(arg_processor.args)
-    config        = setup_config(args)
+    args = vars(arg_processor.args)
+    config = setup_config(args)
 
     # either file may be empty - but at least one must have data in it.
     assert len(config['files']) == 2
@@ -215,22 +207,22 @@ def main():
         return 1
 
     dialect = gftype.get_dialect(config['files'], config['delimiter'], config['quoting'],
-                                 config['quotechar'], config['recdelimiter'], config['hasheader'])
+                                 config['quotechar'], config['recdelimiter'], config['has_header'])
 
-    delta   = delta_runner(config, dialect)
+    file_delta = delta_runner(config, dialect)
 
     if config['stats']:
         print('')
         print('Read Stats:')
-        print('   File0/oldfile records:  %d' % delta.old_read_cnt)
-        print('   File1/newfile records:  %d' % delta.new_read_cnt)
+        print('   File0/oldfile records:  %d' % file_delta.old_read_cnt)
+        print('   File1/newfile records:  %d' % file_delta.new_read_cnt)
         print('')
         print('Write Stats:')
-        print('   *.delete records:       %d' % delta.out_counts['delete'])
-        print('   *.insert records:       %d' % delta.out_counts['insert'])
-        print('   *.same records:         %d' % delta.out_counts['same'])
-        print('   *.chgold records:       %d' % delta.out_counts['chgold'])
-        print('   *.chgnew records:       %d' % delta.out_counts['chgnew'])
+        print('   *.delete records:       %d' % file_delta.out_counts['delete'])
+        print('   *.insert records:       %d' % file_delta.out_counts['insert'])
+        print('   *.same records:         %d' % file_delta.out_counts['same'])
+        print('   *.chgold records:       %d' % file_delta.out_counts['chgold'])
+        print('   *.chgnew records:       %d' % file_delta.out_counts['chgnew'])
 
     return 0
 
@@ -242,22 +234,22 @@ def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDel
         instantiates delta class and runs comparison
         removes temporary files
     """
-    adj_temp_dir     = config['temp_dir'] or dirname(config['files'][1])
-    adj_out_dir      = config['out_dir']  or dirname(config['files'][1])
+    adj_temp_dir = config['temp_dir'] or dirname(config['files'][1])
+    adj_out_dir = config['out_dir']  or dirname(config['files'][1])
 
     #--- handle all key, compare and ignore logic --------------
-    def convert_cols(col_title, cols):
+    def convert_cols(col_title: str, cols: Dict[str, Any]):
         try:
-            off0     = comm.colnames_to_coloff0(config['col_names'], cols)
-        except (KeyError, ValueError) as e:
-            print(e)
+            off0 = comm.colnames_to_coloff0(config['col_names'], cols)
+        except (KeyError, ValueError) as err:
+            print(err)
             print('Column lookup list: %s' % ','.join(cols))
             abort('Invalid config cols for %s: ' % col_title)
         return off0
 
-    keys_off0    = convert_cols('key_cols', config['key_cols'])
+    keys_off0 = convert_cols('key_cols', config['key_cols'])
     compare_off0 = convert_cols('key_cols', config['compare_cols'])
-    ignore_off0  = convert_cols('key_cols', config['ignore_cols'])
+    ignore_off0 = convert_cols('key_cols', config['ignore_cols'])
 
     delta = gdelta.FileDelta(adj_out_dir, dialect)
     for col in keys_off0:
@@ -279,7 +271,7 @@ def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDel
             delta.dass.set_assignment(**asgn)
 
     #--- calc any sequences that refer to old file: -------
-    delta.dass.get_sequence_starts(dialect, config['files'][0])
+    delta.dass.set_sequence_starts(dialect, config['files'][0])
 
     #--- sort & dedupe the two source files -----
     f0_sorted_uniq_fn, _ = prep_file(config['files'][0],
@@ -304,14 +296,13 @@ def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDel
     return delta
 
 
-
 def get_assign_with_offsets_for_names(col_names: List[str],
                                       assign_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """ Return assignment config section after converting col names to offsets.
 
     Args:
         col_names: a list of column names
-        config: assignment section of config structure
+        assign_config: assignment section of config structure
     Returns:
         copy of config - with colnames replaced with 0-offsets
     Raises:
@@ -321,11 +312,9 @@ def get_assign_with_offsets_for_names(col_names: List[str],
     new_assign_config: List[Dict[str, Any]] = copy.deepcopy(assign_config)
     for asgn in new_assign_config:
         if asgn.get("src_field", None) is not None:
-            asgn["src_field_orig"]  = asgn["src_field"]
-            asgn["src_field"]       = comm.colnames_to_coloff0(col_names, [asgn["src_field"]])[0]
+            asgn["src_field"] = comm.colnames_to_coloff0(col_names, [asgn["src_field"]])[0]
         if asgn.get("dest_field", None) is not None:
-            asgn["dest_field_orig"] = asgn["dest_field"]
-            asgn["dest_field"]      = comm.colnames_to_coloff0(col_names, [asgn["dest_field"]])[0]
+            asgn["dest_field"] = comm.colnames_to_coloff0(col_names, [asgn["dest_field"]])[0]
     return new_assign_config
 
 
@@ -354,18 +343,18 @@ def prep_file(filename: str,
         Multiple (see CSVSorter & CSVDeDuper
     """
     if already_sorted:
-        sorted_fn       = filename
+        sorted_fn = filename
     else:
-        sorter          = gsorter.CSVSorter(dialect, key_cols, temp_dir, out_dir)
-        sorted_fn       = sorter.sort_file(filename)
+        sorter = gsorter.CSVSorter(dialect, key_cols, temp_dir, out_dir)
+        sorted_fn = sorter.sort_file(filename)
 
     if already_uniq:
-        final_name      = sorted_fn
-        dups_removed    = 0
+        final_name = sorted_fn
+        dups_removed = 0
     else:
-        deduper         = gdeduper.CSVDeDuper(dialect, key_cols, out_dir)
+        deduper = gdeduper.CSVDeDuper(dialect, key_cols, out_dir)
         final_name, read_cnt, write_cnt = deduper.dedup_file(sorted_fn)
-        dups_removed    = read_cnt - write_cnt
+        dups_removed = read_cnt - write_cnt
 
     if sorted_fn != filename:
         os.remove(sorted_fn)
@@ -466,12 +455,6 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
         places.  Some of this redundancy is intended to provide improved
         messaging for common errors.
     """
-    # removed for now, might add later:
-    #                   'log_level':       {"type":     ["null", "string"],
-    #                                       "enum":     ['DEBUG','INFO','WARNING','ERROR','CRITICAL'],
-    #                                       "required": False},
-    #                   'log_to_console':  {"type":     "boolean",
-    #                                       "required": False},
     config_schema = {'type': 'object',
                      'properties': {
                          'files':           {"type":     "array"},
@@ -497,9 +480,9 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                                                  "src_val":         {"type":    "string"},
                                                  "src_file":        {"type":    "string"},
                                                  "src_field":       {"type":    "string"},
-                                                 "comments":        {"type":    "string"} } },
+                                                 "comments":        {"type":    "string"}}},
                          'delimiter':       {"type":     ["null", "string"]},
-                         'hasheader':       {'type':     ["null", "boolean"]},
+                         'has_header':      {'type':     ["null", "boolean"]},
                          'recdelimiter':    {"type":     ["null", "string"]},
                          'quoting':         {'type':     ["null", "string"],
                                              "enum":     ["quote_none", "quote_all",
@@ -512,11 +495,11 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                                              "required": False},
                          'dry_run':         {"type":     "boolean"},
                          'long_help':       {"type":     "boolean",
-                                             "required": False },
+                                             "required": False},
                          'help':            {"type":     "boolean",
-                                             "required": False },
+                                             "required": False},
                          'version':         {'type':     'string',
-                                             "required": False },
+                                             "required": False},
                          },
                      'additionalProperties': False
                     }
@@ -529,7 +512,7 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                        'quotechar':    None,
                        'already_sorted': False}
 
-    config        = conf.ConfigManager(config_schema)
+    config = conf.ConfigManager(config_schema)
 
     #--- if the args refer to a config file load it now: ---
     if 'config_fn' in args and args['config_fn']:
@@ -537,9 +520,7 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
     elif 'config_name' in args and args['config_name']:
         config.add_file(app_name=APP_NAME,
                         config_fn='%s.yml' % args['config_name'])
-    #print("Config structure: ")
-    #pp(config.cm_config)
-    #print("config['files']: %s" % config.cm_config.get('files', None))
+
     print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
     print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
     print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
@@ -573,10 +554,6 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
 
     #--- finally add defaults
     config.add_defaults(config_defaults)
-    #print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
-    #print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
-    #print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
-    #print("args['files']: %s" % args.get('files', None))
 
     #--- validate the consolidated config: ---
     config.validate()                   # validates using json schema
@@ -613,8 +590,8 @@ def validate_config(config: Dict[str, Any]) -> None:
     elif config['compare_cols'] == [] and config['ignore_cols'] == []:
         abort("Error: One of compare_cols or ignore_cols must be provided")
 
-    if config['hasheader']:
-        abort("Error: hasheader is not supported yet.")
+    if config['has_header']:
+        abort("Error: has_header is not supported yet.")
 
     for kv_pair in config['variables']:
         if ':' not in kv_pair:
@@ -632,4 +609,3 @@ def validate_config(config: Dict[str, Any]) -> None:
 
 if __name__ == '__main__':
     sys.exit(main())
-

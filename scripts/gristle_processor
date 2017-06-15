@@ -15,10 +15,8 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2014 Ken Farmer
+Copyright 2014,2017 Ken Farmer
 """
-
-#--- standard modules ------------------
 import sys
 import argparse
 import os
@@ -28,26 +26,21 @@ import math
 import operator
 import shutil
 import errno
-from pprint import pprint as pp
+from signal import signal, SIGPIPE, SIG_DFL
 
 #from pprint import pprint as pp
 import validictory as valid
 import appdirs
 import yaml
-import cletus.cletus_log          as log
-import cletus.cletus_supp         as supp
-import cletus.cletus_job          as job
-import cletus.cletus_config       as config
+import cletus.cletus_log as log
+import cletus.cletus_supp as supp
+import cletus.cletus_job as job
+
+import datagristle.common as comm
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
-from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
-
-#--- gristle modules -------------------
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import datagristle.file_type           as file_type
-import datagristle.common              as comm
 
 
 logger = None
@@ -66,14 +59,14 @@ def main():
        Terminates program
     """
     #----- set up ----
-    args              = get_args()
+    args = get_args()
     config, config_fn = get_config(arg_config_file=args.config_file,
                                    arg_config_name=args.config_name)
     setup_logs(args.log_dir, args.log_level or config['housekeeping']['log_level'])
     logger.info('program starting')
     logger.info('config_file used: %s' % config_fn)
 
-    jobcheck   = exit_if_already_running()
+    jobcheck = exit_if_already_running()
     exit_if_suppressed()
 
     for dir_sect_name in config:
@@ -99,11 +92,11 @@ class ProcessDir(object):
 
     def __init__(self, kwargs, test_run=False):
 
-        self.test_run      = test_run
+        self.test_run = test_run
 
         self._validate_config_section(kwargs)
 
-        self.name          = kwargs['name']
+        self.name = kwargs['name']
         self.gather_kwargs = kwargs['gathering_phase']
 
         if 'inclusion_phase' in kwargs:
@@ -112,11 +105,11 @@ class ProcessDir(object):
             self.in_kwargs = {}
 
         if 'exclusion_phase' in kwargs:
-            self.ex_kwargs     = kwargs['exclusion_phase']
+            self.ex_kwargs = kwargs['exclusion_phase']
         else:
             self.ex_kwargs = {}
 
-        self.act_kwargs    = kwargs['action_phase']
+        self.act_kwargs = kwargs['action_phase']
 
         self.file_analyzer = FileAnalyzer(self.in_kwargs, self.ex_kwargs)
         self.file_actioner = FileActioner(self.act_kwargs, test_run)
@@ -126,7 +119,7 @@ class ProcessDir(object):
         self.kwargs = kwargs
         config_validator = ConfigValidator(kwargs)
         if (not os.path.exists(self.kwargs['gathering_phase']['dir'])
-        or  not os.path.isdir(self.kwargs['gathering_phase']['dir'])):
+                or  not os.path.isdir(self.kwargs['gathering_phase']['dir'])):
             abort('ERROR: invalid config file',
                   'The config file dir in gathering_phase.dir was not found '
                   'or is not a directory: %s' % self.kwargs['gathering_phase']['dir'], 1)
@@ -159,12 +152,12 @@ class FileActioner(object):
     """
 
     def __init__(self, action_kwargs, test_run=False):
-        self.act_kwargs     = action_kwargs
-        self.file_name      = None
-        self.test_run       = test_run
+        self.act_kwargs = action_kwargs
+        self.file_name = None
+        self.test_run = test_run
 
     def run_all_actions(self, file_name):
-        self.file_name      = file_name
+        self.file_name = file_name
         if 'action_builtin' in self.act_kwargs:
             self._run_action_builtin()
         else:
@@ -195,6 +188,7 @@ class FileActioner(object):
             try:
                 os.remove(fqfn)
             except OSError as e:
+                print(repr(e))
                 if e[0] == errno.ENOENT:
                     logger.warning('Delete failed - file already gone: %s' % fqfn)
                 else:
@@ -203,6 +197,7 @@ class FileActioner(object):
             try:
                 shutil.rmtree(fqfn)
             except OSError as e:
+                print(repr(e))
                 if e[0] == errno.ENOENT:
                     logger.warning('Delete failed - dir already gone: %s' % fqfn)
                 else:
@@ -219,17 +214,17 @@ class FileActioner(object):
 class FileAnalyzer(object):
 
     def __init__(self, in_kwargs, ex_kwargs):
-        self.in_kwargs    = in_kwargs
-        self.ex_kwargs    = ex_kwargs
-        self.seconds      = {'s':1, 'm':60, 'h':3600, 'd':86400,
-                             'w':604800, 'M':2592000, 'y':31536000}
+        self.in_kwargs = in_kwargs
+        self.ex_kwargs = ex_kwargs
+        self.seconds = {'s':1, 'm':60, 'h':3600, 'd':86400,
+                        'w':604800, 'M':2592000, 'y':31536000}
         self.seconds_translator = {'seconds':'s', 'second':'s',
                                    'minutes':'m', 'minute':'m',
-                                   'hours':'h',   'hour':'h',
-                                   'days':'d',    'day':'d',
-                                   'weeks':'w',   'week':'w',
-                                   'months':'M',  'month':'M',
-                                   'year':'y',    'year':'y'}
+                                   'hours':'h', 'hour':'h',
+                                   'days':'d', 'day':'d',
+                                   'weeks':'w', 'week':'w',
+                                   'months':'M', 'month':'M',
+                                   'year':'y', 'year':'y'}
 
     def qualify_file(self, fn, fqfn):
         """
@@ -263,19 +258,19 @@ class FileAnalyzer(object):
 
         if 'fntime_time' in self.in_kwargs:
             if self._filenamedate_op_argdate(file_name,
-                     comm.dict_coalesce(self.in_kwargs, 'fntime_filter_regex'),
-                     comm.dict_coalesce(self.in_kwargs, 'fntime_extract_regex'),
-                     comm.dict_coalesce(self.in_kwargs, 'fntime_format'),
-                     comm.dict_coalesce(self.in_kwargs, 'fntime_op'),
-                     comm.dict_coalesce(self.in_kwargs, 'fntime_time')):
+                                             comm.dict_coalesce(self.in_kwargs, 'fntime_filter_regex'),
+                                             comm.dict_coalesce(self.in_kwargs, 'fntime_extract_regex'),
+                                             comm.dict_coalesce(self.in_kwargs, 'fntime_format'),
+                                             comm.dict_coalesce(self.in_kwargs, 'fntime_op'),
+                                             comm.dict_coalesce(self.in_kwargs, 'fntime_time')):
                 pass
             else:
                 return False
 
         elif 'atime_time' in self.in_kwargs:
             if self._atime_op_argdate(fqfn,
-                     comm.dict_coalesce(self.in_kwargs, 'atime_time'),
-                     comm.dict_coalesce(self.in_kwargs, 'atime_op')):
+                                      comm.dict_coalesce(self.in_kwargs, 'atime_time'),
+                                      comm.dict_coalesce(self.in_kwargs, 'atime_op')):
                 pass
             else:
                 return False
@@ -284,15 +279,9 @@ class FileAnalyzer(object):
             return True
 
         if comm.dict_coalesce(self.in_kwargs, 'file_type') == 'file':
-            if os.path.isfile(fqfn):
-                return True
-            else:
-                return False
+            return os.path.isfile(fqfn)
         else:
-            if os.path.isdir(fqfn):
-                return True
-            else:
-                return False
+            return os.path.isdir(fqfn)
 
 
 
@@ -371,7 +360,7 @@ class FileAnalyzer(object):
             Raises:
             - ValueError if format doesn't work on filename date
         """
-        assert op in ['gt','lt']
+        assert op in ['gt', 'lt']
 
         #---- extract filename date string:
         file_substring = get_regex_substring(fn, extract_rgx, filter_rgx)
@@ -387,7 +376,7 @@ class FileAnalyzer(object):
             return None
 
         threshold_epoch = self._get_threshold_epoch(arg_date)
-        filename_epoch  = time.mktime(file_date)
+        filename_epoch = time.mktime(file_date)
 
         if dynamic_comparison(filename_epoch, op, threshold_epoch):
             return True
@@ -426,18 +415,18 @@ class FileAnalyzer(object):
 
         #---- handle the current_time format
         if 'current_time' in time_delta:
-           token = time_delta.split()
-           if (len(token) != 4
-           or token[0] != 'current_time'
-           or token[1] != '-'
-           or not isnumeric(token[2])
-           or token[3] not in self.seconds_translator.keys()):
-               abort('ERROR: Config file is invalid',
-                     'fntime_time should have format like: current_time - n days'
-                     'What was found:  %s' % time_delta, 1)
-           else:
-              measure = token[2]
-              unit    = self.seconds_translator[token[3]]
+            token = time_delta.split()
+            if (len(token) != 4
+                    or token[0] != 'current_time'
+                    or token[1] != '-'
+                    or not isnumeric(token[2])
+                    or token[3] not in self.seconds_translator.keys()):
+                abort('ERROR: Config file is invalid',
+                      'fntime_time should have format like: current_time - n days'
+                      'What was found:  %s' % time_delta, 1)
+            else:
+                measure = token[2]
+                unit = self.seconds_translator[token[3]]
 
         #---- handle the abbreviated format
         else:
@@ -481,8 +470,8 @@ def get_config(arg_config_file=None, arg_config_name=None):
         config_fn = arg_config_file
     elif arg_config_name:
         config_fn = os.path.join(appdirs.user_config_dir('datagristle'),
-                                                         'gristle_processor',
-                                                         '%s.yml' % arg_config_name)
+                                 'gristle_processor',
+                                 '%s.yml' % arg_config_name)
     else:
         abort('ERROR: config file missing',
               'User must provide either a config-fn or config-name', 1)
@@ -492,7 +481,7 @@ def get_config(arg_config_file=None, arg_config_name=None):
               'file not found: %s' % config_fn, 1)
 
     config_fp = open(config_fn)
-    config    = yaml.safe_load(config_fp)
+    config = yaml.safe_load(config_fp)
 
     return config, config_fn
 
@@ -574,11 +563,11 @@ class ConfigValidator(object):
 
         #--- if fntime set was included, make sure all necessary items are
         #--- included.
-        if ('fntime_time'          in inclusion_config
-        or  'fntime_filter_regex'  in inclusion_config
-        or  'fntime_extract_regex' in inclusion_config
-        or  'fntime_format'        in inclusion_config
-        or  'fntime_op'            in inclusion_config):
+        if ('fntime_time' in inclusion_config
+                or  'fntime_filter_regex' in inclusion_config
+                or  'fntime_extract_regex' in inclusion_config
+                or  'fntime_format' in inclusion_config
+                or  'fntime_op' in inclusion_config):
             if 'fntime_time' not in inclusion_config:
                 abort('ERROR: config is invalid',
                       'fntime_time_time is missing from inclusion_config', 1)
@@ -608,8 +597,8 @@ class ConfigValidator(object):
         except valid.validator.FieldValidationError as e:
             abort('ERROR: Config file is invalid', str(e), 1)
 
-        if ('action_builtin'       in action_config
-        and 'action_external'      in action_config):
+        if ('action_builtin' in action_config
+                and 'action_external' in action_config):
             abort('ERROR: config is invalid',
                   'both builtin and external actions provided.', 1)
 
@@ -660,7 +649,7 @@ def setup_logs(arg_log_dir, log_level='debug'):
     cl_logger = log.LogManager(app_name=APP_NAME,
                                log_name=__name__,
                                log_dir=arg_log_dir)
-    logger    = cl_logger.logger
+    logger = cl_logger.logger
     logger.setLevel(log_level.upper())
 
 
@@ -691,8 +680,8 @@ def get_regex_substring(string, extract_rgx, filter_rgx=None):
     """
 
     if filter_rgx is not None:
-        filter_pile     = re.compile(filter_rgx)
-        results         = filter_pile.search(string)
+        filter_pile = re.compile(filter_rgx)
+        results = filter_pile.search(string)
         if results is None:
             filtered_string = None
         else:
@@ -703,8 +692,8 @@ def get_regex_substring(string, extract_rgx, filter_rgx=None):
     if filtered_string is None:
         return None
 
-    ext_pile   = re.compile(extract_rgx)
-    ext_match  = ext_pile.search(filtered_string)
+    ext_pile = re.compile(extract_rgx)
+    ext_match = ext_pile.search(filtered_string)
 
     if ext_match is None and filter_rgx:
         raise ValueError # Extract Regex is not intended to filter
@@ -765,7 +754,7 @@ def exit_if_suppressed():
 
 
 def exit_if_already_running():
-    jobcheck  = job.JobCheck(app_name=APP_NAME)
+    jobcheck = job.JobCheck(app_name=APP_NAME)
     if jobcheck.lock_pidfile():
         logger.info('JobCheck has passed')
         return jobcheck
@@ -792,32 +781,32 @@ def get_args():
                                      formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('--config-name',
-           dest='config_name',
-           default=None,
-           help='Specifies the name of the config file in the standard xdg datagristle config')
+                        dest='config_name',
+                        default=None,
+                        help='Specifies the name of the config file in the standard xdg datagristle config')
     parser.add_argument('-c', '--config-file',
-           dest='config_file',
-           default=None,
-           help='Specifies the name of the config file in a user-specified directory')
+                        dest='config_file',
+                        default=None,
+                        help='Specifies the name of the config file in a user-specified directory')
     parser.add_argument('--log-dir',
-           dest='log_dir',
-           default=None,
-           help='Overrides the xdg-default logging directory.  XDG default on linux is $HOME/.cache/datagristle/gristle_process')
+                        dest='log_dir',
+                        default=None,
+                        help='Overrides the xdg-default logging directory.  XDG default on linux is $HOME/.cache/datagristle/gristle_process')
     parser.add_argument('--log-level',
-           dest='log_level',
-           choices=['debug', 'info', 'warning', 'error', 'critical'],
-           help='Specifies level of detail in logs.  Default is None - which leaves it to the config file.')
+                        dest='log_level',
+                        choices=['debug', 'info', 'warning', 'error', 'critical'],
+                        help='Specifies level of detail in logs.  Default is None - which leaves it to the config file.')
 
     parser.add_argument('--testrun',
-           default=False,
-           action='store_true',
-           dest='test_run',
-           help=('Identify files to act upon - but just list them'))
+                        default=False,
+                        action='store_true',
+                        dest='test_run',
+                        help=('Identify files to act upon - but just list them'))
 
     parser.add_argument('--long-help',
-           default=False,
-           action='store_true',
-           help='Print more verbose help')
+                        default=False,
+                        action='store_true',
+                        help='Print more verbose help')
 
     args = parser.parse_args()
 

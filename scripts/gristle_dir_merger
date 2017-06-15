@@ -118,33 +118,26 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2014 Ken Farmer
+Copyright 2014,2017 Ken Farmer
 """
-
-#--- standard modules ------------------
 import sys
 import argparse
-import os
 import time
 import math
 import shutil
-import errno
 import glob
 import hashlib
 import logging
+import os
 from os.path import dirname, basename
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
+from signal import signal, SIGPIPE, SIG_DFL
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
-from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
-#--- gristle modules -------------------
-sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
-import datagristle.file_type           as file_type
-import datagristle.common              as comm
 
 __version__ = 'unknown'
 try:
@@ -158,16 +151,16 @@ except ImportError:
 def main():
     """ Sets up the environment then runs the main process.
     """
-    args       = get_args()
+    args = get_args()
     setup_logs(args.log_level)
 
     process_dir = ProcessDirs(args.source_dir,
-                             args.matchon,
-                             args.on_f_match,
-                             args.on_p_match,
-                             args.recursive,
-                             args.dry_run,
-                             args.ignore_errors)
+                              args.matchon,
+                              args.on_f_match,
+                              args.on_p_match,
+                              args.recursive,
+                              args.dry_run,
+                              args.ignore_errors)
 
     process_dir.walk(args.source_dir, args.dest_dir)
 
@@ -189,24 +182,24 @@ class ProcessDirs(object):
 
         assert isdir(starting_src_dir)
 
-        self.start_time        = time.time()
-        self.ignore_err        = ignore_err
-        self.recursive         = recursive
-        self.matchon           = matchon
-        self.starting_src_dir  = starting_src_dir
-        self.dest_dirs         = {} # key is dirpath, value is count of files within
-        self.dest_files        = {} # key is dirpath, value is list of files
-        self.full_match        = full_match
-        self.part_match        = part_match
-        self.merger            = MergeFiles(dry_run, ignore_err)
-        self.full_match_cnt    = 0
+        self.start_time = time.time()
+        self.ignore_err = ignore_err
+        self.recursive = recursive
+        self.matchon = matchon
+        self.starting_src_dir = starting_src_dir
+        self.dest_dirs = {} # key is dirpath, value is count of files within
+        self.dest_files = {} # key is dirpath, value is list of files
+        self.full_match = full_match
+        self.part_match = part_match
+        self.merger = MergeFiles(dry_run, ignore_err)
+        self.full_match_cnt = 0
         self.partial_match_cnt = 0
-        self.no_match_cnt      = 0
-        self.sdir_cnt          = 0
-        self.sfile_cnt         = 0
-        self.sdotfile_cnt      = 0
-        self.ddir_cnt          = 0
-        self.dfile_cnt         = 0
+        self.no_match_cnt = 0
+        self.sdir_cnt = 0
+        self.sfile_cnt = 0
+        self.sdotfile_cnt = 0
+        self.ddir_cnt = 0
+        self.dfile_cnt = 0
 
 
     def get_walk_entries(self, src_dir):
@@ -218,8 +211,8 @@ class ProcessDirs(object):
                 - files - a list of files within a_dir
         """
         entries = os.listdir(src_dir)
-        dirs    = []
-        files   = []
+        dirs = []
+        files = []
         for entry in entries:
             if isdir(pjoin(src_dir, entry)):
                 dirs.append(entry)
@@ -239,7 +232,7 @@ class ProcessDirs(object):
         kill_if_symlink(src_dir, 'source', self.ignore_err)
         kill_if_symlink(dst_dir, 'dest', self.ignore_err)
 
-        sub_dirs, files  = self.get_walk_entries(src_dir)
+        sub_dirs, files = self.get_walk_entries(src_dir)
 
         for sub_dir in sub_dirs:
 
@@ -320,7 +313,7 @@ class ProcessDirs(object):
         if dest_dir not in self.dest_dirs:
             dest_file_list = glob.glob(pjoin(dest_dir, '*'))
             dest_file_list.extend(glob.glob(pjoin(dest_dir, '.*')))
-            self.dest_dirs[dest_dir]  = len(dest_file_list)
+            self.dest_dirs[dest_dir] = len(dest_file_list)
             self.dest_files[dest_dir] = [basename(f) for f in dest_file_list]
 
         if src_file:
@@ -333,11 +326,11 @@ class ProcessDirs(object):
     def generate_dest_counts(self):
         ddir_cnt  = 0
         dfile_cnt = 0
-        for key, value in self.dest_dirs.iteritems():
+        for _, value in self.dest_dirs.iteritems():
             if value > 0:
-                ddir_cnt  += 1
+                ddir_cnt += 1
                 dfile_cnt += value
-        self.ddir_cnt  = ddir_cnt
+        self.ddir_cnt = ddir_cnt
         self.dfile_cnt = dfile_cnt - ddir_cnt
 
 
@@ -352,23 +345,23 @@ class ProcessDirs(object):
 
         logging.info('')
         logging.info('---------- Counts -----------')
-        logging.info('Total Source Objects:       %d' % (self.sdir_cnt + self.sfile_cnt))
-        logging.info('   Directory Read Cnt:      %d' % self.sdir_cnt)
-        logging.info('   File Read Cnt:           %d' % self.sfile_cnt)
-        logging.info('      DotFile Read Cnt:     %d' % self.sdotfile_cnt)
-        logging.info('Total Dest Objects:         %d' % (self.ddir_cnt + self.dfile_cnt))
-        logging.info('   Directory Read Cnt:      %d' % self.ddir_cnt)
-        logging.info('   File Read Cnt:           %d' % self.dfile_cnt)
+        logging.info('Total Source Objects:       %d', (self.sdir_cnt + self.sfile_cnt))
+        logging.info('   Directory Read Cnt:      %d', self.sdir_cnt)
+        logging.info('   File Read Cnt:           %d', self.sfile_cnt)
+        logging.info('      DotFile Read Cnt:     %d', self.sdotfile_cnt)
+        logging.info('Total Dest Objects:         %d', (self.ddir_cnt + self.dfile_cnt))
+        logging.info('   Directory Read Cnt:      %d', self.ddir_cnt)
+        logging.info('   File Read Cnt:           %d', self.dfile_cnt)
         logging.info('')
-        logging.info('Full Match Cnt:             %d' % self.full_match_cnt)
-        logging.info('Partial Match Cnt:          %d' % self.partial_match_cnt)
-        logging.info('No Match Cnt:               %d' % self.no_match_cnt)
+        logging.info('Full Match Cnt:             %d', self.full_match_cnt)
+        logging.info('Partial Match Cnt:          %d', self.partial_match_cnt)
+        logging.info('No Match Cnt:               %d', self.no_match_cnt)
         logging.info('')
-        logging.info('Delete Source Cnt:          %d' % self.merger.delete_source_cnt)
-        logging.info('Move Source Cnt:            %d' % self.merger.move_source_cnt)
-        logging.info('Rename And Move Source Cnt: %d' % self.merger.rename_and_move_source_cnt)
+        logging.info('Delete Source Cnt:          %d', self.merger.delete_source_cnt)
+        logging.info('Move Source Cnt:            %d', self.merger.move_source_cnt)
+        logging.info('Rename And Move Source Cnt: %d', self.merger.rename_and_move_source_cnt)
         logging.info('')
-        logging.info('Seconds Duration:      %7.2f' % (time.time() - self.start_time))
+        logging.info('Seconds Duration:      %7.2f', (time.time() - self.start_time))
 
 
 
@@ -381,16 +374,16 @@ class MergeFiles(object):
     """
 
     def __init__(self, dry_run, ignore_err):
-        self.dry_run                     = dry_run
-        self.ignore_err                  = ignore_err
-        self.action   = {'keep_dest':     self.keep_dest,
-                         'keep_source':   self.keep_source,
-                         'keep_both':     self.keep_both,
-                         'keep_newest':   self.keep_newest,
-                         'keep_biggest':  self.keep_biggest }
-        self.move_source_cnt             = 0
-        self.rename_and_move_source_cnt  = 0
-        self.delete_source_cnt           = 0
+        self.dry_run = dry_run
+        self.ignore_err = ignore_err
+        self.action = {'keep_dest': self.keep_dest,
+                       'keep_source': self.keep_source,
+                       'keep_both': self.keep_both,
+                       'keep_newest': self.keep_newest,
+                       'keep_biggest': self.keep_biggest}
+        self.move_source_cnt = 0
+        self.rename_and_move_source_cnt = 0
+        self.delete_source_cnt = 0
 
 
     def keep_dest(self, src_path, dst_path, reason=''):
@@ -410,7 +403,7 @@ class MergeFiles(object):
 
     def keep_newest(self, src_path, dst_path, reason=''):
         src_fn_time = os.path.getmtime(src_path)
-        dst_fn_time   = os.path.getmtime(dst_path)
+        dst_fn_time = os.path.getmtime(dst_path)
 
         if src_fn_time > dst_fn_time:
             self._move_source(src_path, dst_path, reason=reason)
@@ -538,12 +531,12 @@ def compare_md5s(src_path, dst_path):
     #---- next keep comparing sections, hoping to bail out early
     #---- on a difference:
     source_md5 = hashlib.md5()
-    dest_md5   = hashlib.md5()
+    dest_md5 = hashlib.md5()
     source_f = open(src_path, 'r')
-    dest_f   = open(dst_path, 'r')
+    dest_f = open(dst_path, 'r')
     while True:
-        source_chunk =  source_f.read(128 * source_md5.block_size)
-        dest_chunk   =  dest_f.read(128 * dest_md5.block_size)
+        source_chunk = source_f.read(128 * source_md5.block_size)
+        dest_chunk = dest_f.read(128 * dest_md5.block_size)
         if not source_chunk or not dest_chunk:
             break
         else:
@@ -577,7 +570,7 @@ def create_unique_file_name(dir_name, file_name):
     i = 0
     while exists(pjoin(dir_name, file_name)):
         i += 1
-        file_name  = '%s.%d%s' % (base_name, i, extension)
+        file_name = '%s.%d%s' % (base_name, i, extension)
 
     return file_name
 
@@ -624,11 +617,11 @@ def setup_logs(log_level='debug', log_to_console=True):
                         format='%(message)s')
 
 def log_action(on_f_match, file_name):
-    logging.info('%s - %s' % (on_f_match, file_name))
+    logging.info('%s - %s', on_f_match, file_name)
 
 def log_reason(reason):
     if reason:
-        logging.debug('   %s' % reason)
+        logging.debug('   %s', reason)
 
 
 
@@ -650,15 +643,15 @@ def kill_if_symlink(fqfn, dir_type, ignore_errors):
               But they may have no corresponding directory on the dest side -
               so this could get called for a dest_dir that doesn't exist.
     """
-    assert dir_type in ['source','dest']
+    assert dir_type in ['source', 'dest']
     if exists(fqfn):
         if os.path.islink(fqfn):
-            logging.critical('Symbolic link not supported: %s' % fqfn)
+            logging.critical('Symbolic link not supported: %s', fqfn)
             if not ignore_errors:
                 sys.exit(1)
     else:
         if dir_type == 'source':
-            logging.critical('File missing while checking for symlink: %s' % fqfn)
+            logging.critical('File missing while checking for symlink: %s', fqfn)
             if not ignore_errors:
                 sys.exit(1)
 
@@ -679,69 +672,69 @@ def get_args():
                                      formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('source_dir',
-           help='Source directory.  Files from here will be deleted or moved into the dest_dir.')
+                        help='Source directory.  Files from here will be deleted or moved into the dest_dir.')
     parser.add_argument('dest_dir',
-           help='Destination directory.  Files from the source_dir will be copied into here.')
+                        help='Destination directory.  Files from the source_dir will be copied into here.')
     parser.add_argument('--match-on-name-only',
-           dest='matchon',
-           action='store_const',
-           const='name_only',
-           help='Match files on name only.  Overrides default of match-on-name-and-md5.')
+                        dest='matchon',
+                        action='store_const',
+                        const='name_only',
+                        help='Match files on name only.  Overrides default of match-on-name-and-md5.')
     parser.add_argument('--match-on-name-and-md5',
-           dest='matchon',
-           action='store_const',
-           const='name_and_md5',
-           help='Match files on name and an MD5 commparison.  This is the default.')
+                        dest='matchon',
+                        action='store_const',
+                        const='name_and_md5',
+                        help='Match files on name and an MD5 commparison.  This is the default.')
     parser.add_argument('--on-full-match',
-           dest='on_f_match',
-           choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
-           default='keep_dest',
-           required=False,
-           help='Action for files matched completely.  Default is keep_dest.')
+                        dest='on_f_match',
+                        choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
+                        default='keep_dest',
+                        required=False,
+                        help='Action for files matched completely.  Default is keep_dest.')
     # default added below so it won't get added with match-on-name-only:
     parser.add_argument('--on-partial-match',
-           dest='on_p_match',
-           choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
-           required=False,
-           help='Action for files matched by name but with different content.  Default is keep_newest.')
+                        dest='on_p_match',
+                        choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
+                        required=False,
+                        help='Action for files matched by name but with different content.  Default is keep_newest.')
 
 
     parser.add_argument('-i', '--ignore-errors',
-           default=False,
-           action='store_true',
-           dest='ignore_errors',
-           help='ignores errors, but reports them, when dry-run is true')
+                        default=False,
+                        action='store_true',
+                        dest='ignore_errors',
+                        help='ignores errors, but reports them, when dry-run is true')
 
     parser.add_argument('--dry-run',
-           default=False,
-           action='store_true',
-           dest='dry_run',
-           help='Lists files and action, but does not change them.')
+                        default=False,
+                        action='store_true',
+                        dest='dry_run',
+                        help='Lists files and action, but does not change them.')
 
     parser.add_argument('-r', '--recursive',
-           default=False,
-           action='store_true',
-           help='Walk through directories recursively.  Default is non-recursive')
+                        default=False,
+                        action='store_true',
+                        help='Walk through directories recursively.  Default is non-recursive')
 
     parser.add_argument('-s', '--stats',
-           default=False,
-           action='store_true',
-           help='Print statistics at end of job.  Default is False.')
+                        default=False,
+                        action='store_true',
+                        help='Print statistics at end of job.  Default is False.')
 
     parser.add_argument('--log-level',
-           dest='log_level',
-           choices=['debug', 'info', 'warning', 'error', 'critical'],
-           default='info',
-           help='Level of log detail.  Default is Info.')
+                        dest='log_level',
+                        choices=['debug', 'info', 'warning', 'error', 'critical'],
+                        default='info',
+                        help='Level of log detail.  Default is Info.')
 
     parser.add_argument('--long-help',
-           default=False,
-           action='store_true',
-           help='Print more verbose help.')
+                        default=False,
+                        action='store_true',
+                        help='Print more verbose help.')
 
     parser.add_argument('--version',
-           action='version',
-           version='gristle_dir_merger %s' % __version__)
+                        action='version',
+                        version='gristle_dir_merger %s' % __version__)
 
     if '--long-help' in sys.argv:
         print(__doc__)

@@ -29,7 +29,7 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
 
 import sys
@@ -92,7 +92,7 @@ class SpecProcessor(object):
         if not is_sequence(spec):
             raise ValueError('spec argument is not a sequence object')
 
-        def _is_invalid_part(part):
+        def _is_invalid_part(part: str) -> bool:
             try:
                 int(part)
             except (TypeError, ValueError):

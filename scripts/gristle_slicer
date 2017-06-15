@@ -73,7 +73,6 @@
        http://opensource.org/licenses/BSD-3-Clause
     Copyright 2011,2012,2013,2017 Ken Farmer
 """
-
 import sys
 import io
 import optparse
@@ -81,26 +80,20 @@ import csv
 import fileinput
 import os
 from pprint import pprint as pp
-import typing
-from typing import List, Union, Tuple, Dict, Any, Optional, IO, TextIO
+from signal import signal, SIGPIPE, SIG_DFL
+from typing import List, Tuple, Any, Optional, IO, TextIO
+
+import datagristle.file_type as file_type
+import datagristle.location_slicer as slicer
+import datagristle.csvhelper as csvhelper
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
-from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL)
-
-
-#--- gristle modules -------------------
-# set up a custom path - just for running unittests
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import datagristle.file_type           as file_type
-import datagristle.location_slicer     as slicer
-import datagristle.csvhelper           as csvhelper
+signal(SIGPIPE, SIG_DFL)
 
 debug = False
 
 
-def main():
+def main() -> int:
     """ runs all processes:
             - gets opts & args
             - analyzes file to determine csv characteristics unless data is
@@ -109,8 +102,8 @@ def main():
             - writes records
     """
     global debug
-    (opts, files)   = get_opts_and_args()
-    debug           = opts.debug
+    (opts, files) = get_opts_and_args()
+    debug = opts.debug
 
     if files:
         if not os.path.exists(files[0]):
@@ -122,19 +115,19 @@ def main():
     except file_type.IOErrorEmptyFile:
         print('ERROR: empty file')
         sys.exit(0)
-    outfile, csv_writer  = get_output_file_info(opts, dialect)
+    outfile, csv_writer = get_output_file_info(opts, dialect)
 
     (incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer) \
        = setup_slicer(opts, files, dialect)
 
-    rec_cnt  = -1
-    def processor(reader):
+    rec_cnt = -1
+    def processor(reader) -> None:
         nonlocal rec_cnt
         try:
             for rec in reader:
                 rec_cnt += 1
                 new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                                    rec, incl_col_slicer, excl_col_slicer)
+                                      rec, incl_col_slicer, excl_col_slicer)
                 if new_rec:
                     write_rec(csv_writer, new_rec, rec_cnt)
         except file_type.IOErrorEmptyFile:
@@ -183,7 +176,7 @@ def get_input_file_info(input_files: List[str], opts: Any) -> csvhelper.Dialect:
     """
     if opts.delimiter:
         dialect = csvhelper.Dialect(delimiter=opts.delimiter,
-                                    hasheader=False,
+                                    has_header=False,
                                     quoting=file_type.get_quote_number(opts.quoting),
                                     quotechar='"',
                                     lineterminator='\n')
@@ -272,8 +265,8 @@ def setup_slicer(opts,
 
 def get_file_counts(files: List[str],
                     dialect: csv.Dialect,
-                    get_rec_cnt: bool=False,
-                    get_col_cnt: bool=False) -> Tuple[Optional[int], int]:
+                    get_rec_cnt: bool = False,
+                    get_col_cnt: bool = False) -> Tuple[Optional[int], int]:
     """ Gets record and column counts for input files.
         - Counts have an offset of 0
         - if rec is True then it will read entire input file to get
@@ -284,9 +277,9 @@ def get_file_counts(files: List[str],
           and the field count from the first record.
     """
     assert get_rec_cnt is True or get_col_cnt is True
-    rec_cnt   = -1
+    rec_cnt = -1
     for record in csv.reader(fileinput.input(files), dialect):
-        rec_cnt  += 1
+        rec_cnt += 1
         field_cnt = len(record) -1
         if not get_rec_cnt and rec_cnt > -1:
             break
@@ -323,7 +316,7 @@ def process_rec(rec_number: int,
             - if the rec_number fails:  None
             - if the rec_number passes: a list of the columns that qualified
     """
-    # minimal validation 
+    # minimal validation
     assert int(rec_number) >= 0
 
     # reject record if it isn't in the inclusion spec
@@ -389,48 +382,47 @@ def get_opts_and_args() -> Tuple[optparse.Values, List[str]]:
     parser = optparse.OptionParser(usage = use)
 
     parser.add_option('--long-help',
-           default=False,
-           action='store_true',
-           help='Print more verbose help')
+                      default=False,
+                      action='store_true',
+                      help='Print more verbose help')
     parser.add_option('-o', '--output',
-           default='-',
-           help='Specifies the output file.  The default is stdout.  Note that'
-                'if a filename is provided the program will override any '
-                'file of that name.')
+                      default='-',
+                      help='Specifies the output file.  The default is stdout.  Note that'
+                           'if a filename is provided the program will override any '
+                           'file of that name.')
     parser.add_option('-c', '--columns',
-           default=':',
-           help=('Specify the columns to include via a comma-separated list of '
-                 'columns and colon-separated pairs of column start & '
-                 'stop ranges. The default is to include all columns (":"). '))
+                      default=':',
+                      help=('Specify the columns to include via a comma-separated list of '
+                            'columns and colon-separated pairs of column start & '
+                            'stop ranges. The default is to include all columns (":"). '))
     parser.add_option('-C', '--excolumns',
-           help=('Specify the columns to exclude via a comma-separated list of '
-                 'columns and colon-separated pairs of column start & '
-                 'stop ranges.  The default is to exclude nothing. '))
+                      help=('Specify the columns to exclude via a comma-separated list of '
+                            'columns and colon-separated pairs of column start & '
+                            'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-r', '--records',
-           default=':',
-           help=('Specify the records to include via a comma-separated list of '
-                 'record numbers and colon-separated pairs of record start & '
-                 'stop ranges.  The default is to include all records (":").'))
+                      default=':',
+                      help=('Specify the records to include via a comma-separated list of '
+                            'record numbers and colon-separated pairs of record start & '
+                            'stop ranges.  The default is to include all records (":").'))
     parser.add_option('-R', '--exrecords',
-           help=('Specify the records to exclude via a comma-separated list of '
-                 'record numbers and colon-separated pairs of record start & '
-                 'stop ranges.  The default is to exclude nothing. '))
+                      help=('Specify the records to exclude via a comma-separated list of '
+                            'record numbers and colon-separated pairs of record start & '
+                            'stop ranges.  The default is to exclude nothing. '))
     parser.add_option('-d', '--delimiter',
-           help=('Specify a quoted single-column field delimiter. This may be '
-                 'determined automatically by the program in some cases.  But'
-                 ' stdin requires this to be provided, and automatic detection'
-                 ' can also sometimes get confused.  If you provide the delimiter'
-                 ' then you should also provide the quoting instruction.'))
+                      help=('Specify a quoted single-column field delimiter. This may be '
+                            'determined automatically by the program in some cases.  But'
+                            ' stdin requires this to be provided, and automatic detection'
+                            ' can also sometimes get confused.  If you provide the delimiter'
+                            ' then you should also provide the quoting instruction.'))
     parser.add_option('-q', '--quoting',
-           choices=('quote_all','quote_minimal','quite_nonnumeric','quote_none'),
-           default='quote_none',
-           help='Specify field quoting - used for stdin or when automatic detection '
-                'fails.   The default is quote_none')
+                      choices=('quote_all', 'quote_minimal', 'quite_nonnumeric', 'quote_none'),
+                      default='quote_none',
+                      help='Specify field quoting - used for stdin or when automatic detection '
+                           'fails.   The default is quote_none')
     parser.add_option('--debug',
-           default=False,
-           action='store_true',
-           help='Print debugging info')
-
+                      default=False,
+                      action='store_true',
+                      help='Print debugging info')
 
     (opts, files) = parser.parse_args()
 
@@ -442,7 +434,7 @@ def get_opts_and_args() -> Tuple[optparse.Values, List[str]]:
         if not files:
             parser.error('Provide delimiter and quoting when piping data into program via stdin')
 
-    def lister(arg_string):
+    def lister(arg_string: str) -> List[str]:
         """ converts input commma-delimited string into a list
         """
         if arg_string:

@@ -1,40 +1,32 @@
 #!/usr/bin/env python
 """ This harness provides Functional Tests for gristle_dir_merger.  That is,
-    it runs the entire application rather than just testing specific classes 
+    it runs the entire application rather than just testing specific classes
     or functions.
 
-    Usage instructions: run with pytest:
-        $ py.test <this file>
-
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2014 Ken Farmer
+    See the file "LICENSE" for the full license governing this code.
+    Copyright 2014, 2017 Ken Farmer
 """
+#adjust pylint for pytest oddities:
+#pylint: disable=missing-docstring
+#pylint: disable=unused-argument
+#pylint: disable=attribute-defined-outside-init
+#pylint: disable=protected-access
+#pylint: disable=no-self-use
+#pylint: disable=anomalous-backslash-in-string
 
-import sys
-import os
 import tempfile
 import time
-import fileinput
-import pytest
-import glob
-import errno
 import shutil
-from pprint import pprint as pp
+import os
 from os.path import dirname, join as pjoin
 
 import envoy
-import yaml
 
-#--- gristle modules -------------------
-sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
 import datagristle.test_tools as tt
-script_dir = dirname(dirname(os.path.realpath((__file__))))
-data_dir   = pjoin(dirname(script_dir), 'data')
-PGM        = pjoin(script_dir, 'gristle_dir_merger')
-sys.path.insert(0, tt.get_app_root())
 
-import datagristle.common  as comm
-from datagristle.common import dict_coalesce
+PGM = pjoin(dirname(dirname(os.path.realpath((__file__)))), 'gristle_dir_merger')
+
+
 
 
 def rmtree_ignore_error(path):
@@ -46,13 +38,13 @@ def rmtree_ignore_error(path):
     except OSError:
         pass
 
-class TestEmpties(object):
-    """ Tests gristle_dir_merger when used with empty directoreis.
-    """
+
+
+class TestFixture(object):
 
     def setup_method(self, method):
         self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
-        self.dest_dir   = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
+        self.dest_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
 
     def teardown_method(self, method):
         rmtree_ignore_error(self.source_dir)
@@ -63,6 +55,20 @@ class TestEmpties(object):
         print(response.std_out)
         print(response.std_err)
 
+    def executor(self, cmd, expected_success=True):
+        print('\n command: %s' % cmd)
+        runner = envoy.run(cmd)
+        self.get_outputs(runner)
+        if expected_success:
+            assert runner.status_code == 0
+        else:
+            assert runner.status_code != 0
+
+
+
+class TestEmpties(TestFixture):
+    """ Tests gristle_dir_merger when used with empty directoreis.
+    """
     def test_empty_to_empty(self):
 
         self.cmd = """%(pgm)s %(source_dir)s       \
@@ -73,12 +79,8 @@ class TestEmpties(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print('\n command: %s' % self.cmd)
+        self.executor(self.cmd)
 
-        r = envoy.run(self.cmd)
-        self.get_outputs(r)
-
-        assert r.status_code      == 0
 
     def test_nonempty_to_empty(self):
 
@@ -92,12 +94,8 @@ class TestEmpties(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print('\n command: %s' % self.cmd)
 
-        r = envoy.run(self.cmd)
-        self.get_outputs(r)
-
-        assert r.status_code      == 0
+        self.executor(self.cmd)
         assert 'foo.csv' in os.listdir(self.dest_dir)
         assert not os.path.exists(self.source_dir)
 
@@ -111,7 +109,7 @@ class TestEmpties(object):
             \tmp\TestGristleDirMerger_source_?
             \tmp\TestGristleDirMerger_dest_?\mysubdir\foo.csv
         """
-        source_subdir = os.path.join(self.source_dir, 'mysubdir')
+        _ = os.path.join(self.source_dir, 'mysubdir')
 
         subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(subdir)
@@ -125,10 +123,7 @@ class TestEmpties(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print('\n command: %s' % self.cmd)
-
-        r = envoy.run(self.cmd)
-        self.get_outputs(r)
+        self.executor(self.cmd)
 
         print('dest_dir: %s' % self.dest_dir)
         print(os.listdir(self.dest_dir))
@@ -137,7 +132,6 @@ class TestEmpties(object):
         #print os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
         print('is a file? %s' % os.path.isfile(os.path.join(self.dest_dir, 'mysubdir')))
 
-        assert r.status_code      == 0
         assert 'mysubdir' in os.listdir(self.dest_dir)
         assert not os.path.exists(self.source_dir)
         assert 'foo.csv'  in os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
@@ -150,11 +144,11 @@ class TestMatchOnNameOnly(object):
     """
 
     def setup_method(self, method):
-        self.source_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
+        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
         self.source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(self.source_subdir)
 
-        self.dest_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
+        self.dest_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
         self.dest_subdir = os.path.join(self.dest_dir, 'mysubdir')
         os.mkdir(self.dest_subdir)
 
@@ -184,8 +178,8 @@ class TestMatchOnNameOnly(object):
         create_test_file(self.dest_subdir, 'bar.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_both')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'bar.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'bar.csv'])
 
     def test_dup_files_and_onmatch_is_useboth(self):
         """      starting dirs & files:
@@ -198,13 +192,13 @@ class TestMatchOnNameOnly(object):
         create_test_file(self.dest_subdir, 'foo.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_both')
-        r = envoy.run(self.cmd)
+        runner = envoy.run(self.cmd)
         print('dest_dir:')
         print(os.listdir(self.dest_dir))
         print('')
         print('dest_subdir:')
         print(os.listdir(self.dest_subdir))
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
     def test_dup_files_and_onmatch_is_usesource(self):
         """      starting dirs & files:
@@ -216,8 +210,8 @@ class TestMatchOnNameOnly(object):
         create_test_file(self.dest_subdir, 'foo.csv', final_contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_source')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert '' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_dup_files_and_onmatch_is_usedest(self):
@@ -230,8 +224,8 @@ class TestMatchOnNameOnly(object):
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_dest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert 'is-different' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_dup_files_and_onmatch_is_usebiggest(self):
@@ -244,8 +238,8 @@ class TestMatchOnNameOnly(object):
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_biggest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert 'is-different' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_dup_files_and_onmatch_is_usenewest(self):
@@ -258,8 +252,8 @@ class TestMatchOnNameOnly(object):
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different', year=2014)
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_only', on_match='keep_newest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert 'is-different' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
 
@@ -268,11 +262,11 @@ class TestMatchOnAndMD5(object):
     """
 
     def setup_method(self, method):
-        self.source_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
+        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
         self.source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(self.source_subdir)
 
-        self.dest_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
+        self.dest_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
         self.dest_subdir = os.path.join(self.dest_dir, 'mysubdir')
         os.mkdir(self.dest_subdir)
 
@@ -302,8 +296,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'bar.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'bar.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'bar.csv'])
 
     def test_dup_files_and_onmatch_is_useboth_with_fullmatch(self):
         """ starting dirs & files:
@@ -316,8 +310,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'foo.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
     def test_dup_files_and_onmatch_is_useboth_with_partialmatch(self):
         """ starting dirs & files:
@@ -330,8 +324,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'foo.csv', 'im-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
     def test_dup_files_and_onmatch_is_usesource_with_partialmatch(self):
         """ starting dirs & files:
@@ -343,8 +337,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'foo.csv', final_contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_source')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert '' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_dup_files_and_onmatch_is_usedest_with_partialmatch(self):
@@ -357,8 +351,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_dest', on_partial_match='keep_dest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert 'is-different' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_dup_files_and_onmatch_is_usebiggest_with_partialmatch(self):
@@ -371,8 +365,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_biggest', on_partial_match='keep_biggest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert 'is-different' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_dup_files_and_onmatch_is_usenewest_with_partial_match(self):
@@ -385,8 +379,8 @@ class TestMatchOnAndMD5(object):
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different', year=2014)
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_newest', on_partial_match='keep_newest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert 'is-different' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
 
@@ -396,11 +390,11 @@ class TestMatchOnNameAndMd5Extras(object):
 
     def setup_method(self, method):
 
-        self.source_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
+        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
         self.source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(self.source_subdir)
 
-        self.dest_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
+        self.dest_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
         self.dest_subdir = os.path.join(self.dest_dir, 'mysubdir')
         os.mkdir(self.dest_subdir)
 
@@ -434,8 +428,8 @@ class TestMatchOnNameAndMd5Extras(object):
         """
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_dest', on_partial_match='keep_newest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
 
 
     def test_files_with_same_md5sums(self):
@@ -446,11 +440,10 @@ class TestMatchOnNameAndMd5Extras(object):
               dst_dir\mysubdir\foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='', year=2014)
-
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_dest', on_partial_match='keep_newest')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
 
     def test_big_files_with_same_size_but_diff_md5_and_useboth(self):
         """ starting dirs & files:
@@ -461,18 +454,16 @@ class TestMatchOnNameAndMd5Extras(object):
                 dst_dir\mysubdir\foo.1.csv      # (action=keep_both)
         """
         shutil.rmtree(self.source_dir)
-        self.source_dir  = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
-        source_subdir    = os.path.join(self.source_dir, 'mysubdir')
+        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
+        source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(source_subdir)
-        create_test_file(source_subdir, 'foo.csv', records=10000)  #mostly same
-
-        create_test_file(self.dest_subdir, 'foo.csv',   records=10000,
-                         last_row_odd=True)    #mostly same
+        create_test_file(source_subdir, 'foo.csv', records=10000) #mostly same
+        create_test_file(self.dest_subdir, 'foo.csv', records=10000, last_row_odd=True) #mostly same
 
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
 
 class TestActionUseBoth(object):
@@ -490,11 +481,11 @@ class TestActionUseBoth(object):
     """
 
     def setup_method(self, method):
-        self.source_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
+        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
         self.source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(self.source_subdir)
 
-        self.dest_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
+        self.dest_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
         self.dest_subdir = os.path.join(self.dest_dir, 'mysubdir')
         os.mkdir(self.dest_subdir)
 
@@ -523,8 +514,8 @@ class TestActionUseBoth(object):
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
     def test_matchon_nameandmd5_with_partial_match(self):
 
@@ -532,8 +523,8 @@ class TestActionUseBoth(object):
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'foo.1.csv'])
 
     def test_matchon_nameandmd5_with_partial_match_source(self):
 
@@ -541,8 +532,8 @@ class TestActionUseBoth(object):
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_source')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv'])
         assert '' == get_file_contents(os.path.join(self.dest_dir, 'mysubdir', 'foo.csv'))
 
     def test_matchon_nameandmd5_with_partial_match_nomatch(self):
@@ -551,8 +542,8 @@ class TestActionUseBoth(object):
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r, source_files=None, dest_files=['foo.csv', 'bar.csv'])
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner, source_files=None, dest_files=['foo.csv', 'bar.csv'])
 
 
 class TestOnSymLinks(object):
@@ -570,13 +561,13 @@ class TestOnSymLinks(object):
     """
 
     def setup_method(self, method):
-        self.source_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
+        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
         self.source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(self.source_subdir)
 
-        self.real_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_real_')
+        self.real_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_real_')
 
-        self.dest_dir    = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
+        self.dest_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
         self.dest_subdir = os.path.join(self.dest_dir, 'mysubdir')
         os.mkdir(self.dest_subdir)
 
@@ -600,20 +591,20 @@ class TestOnSymLinks(object):
                        source_files, dest_files, source_subdir_exists,
                        expected_status_code=1)
 
-
     def test_symbolic_source_dir(self):
 
         self.fake_source_dir = os.path.join(self.real_dir, 'myfakedir')
-        os.symlink(self.source_subdir, self.fake_source_dir)
+        os.symlink(self.source_dir, self.fake_source_dir)
 
         create_test_file(self.source_subdir, 'foo.csv', final_contents='')
         create_test_file(self.dest_subdir, 'foo.csv', final_contents='')
 
         self.cmd = get_cmd(self.fake_source_dir, self.dest_dir,
-                   match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
+                           match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r)
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner)
+
 
     def test_symbolic_dest_dir(self):
 
@@ -625,25 +616,10 @@ class TestOnSymLinks(object):
         create_test_file(self.dest_subdir, 'foo.csv', final_contents='')
 
         self.cmd = get_cmd(self.source_dir, self.fake_dest_dir,
-                   match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
+                           match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r)
-
-
-    def test_symbolic_source_dir(self):
-
-        self.fake_source_dir = os.path.join(self.real_dir, 'myfakedir')
-        os.symlink(self.source_dir, self.fake_source_dir)
-
-        create_test_file(self.source_subdir, 'foo.csv', final_contents='')
-        create_test_file(self.dest_subdir, 'foo.csv', final_contents='')
-
-        self.cmd = get_cmd(self.fake_source_dir, self.dest_dir,
-                   match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
-
-        r = envoy.run(self.cmd)
-        self.assert_results(r)
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner)
 
 
     def test_symbolic_source_file(self):
@@ -653,35 +629,22 @@ class TestOnSymLinks(object):
                    os.path.join(self.source_subdir, 'foo_fake.csv'))
 
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
-                   match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
+                           match_on='name_and_md5', on_match='keep_both', on_partial_match='keep_both')
 
-        r = envoy.run(self.cmd)
-        self.assert_results(r)
+        runner = envoy.run(self.cmd)
+        self.assert_results(runner)
 
 
-class TestDryRun(object):
+class TestDryRun(TestFixture):
     """ Tests gristle_dir_merger with criteria of name only.
     """
 
-    def setup_method(self, method):
-        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
-        self.dest_dir   = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
-
-    def teardown_method(self, method):
-        shutil.rmtree(self.source_dir)
-        shutil.rmtree(self.dest_dir)
-
-    def get_outputs(self, response):
-        print(response.status_code)
-        print(response.std_out)
-        print(response.std_err)
-
     def test_nonempty_subdir_to_nonempty_dir(self):
-        """      starting dirs & files:
+        """starting dirs & files:
             \tmp\TestGristleDirMerger_source_?\mysubdir
             \tmp\TestGristleDirMerger_source_?\mysubdir\foo.csv
             \tmp\TestGristleDirMerger_dest_???\mysubdir\bar.csv
-                  should become:
+           should become:
             \tmp\TestGristleDirMerger_source_?
             \tmp\TestGristleDirMerger_source_?\mysubdir\foo.csv
             \tmp\TestGristleDirMerger_dest_???\mysubdir\bar.csv
@@ -703,37 +666,20 @@ class TestDryRun(object):
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
-        print('\n command: %s' % self.cmd)
-
-        r = envoy.run(self.cmd)
-        self.get_outputs(r)
-
-        assert r.status_code      == 0
+        self.executor(self.cmd)
         assert 'mysubdir' in os.listdir(self.dest_dir)
         assert 'bar.csv'  in os.listdir(os.path.join(self.dest_dir, 'mysubdir'))
         assert 'mysubdir' in os.listdir(self.source_dir)
         assert 'foo.csv'  in os.listdir(os.path.join(self.source_dir, 'mysubdir'))
 
 
-class TestDeepDirectory(object):
+
+class TestDeepDirectory(TestFixture):
     """ Tests gristle_dir_merger with action of keep_newest.
     """
 
-    def setup_method(self, method):
-        self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
-        self.dest_dir   = tempfile.mkdtemp(prefix='TestGristleDirMerger_dest_')
-
-    def teardown_method(self, method):
-        shutil.rmtree(self.dest_dir)
-        rmtree_ignore_error(self.source_dir)
-
-    def get_outputs(self, response):
-        print(response.status_code)
-        print(response.std_out)
-        print(response.std_err)
-
     def test_basics(self):
-        """      starting dirs & files:
+        """ starting dirs & files:
             \tmp\*_source_?\mysubdir
             \tmp\*_source_?\mysubdir\foo
             \tmp\*_source_?\mysubdir\foo\foo.csv
@@ -783,11 +729,8 @@ class TestDeepDirectory(object):
 
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_dest', on_partial_match='keep_dest')
+        self.executor(self.cmd)
 
-        r = envoy.run(self.cmd)
-        self.get_outputs(r)
-
-        assert r.status_code      == 0
         #assert 'mysubdir'   not in os.listdir(self.source_dir)
         assert not os.path.exists(self.source_dir)
         assert 'mysubdir'   in os.listdir(self.dest_dir)
@@ -821,7 +764,7 @@ def create_test_file(path, file_name,
            - Nothing
     """
 
-    fp = open(os.path.join(path, file_name),"w")
+    fp = open(os.path.join(path, file_name), "w")
     for i in range(records):
         if last_row_odd and i == (records-1):
             odd_contents = contents.swapcase()
@@ -850,30 +793,37 @@ def get_file_myear(fqfn):
 
 def get_cmd(source_dir, dest_dir, match_on, on_match, on_partial_match=None):
 
-        pgm      = PGM
-        if match_on == 'name_only':
-            mo_opt = '--match-on-name-only'
-        else:
-            mo_opt = '--match-on-name-and-md5'
-        if on_partial_match is None:
-            opm_opt = ''
-        else:
-            opm_opt = '--on-partial-match %s' % on_partial_match
-        cmd  = """%(pgm)s %(source_dir)s                      \
-                          %(dest_dir)s                        \
-                     %(mo_opt)s                               \
-                     --on-full-match     %(on_match)s         \
-                     %(opm_opt)s                              \
-                     --log-level         debug                \
-                     -r                                       \
-               """ % locals()
-        print('\n command: %s' % cmd)
-        return cmd
+    pgm = PGM
+    if match_on == 'name_only':
+        mo_opt = '--match-on-name-only'
+    else:
+        mo_opt = '--match-on-name-and-md5'
+    if on_partial_match is None:
+        opm_opt = ''
+    else:
+        opm_opt = '--on-partial-match %s' % on_partial_match
+    cmd = f"""{pgm} {source_dir}
+                    {dest_dir}
+                    {mo_opt}
+                    --on-full-match {on_match}
+                    {opm_opt}
+                    --log-level debug
+                    -r
+           """
+    print('\n command: %s' % cmd)
+    return cmd
 
 
-def assert_results(env_result, source_dir, dest_dir, source_files=None, dest_files=None, source_subdir_exists=False,
+
+def assert_results(env_result,
+                   source_dir,
+                   dest_dir,
+                   source_files=None,
+                   dest_files=None,
+                   source_subdir_exists=False,
                    expected_status_code=0):
-    assert env_result.status_code      == expected_status_code
+
+    assert env_result.status_code == expected_status_code
     assert 'mysubdir'   in os.listdir(dest_dir)
 
     if env_result.status_code == 0:
@@ -886,7 +836,7 @@ def assert_results(env_result, source_dir, dest_dir, source_files=None, dest_fil
             for sfile in os.listdir(os.path.join(source_dir, 'mysubdir')):
                 assert sfile in source_files
         else:
-            assert source_files == None, "Bad test args"
+            assert source_files is None, "Bad test args"
             #assert 'mysubdir'   not in os.listdir(source_dir)
             assert not os.path.exists(source_dir)
 
@@ -900,10 +850,8 @@ def assert_results(env_result, source_dir, dest_dir, source_files=None, dest_fil
             assert dfile in dest_files
 
 
+
 def print_outputs(response):
     print(response.status_code)
     print(response.std_out)
     print(response.std_err)
-
-
-

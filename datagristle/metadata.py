@@ -32,7 +32,7 @@
        - rpt_collection_analysis_v
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
 
 import appdirs
@@ -91,15 +91,15 @@ class GristleMetaData(object):
             print('data dir (%s) missing - it will be created' % user_data_dir)
             os.makedirs(user_data_dir)
 
-        self.fqdb_name  = os.path.join(user_data_dir, db_name)
-        self.engine     = create_engine('sqlite:////%s' % self.fqdb_name)
+        self.fqdb_name = os.path.join(user_data_dir, db_name)
+        self.engine = create_engine('sqlite:////%s' % self.fqdb_name)
         def _fk_pragma_on_connect(dbapi_con, con_record):
             """ turns foreign key enforcement on"""
             dbapi_con.execute('pragma foreign_keys=ON')
 
         event.listen(self.engine, 'connect', _fk_pragma_on_connect)
 
-        self.engine.echo    = False
+        self.engine.echo = False
 
         self.metadata = MetaData(self.engine)
 
@@ -110,7 +110,7 @@ class GristleMetaData(object):
         #    existing_views = engine.dialect.get_view_names(connect)
         # requires the explicit connection.
         #-------------------------------------------------------------------
-        self.connect  = self.engine.connect()
+        self.connect = self.engine.connect()
 
         self.create_db_tables_declaratively()
 
@@ -122,41 +122,41 @@ class GristleMetaData(object):
             different from this configuration however.
         """
 
-        self.schema_tools       = SchemaTools(self.metadata, self.engine)
-        self.schema             = self.schema_tools.table_create()
+        self.schema_tools = SchemaTools(self.metadata, self.engine)
+        self.schema = self.schema_tools.table_create()
 
-        self.element_tools      = ElementTools(self.metadata, self.engine)
-        self.element            = self.element_tools.table_create()
+        self.element_tools = ElementTools(self.metadata, self.engine)
+        self.element = self.element_tools.table_create()
 
-        self.collection_tools   = CollectionTools(self.metadata, self.engine)
-        self.collection         = self.collection_tools.table_create()
+        self.collection_tools = CollectionTools(self.metadata, self.engine)
+        self.collection = self.collection_tools.table_create()
 
-        self.field_tools        = FieldTools(self.metadata, self.engine)
-        self.field              = self.field_tools.table_create()
+        self.field_tools = FieldTools(self.metadata, self.engine)
+        self.field = self.field_tools.table_create()
 
-        self.field_value_tools  = FieldValueTools(self.metadata, self.engine)
-        self.field_value        = self.field_value_tools.table_create()
+        self.field_value_tools = FieldValueTools(self.metadata, self.engine)
+        self.field_value = self.field_value_tools.table_create()
 
-        self.instance_tools     = InstanceTools(self.metadata, self.engine)
-        self.instance           = self.instance_tools.table_create()
+        self.instance_tools = InstanceTools(self.metadata, self.engine)
+        self.instance = self.instance_tools.table_create()
 
-        self.analysis_profile_tools     = AnalysisProfileTools(self.metadata, self.engine)
-        self.analysis_profile           = self.analysis_profile_tools.table_create()
+        self.analysis_profile_tools = AnalysisProfileTools(self.metadata, self.engine)
+        self.analysis_profile = self.analysis_profile_tools.table_create()
 
-        self.analysis_tools             = AnalysisTools(self.metadata, self.engine)
-        self.analysis                   = self.analysis_tools.table_create()
+        self.analysis_tools = AnalysisTools(self.metadata, self.engine)
+        self.analysis = self.analysis_tools.table_create()
 
-        self.collection_analysis_tools  = CollectionAnalysisTools(self.metadata, self.engine)
-        self.collection_analysis        = self.collection_analysis_tools.table_create()
+        self.collection_analysis_tools = CollectionAnalysisTools(self.metadata, self.engine)
+        self.collection_analysis = self.collection_analysis_tools.table_create()
 
-        self.field_analysis_tools       = FieldAnalysisTools(self.metadata, self.engine)
-        self.field_analysis             = self.field_analysis_tools.table_create()
+        self.field_analysis_tools = FieldAnalysisTools(self.metadata, self.engine)
+        self.field_analysis = self.field_analysis_tools.table_create()
 
         self.field_analysis_value_tools = FieldAnalysisValueTools(self.metadata, self.engine)
-        self.field_analysis_value       = self.field_analysis_value_tools.table_create()
- 
+        self.field_analysis_value = self.field_analysis_value_tools.table_create()
+
         self.metadata.create_all()
- 
+
         # we can't easily create views with sqlalchemy - so do that manually:
         create_views(self.engine, self.connect)
 
@@ -201,21 +201,21 @@ class SchemaTools(simplesql.TableTools):
         """ Creates the schema table
         """
         #                UniqueConstraint(columns=['schema_name']),
-        self.schema   = Table('schema'          ,
-                        self.metadata           ,
-                        Column('schema_id'      ,
-                               Integer          ,
-                               nullable=False   ,
-                               primary_key=True),
-                        Column('schema_name'    ,
-                               String(40)       ,
-                               nullable=False)  ,
-                        Column('schema_desc'    ,
-                               String(255)      ,
-                               nullable=False)  ,
-                        UniqueConstraint('schema_name', name='schema_uk1'),
-                        extend_existing=True    )
-        self._table      = self.schema
+        self.schema = Table('schema',
+                            self.metadata,
+                            Column('schema_id',
+                                   Integer,
+                                   nullable=False,
+                                   primary_key=True),
+                            Column('schema_name',
+                                   String(40),
+                                   nullable=False),
+                            Column('schema_desc',
+                                   String(255),
+                                   nullable=False),
+                            UniqueConstraint('schema_name', name='schema_uk1'),
+                            extend_existing=True)
+        self._table = self.schema
         self._table_name = 'schema'
         self._unique_constraints = ['schema_name']
 
@@ -275,7 +275,7 @@ class SchemaTools(simplesql.TableTools):
                              schema_desc = :schema_desc
                        WHERE schema_id   = :schema_id
                   """
-        sql    = text(raw_sql)
+        sql = text(raw_sql)
         try:
             connection = self.engine.connect()
             result = connection.execute(sql,
@@ -289,16 +289,16 @@ class SchemaTools(simplesql.TableTools):
                     result.rowcount)
 
 
-    def validate(self, required_col_list, **kwargs):
+    @staticmethod
+    def validate(required_col_list, **kwargs):
         """ Check for common schema problems.
         """
-
-        missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
+        missing_col_list = [i for i in required_col_list if i not in kwargs]
         if missing_col_list:
             raise ValueError('mandatory columns missing: %s' % missing_col_list)
 
         if (kwargs['schema_name'] is None
-        or kwargs['schema_name'].strip() == ''):
+                or kwargs['schema_name'].strip() == ''):
             raise ValueError('schema_name may not be blank')
 
 
@@ -312,18 +312,26 @@ class ElementTools(simplesql.TableTools):
     def table_create(self):
         """ Creates the 'element' table.
         """
-        self.element = Table('element'                                      ,
-                       self.metadata                                        ,
-                       Column('element_name', String(60),  nullable=False   ,
-                                                           primary_key=True),
-                       Column('element_desc', String(255), nullable=False)  ,
-                       Column('element_type', String(10),  nullable=False)  ,
-                       Column('element_len' , Integer,     nullable=True)   ,
-                       CheckConstraint ('element_len > 0 ',
-                                        name='element_ck1')    ,
-                       extend_existing=True )
+        self.element = Table('element',
+                             self.metadata,
+                             Column('element_name',
+                                    String(60),
+                                    nullable=False,
+                                    primary_key=True),
+                             Column('element_desc',
+                                    String(255),
+                                    nullable=False),
+                             Column('element_type',
+                                    String(10),
+                                    nullable=False),
+                             Column('element_len',
+                                    Integer,
+                                    nullable=True),
+                             CheckConstraint('element_len > 0 ',
+                                             name='element_ck1'),
+                             extend_existing=True)
 
-        self._table      = self.element
+        self._table = self.element
         self._table_name = 'element'
 
         return self._table
@@ -338,20 +346,29 @@ class CollectionTools(simplesql.TableTools):
         """
 
         self.collection = Table('collection',
-              self.metadata,
-              Column('collection_id'   , Integer       , nullable=False   ,
-                     primary_key=True),
-              Column('schema_id'       , Integer       , nullable=False  ),
-              Column('collection_name' , String(40)    , nullable=False  ),
-              Column('collection_desc' , String(256)   , nullable=False  ),
-              UniqueConstraint('schema_id', 'collection_name',
-                               name='collection_uk1'),
-              ForeignKeyConstraint(columns=['schema_id'],
-                                   refcolumns=['schema.schema_id'],
-                                   name='collection_fk1',
-                                   ondelete='CASCADE'),
-              extend_existing=True)
-        self._table      = self.collection
+                                self.metadata,
+                                Column('collection_id',
+                                       Integer,
+                                       nullable=False,
+                                       primary_key=True),
+                                Column('schema_id',
+                                       Integer,
+                                       nullable=False),
+                                Column('collection_name',
+                                       String(40),
+                                       nullable=False),
+                                Column('collection_desc',
+                                       String(256),
+                                       nullable=False),
+                                UniqueConstraint('schema_id',
+                                                 'collection_name',
+                                                 name='collection_uk1'),
+                                ForeignKeyConstraint(columns=['schema_id'],
+                                                     refcolumns=['schema.schema_id'],
+                                                     name='collection_fk1',
+                                                     ondelete='CASCADE'),
+                                extend_existing=True)
+        self._table = self.collection
         self._table_name = 'collection'
         return self._table
 
@@ -367,42 +384,58 @@ class FieldTools(simplesql.TableTools):
         """
 
         self.field = Table('field',
-            self.metadata,
-            Column('field_id'        , Integer     , nullable=False   ,
-                   primary_key=True),
-            Column('collection_id'   , Integer     , nullable=False  ),
-            Column('field_name'      , String(40)  , nullable=False  ),
-            Column('field_desc'      , String(256) , nullable=True   ),
-            Column('field_order'     , Integer     , nullable=True   ),
-            Column('field_type'      , String(10)  , nullable=True   ),
-            Column('field_len'       , Integer     , nullable=True   ),
-            Column('element_name'    , String(60)  , nullable=True   ),
-            UniqueConstraint('collection_id',
-                   'field_name',
-                   name='field_uk1'),
-            ForeignKeyConstraint(columns=['collection_id'],
-                   refcolumns=['collection.collection_id'],
-                   name='field_fk1',
-                   ondelete='CASCADE'),
-            ForeignKeyConstraint(columns=['element_name'],
-                   refcolumns=['element.element_name'],
-                   name='field_fk2',
-                   ondelete='RESTRICT'),
-            CheckConstraint('field_len > 0',
-                   name='field_len_ck1'),
-            CheckConstraint("field_type in ('string','int','date','time','timestamp','float')",
-                   name='field_len_ck2'),
-            CheckConstraint("( (element_name IS NULL AND field_type IS NOT NULL) \
-                   OR (element_name IS NOT NULL AND field_type IS NULL) ) ",
-                   name='field_ck3') ,
-            CheckConstraint("  (field_type IS NULL AND field_len IS NULL)   \
-                   OR (field_type  = 'string' AND field_len IS NOT NULL)    \
-                   OR (field_type <> 'string' AND field_len IS NULL)  ",
-                   name='field_ck4') ,
-            extend_existing=True )
-        self._table      = self.field
+                           self.metadata,
+                           Column('field_id',
+                                  Integer,
+                                  nullable=False,
+                                  primary_key=True),
+                           Column('collection_id',
+                                  Integer,
+                                  nullable=False),
+                           Column('field_name',
+                                  String(40),
+                                  nullable=False),
+                           Column('field_desc',
+                                  String(256),
+                                  nullable=True),
+                           Column('field_order',
+                                  Integer,
+                                  nullable=True),
+                           Column('field_type',
+                                  String(10),
+                                  nullable=True),
+                           Column('field_len',
+                                  Integer,
+                                  nullable=True),
+                           Column('element_name',
+                                  String(60),
+                                  nullable=True),
+                           UniqueConstraint('collection_id',
+                                            'field_name',
+                                            name='field_uk1'),
+                           ForeignKeyConstraint(columns=['collection_id'],
+                                                refcolumns=['collection.collection_id'],
+                                                name='field_fk1',
+                                                ondelete='CASCADE'),
+                           ForeignKeyConstraint(columns=['element_name'],
+                                                refcolumns=['element.element_name'],
+                                                name='field_fk2',
+                                                ondelete='RESTRICT'),
+                           CheckConstraint('field_len > 0',
+                                           name='field_len_ck1'),
+                           CheckConstraint("field_type in ('string','int','date','time','timestamp','float')",
+                                           name='field_len_ck2'),
+                           CheckConstraint("( (element_name IS NULL AND field_type IS NOT NULL) \
+                                           OR (element_name IS NOT NULL AND field_type IS NULL) ) ",
+                                           name='field_ck3'),
+                           CheckConstraint("  (field_type IS NULL AND field_len IS NULL)   \
+                                           OR (field_type  = 'string' AND field_len IS NOT NULL)    \
+                                           OR (field_type <> 'string' AND field_len IS NULL)  ",
+                                           name='field_ck4'),
+                           extend_existing=True)
+        self._table = self.field
         self._table_name = 'field'
-        self.instance    = None # assigned in InstanceTools
+        self.instance = None # assigned in InstanceTools
         return self._table
 
 
@@ -417,23 +450,23 @@ class FieldTools(simplesql.TableTools):
            assume field_order.
         """
         assert field_order is not None or field_name
-        sql = """ SELECT field_id               \
-                  FROM  field                   \
-                  WHERE collection_id  = :collection_id \
-                    AND field_order    = :field_order   \
+        sql = """ SELECT field_id
+                  FROM  field
+                  WHERE collection_id  = :collection_id
+                    AND field_order    = :field_order
               """
         select_sql = text(sql)
         result = self.engine.execute(select_sql,
                                      collection_id=collection_id,
                                      field_order=field_order)
-        rows   = result.fetchall()
+        rows = result.fetchall()
         try:
             return rows[0].field_id
         except IndexError:  # No rows found
             if not field_name:
-               field_name = 'field%s' % field_order
+                field_name = 'field%s' % field_order
             if not field_desc:
-               field_desc = 'field%s' % field_order
+                field_desc = 'field%s' % field_order
             return self.setter(collection_id=collection_id,
                                field_order=field_order,
                                field_name=field_name,
@@ -454,7 +487,7 @@ class FieldTools(simplesql.TableTools):
                 - exc.IntegrityError
         """
         required_col_list = ['collection_id', 'field_name', 'field_desc',
-                             'field_order','field_type','field_len',
+                             'field_order', 'field_type', 'field_len',
                              'element_name']
         vkwargs = self.validate(required_col_list, **kwargs)
 
@@ -472,7 +505,7 @@ class FieldTools(simplesql.TableTools):
                               :field_type,
                               :field_len)
                   """
-        sql    = text(raw_sql)
+        sql = text(raw_sql)
         try:
             connection = self.engine.connect()
             result = connection.execute(sql,
@@ -493,7 +526,7 @@ class FieldTools(simplesql.TableTools):
     def update(self, **kwargs):
         """ Updates field values into database.
             Inputs:
-                - keyword args of field_id, collection_id, field_name, field_desc, 
+                - keyword args of field_id, collection_id, field_name, field_desc,
                   field_order, field_type, field_len, element_name
             Returns:
                 - lastrowid
@@ -502,8 +535,8 @@ class FieldTools(simplesql.TableTools):
                 - exc.IntegrityError
         """
         required_col_list = ['field_id', 'collection_id', 'field_name',
-                             'field_desc', 'field_order','field_type',
-                             'field_len',  'element_name']
+                             'field_desc', 'field_order', 'field_type',
+                             'field_len', 'element_name']
         vkwargs = self.validate(required_col_list, **kwargs)
 
         raw_sql = """ UPDATE field
@@ -516,7 +549,7 @@ class FieldTools(simplesql.TableTools):
                              element_name   =  :element_name
                              WHERE field_id =  :field_id
                   """
-        sql    = text(raw_sql)
+        sql = text(raw_sql)
         try:
             connection = self.engine.connect()
             result = connection.execute(sql,
@@ -536,32 +569,33 @@ class FieldTools(simplesql.TableTools):
                     result.rowcount)
 
 
+    @staticmethod
     def validate(self, required_col_list, **kwargs):
         """ Check for common schema problems.
         """
-        missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
+        missing_col_list  = [i for i in required_col_list if i not in kwargs]
         if missing_col_list:
             raise ValueError('mandatory columns missing: %s' % missing_col_list)
 
         if (kwargs['element_name'] == 'None'
-        or kwargs['element_name'] == ''):
+                or kwargs['element_name'] == ''):
             kwargs['element_name'] = None
         else:
             kwargs['element_name'] = kwargs['element_name']
 
         if (kwargs['field_len'] == 'None'
-        or kwargs['field_len'] == ''):
+                or kwargs['field_len'] == ''):
             kwargs['field_len'] = None
         else:
             kwargs['field_len'] = kwargs['field_len']
 
 
         if (kwargs['field_name'] is None
-        or kwargs['field_name'].strip() == ''):
+                or kwargs['field_name'].strip() == ''):
             raise ValueError('field_name may not be blank')
 
         if kwargs['element_name']:
-            if (kwargs['field_type'] or kwargs['field_len']):
+            if kwargs['field_type'] or kwargs['field_len']:
                 raise ValueError('field_type and field_len must be blank if element_name is provided')
 
         if kwargs['field_type'] not in ['string', 'int']:
@@ -569,8 +603,8 @@ class FieldTools(simplesql.TableTools):
                 % kwargs['field_type'])
 
         try:
-            if (kwargs['field_len'] and len(kwargs['field_len']) > 0):
-                if int(kwargs['field_len'])  < 1:
+            if kwargs['field_len'] and len(kwargs['field_len']) > 0:
+                if int(kwargs['field_len']) < 1:
                     raise ValueError('Field_len if provided must be > 0')
         except ValueError:
             raise ValueError('Field_len must be a non-zero integer')
@@ -580,7 +614,7 @@ class FieldTools(simplesql.TableTools):
 
         try:
             if kwargs['field_order']:
-                if int(kwargs['field_order'])  < 0:
+                if int(kwargs['field_order']) < 0:
                     raise ValueError('Field_order if provided must be >= 0')
         except ValueError:
             raise ValueError('Field_order must be a non-negative integer')
@@ -598,28 +632,35 @@ class FieldValueTools(simplesql.TableTools):
         """
 
         self.field_value = Table('field_value',
-            self.metadata,
-            Column('field_id'        , Integer     , nullable=False  ),
-            Column('fv_value'        , String(256) , nullable=False  ),
-            Column('fv_desc'         , String(2048),                 ),
-            Column('fv_issues'       , String(2048),                 ),
-            UniqueConstraint('field_id',
-                   'fv_value',
-                   name='field_value_uk1'),
-            ForeignKeyConstraint(columns=['field_id'],
-                   refcolumns=['field.field_id'],
-                   name='field_value_fk1',
-                   ondelete='CASCADE'),
-            extend_existing=True )
-        self._table      = self.field_value
+                                 self.metadata,
+                                 Column('field_id',
+                                        Integer,
+                                        nullable=False),
+                                 Column('fv_value',
+                                        String(256),
+                                        nullable=False),
+                                 Column('fv_desc',
+                                        String(2048)),
+                                 Column('fv_issues',
+                                        String(2048)),
+                                 UniqueConstraint('field_id',
+                                                  'fv_value',
+                                                  name='field_value_uk1'),
+                                 ForeignKeyConstraint(columns=['field_id'],
+                                                      refcolumns=['field.field_id'],
+                                                      name='field_value_fk1',
+                                                      ondelete='CASCADE'),
+                                 extend_existing=True)
+        self._table = self.field_value
         self._table_name = 'field_value'
         return self._table
 
 
-    def validate(self, required_col_list, **kwargs):
+    @staticmethod
+    def validate(required_col_list, **kwargs):
         """ Check for common schema problems.
         """
-        missing_col_list  = [ i for i in required_col_list if i not in kwargs ]
+        missing_col_list = [i for i in required_col_list if i not in kwargs]
         if missing_col_list:
             raise ValueError('mandatory columns missing: %s' % missing_col_list)
         return kwargs
@@ -636,7 +677,7 @@ class FieldValueTools(simplesql.TableTools):
                 - exc.IntegrityError
         """
         required_col_list = ['field_id', 'fv_value', 'fv_desc', 'fv_issues']
-        vkwargs           = self.validate(required_col_list, **kwargs)
+        vkwargs = self.validate(required_col_list, **kwargs)
 
         raw_sql = """ INSERT INTO field_value
                       (field_id,
@@ -648,7 +689,7 @@ class FieldValueTools(simplesql.TableTools):
                               :fv_desc,
                               :fv_issues)
                   """
-        sql    = text(raw_sql)
+        sql = text(raw_sql)
         try:
             connection = self.engine.connect()
             result = connection.execute(sql,
@@ -673,15 +714,15 @@ class FieldValueTools(simplesql.TableTools):
                 - exc.IntegrityError
         """
         required_col_list = ['field_id', 'fv_value', 'fv_desc', 'fv_issues']
-        vkwargs           = self.validate(required_col_list, **kwargs)
+        vkwargs = self.validate(required_col_list, **kwargs)
 
         raw_sql = """ UPDATE field_value
-                         SET fv_desc        =  :fv_desc,
-                             fv_issues      =  :fv_issues
+                         SET fv_desc   =  :fv_desc,
+                             fv_issues =  :fv_issues
                        WHERE field_id =  :field_id
                          AND fv_value =  :fv_value
                   """
-        sql    = text(raw_sql)
+        sql = text(raw_sql)
         try:
             connection = self.engine.connect()
             result = connection.execute(sql,
@@ -705,26 +746,26 @@ class InstanceTools(simplesql.TableTools):
     def table_create(self):
         """ Creates the 'instance' table.
         """
-        self.instance = Table('instance' ,
-             self.metadata           ,
-             Column('instance_id'    ,
-                    Integer          ,
-                    nullable=False   ,
-                    primary_key=True),
-             Column('schema_id'      ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('instance_name'  ,
-                    String(255)      ,
-                    nullable=False  ),
-             UniqueConstraint('schema_id','instance_name', name='instance_uk1'),
-             ForeignKeyConstraint(columns=['schema_id'],
-                                  refcolumns=['schema.schema_id'],
-                                  name='instance_fk1',
-                                  ondelete='CASCADE'),
-             extend_existing=True    )
+        self.instance = Table('instance',
+                              self.metadata,
+                              Column('instance_id',
+                                     Integer,
+                                     nullable=False,
+                                     primary_key=True),
+                              Column('schema_id',
+                                     Integer,
+                                     nullable=False),
+                              Column('instance_name',
+                                     String(255),
+                                     nullable=False),
+                              UniqueConstraint('schema_id', 'instance_name', name='instance_uk1'),
+                              ForeignKeyConstraint(columns=['schema_id'],
+                                                   refcolumns=['schema.schema_id'],
+                                                   name='instance_fk1',
+                                                   ondelete='CASCADE'),
+                              extend_existing=True)
 
-        self._table      = self.instance
+        self._table = self.instance
         self._table_name = 'instance'
         return self._table
 
@@ -735,18 +776,18 @@ class InstanceTools(simplesql.TableTools):
            Note that this code assumes that only a single instance exists for
            a given schema.   This is only going to be true for the short-term.
         """
-        sql = """ SELECT instance_id               \
-                  FROM instance                    \
-                  WHERE schema_id  = :schema_id    \
+        sql = """ SELECT instance_id
+                  FROM instance
+                  WHERE schema_id = :schema_id
               """
         select_sql = text(sql)
         result = self.engine.execute(select_sql, schema_id=schema_id)
-        rows   = result.fetchall()
+        rows = result.fetchall()
         try:
             return rows[0].instance_id
         except IndexError:  # No rows found
             return self.setter(schema_id=schema_id,
-                                         instance_name=instance_name)
+                               instance_name=instance_name)
 
 
 
@@ -757,55 +798,55 @@ class AnalysisProfileTools(simplesql.TableTools):
     def table_create(self):
         """ Creates 'analysis_profile' table.
         """
-        self.analysis_profile = Table('analysis_profile' ,
-             self.metadata           ,
-             Column('analysis_profile_id'    ,
-                    Integer          ,
-                    nullable=False   ,
-                    primary_key=True),
-             Column('instance_id'    ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('collection_id'  ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('analysis_profile_name'  ,
-                    String(255)      ,
-                    nullable=False  ),
-             UniqueConstraint('instance_id','collection_id',
-                              'analysis_profile_name',
-                              name='analysis_profile_k1'),
-             ForeignKeyConstraint(columns=['instance_id'],
-                                  refcolumns=['instance.instance_id'],
-                                  name='analysis_profile_fk1',
-                                  ondelete='CASCADE'),
-             ForeignKeyConstraint(columns=['collection_id'],
-                                  refcolumns=['collection.collection_id'],
-                                  name='analysis_profile_fk1',
-                                  ondelete='CASCADE'),
-             extend_existing=True    )
+        self.analysis_profile = Table('analysis_profile',
+                                      self.metadata,
+                                      Column('analysis_profile_id',
+                                             Integer,
+                                             nullable=False,
+                                             primary_key=True),
+                                      Column('instance_id',
+                                             Integer,
+                                             nullable=False),
+                                      Column('collection_id',
+                                             Integer,
+                                             nullable=False),
+                                      Column('analysis_profile_name',
+                                             String(255),
+                                             nullable=False),
+                                      UniqueConstraint('instance_id', 'collection_id',
+                                                       'analysis_profile_name',
+                                                       name='analysis_profile_k1'),
+                                      ForeignKeyConstraint(columns=['instance_id'],
+                                                           refcolumns=['instance.instance_id'],
+                                                           name='analysis_profile_fk1',
+                                                           ondelete='CASCADE'),
+                                      ForeignKeyConstraint(columns=['collection_id'],
+                                                           refcolumns=['collection.collection_id'],
+                                                           name='analysis_profile_fk1',
+                                                           ondelete='CASCADE'),
+                                      extend_existing=True)
 
-        self._table      = self.analysis_profile
+        self._table = self.analysis_profile
         self._table_name = 'analysis_profile'
         return self._table
 
 
-    def get_analysis_profile_id(self, instance_id, collection_id, 
+    def get_analysis_profile_id(self, instance_id, collection_id,
                                 analysis_profile_name='default'):
         """Get analysis_profile_id if one exists, ir not doesn't exist then create it.
            Return final id.
 
-           Note that this code assumes that only a single analysis_profile 
-           exists for a given schema.   This is only going to be true for the 
+           Note that this code assumes that only a single analysis_profile
+           exists for a given schema.   This is only going to be true for the
            short-term.
         """
-        sql = """ SELECT analysis_profile_id         \
-                  FROM analysis_profile              \
-                  WHERE instance_id  = :instance_id  \
+        sql = """ SELECT analysis_profile_id
+                  FROM analysis_profile
+                  WHERE instance_id  = :instance_id
               """
         select_sql = text(sql)
         result = self.engine.execute(select_sql, instance_id=instance_id)
-        rows   = result.fetchall()
+        rows = result.fetchall()
         try:
             return rows[0].analysis_profile_id
         except IndexError:  # No rows found
@@ -829,39 +870,39 @@ class AnalysisTools(simplesql.TableTools):
         #            server_default=func.current_timestamp()   ,
         #            server_default=u'CURRENT_TIMESTAMP',
         #            default='CURRENT_TIMESTAMP',
-        self.analysis = Table('analysis' ,
-             self.metadata           ,
-             Column('analysis_id'    ,
-                    Integer          ,
-                    nullable=False   ,
-                    primary_key=True),
-             Column('instance_id'    ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('analysis_profile_id'  ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('analysis_timestamp'  ,
-                    DATETIME         ,
-                    default=datetime.datetime.now,
-                    onupdate=datetime.datetime.now,
-                    nullable=False  ),
-             Column('analysis_tool'  ,
-                    String(20)       ,
-                    nullable=False  ),
-             UniqueConstraint('instance_id','analysis_timestamp',
-                    name='analysis_uk1'),
-             ForeignKeyConstraint(columns=['instance_id'],
-                    refcolumns=['instance.instance_id'],
-                    name='analysis_fk1',
-                    ondelete='CASCADE'),
-             ForeignKeyConstraint(columns=['analysis_profile_id'],
-                    refcolumns=['analysis_profile.analysis_profile_id'],
-                    name='analysis_fk2',
-                    ondelete='CASCADE'),
-             extend_existing=True    )
+        self.analysis = Table('analysis',
+                              self.metadata,
+                              Column('analysis_id',
+                                     Integer,
+                                     nullable=False,
+                                     primary_key=True),
+                              Column('instance_id',
+                                     Integer,
+                                     nullable=False),
+                              Column('analysis_profile_id',
+                                     Integer,
+                                     nullable=True),
+                              Column('analysis_timestamp',
+                                     DATETIME,
+                                     default=datetime.datetime.now,
+                                     onupdate=datetime.datetime.now,
+                                     nullable=False),
+                              Column('analysis_tool',
+                                     String(20),
+                                     nullable=False),
+                              UniqueConstraint('instance_id', 'analysis_timestamp',
+                                               name='analysis_uk1'),
+                              ForeignKeyConstraint(columns=['instance_id'],
+                                                   refcolumns=['instance.instance_id'],
+                                                   name='analysis_fk1',
+                                                   ondelete='CASCADE'),
+                              ForeignKeyConstraint(columns=['analysis_profile_id'],
+                                                   refcolumns=['analysis_profile.analysis_profile_id'],
+                                                   name='analysis_fk2',
+                                                   ondelete='CASCADE'),
+                              extend_existing=True)
 
-        self._table      = self.analysis
+        self._table = self.analysis
         self._table_name = 'analysis'
         self.insert_defaulted.append('analysis_timestamp')
         self.update_defaulted.append('analysis_timestamp')
@@ -875,55 +916,55 @@ class CollectionAnalysisTools(simplesql.TableTools):
     def table_create(self):
         """ Creates the 'collection_analysis' table.
         """
-        self.collection_analysis = Table('collection_analysis' ,
-             self.metadata           ,
-             Column('ca_id'          ,
-                    Integer          ,
-                    nullable=False   ,
-                    primary_key=True ),
-             Column('analysis_id'    ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('collection_id'  ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('ca_name'        ,
-                    String(80)       ,
-                    nullable=False  ),
-             Column('ca_location'    ,
-                    String(256)      ,
-                    nullable=False  ),
-             Column('ca_row_cnt'     ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('ca_field_cnt'   ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('ca_delimiter'   ,
-                    String(10)       ,
-                    nullable=True   ),
-             Column('ca_hasheader'   ,
-                    Boolean          ,
-                    nullable=True   ),
-             Column('ca_quoting'     ,
-                    String(20)       ,
-                    nullable=True   ),
-             Column('ca_quote_char'  ,
-                    String(1)       ,
-                    nullable=True   ),
-             UniqueConstraint('analysis_id','collection_id',
-                    name='collection_analysis_uk1'),
-             ForeignKeyConstraint(columns=['analysis_id'],
-                    refcolumns=['analysis.analysis_id'],
-                    name='collection_analysis_fk1',
-                    ondelete='CASCADE'),
-             ForeignKeyConstraint(columns=['collection_id'],
-                    refcolumns=['collection.collection_id'],
-                    name='collection_analysis_fk2',
-                    ondelete='CASCADE'),
-             extend_existing=True    )
+        self.collection_analysis = Table('collection_analysis',
+                                         self.metadata,
+                                         Column('ca_id',
+                                                Integer,
+                                                nullable=False,
+                                                primary_key=True),
+                                         Column('analysis_id',
+                                                Integer,
+                                                nullable=False),
+                                         Column('collection_id',
+                                                Integer,
+                                                nullable=False),
+                                         Column('ca_name',
+                                                String(80),
+                                                nullable=False),
+                                         Column('ca_location',
+                                                String(256),
+                                                nullable=False),
+                                         Column('ca_row_cnt',
+                                                Integer,
+                                                nullable=True),
+                                         Column('ca_field_cnt',
+                                                Integer,
+                                                nullable=True),
+                                         Column('ca_delimiter',
+                                                String(10),
+                                                nullable=True),
+                                         Column('ca_hasheader',
+                                                Boolean,
+                                                nullable=True),
+                                         Column('ca_quoting',
+                                                String(20),
+                                                nullable=True),
+                                         Column('ca_quote_char',
+                                                String(1),
+                                                nullable=True),
+                                         UniqueConstraint('analysis_id','collection_id',
+                                                name='collection_analysis_uk1'),
+                                         ForeignKeyConstraint(columns=['analysis_id'],
+                                                refcolumns=['analysis.analysis_id'],
+                                                name='collection_analysis_fk1',
+                                                ondelete='CASCADE'),
+                                         ForeignKeyConstraint(columns=['collection_id'],
+                                                refcolumns=['collection.collection_id'],
+                                                name='collection_analysis_fk2',
+                                                ondelete='CASCADE'),
+                                         extend_existing=True)
 
-        self._table      = self.collection_analysis
+        self._table = self.collection_analysis
         self._table_name = 'collection_analysis'
         return self._table
 
@@ -936,75 +977,75 @@ class FieldAnalysisTools(simplesql.TableTools):
     def table_create(self):
         """ Creates the 'field_analysis' table.
         """
-        self.field_analysis = Table('field_analysis' ,
-             self.metadata           ,
-             Column('fa_id'          ,
-                    Integer          ,
-                    nullable=False   ,
-                    primary_key=True),
-             Column('ca_id'          ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('field_id'       ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('fa_type'        ,
-                    String(10)       ,
-                    nullable=True   ),
-             Column('fa_unique_cnt'  ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('fa_known_cnt'   ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('fa_unknown_cnt' ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('fa_min'         ,
-                    String(256)      ,
-                    nullable=True   ),
-             Column('fa_max'         ,
-                    String(256)      ,
-                    nullable=True   ),
-             Column('fa_mean'        ,
-                    Float            ,
-                    nullable=True   ),
-             Column('fa_median'      ,
-                    Float            ,
-                    nullable=True   ),
-             Column('fa_stddev'      ,
-                    Float            ,
-                    nullable=True   ),
-             Column('fa_variance'    ,
-                    Float            ,
-                    nullable=True   ),
-             Column('fa_min_len'     ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('fa_max_len'     ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('fa_mean_len'    ,
-                    Integer          ,
-                    nullable=True   ),
-             Column('fa_case'        ,
-                    String(10)       ,
-                    nullable=True   ),
-             UniqueConstraint('ca_id','field_id'               ,
-                              name='field_analysis_uk1')       ,
-             ForeignKeyConstraint(columns=['ca_id']            ,
-                                  refcolumns=['collection_analysis.ca_id'],
-                                  name='field_analysis_fk1'    ,
-                                  ondelete='CASCADE'),
-             ForeignKeyConstraint(columns=['field_id']         ,
-                                  refcolumns=['field.field_id'],
-                                  name='field_analysis_fk2'    ,
-                                  ondelete='CASCADE'),
-             CheckConstraint ("fa_case IN ('lower','upper','mixed','unk')",
-                              name='field_analysis_ck1')       ,
-             extend_existing=True    )
+        self.field_analysis = Table('field_analysis',
+                                    self.metadata,
+                                    Column('fa_id',
+                                           Integer,
+                                           nullable=False,
+                                           primary_key=True),
+                                    Column('ca_id',
+                                           Integer,
+                                           nullable=False),
+                                    Column('field_id',
+                                           Integer,
+                                           nullable=False),
+                                    Column('fa_type',
+                                           String(10),
+                                           nullable=True),
+                                    Column('fa_unique_cnt',
+                                           Integer,
+                                           nullable=True),
+                                    Column('fa_known_cnt',
+                                           Integer,
+                                           nullable=True),
+                                    Column('fa_unknown_cnt',
+                                           Integer,
+                                           nullable=True),
+                                    Column('fa_min',
+                                           String(256),
+                                           nullable=True),
+                                    Column('fa_max',
+                                           String(256),
+                                           nullable=True),
+                                    Column('fa_mean',
+                                           Float,
+                                           nullable=True),
+                                    Column('fa_median',
+                                           Float,
+                                           nullable=True),
+                                    Column('fa_stddev',
+                                           Float,
+                                           nullable=True),
+                                    Column('fa_variance',
+                                           Float,
+                                           nullable=True),
+                                    Column('fa_min_len',
+                                           Integer,
+                                           nullable=True),
+                                    Column('fa_max_len',
+                                           Integer,
+                                           nullable=True),
+                                    Column('fa_mean_len',
+                                           Integer,
+                                           nullable=True),
+                                    Column('fa_case',
+                                           String(10),
+                                           nullable=True),
+                                    UniqueConstraint('ca_id', 'field_id',
+                                           name='field_analysis_uk1'),
+                                    ForeignKeyConstraint(columns=['ca_id'],
+                                           refcolumns=['collection_analysis.ca_id'],
+                                           name='field_analysis_fk1',
+                                           ondelete='CASCADE'),
+                                    ForeignKeyConstraint(columns=['field_id'],
+                                           refcolumns=['field.field_id'],
+                                           name='field_analysis_fk2',
+                                           ondelete='CASCADE'),
+                                    CheckConstraint ("fa_case IN ('lower', 'upper', 'mixed', 'unk')",
+                                           name='field_analysis_ck1'),
+                                    extend_existing=True)
 
-        self._table      = self.field_analysis
+        self._table = self.field_analysis
         self._table_name = 'field_analysis'
         return self._table
 
@@ -1017,30 +1058,30 @@ class FieldAnalysisValueTools(simplesql.TableTools):
     def table_create(self):
         """ Creates the 'field_analysis' table.
         """
-        self.field_analysis_value = Table('field_analysis_value' ,
-             self.metadata           ,
-             Column('fav_id'         ,
-                    Integer          ,
-                    nullable=False   ,
-                    primary_key=True),
-             Column('fa_id'          ,
-                    Integer          ,
-                    nullable=False  ),
-             Column('fav_value'      ,
-                    String           ,
-                    nullable=False  ),
-             Column('fav_count'      ,
-                    Integer          ,
-                    nullable=False  ),
-             UniqueConstraint('fa_id','fav_value'              ,
-                              name='field_analysis_value_uk1') ,
-             ForeignKeyConstraint(columns=['fa_id']            ,
-                                  refcolumns=['field_analysis.fa_id'],
-                                  name='field_analysis_value_fk1'    ,
-                                  ondelete='CASCADE'),
-             extend_existing=True    )
+        self.field_analysis_value = Table('field_analysis_value',
+                                          self.metadata,
+                                          Column('fav_id',
+                                                 Integer,
+                                                 nullable=False,
+                                                 primary_key=True),
+                                          Column('fa_id',
+                                                 Integer,
+                                                 nullable=False),
+                                          Column('fav_value',
+                                                 String,
+                                                 nullable=False),
+                                          Column('fav_count',
+                                                 Integer,
+                                                 nullable=False),
+                                          UniqueConstraint('fa_id', 'fav_value',
+                                                           name='field_analysis_value_uk1'),
+                                          ForeignKeyConstraint(columns=['fa_id'],
+                                                               refcolumns=['field_analysis.fa_id'],
+                                                               name='field_analysis_value_fk1',
+                                                               ondelete='CASCADE'),
+                                          extend_existing=True)
 
-        self._table      = self.field_analysis_value
+        self._table = self.field_analysis_value
         self._table_name = 'field_analysis_value'
         return self._table
 
@@ -1055,100 +1096,99 @@ def create_views(engine, connect):
     create_view_rpt_collection_analysis_v(engine, connect)
     create_view_rpt_field_analysis_v(engine, connect)
 
-    
+
 
 def create_view_rpt_collection_analysis_v(engine, connection):
     """ Creates this view - if it doesn't already exist.
-        
-        This view will join schema, collection, instance, analysis, and 
-        collection_analysis tables together.  It will usually produce more 
-        rows that the user wants - since a given schema may have multiple 
+
+        This view will join schema, collection, instance, analysis, and
+        collection_analysis tables together.  It will usually produce more
+        rows that the user wants - since a given schema may have multiple
         instances and multiple analysis may be performed.  For this reason
         it is anticipated that it will typically be restricted by both
         instance id or name and analysis id or timestamp.
     """
 
-    sql = """ CREATE VIEW rpt_collection_analysis_v AS \
-              SELECT s.schema_id,          \
-                     s.schema_name,        \
-                     c.collection_id,      \
-                     c.collection_name,    \
-                     i.instance_id,        \
-                     i.instance_name,      \
-                     a.analysis_id,        \
-                     a.analysis_timestamp, \
-                     ca.ca_id,             \
-                     ca.ca_name,           \
-                     ca.ca_location,       \
-                     ca.ca_row_cnt,        \
-                     ca.ca_field_cnt,      \
-                     ca.ca_delimiter,      \
-                     ca.ca_hasheader,      \
-                     ca.ca_quoting,        \
-                     ca.ca_quote_char      \
-              FROM schema  s                               \
-                  INNER JOIN collection c                  \
-                     ON s.schema_id = c.schema_id          \
-                  INNER JOIN instance i                    \
-                     ON s.schema_id = i.schema_id          \
-                  INNER JOIN analysis a                    \
-                     ON i.instance_id = a.instance_id      \
-                  INNER JOIN collection_analysis  ca       \
-                     ON a.analysis_id = ca.analysis_id     \
-                    AND c.collection_id = ca.collection_id \
+    sql = """ CREATE VIEW rpt_collection_analysis_v AS
+              SELECT s.schema_id,
+                     s.schema_name,
+                     c.collection_id,
+                     c.collection_name,
+                     i.instance_id,
+                     i.instance_name,
+                     a.analysis_id,
+                     a.analysis_timestamp,
+                     ca.ca_id,
+                     ca.ca_name,
+                     ca.ca_location,
+                     ca.ca_row_cnt,
+                     ca.ca_field_cnt,
+                     ca.ca_delimiter,
+                     ca.ca_hasheader,
+                     ca.ca_quoting,
+                     ca.ca_quote_char
+              FROM schema  s
+                  INNER JOIN collection c
+                     ON s.schema_id = c.schema_id
+                  INNER JOIN instance i
+                     ON s.schema_id = i.schema_id
+                  INNER JOIN analysis a
+                     ON i.instance_id = a.instance_id
+                  INNER JOIN collection_analysis  ca
+                     ON a.analysis_id = ca.analysis_id
+                    AND c.collection_id = ca.collection_id
           """
     existing_views = engine.dialect.get_view_names(connection)
     if 'rpt_collection_analysis_v' not in existing_views:
         create_sql = text(sql)
-        result     = engine.execute(create_sql)
+        _ = engine.execute(create_sql)
 
 
 
 def create_view_rpt_field_analysis_v(engine, connection):
     """ Creates this view - if it doesn't already exist.
-        
+
         This view will join collection, field, collection_analysis and
-        field_analysis tables together.   It will usually produce more 
+        field_analysis tables together.   It will usually produce more
         rows than the user wants - since a given collection may have
-        multiple analysis rows.  For this reason it is anticipated that 
+        multiple analysis rows.  For this reason it is anticipated that
         it will typically be restricted by connection_analysis.ca_id or
         connection_analysis.analysis_id.
     """
 
-    sql = """ CREATE VIEW rpt_field_analysis_v AS \
-              SELECT c.collection_id,      \
-                     ca.analysis_id,       \
-                     ca.ca_id,             \
-                     f.field_id,           \
-                     f.field_name,         \
-                     f.field_type,         \
-                     f.field_order,        \
-                     f.field_len,          \
-                     fa.fa_type,           \
-                     fa.fa_unique_cnt,     \
-                     fa.fa_known_cnt,      \
-                     fa.fa_unknown_cnt,    \
-                     fa.fa_min,            \
-                     fa.fa_max,            \
-                     fa.fa_mean,           \
-                     fa.fa_median,         \
-                     fa.fa_stddev,         \
-                     fa.fa_variance,       \
-                     fa.fa_min_len,        \
-                     fa.fa_max_len,        \
-                     fa.fa_mean_len,       \
-                     fa.fa_case            \
-              FROM collection c                            \
-                  INNER JOIN collection_analysis ca        \
-                     ON c.collection_id = ca.collection_id \
-                  INNER JOIN field f                       \
-                     ON c.collection_id = f.collection_id  \
-                  INNER JOIN field_analysis fa             \
-                     ON f.field_id = fa.field_id           \
+    sql = """ CREATE VIEW rpt_field_analysis_v AS
+              SELECT c.collection_id,
+                     ca.analysis_id,
+                     ca.ca_id,
+                     f.field_id,
+                     f.field_name,
+                     f.field_type,
+                     f.field_order,
+                     f.field_len,
+                     fa.fa_type,
+                     fa.fa_unique_cnt,
+                     fa.fa_known_cnt,
+                     fa.fa_unknown_cnt,
+                     fa.fa_min,
+                     fa.fa_max,
+                     fa.fa_mean,
+                     fa.fa_median,
+                     fa.fa_stddev,
+                     fa.fa_variance,
+                     fa.fa_min_len,
+                     fa.fa_max_len,
+                     fa.fa_mean_len,
+                     fa.fa_case
+              FROM collection c
+                  INNER JOIN collection_analysis ca
+                     ON c.collection_id = ca.collection_id
+                  INNER JOIN field f
+                     ON c.collection_id = f.collection_id
+                  INNER JOIN field_analysis fa
+                     ON f.field_id = fa.field_id
           """
     existing_views = engine.dialect.get_view_names(connection)
     if 'rpt_field_analysis_v' not in existing_views:
         create_sql = text(sql)
-        result     = engine.execute(create_sql)
-
+        _ = engine.execute(create_sql)
 

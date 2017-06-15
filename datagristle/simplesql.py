@@ -12,12 +12,12 @@
        - sqlite3
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
 
 from sqlalchemy import exc
 from sqlalchemy import UniqueConstraint
-#from pprint import pprint
+from pprint import pprint as pp
 
 import logging
 
@@ -29,13 +29,15 @@ class TableTools(object):
 
     def __init__(self, metadata, engine):
         self.metadata = metadata
-        self.engine   = engine
-        self._table       = None
-        self._table_name  = None
+        self.engine = engine
+        self._table = None
+        self._table_name = None
         self._unique_constraints = None
         self.insert_defaulted = []       # cols added here aren't inserted
         self.update_defaulted = []       # cols added here aren't updated
 
+    def __repr__(self):
+        return f'''_table_name: {self._table_name}'''
 
     def deleter(self, **kw):
         """ Requires the key of the row.
@@ -111,7 +113,7 @@ class TableTools(object):
         return rows
 
 
-    def setter(self, **kw):
+    def setter(self, **kw: object) -> object:
         """ Inserts new entry or updates existing entry.
             Assumptions:
                 - the table has a primary key named 'id'
@@ -126,13 +128,14 @@ class TableTools(object):
             Returns number of rows inserted.
         """
         kw_insert = {}
-        #broken code - not sure what it did exactly!
-        for key in kw.keys():
+        #Not sure if following is correct: it prevents setting any fields defaulted
+        for key in kw:
             if kw[key] not in self.insert_defaulted:
                 kw_insert[key] = kw[key]
 
         try:
             ins_sql = self._table.insert()
+            pp(ins_sql)
             result = ins_sql.execute(kw_insert)
             if result.rowcount == 0:
                 raise KeyError    # by missing column
@@ -142,11 +145,12 @@ class TableTools(object):
             # possibly caused by violation of primary key constraint
             # possibly caused by violation of check or fk key constraint
             kw_update = {}
-            for key in kw.keys():
+            for key in kw:
                 if kw[key] not in self.update_defaulted:
                     kw_update[key] = kw[key]
-            upd_sql      = self._table.update()
-            upd_sql      = self._create_where(upd_sql, kw_update)
+            upd_sql = self._table.update()
+            upd_sql = self._create_where(upd_sql, kw_update)
+            pp(upd_sql)
             try:
                 result = upd_sql.execute(kw_update)
             except exc.IntegrityError as except_detail:
@@ -175,30 +179,27 @@ class TableTools(object):
         """
         #print '\nprovided filter_col: ' +  ','.join(filter_col)
         #print self._table.primary_key
-        where     = None
+        where = None
         technique = 'pk'
         for column in self._table.c:
             if column.name in self._table.primary_key:
                 if column.name not in filter_col:
                     technique = 'uk'
-        #print technique
 
         if technique == 'pk':
             for column in self._table.c:
                 if column.name in self._table.primary_key:
-                    where = sql.where(self._table.c[column.name]
-                                      == filter_col[column.name])
+                    where = sql.where(self._table.c[column.name] == filter_col[column.name])
         elif technique == 'uk':
             for constraint in self._get_unique_constraints():
-                #print '   constraint:         %s' %  constraint
-                #print '     syscat:           %s' %  self._table.c[constraint]
-                #print '     filter_col:       %s' %  ','.join(filter_col)
-                #print '     filter_col[sub]:  %s' %  filter_col[constraint]
-                #print 'Constraint:  %s' % constraint
-                #print 'constraint: %s' % self._table.c[constraint]
-                #print 'filter_col: %s' % filter_col[constraint]
-                where = sql.where(self._table.c[constraint]
-                                  == filter_col[constraint])
+                print('   constraint:         %s' %  constraint)
+                print('     syscat:           %s' %  self._table.c[constraint])
+                print('     filter_col:       %s' %  ','.join(filter_col))
+                print('     filter_col[sub]:  %s' %  filter_col[constraint])
+                print('Constraint:  %s' % constraint)
+                print('constraint: %s' % self._table.c[constraint])
+                print('filter_col: %s' % filter_col[constraint])
+                where = sql.where(self._table.c[constraint] == filter_col[constraint])
             if where is None:
                 if not self._get_unique_constraints():
                     raise KeyError('no pk provided but table lacks a uk')
