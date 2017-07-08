@@ -1,30 +1,27 @@
 #!/usr/bin/env python
-""" To do:
-      1.  test with multiple input files
-
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
+""" See the file "LICENSE" for the full license governing this code.
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
+#adjust pylint for pytest oddities:
+#pylint: disable=missing-docstring
+#pylint: disable=unused-argument
+#pylint: disable=attribute-defined-outside-init
+#pylint: disable=protected-access
+#pylint: disable=no-self-use
+#pylint: disable=empty-docstring
 
-import sys
-import os
 import tempfile
-import random
-import time
 import fileinput
-import subprocess
-import envoy
-import pytest
-from os.path import dirname
+import os
 
-#--- gristle modules -------------------
+import envoy
+
+import datagristle.common  as comm
 
 # lets get pathing set for running code out of project structure & testing it via tox
 script_path = os.path.dirname(os.path.dirname(os.path.realpath((__file__))))
-fq_pgm      = os.path.join(script_path, 'gristle_slicer')
+fq_pgm = os.path.join(script_path, 'gristle_slicer')
 
-sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
-import datagristle.common  as comm
 
 
 
@@ -32,8 +29,8 @@ class Test7x7File(object):
 
     def setup_method(self, method):
 
-        self.std_7x7_fqfn       = self._generate_7x7_file()
-        (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestSlice7x7Out_')
+        self.std_7x7_fqfn = self._generate_7x7_file()
+        (dummy, self.out_fqfn) = tempfile.mkstemp(prefix='TestSlice7x7Out_')
 
     def teardown_method(self, method):
         os.remove(self.std_7x7_fqfn)
@@ -41,8 +38,7 @@ class Test7x7File(object):
 
     def _generate_7x7_file(self):
         (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicer7x7In_')
-
-        fp = os.fdopen(fd,"wt")
+        fp = os.fdopen(fd, "wt")
         fp.write('0-0,0-1,0-2,0-3,0-4,0-5,0-6\n')
         fp.write('1-0,1-1,1-2,1-3,1-4,1-5,1-6\n')
         fp.write('2-0,2-1,2-2,2-3,2-4,2-5,2-6\n')
@@ -50,32 +46,31 @@ class Test7x7File(object):
         fp.write('4-0,4-1,4-2,4-3,4-4,4-5,4-6\n')
         fp.write('5-0,5-1,5-2,5-3,5-4,5-5,5-6\n')
         fp.write('6-0,6-1,6-2,6-3,6-4,6-5,6-6\n')
-
         fp.close()
         return fqfn
 
 
     def runner(self, incl_rec_spec=None, excl_rec_spec=None,
-                     incl_col_spec=None, excl_col_spec=None,
-                     options=None):
+               incl_col_spec=None, excl_col_spec=None,
+               options=None):
 
-        in_fqfn  = self.std_7x7_fqfn
+        in_fqfn = self.std_7x7_fqfn
         out_fqfn = self.out_fqfn
-        irs = comm.coalesce(' ', "%(incl_rec_spec)s" % locals())
-        ers = comm.coalesce(' ', "%(excl_rec_spec)s" % locals())
-        ics = comm.coalesce(' ', "%(incl_col_spec)s" % locals())
-        ecs = comm.coalesce(' ', "%(excl_col_spec)s" % locals())
-        opt = comm.coalesce(' ', "%(options)s"       % locals())
+        irs = comm.coalesce(' ', f"{incl_rec_spec}")
+        ers = comm.coalesce(' ', f"{excl_rec_spec}")
+        ics = comm.coalesce(' ', f"{incl_col_spec}")
+        ecs = comm.coalesce(' ', f"{excl_col_spec}")
+        opt = comm.coalesce(' ', f"{options}")
         pgm = fq_pgm  # get it local for string formatting
 
-        cmd = '''%(pgm)s %(in_fqfn)s     \
-                         -o %(out_fqfn)s \
-                         %(irs)s         \
-                         %(ers)s         \
-                         %(ics)s         \
-                         %(ecs)s         \
-                         %(opt)s         \
-              ''' % locals()
+        cmd = f'''{pgm} {in_fqfn}
+                         -o {out_fqfn}
+                         {irs}
+                         {ers}
+                         {ics}
+                         {ecs}
+                         {opt}
+               '''
         r = envoy.run(cmd)
         if r.status_code:
             print('Status Code:  %d' % r.status_code)
@@ -221,8 +216,8 @@ class Test7x7File(object):
 class TestEmptyFile(object):
 
     def setup_method(self, method):
-        self.empty_fqfn         = self._generate_empty_file()
-        (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestSliceEmptyOut_')
+        self.empty_fqfn = self._generate_empty_file()
+        (dummy, self.out_fqfn) = tempfile.mkstemp(prefix='TestSliceEmptyOut_')
 
     def teardown_method(self, method):
         os.remove(self.empty_fqfn)
@@ -230,7 +225,7 @@ class TestEmptyFile(object):
 
     def _generate_empty_file(self):
         (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicerEmptyIn_')
-        fp = os.fdopen(fd,"wt")
+        fp = os.fdopen(fd, "wt")
         fp.close()
         return fqfn
 
@@ -242,11 +237,11 @@ class TestEmptyFile(object):
         print(r.std_out)
         print(r.std_err)
         assert r.status_code == 0
-        out_recs  = []
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
-        assert len(out_recs) == 0
+        assert not out_recs
 
     def test_empty_stdin(self):
         """ Should show proper handling of an empty file.
@@ -254,11 +249,11 @@ class TestEmptyFile(object):
         cmd = "cat %s | %s -d ',' -o %s -r 15:20" % (self.empty_fqfn, fq_pgm, self.out_fqfn)
         r = envoy.run(cmd)
         assert r.status_code == 0
-        out_recs  = []
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
-        assert len(out_recs) == 0
+        assert not out_recs
 
     def test_negative_offset_with_empty_stdin(self):
         """ Should return error since stdin can't have negative offsets
@@ -266,11 +261,11 @@ class TestEmptyFile(object):
         cmd = "cat %s , %s -d ',' -o %s -r -1:" % (self.empty_fqfn, fq_pgm, self.out_fqfn)
         r = envoy.run(cmd)
         assert r.status_code == 1
-        out_recs  = []
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
-        assert len(out_recs) == 0
+        assert not out_recs
 
 
 
@@ -278,8 +273,8 @@ class TestCSVDialects(object):
 
     def setup_method(self, method):
 
-        self.nq_fqfn       = self._generate_nonquoted_file()
-        self.q_fqfn        = self._generate_quoted_file()
+        self.nq_fqfn = self._generate_nonquoted_file()
+        self.q_fqfn = self._generate_quoted_file()
         (dummy, self.out_fqfn) = tempfile.mkstemp(prefix='TestSlice4x4Out_')
 
     def teardown_method(self, method):
@@ -289,7 +284,7 @@ class TestCSVDialects(object):
 
     def _generate_nonquoted_file(self):
         (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicerNQIn_')
-        fp = os.fdopen(fd,"wt")
+        fp = os.fdopen(fd, "wt")
         fp.write('0a0,0e1,0i2,0m3\n')
         fp.write('1b0,1f1,1j2,1n3\n')
         fp.write('2c0,2g1,2k2,2o3\n')
@@ -299,7 +294,7 @@ class TestCSVDialects(object):
 
     def _generate_quoted_file(self):
         (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicerQIn_')
-        fp = os.fdopen(fd,"wt")
+        fp = os.fdopen(fd, "wt")
         fp.write('"0a0","0e1","0i2","0m3"\n')
         fp.write('"1b0","1f1","1j2","1n3"\n')
         fp.write('"2c0","2g1","2k2","2o3"\n')
@@ -307,31 +302,33 @@ class TestCSVDialects(object):
         fp.close()
         return fqfn
 
-    def runner(self, incl_rec_spec=None, excl_rec_spec=None,
-                     incl_col_spec=None, excl_col_spec=None,
-                     quoted_file=False,
-                     options=None,
-                     runtype='arg'):
 
-        assert runtype in ['arg','stdin']
+    def runner(self, incl_rec_spec=None, excl_rec_spec=None,
+               incl_col_spec=None, excl_col_spec=None,
+               quoted_file=False,
+               options=None,
+               runtype='arg'):
+
+        assert runtype in ['arg', 'stdin']
 
         if quoted_file:
             in_fqfn = self.q_fqfn
         else:
             in_fqfn = self.nq_fqfn
 
-        irs      = comm.coalesce(' ', "'%(incl_rec_spec)s'" % locals())
-        ers      = comm.coalesce(' ', "'%(excl_rec_spec)s'" % locals())
-        ics      = comm.coalesce(' ', "'%(incl_col_spec)s'" % locals())
-        ecs      = comm.coalesce(' ', "'%(excl_col_spec)s'" % locals())
-        opt      = comm.coalesce(' ', "%(options)s"         % locals())
-        pgm      = fq_pgm  # get it local for string formatting
+        irs = comm.coalesce(' ', f"'{incl_rec_spec}'")
+        ers = comm.coalesce(' ', f"'{excl_rec_spec}'")
+        ics = comm.coalesce(' ', f"'{incl_col_spec}'")
+        ecs = comm.coalesce(' ', f"'{excl_col_spec}'")
+        opt = comm.coalesce(' ', f"{options}")
+        pgm = fq_pgm # get it local for string formatting
         out_fqfn = self.out_fqfn
-
 
         def run_cmd(cmd):
             print(cmd)
             r = envoy.run(cmd)
+            print(r.std_out)
+            print(r.std_err)
             recs = []
             for rec in fileinput.input(self.out_fqfn):
                 recs.append(rec[:-1])
@@ -340,14 +337,14 @@ class TestCSVDialects(object):
 
 
         if runtype == 'arg':
-            arg_cmd = '''%(pgm)s    %(in_fqfn)s             \
-                                    -o %(out_fqfn)s         \
-                                    %(irs)s                 \
-                                    %(ers)s                 \
-                                    %(ics)s                 \
-                                    %(ecs)s                 \
-                                    %(opt)s                 \
-                      ''' % locals()
+            arg_cmd = f'''{pgm}    {in_fqfn}
+                                    -o {out_fqfn}
+                                    {irs}
+                                    {ers}
+                                    {ics}
+                                    {ecs}
+                                    {opt}
+                      '''
             rc, recs = run_cmd(arg_cmd)
         else:
             #fixme - envoy doesn't support this pipe operation in python3.6
@@ -367,14 +364,14 @@ class TestCSVDialects(object):
             #/usr/lib/python3.6/subprocess.py:1478: in _communicate
             #    self._save_input(input)
 
-            stdin_cmd = '''cat %(in_fqfn)s | %(pgm)s        \
-                                    -o %(out_fqfn)s         \
-                                    %(irs)s                 \
-                                    %(ers)s                 \
-                                    %(ics)s                 \
-                                    %(ecs)s                 \
-                                    %(opt)s                 \
-                        ''' % locals()
+            stdin_cmd = f'''cat {in_fqfn} | {pgm}
+                                    -o {out_fqfn}
+                                    {irs}
+                                    {ers}
+                                    {ics}
+                                    {ecs}
+                                    {opt}
+                        '''
             rc, recs = run_cmd(stdin_cmd)
 
         return rc, recs

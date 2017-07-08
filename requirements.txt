@@ -3,9 +3,8 @@ Jinja2      == 2.7.3
 PyYAML      == 3.11
 SQLAlchemy  == 0.9.8
 Werkzeug    == 0.9.6
-appdirs     == 1.4.0
-cletus      == 1.0.10
+appdirs     == 1.4.3
+cletus      == 1.0.14
 envoy       == 0.0.3
-py          == 1.4.25
-pytest      == 2.6.4
+pytest      == 3.1.2
 validictory == 1.0.0

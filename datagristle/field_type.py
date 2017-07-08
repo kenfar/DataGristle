@@ -3,7 +3,6 @@
     Classes & Functions Include:
       FieldTyper   - class runs all checks on all fields
       get_field_type()
-      _get_type()
       is_timestamp() - determines if arg is a timestamp of some type
       is_float()   - determines if arg is a float
       is_integer() - determines if arg is an integer
@@ -15,25 +14,26 @@
       - consistency metric
       - change returned data format to be based on field
 
-    See the file "LICENSE" for the full license governing this code. 
+    See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013,2017 Ken Farmer
 """
 import datetime
 import math
 from itertools import groupby
-#import pprint
+from typing import Any, List, Tuple, Dict, Optional, Union
 
 
 #--- CONSTANTS -----------------------------------------------------------
 
-MAX_FREQ_SIZE          = 10000         # limits entries within freq dictionaries
+GRISTLE_FIELD_TYPES = ['unknown', 'string', 'float', 'integer', 'timestamp']
+MAX_FREQ_SIZE = 10000                  # limits entries within freq dictionaries
 DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01  # (not actual min)
 DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01  # (not acutal max)
-DATE_MAX_LEN           = 26
-DATE_INVALID_CHARS = ['`','`','!','@','#','$','%','^','&','*','(',')',
-                      '_','+','=','[','{','}','}','|',
-                      ';','"',"'",'<','>','?',
-                      'q','z','x']
+DATE_MAX_LEN = 26
+DATE_INVALID_CHARS = ['`', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',
+                      '_', '+', '=', '[', '{', '}', '}', '|',
+                      ';', '"', "'", '<', '>', '?',
+                      'q', 'z', 'x']
 DATE_FORMATS = [ # <scope>, <pattern>, <format>
                 ("year",   "YYYY",           "%Y"),
                 ("month",  "YYYYMM",         "%Y%m"),
@@ -69,7 +69,7 @@ DATE_FORMATS = [ # <scope>, <pattern>, <format>
 
 
 
-def get_field_type(values):
+def get_field_type(values: Union[List[Any], Dict[str, int]]) -> str:
     """ Determines the type of every item in the value list or dictionary,
         then consolidates that into a single output type.  This is used to
         determine what type to convert an entire field into - often within
@@ -91,18 +91,20 @@ def get_field_type(values):
     if values is None:
         return 'unknown'
 
-    type_freq = {}
+    type_freq: Dict[str, int] = {}
 
     if isinstance(values, list):
         transformed_values = [_get_type(x) for x in values]
         sorted_values = sorted(transformed_values)
-        type_freq = { key:len(list(group)) for key, group in groupby(sorted_values) }
-    else:
+        type_freq = {key:len(list(group)) for key, group in groupby(sorted_values)}
+    elif isinstance(values, dict):
         values = list(values.items())
         keyfunc = lambda t: (t[0])
         sorted_values = sorted(values, key=keyfunc)
         for key, rows in groupby(sorted_values, keyfunc):
             type_freq[_get_type(key)] = sum(row[1] for row in rows)
+    else:
+        raise ValueError('invalid input type: {}'.format(type(values)))
 
     clean_type_list = [x for x in type_freq if x != 'unknown']
 
@@ -110,12 +112,11 @@ def get_field_type(values):
     if result:
         return result
 
-    result = _get_field_type_probability(type_freq)
-    return result or 'unknown'
+    return _get_field_type_probability(type_freq) or 'unknown'
 
 
 
-def _get_type(value):
+def _get_type(value: Any) -> str:
     """ accepts a single string value and returns its potential type
 
         Types identified (and returned) include:
@@ -129,7 +130,7 @@ def _get_type(value):
         Test Coverage:
           - complete via test harness
     """
-    dtc_status, dummy, dummy = is_timestamp(value)
+    dtc_status, _, _ = is_timestamp(value)
     if dtc_status:
         return 'timestamp'
     elif is_unknown(value):
@@ -145,11 +146,11 @@ def _get_type(value):
 
 
 
-def _get_field_type_rule(type_list):
+def _get_field_type_rule(types: List[str]) -> Optional[str]:
     """ The intent is to resolve type determinations through simplistic
         rules:
         Additional Notes to consider:
-        1. Note that type of 'unknown' must not be included within type_list
+        1. Note that type of 'unknown' must not be included within types
         2. empty list = unknown
         3. one-item list = that item
         4. 2-3 item list of number types = float
@@ -161,40 +162,39 @@ def _get_field_type_rule(type_list):
         with floats.   These floats should have been kicked out as garbage data -
         but if the timestamps were epochs then that would not be appropriate.
     """
-    assert 'unknown' not in type_list
+    assert 'unknown' not in types
 
     # floats with nothing to the right of the decimal point may be ints
-    float_set_2i     = set(['integer', 'float'])
+    float_set_2i = set(['integer', 'float'])
     # some floats fall into the timestamp epoch range:
-    float_set_2t     = set(['float', 'timestamp'])
+    float_set_2t = set(['float', 'timestamp'])
     # or a mix of the above two:
-    float_set_3      = set(['integer', 'float', 'timestamp'])
+    float_set_3 = set(['integer', 'float', 'timestamp'])
     # some integers also fall into the timestamp epoch range:
-    integer_set_2t   = set(['integer', 'timestamp'])
+    integer_set_2t = set(['integer', 'timestamp'])
 
-    type_set  = set(type_list)
+    type_set = set(types)
 
-    if len(type_list) == 0:
-        return 'unknown'
-    elif len(type_list)  == 1:
-        field_type = type_list[0]
-        return field_type
-    elif len(type_list) == 2:
+    result = None
+    if len(types) == 0:
+        result = 'unknown'
+    elif len(types)  == 1:
+        result = types[0]
+    elif len(types) == 2:
         if not type_set.symmetric_difference(float_set_2i):
-            return 'float'
+            result = 'float'
         elif not type_set.symmetric_difference(float_set_2t):
-            return 'float'
+            result = 'float'
         elif not type_set.symmetric_difference(integer_set_2t):
-            return 'integer'
-    elif len(type_list) == 3:
+            result = 'integer'
+    elif len(types) == 3:
         if not type_set.symmetric_difference(float_set_3):
-            return 'float'
-    else:
-        return None
+            result = 'float'
+    return result
 
 
 
-def _get_field_type_probability(type_freq):
+def _get_field_type_probability(type_freq) -> str:
     """ Determines type of field based on the type of the vast majority of
         values.
     """
@@ -207,13 +207,12 @@ def _get_field_type_probability(type_freq):
     for key in type_pct:
         if type_pct[key] >= 0.95:
             return key
-
-    # no clear winner, we can't be sure:
-    return 'unknown'
-
+    else:
+        return 'unknown'
 
 
-def is_string(value):
+
+def is_string(value: Any) -> bool:
     """ Returns True if the value is a string, subject to false-negatives
         if the string is all numeric.
         'b'      is True
@@ -240,7 +239,7 @@ def is_string(value):
 
 
 
-def is_integer(value):
+def is_integer(value: Any) -> bool:
     """ Returns True if the input consists soley of digits and represents an
         integer rather than character data or a float.
         '3'       is True
@@ -271,7 +270,7 @@ def is_integer(value):
 
 
 
-def is_float(value):
+def is_float(value: Any) -> bool:
     """ Returns True if the input consists soley of digits and represents a
         float rather than character data or an integer.
         44.55   is True
@@ -301,7 +300,7 @@ def is_float(value):
 
 
 
-def is_unknown(value):
+def is_unknown(value: Any) -> bool:
     """ Returns True if the value is a common unknown indicator:
         ''        is True
         ' '       is True
@@ -331,7 +330,7 @@ def is_unknown(value):
 
 
 
-def is_timestamp(time_str):
+def is_timestamp(time_str: str) -> Tuple[bool, Optional[str], Optional[str]]:
     """ Determine if arg is a timestamp and if so what format
 
     Args:
@@ -377,7 +376,7 @@ def is_timestamp(time_str):
                 t_date = t_date.replace(microsecond=microsecond)
             return True, scope, pattern
     else:
-        return False,  None, None
+        return False, None, None
 
 
 

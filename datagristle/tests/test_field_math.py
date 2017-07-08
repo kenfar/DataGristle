@@ -1,21 +1,16 @@
 #!/usr/bin/env python
+""" See the file "LICENSE" for the full license governing this code.
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
-    To do:
-      1.  add tests for floats
+#adjust pylint for pytest oddities:
+#pylint: disable=missing-docstring
+#pylint: disable=unused-argument
+#pylint: disable=attribute-defined-outside-init
+#pylint: disable=protected-access
+#pylint: disable=no-self-use
 
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
-"""
+import pytest
 
-import sys
-import os
-import tempfile
-import random
-from pprint import pprint
-from os.path import dirname
-
-sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
-sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import datagristle.field_math  as mod
 
 
@@ -23,7 +18,7 @@ class TestGetMedian(object):
 
     def test_empty(self):
         values = []
-        assert mod.get_median(values) == None
+        assert mod.get_median(values) is None
 
     def test_single_value(self):
         values = [(3, 1)]
@@ -81,13 +76,9 @@ class TestGetMedian(object):
         values = [(None, 1), (4, 1)]
         assert mod.get_median(values) == 4
 
-    def test_dictionary(self):
-        values = {1: 1, 2:1}
-        assert mod.get_median(values) == 1.5
-
     def test_types(self):
-        assert type(mod.get_median({10:4, 100:86}))  is float
-        assert type(mod.get_median({1:1})) is float
+        assert isinstance(mod.get_median([(10, 4), (100, 86)]), float)
+        assert isinstance(mod.get_median([(1, 1)]), float)
 
 
 
@@ -103,97 +94,96 @@ class Test_get_variance_and_stddev(object):
         return  '%.2f' % value
 
     def test_math_empty_list(self):
-        list_1   = {}
-        list_1a  = (None, None)
+        list_1 = []
+        list_1a = (None, None)
         assert mod.get_variance_and_stddev(list_1) == list_1a
 
     def test_math_identical_single_number_occuring_once(self):
 
-        list_1   = {2:1}
-        list_1a  = (0.0, 0.0)
+        list_1 = [(2, 1)]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
-        assert mod.get_variance_and_stddev(list_1)    == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
-        list_2   = {2:1, 2:1,2:1}
-        list_2a  = (0.0, 0.0)
+        list_2 = [(2, 1), (2, 1), (2, 1)]
+        list_2a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_2, 2) == list_2a
-        assert mod.get_variance_and_stddev(list_2)    == list_2a
+        assert mod.get_variance_and_stddev(list_2) == list_2a
 
     def test_math_multiple_numbers_occuring_once(self):
 
-        list_1   = {2:1, 3:1, 4:1}
-        list_1a  = ('0.67', '0.82')
-        var, stddev  = mod.get_variance_and_stddev(list_1)
-        small_var    = self._convert_float(var)
+        list_1 = [(2, 1), (3, 1), (4, 1)]
+        list_1a = ('0.67', '0.82')
+        var, stddev = mod.get_variance_and_stddev(list_1)
+        small_var = self._convert_float(var)
         small_stddev = self._convert_float(stddev)
         assert (small_var, small_stddev) == list_1a
 
-        list_2   = {2:1, 3:1, 9:1, 12:1, 13:1, 15:1,
-                   17:1, 19:1, 22:1, 23:1, 25:1}
-        list_2a  = ('53.88', '7.34')
-        var, stddev  = mod.get_variance_and_stddev(list_2)
-        small_var    = self._convert_float(var)
+        list_2 = [(2, 1), (3, 1), (9, 1), (12, 1), (13, 1), (15, 1),
+                  (17, 1), (19, 1), (22, 1), (23, 1), (25, 1)]
+        list_2a = ('53.88', '7.34')
+        var, stddev = mod.get_variance_and_stddev(list_2)
+        small_var = self._convert_float(var)
         small_stddev = self._convert_float(stddev)
         assert (small_var, small_stddev) == list_2a
 
     def test_math_multiple_numbers_occurring_multiple_times(self):
-        list_4   = {2:10, 3:15, 9:10, 12:7, 13:4, 15:2,
-                   17:1, 19:1, 22:1, 23:1, 25:1}
-        list_4a  = ('37.11', '6.09')
-        var, stddev  = mod.get_variance_and_stddev(list_4)
-        small_var    = self._convert_float(var)
+        list_4 = [(2, 10), (3, 15), (9, 10), (12, 7), (13, 4), (15, 2),
+                  (17, 1), (19, 1), (22, 1), (23, 1), (25, 1)]
+        list_4a = ('37.11', '6.09')
+        var, stddev = mod.get_variance_and_stddev(list_4)
+        small_var = self._convert_float(var)
         small_stddev = self._convert_float(stddev)
         assert (small_var, small_stddev) == list_4a
 
     def test_math_identical_single_float_occuring_once(self):
-        list_1   = {2.0:1}
-        list_1a  = (0.0, 0.0)
+        list_1 = [(2.0, 1)]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
-        assert mod.get_variance_and_stddev(list_1)    == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
-        list_2   = {2.5:1}
-        list_2a  = (0.0, 0.0)
+        list_2 = [(2.5, 1)]
+        list_2a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_2, 2.5) == list_2a
-        assert mod.get_variance_and_stddev(list_2)      == list_2a
+        assert mod.get_variance_and_stddev(list_2) == list_2a
 
 
     def test_math_floats_multiple_floats_occuring_once(self):
-
-        list_1   = {2.0:1, 3.0:1, 4.0:1}
-        list_1a  = ('0.67', '0.82')
-        var, stddev  = mod.get_variance_and_stddev(list_1)
-        small_var    = self._convert_float(var)
+        list_1 = [(2.0, 1), (3.0, 1), (4.0, 1)]
+        list_1a = ('0.67', '0.82')
+        var, stddev = mod.get_variance_and_stddev(list_1)
+        small_var = self._convert_float(var)
         small_stddev = self._convert_float(stddev)
         assert (small_var, small_stddev) == list_1a
 
     def test_math_single_float_occurring_multiple_times(self):
-        list_1   = {2.5:2}
-        list_1a  = (0.0, 0.0)
+        list_1 = [(2.5, 2)]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2.5) == list_1a
-        assert mod.get_variance_and_stddev(list_1)      == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
     def test_math_single_string_occurring_once(self):
-        list_1   = {'2':2}
-        list_1a  = (0.0, 0.0)
+        list_1 = [('2', 2)]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
-        assert mod.get_variance_and_stddev(list_1)      == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
-        list_1   = {'2':2}
-        list_1a  = (0.0, 0.0)
+        list_1 = [('2', 2)]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
-        assert mod.get_variance_and_stddev(list_1)      == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
     def test_math_ignoring_bad_key(self):
-        list_1   = {2:2, 'bar':2}
-        list_1a  = (0.0, 0.0)
+        list_1 = [(2, 2), ('bar', 2)]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
-        assert mod.get_variance_and_stddev(list_1)      == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
-    def deprecatedtest_math_ignoring_bad_value(self):
-        list_1   = {2:2, 3:'foo'}
-        list_1a  = (0.0, 0.0)
+    def test_math_ignoring_bad_value(self):
+        list_1 = [(2, 2), (3, 'foo')]
+        list_1a = (0.0, 0.0)
         assert mod.get_variance_and_stddev(list_1, 2) == list_1a
-        assert mod.get_variance_and_stddev(list_1)      == list_1a
+        assert mod.get_variance_and_stddev(list_1) == list_1a
 
 
 
@@ -207,51 +197,103 @@ class TestGetMean(object):
         assert mod.get_mean({}) is None
 
     def test_alpha_values(self):
-        assert mod.get_mean({'blah':2}) == 0
-
-    def test_mean_of_numbers_in_string_format(self):
-        assert mod.get_mean({'10':4, '100':86})  == 96.00
+        assert mod.get_mean([('blah', 2)]) == 0
 
     def test_mean_of_ints(self):
-        assert mod.get_mean({10:4, 100:86})  == 96.00
+        assert mod.get_mean([(10, 4), (100, 86)]) == 96.00
 
     def test_list_of_tuples(self):
-        assert mod.get_mean([(10,4), (15, 4)]) == 12.5
+        assert mod.get_mean([(10, 4), (15, 4)]) == 12.5
 
     def test_mean_of_floats(self):
-        assert mod.get_mean({2.5:4, 10:1})  == 4.0
+        assert mod.get_mean([(2.5, 4), (10, 1)]) == 4.0
 
     def test_mean_of_numbers_in_string_format(self):
-        test_dict  = {2:1,3:1,9:1,12:1,13:1,15:1,17:1,19:1,22:1,23:1,25:1}
+        test_dict = [(2, 1), (3, 1), (9, 1), (12, 1), (13, 1), (15, 1), (17, 1), (19, 1),
+                     (22, 1), (23, 1), (25, 1)]
         result = '%.4f' % mod.get_mean(test_dict)
-        assert result  == str(14.5455)
+        assert result == str(14.5455)
+        assert mod.get_mean([('10', 4), ('100', 86)]) == 96.00
 
     def test_types(self):
-        assert mod.get_mean({10:4, 100:86})  == 96.00
-        assert mod.get_mean({1:1})  == 1
+        assert mod.get_mean([(10, 4), (100, 86)]) == 96.00
+        assert mod.get_mean([(1, 1)]) == 1
 
 
 
 class TestGetMeanLength(object):
 
     def test_empty(self):
-        assert mod.get_mean_length({}) is None
+        assert mod.get_mean_length([]) == 0
 
     def test_none(self):
-        assert mod.get_mean_length(None) is None
+        assert mod.get_mean_length(None) == 0
 
     def test_unknowns(self):
-        assert mod.get_mean_length({'UNK':1, 'unknown':3, ' ':99, '':99, 'a':4, 'b':2}) == 1
+        assert mod.get_mean_length([('UNK', 1), ('unknown', 3), (' ', 99), ('', 99),
+                                    ('a', 4), ('b', 2)]) == 1
 
     def test_easy_singles(self):
-        assert mod.get_mean_length({'abc':1, 'abcdefg':1}) == 5
+        assert mod.get_mean_length([('abc', 1), ('abcdefg', 1)]) == 5
 
     def test_easy_multiples(self):
-        assert mod.get_mean_length({'abc':99, 'abcdef':1}) == 3.03
+        assert mod.get_mean_length([('abc', 99), ('abcdef', 1)]) == 3.03
 
     def test_list_of_tuples(self):
-        assert mod.get_mean_length([('abc',99), ('abcdef',1)]) == 3.03
+        assert mod.get_mean_length([('abc', 99), ('abcdef', 1)]) == 3.03
 
 
 
+class TestMiscFunctions(object):
 
+    def test_cast_numeric_with_numeric_types(self):
+        assert mod.cast_numeric(1.0) == 1.0
+        assert mod.cast_numeric(1) == 1
+        assert isinstance(mod.cast_numeric(1), int)
+
+    def test_cast_numeric_with_string_types(self):
+        assert mod.cast_numeric('1.0') == 1.0
+        assert mod.cast_numeric('1') == 1
+        assert mod.cast_numeric('0') == 0
+
+    def test_cast_numeric_with_bad_values(self):
+        with pytest.raises(ValueError):
+            mod.cast_numeric('a')
+        with pytest.raises(ValueError):
+            mod.cast_numeric(None)
+
+    def test_get_clean_freq_dist_for_numbers(self):
+        val = [('5', 3), ('7', 5)]
+        assert mod.get_clean_freq_dist_for_numbers(val) == [(5, 3), (7, 5)]
+        val = [(5, 3), (7, 5)]
+        assert mod.get_clean_freq_dist_for_numbers(val) == [(5, 3), (7, 5)]
+        val = [('5.0', 3), (7.0, 5)]
+        assert mod.get_clean_freq_dist_for_numbers(val) == [(5.0, 3), (7.0, 5)]
+        val = [('5.0', 3), (7.0, 5), ('a', 3)]
+        assert mod.get_clean_freq_dist_for_numbers(val) == [(5.0, 3), (7.0, 5)]
+        val = [(3, 'foo')]
+        assert mod.get_clean_freq_dist_for_numbers(val) == []
+
+    def test_get_clean_freq_dist_for_numbers_misc(self):
+        assert mod.get_clean_freq_dist_for_numbers([]) == []
+        with pytest.raises(TypeError):
+            assert mod.get_clean_freq_dist_for_numbers(None)
+
+    def test_get_clean_freq_dist_for_text(self):
+        val = [('a', 3), ('b', 5)]
+        assert mod.get_clean_freq_dist_for_text(val) == [('a', 3), ('b', 5)]
+        val = [('a', 3), ('b', 5), (9, 3)]
+        assert mod.get_clean_freq_dist_for_text(val) == [('a', 3), ('b', 5)]
+        val = [(3, 'foo')]
+        assert mod.get_clean_freq_dist_for_text(val) == []
+        val = [('unk', 'foo')]
+        assert mod.get_clean_freq_dist_for_text(val) == []
+        val = [('unknown', 'foo')]
+        assert mod.get_clean_freq_dist_for_text(val) == []
+        val = [(None, 'foo')]
+        assert mod.get_clean_freq_dist_for_text(val) == []
+
+    def test_get_clean_freq_dist_for_text_misc(self):
+        assert mod.get_clean_freq_dist_for_text([]) == []
+        with pytest.raises(TypeError):
+            assert mod.get_clean_freq_dist_for_text(None)

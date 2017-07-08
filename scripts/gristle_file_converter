@@ -14,56 +14,44 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
         http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
-
-#--- standard modules ------------------
 import sys
 import optparse
 import csv
-import os
-from os.path import dirname
-
-#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL)
-
-
-#--- gristle modules -------------------
-# lets get pathing set for running code out of project structure & testing it via tox
-sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
-
 
 import datagristle.file_type           as file_type
 
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+signal(SIGPIPE, SIG_DFL)
 
-#------------------------------------------------------------------------------
-# Command-line section 
-#------------------------------------------------------------------------------
+
+
 def main():
     """ Analyzes the file to automatically determine input file csv
         characteristics.  Then reads one record at a time and writes it
         out.
 
     """
-    cmd_parser   = CommandLineParser()
-    opts         = cmd_parser.opts
-    files        = cmd_parser.files
+    cmd_parser = CommandLineParser()
+    opts = cmd_parser.opts
+    files = cmd_parser.files
 
     try:
-        in_dialect    = get_in_dialect(opts, files, cmd_parser)
+        in_dialect = get_in_dialect(opts, files, cmd_parser)
     except EOFError:
         return 1
-    out_dialect   = get_out_dialect(opts)
-    in_file       = InFileHandler(files, in_dialect, opts.stripfields)
-    out_file      = OutFileHandler(opts.output, out_dialect)
+    out_dialect = get_out_dialect(opts)
+    in_file = InFileHandler(files, in_dialect, opts.stripfields)
+    out_file = OutFileHandler(opts.output, out_dialect)
 
     fields = in_file.readline()
     while fields:
 
         if (in_file.read_cnt == 1
-        and in_dialect.has_header
-        and not out_dialect.has_header):
+                and in_dialect.has_header
+                and not out_dialect.has_header):
             pass
         else:
             out_file.writeline(fields)
@@ -82,17 +70,17 @@ class InFileHandler(object):
         or a multi-column delimiter.
     """
     def  __init__(self, file_names, dialect, stripfields):
-        self.file        = file_names[0]
-        self.dialect     = dialect
+        self.file = file_names[0]
+        self.dialect = dialect
         self.stripfields = stripfields
-        self.read_cnt    = 0
-        self.bad_cnt     = 0
-        self.in_file     = open(self.file,'r')
-        self.eof         = False
+        self.read_cnt = 0
+        self.bad_cnt = 0
+        self.in_file = open(self.file,'r')
+        self.eof = False
         if self.dialect.auto:
             self.reader  = csv.reader(self.in_file,
-                                     delimiter=self.dialect.delimiter,
-                                     quoting=self.dialect.quote_type)
+                                      delimiter=self.dialect.delimiter,
+                                      quoting=self.dialect.quote_type)
 
     def readline(self):
         """ Public method that handles reading.
@@ -195,13 +183,13 @@ class OutFileHandler(object):
             name was not provided.  Will use csv module if the delimiter is
             just a single character.
         """
-        self.dialect        = dialect
-        self.write_cnt      = 0
-        self.csv_writer     = None  # only used by single-char files with csv module
+        self.dialect = dialect
+        self.write_cnt = 0
+        self.csv_writer = None # only used by single-char files with csv module
         if output:
-            self.out_file   = open(output, 'w')
+            self.out_file = open(output, 'w')
         else:
-            self.out_file   = sys.stdout
+            self.out_file = sys.stdout
         if len(self.dialect.delimiter) == 1:
             self.csv_writer = csv.writer(self.out_file,
                                          delimiter=self.dialect.delimiter,
@@ -215,9 +203,9 @@ class OutFileHandler(object):
             self.csv_writer.writerow(fields)
         else:
             fields2 = self._add_quotes(fields)
-            rec     = self.dialect.delimiter.join(fields2)
-            rec2    = self._add_recdelimiter(rec)
-            rec3    = self._add_lineterminator(rec2)
+            rec = self.dialect.delimiter.join(fields2)
+            rec2 = self._add_recdelimiter(rec)
+            rec3 = self._add_lineterminator(rec2)
             self.out_file.write(rec3)
 
     def _add_recdelimiter(self, rec):
@@ -245,7 +233,7 @@ class OutFileHandler(object):
             NOTE: it quotes every single field - not just strings! """
         # pylint: disable=W0612
         if self.dialect.quoting:
-            quotechar  = self.dialect.quotechar
+            quotechar = self.dialect.quotechar
             new_fields = []
             for field in fields:
                 new_fields.append('%(quotechar)s%(field)s%(quotechar)s' % locals())
@@ -276,17 +264,17 @@ def get_in_dialect(opts, files, parser):
     if (len(files) == 1
        and  (opts.delimiter is None or len(opts.delimiter) == 1)):
         # automatically determine input dialect:
-        my_file       = file_type.FileTyper(files[0],
-                                           opts.delimiter,
-                                           opts.recdelimiter,
-                                           opts.hasheader)
+        my_file = file_type.FileTyper(files[0],
+                                      opts.delimiter,
+                                      opts.recdelimiter,
+                                      opts.has_header)
         try:
             my_file.analyze_file()
         except file_type.IOErrorEmptyFile:
             raise EOFError
-        in_dialect                = my_file.dialect
-        in_dialect.auto           = True                 # will use csv mod
-        in_dialect.recdelimiter   = opts.recdelimiter
+        in_dialect = my_file.dialect
+        in_dialect.auto = True # will use csv mod
+        in_dialect.recdelimiter = opts.recdelimiter
         in_dialect.lineterminator = '\n'                 # prefer unix default
         if opts.quoting:
             in_dialect.quote_type = csv.QUOTE_ALL
@@ -300,20 +288,20 @@ def get_in_dialect(opts, files, parser):
             parser.parser.error("Manual csv parsing required - but missing quoting option")
         if not opts.quotechar:
             parser.parser.error("Manual csv parsing required - but missing quotechar option")
-        if not opts.hasheader:
-            parser.parser.error("Manual csv parsing required - but missing hasheader option")
-        in_dialect                = CustomCSV
-        in_dialect.delimiter      = opts.delimiter
-        in_dialect.quoting        = opts.quoting
-        in_dialect.quotechar      = opts.quotechar
+        if not opts.has_header:
+            parser.parser.error("Manual csv parsing required - but missing has_header option")
+        in_dialect = CustomCSV
+        in_dialect.delimiter = opts.delimiter
+        in_dialect.quoting = opts.quoting
+        in_dialect.quotechar = opts.quotechar
         if opts.quoting:
             in_dialect.quote_type = csv.QUOTE_ALL
         else:
             in_dialect.quote_type = csv.QUOTE_NONE
-        in_dialect.recdelimiter   = opts.recdelimiter    # custom field
-        in_dialect.has_header     = opts.hasheader   
-        in_dialect.lineterminator = '\n'                 # naive assumption
-        in_dialect.auto           = False                # will not use csv mod
+        in_dialect.recdelimiter = opts.recdelimiter # custom field
+        in_dialect.has_header = opts.has_header
+        in_dialect.lineterminator = '\n' # naive assumption
+        in_dialect.auto = False # will not use csv mod
 
     return in_dialect
 
@@ -321,27 +309,27 @@ def get_in_dialect(opts, files, parser):
 def get_out_dialect(opts):
     """ Determines then returns output dialect from command line options.
     """
-    out_dialect              = CustomCSV()
-    out_dialect.delimiter    = opts.out_delimiter
+    out_dialect = CustomCSV()
+    out_dialect.delimiter = opts.out_delimiter
     out_dialect.recdelimiter = opts.out_recdelimiter
-    out_dialect.has_header   = opts.out_hasheader   
-    out_dialect.quoting      = opts.out_quoting
+    out_dialect.has_header = opts.out_has_header
+    out_dialect.quoting = opts.out_quoting
     out_dialect.lineterminator = '\n'                    # naive assumption
     if opts.out_quoting:                                 # naive assumption
-        out_dialect.quote_type  = csv.QUOTE_ALL
+        out_dialect.quote_type = csv.QUOTE_ALL
     else:
-        out_dialect.quote_type  = csv.QUOTE_NONE
+        out_dialect.quote_type = csv.QUOTE_NONE
     if len(opts.out_delimiter) == 1:
-        out_dialect.auto     = True                      # will use csv mod
+        out_dialect.auto = True # will use csv mod
     else:
-        out_dialect.auto     = False                     # will not use csv mod
+        out_dialect.auto = False # will not use csv mod
 
     return out_dialect
 
 
 class CommandLineParser(object):
-    """ Manages all parsing, formating and validating of command line options 
-        and args.  
+    """ Manages all parsing, formating and validating of command line options
+        and args.
         Tested via test-harness.
     """
     def __init__(self):
@@ -358,59 +346,58 @@ class CommandLineParser(object):
         """ Defines all command line options.
         """
 
-        self.parser.add_option('-o', '--output', 
-               help='Specifies output file. Default is stdout.')
+        self.parser.add_option('-o', '--output',
+                               help='Specifies output file. Default is stdout.')
         self.parser.add_option('-q', '--quiet',
-               action='store_false',
-               dest='verbose',
-               default=True,
-               help='provides less detail')
+                               action='store_false',
+                               dest='verbose',
+                               default=True,
+                               help='provides less detail')
         self.parser.add_option('-v', '--verbose',
-               action='store_true',
-               dest='verbose',
-               default=True,
-               help='provides more detail')
+                               action='store_true',
+                               dest='verbose',
+                               default=True,
+                               help='provides more detail')
         self.parser.add_option('-d', '--delimiter',
-               help=('Specify the input file delimiter within quotes'
-                     'This is especially useful for multi-col delimiters.'))
+                               help=('Specify the input file delimiter within quotes'
+                                     'This is especially useful for multi-col delimiters.'))
         self.parser.add_option('-D', '--outdelimiter',
-               dest='out_delimiter',
-               help=('Specify the output file delimiter within quoted'
-                     'This is especially useful for multi-col delimiters.'))
+                               dest='out_delimiter',
+                               help=('Specify the output file delimiter within quoted'
+                                     'This is especially useful for multi-col delimiters.'))
         self.parser.add_option('-r', '--recdelimiter',
-               help='Specify a quoted end-of-record delimiter within input file. ')
+                               help='Specify a quoted end-of-record delimiter within input file. ')
         self.parser.add_option('-R', '--outrecdelimiter',
-               dest='out_recdelimiter',
-               help='Specify a quoted end-of-record delimiter in output file. ')
+                               dest='out_recdelimiter',
+                               help='Specify a quoted end-of-record delimiter in output file. ')
         self.parser.add_option('--quoting',
-               default=False,
-               action='store_true',
-               help='Specify field quoting - generally only used for stdin data.'
-                    '  The default is False.')
+                               default=False,
+                               action='store_true',
+                               help='Specify field quoting - generally only used for stdin data.'
+                                    '  The default is False.')
         self.parser.add_option('-Q', '--outquoting',
-               dest='out_quoting',
-               default=False,
-               action='store_true',
-               help='Specify output field quoting')
+                               dest='out_quoting',
+                               default=False,
+                               action='store_true',
+                               help='Specify output field quoting')
         self.parser.add_option('--quotechar',
-               default='"',
-               help='Specify field quoting character - generally only used for '
-                    'stdin data.  Default is double-quote')
-        self.parser.add_option('--hasheader',
-               default=False,
-               action='store_true',
-               help='Indicates the existance of a header in the input file.')
-        self.parser.add_option('-H', '--outhasheader',
-               default=False,
-               action='store_true',
-               dest='out_hasheader',
-               help='Specify that a header within the input file will be retained in the output file')
+                               default='"',
+                               help='Specify field quoting character - generally only used for '
+                                    'stdin data.  Default is double-quote')
+        self.parser.add_option('--has-header',
+                               default=False,
+                               action='store_true',
+                               help='Indicates the existance of a header in the input file.')
+        self.parser.add_option('-H', '--out-has-header',
+                               default=False,
+                               action='store_true',
+                               dest='out_has_header',
+                               help='Specify that a header within the input file will be retained in the output file')
         self.parser.add_option('--stripfields',
-               default=False,
-               action='store_true',
-               dest='stripfields',
-               help='Strip leading and trailing spaces from each field')
-
+                               default=False,
+                               action='store_true',
+                               dest='stripfields',
+                               help='Strip leading and trailing spaces from each field')
 
 
     def _validate_misc(self):
@@ -422,7 +409,7 @@ class CommandLineParser(object):
         if self.files:
             if (len(self.files) > 1 and not self.opts.delimiter):
                 self.parser.error('Please provide delimiter when piping data into '
-                             'program via stdin or reading multiple input files')
+                                  'program via stdin or reading multiple input files')
         else:
             self.parser.error('Input file argument is missing')
 
@@ -446,4 +433,3 @@ class CustomCSV(csv.Dialect):
 
 if __name__ == '__main__':
     sys.exit(main())
-

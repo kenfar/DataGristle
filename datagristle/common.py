@@ -2,7 +2,7 @@
 """ Used to hold all common  general-purpose functions and classes
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011 Ken Farmer
+    Copyright 2011,2017 Ken Farmer
 """
 import sys
 import argparse
@@ -15,6 +15,10 @@ from typing import List, Dict, Any, Optional, Tuple, Union
 
 from datagristle._version import __version__
 
+
+FreqType = List[Tuple[Any, int]]
+StrFreqType = List[Tuple[str, int]]
+NumericFreqType = List[Tuple[Union[int, float], int]]
 
 
 def isnumeric(number: Any) -> bool:
@@ -29,7 +33,6 @@ def isnumeric(number: Any) -> bool:
         return True
     except (TypeError, ValueError):
         return False
-
 
 
 def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float]:
@@ -50,8 +53,7 @@ def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float
     return most_common_key, most_common_pct
 
 
-
-def coalesce(default: Any, *args):
+def coalesce(default: Any, *args: Any) -> Any:
     """ Returns the first non-None value.
         If no non-None args exist, then return default.
     """
@@ -61,14 +63,14 @@ def coalesce(default: Any, *args):
     return default
 
 
-def dict_coalesce(struct: Dict, key: Any, default: Any=None):
+def dict_coalesce(struct: Dict, key: Any, default: Any=None) -> Any:
     try:
         return struct[key]
     except KeyError:
         return default
 
 
-def ifprint(value, string: str, *args):
+def ifprint(value: Any, string: str, *args: Any) -> None:
     if value is not None:
         print(string % args)
 
@@ -87,12 +89,12 @@ class ArgProcessor(object):
         sys.exit:  on most errors
         NotImplementedError: if add_custom_args() is not overrridden
     """
-    def __init__(self, short_desc, long_desc):
-        self.parser     = argparse.ArgumentParser(short_desc,
-                              formatter_class=argparse.RawTextHelpFormatter)
+    def __init__(self, short_desc: str, long_desc: str) -> None:
+        self.parser = argparse.ArgumentParser(short_desc,
+                                              formatter_class=argparse.RawTextHelpFormatter)
         self.add_custom_args()
         self.add_standard_args()
-        self.args       = self.parser.parse_args()
+        self.args = self.parser.parse_args()
 
         if self.args.long_help:
             print(long_desc)
@@ -105,132 +107,130 @@ class ArgProcessor(object):
         self.custom_validation()
 
 
-    def add_standard_args(self):
+    def add_standard_args(self) -> None:
         """
         """
         self.parser.add_argument('--long-help',
-                default=False,
-                action='store_true',
-                help='Print more verbose help')
+                                 default=False,
+                                 action='store_true',
+                                 help='Print more verbose help')
 
         self.parser.add_argument('-V', '--version',
-                action='version',
-                version='version: %s' % __version__)
+                                 action='version',
+                                 version='version: %s' % __version__)
 
-
-    def add_option_csv_dialect(self):
+    def add_option_csv_dialect(self) -> None:
         """
         """
         self.parser.add_argument('-d', '--delimiter',
-                action=DelimiterAction,
-                help=('Specify a quoted single-column field delimiter. This may be'
-                      ' determined automatically by the program.'))
+                                 action=DelimiterAction,
+                                 help=('Specify a quoted single-column field delimiter. This may be'
+                                       ' determined automatically by the program.'))
         self.parser.add_argument('--escapechar',
-                default='"',
-                help='Specify escaping character - generally only used for '
-                     ' stdin data.  Default is "')
+                                 default='"',
+                                 help='Specify escaping character - generally only used for '
+                                      ' stdin data.  Default is "')
         self.parser.add_argument('--quoting',
-                choices=('quote_all','quote_minimal','quite_nonnumeric','quote_none'),
-                default='quote_none',
-                help='Specify field quoting - generally only used for stdin data.'
-                     '  The default: is quote_none.')
+                                 choices=('quote_all', 'quote_minimal', 'quite_nonnumeric', 'quote_none'),
+                                 default='quote_none',
+                                 help='Specify field quoting - generally only used for stdin data.'
+                                      '  The default: is quote_none.')
         self.parser.add_argument('--quotechar',
-                default='"',
-                help='Specify field quoting character - generally only used for '
-                     'stdin data.  Default is double-quote')
+                                 default='"',
+                                 help='Specify field quoting character - generally only used for '
+                                      'stdin data.  Default is double-quote')
         self.parser.add_argument('--recdelimiter',
-                help='Specify a quoted end-of-record delimiter. ')
-        self.parser.add_argument('--hasheader',
-                dest='hasheader',
-                default=None,
-                action='store_true',
-                help='Indicate that there is a header in the file.')
-        self.parser.add_argument('--hasnoheader',
-                dest='hasheader',
-                default=None,
-                action='store_false',
-                help=('Indicate that there is no header in the file.'
-                        'Occasionally helpful in overriding automatic '
-                        'csv dialect guessing.'))
+                                 help='Specify a quoted end-of-record delimiter. ')
+        self.parser.add_argument('--has-header',
+                                 dest='has_header',
+                                 default=None,
+                                 action='store_true',
+                                 help='Indicate that there is a header in the file.')
+        self.parser.add_argument('--has-no-header',
+                                 dest='has_header',
+                                 default=None,
+                                 action='store_false',
+                                 help=('Indicate that there is no header in the file.'
+                                       'Occasionally helpful in overriding automatic '
+                                       'csv dialect guessing.'))
 
-    def add_option_dry_run(self, help_msg=None):
+    def add_option_dry_run(self, help_msg: str = None) -> None:
         """
         """
         help_info = help_msg or 'Performs most processing except for final changes.'
         self.parser.add_argument('--dry-run',
-                default=False,
-                action='store_true',
-                help=help_info)
+                                 default=False,
+                                 action='store_true',
+                                 help=help_info)
 
-    def add_option_stats(self, help_msg=None, default=True):
+    def add_option_stats(self, help_msg: str = None, default: bool = True) -> None:
         """
         """
         help_info = help_msg or 'Writes detailed processing stats'
         self.parser.add_argument('--stats',
-                dest='stats',
-                action='store_true',
-                help=help_info)
+                                 dest='stats',
+                                 action='store_true',
+                                 help=help_info)
 
         help_info = help_msg or 'Turns off stats'
         self.parser.add_argument('--nostats',
-                dest='stats',
-                action='store_false',
-                help=help_info)
+                                 dest='stats',
+                                 action='store_false',
+                                 help=help_info)
 
-    def add_option_config_name(self):
+    def add_option_config_name(self) -> None:
         """
         """
         help_info = 'Name of config within xdg dir (such as .confg/gristle_differ/* on linux)'
         self.parser.add_argument('--config-name',
-                help=help_info)
+                                 help=help_info)
 
-    def add_option_config_fn(self):
+    def add_option_config_fn(self) -> None:
         """
         """
         help_info = 'Name of config file.'
         self.parser.add_argument('--config-fn',
-                help=help_info)
+                                 help=help_info)
 
-    def add_option_logging(self, help_msg: str=None):
+    def add_option_logging(self, help_msg: str=None) -> None:
         """
         """
         self.parser.add_argument('--log-level',
-                            choices=['DEBUG','INFO','WARNING','ERROR', 'CRITICAL'],
-                            help='Specify verbosity of logging')
+                                 choices=['DEBUG','INFO','WARNING','ERROR', 'CRITICAL'],
+                                 help='Specify verbosity of logging')
         self.parser.add_argument('--console-log',
-                            action='store_true',
-                            default=True,
-                            dest='log_to_console',
-                            help='Turns on printing of logs to the console')
+                                 action='store_true',
+                                 default=True,
+                                 dest='log_to_console',
+                                 help='Turns on printing of logs to the console')
         self.parser.add_argument('--no-console-log',
-                            action='store_false',
-                            dest='log_to_console',
-                            help='Turns off printing of logs to the console')
+                                 action='store_false',
+                                 dest='log_to_console',
+                                 help='Turns off printing of logs to the console')
 
-    def add_positional_file_args(self, stdin: bool=True):
+    def add_positional_file_args(self, stdin: bool = True) -> None:
         """
         """
         if stdin is True:
-            default=['-']
-            help=('Specifies the input file(s).  The default is stdin.  Multiple '
-                  'filenames can be provided.')
+            default = ['-']
+            helpmsg = ('Specifies the input file(s).  The default is stdin.  Multiple '
+                       'filenames can be provided.')
         else:
-            default=None
-            help='Specifies the input file(s). '
-        #print 'default: %s' % default
+            default = None
+            helpmsg = 'Specifies the input file(s). '
 
         self.parser.add_argument('files',
                                  default=default,
                                  nargs='*',
                                  #type=argparse.FileType('r'),
-                                 help=help)
+                                 help=helpmsg)
 
-    def add_custom_args(self):
+    def add_custom_args(self) -> None:
         """ Must be overriden by subclass with its argument additions.
         """
         raise NotImplementedError('Must be overriden by sub-classing script')
 
-    def custom_validation(self):
+    def custom_validation(self) -> None:
         """ Intended to be overridden by subclass.
         """
         pass
@@ -260,31 +260,24 @@ def dialect_del_fixer(values: str) -> str:
     return val
 
 
-
-def abort(summary: str, details: Optional[str]=None, rc: int=1) -> None:
+def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
     """ Creates formatted error message within a box of = characters
         then exits.
     """
-    #---prints top line:
     print('=' * 79)
 
-    #---prints message within = characters, assumes it is kinda short:
     print('=== ', end='')
     print('%-69.69s' % summary, end='')
     print(' ===')
 
-    #---prints exception msg, breaks it into multiple lines:
     if details:
         for i in range(int(math.ceil(len(details)/68))):
             print('=== ', end='')
             print('%-69.69s' % details[i*68:(i*68)+68], end='')
             print(' ===')
 
-    #---prints bottom line:
     print('=' * 79)
-
     sys.exit(rc)
-
 
 
 def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[int]:
@@ -309,7 +302,7 @@ def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[in
     colname_lookup_len = len(colname_lookup)
 
     try:
-        result         =  [int(x) if isnumeric(x) else colname_lookup[x] for x in lookup_list]
+        result =  [int(x) if isnumeric(x) else colname_lookup[x] for x in lookup_list]
     except KeyError:
         raise KeyError('Column name not found in colname list')
 

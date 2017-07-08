@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import os
-import sys
-from os.path import isfile, isdir, exists
+from os.path import isdir
 from os.path import dirname, basename
 from os.path import join  as pjoin
 import csv
+from typing import Tuple, List
+
+import datagristle.csvhelper as csvhelper
 
 
 class CSVDeDuper(object):
@@ -22,12 +23,15 @@ class CSVDeDuper(object):
         ValueError: if out_dir is invalid (ex: doesn't exist)
     """
 
-    def __init__(self, dialect, key_fields_0off, out_dir=None):
+    def __init__(self,
+                 dialect: csvhelper.Dialect,
+                 key_fields_0off: List[int],
+                 out_dir: str = None) -> None:
 
         assert dialect         is not None
         assert key_fields_0off is not None
 
-        self.dialect    = dialect
+        self.dialect = dialect
 
         try:
             self.key_fields_0off = [int(x) for x in key_fields_0off]
@@ -41,10 +45,10 @@ class CSVDeDuper(object):
             else:
                 raise ValueError('Invalid sort output directory: %s' % out_dir)
         else:
-            self.out_dir = None
+            self.out_dir = ''
 
 
-    def dedup_file(self, in_fqfn, out_fqfn=None):
+    def dedup_file(self, in_fqfn: str, out_fqfn: str = None) -> Tuple[str, int, int]:
         """ Copy non-duplicated records from csv input file to csv output file.
 
         Args:
@@ -65,15 +69,15 @@ class CSVDeDuper(object):
               file.
         """
         if not out_fqfn:
-            out_dir  = self.out_dir or dirname(in_fqfn)
+            out_dir = self.out_dir or dirname(in_fqfn)
             out_fqfn = pjoin(out_dir, basename(in_fqfn) + '.uniq')
 
         # walk through input file, dropping duplicates
-        outfile   = open(out_fqfn, 'w')
-        outwriter = csv.writer(outfile, dialect=self.dialect)
-        last_rec  = None
+        outfile = open(out_fqfn, 'w')
+        outwriter = csv.writer(outfile, dialect=self.dialect) # type: csv.writer
+        last_rec: List[str] = []
         write_cnt = 0
-        read_cnt  = 0
+        read_cnt = 0
         with open(in_fqfn, 'rt') as infile:
             reader = csv.reader(infile, self.dialect)
             for rec in reader:
@@ -89,8 +93,3 @@ class CSVDeDuper(object):
                 last_rec = rec
         outfile.close()
         return (out_fqfn, read_cnt, write_cnt)
-
-
-
-
-

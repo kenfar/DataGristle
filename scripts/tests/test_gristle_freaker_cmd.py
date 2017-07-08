@@ -1,104 +1,78 @@
 #!/usr/bin/env python
-""" 
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
+""" See the file "LICENSE" for the full license governing this code.
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
+#adjust pylint for pytest oddities:
+#pylint: disable=missing-docstring
+#pylint: disable=unused-argument
+#pylint: disable=attribute-defined-outside-init
+#pylint: disable=protected-access
+#pylint: disable=no-self-use
+#pylint: disable=empty-docstring
 
-import sys
-import os
 import tempfile
-import random
-import time
 import fileinput
 import subprocess
-import envoy
-import inspect
-from pprint import pprint as pp
+import os
 from os.path import dirname, join as pjoin
 
-sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
+import envoy
+
 import datagristle.test_tools as test_tools
+
 script_dir = dirname(dirname(os.path.realpath((__file__))))
-data_dir   = pjoin(dirname(script_dir), 'data')
+data_dir = pjoin(dirname(script_dir), 'data')
 
 
-
-def generate_test_file(delim, record_cnt, name='generic'):
-    (fd, fqfn) = tempfile.mkstemp(prefix='TestFreakerIn_%s_' % name)
-    fp = os.fdopen(fd,"w")
-
-    for i in range(record_cnt):
-        fields = []
-        fields.append(str(i))
-        fields.append('A')
-        fields.append('B')
-        fields.append('C')
-        fp.write(delim.join(fields)+'\n')
-
-    fp.close()
-    return fqfn
 
 
 class TestCSVDialect(object):
 
     def setup_method(self, method):
-        (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestFreakerOut_')
+        (_, self.out_fqfn) = tempfile.mkstemp(prefix='TestFreakerOut_')
+        self.out_recs = []
 
     def teardown_method(self, method):
         os.remove(self.out_fqfn)
 
-    def get_outputs(self):
-        self.out_recs = []
-        for rec in fileinput.input(self.out_fqfn):
-            self.out_recs.append(rec[:-1])
-
 
     def test_noheader_file_with_no_header_args(self):
         in_fqfn = os.path.join(data_dir, '3x3.csv')
-        cmd = "%s %s -d ',' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'),
-                                           in_fqfn, self.out_fqfn)
-        r =  envoy.run(cmd)
-        self.get_outputs()
-        print(self.out_recs)
-        print(r.std_out)
-        print(r.std_err)
+        cmd = "%s %s -d ',' -o %s -c 0" \
+              % (os.path.join(script_dir, 'gristle_freaker'), in_fqfn, self.out_fqfn)
+        runner = self.executor(cmd)
+        print(runner.std_out)
+        print(runner.std_err)
         assert len(self.out_recs) == 3
-        assert r.status_code == 0
-
 
     def test_noheader_file_with_hasnoheader_arg(self):
         in_fqfn = os.path.join(data_dir, '3x3.csv')
-        cmd = "%s %s -d ',' -o %s -c 0 --hasnoheader" % (os.path.join(script_dir, 'gristle_freaker'),
-                                           in_fqfn, self.out_fqfn)
-        r =  envoy.run(cmd)
-        self.get_outputs()
-        print(self.out_recs)
+        cmd = "%s %s -d ',' -o %s -c 0 --has-no-header" \
+              % (os.path.join(script_dir, 'gristle_freaker'), in_fqfn, self.out_fqfn)
+        self.executor(cmd)
         assert len(self.out_recs) == 3
-        assert r.status_code == 0
 
     def test_header_file_with_no_header_args(self):
         in_fqfn = os.path.join(data_dir, '3x3_header.csv')
-        cmd = "%s %s -d ',' -o %s -c 0 " % (os.path.join(script_dir, 'gristle_freaker'),
-                                           in_fqfn, self.out_fqfn)
-        r =  envoy.run(cmd)
-        self.get_outputs()
-        print(self.out_recs)
+        cmd = "%s %s -d ',' -o %s -c 0 " \
+            % (os.path.join(script_dir, 'gristle_freaker'), in_fqfn, self.out_fqfn)
+        self.executor(cmd)
         assert len(self.out_recs) == 3
-        assert r.status_code == 0
 
     def test_header_file_with_hasheader_arg(self):
         in_fqfn = os.path.join(data_dir, '3x3_header.csv')
-        cmd = "%s %s -d ',' -o %s -c 0 --hasheader" % (os.path.join(script_dir, 'gristle_freaker'),
-                                           in_fqfn, self.out_fqfn)
-        r =  envoy.run(cmd)
-        self.get_outputs()
-        print(self.out_recs)
+        cmd = "%s %s -d ',' -o %s -c 0 --has-header" \
+              % (os.path.join(script_dir, 'gristle_freaker'), in_fqfn, self.out_fqfn)
+        self.executor(cmd)
         assert len(self.out_recs) == 3
-        assert r.status_code == 0
 
-
-
-
+    def executor(self, cmd):
+        runner = envoy.run(cmd)
+        for rec in fileinput.input(self.out_fqfn):
+            self.out_recs.append(rec[:-1])
+        print(self.out_recs)
+        assert runner.status_code == 0
+        return runner
 
 
 
@@ -106,13 +80,13 @@ class TestCommandLine(object):
 
     def setup_method(self, method):
 
-        self.easy_fqfn          = generate_test_file(delim='|',
-                                                     record_cnt=100,
-                                                     name='easy')
-        self.empty_fqfn         = generate_test_file(delim='|',
-                                                     record_cnt=0,
-                                                     name='empty')
-        (dummy, self.out_fqfn)  = tempfile.mkstemp(prefix='TestFreakerOut_')
+        self.easy_fqfn = generate_test_file(delim='|',
+                                            record_cnt=100,
+                                            name='easy')
+        self.empty_fqfn = generate_test_file(delim='|',
+                                             record_cnt=0,
+                                             name='empty')
+        (_, self.out_fqfn) = tempfile.mkstemp(prefix='TestFreakerOut_')
 
     def teardown_method(self, method):
         os.remove(self.easy_fqfn)
@@ -123,164 +97,160 @@ class TestCommandLine(object):
     def test_empty_file(self):
         cmd = '%s %s -o %s -c 0' % (os.path.join(script_dir, 'gristle_freaker'),
                                     self.empty_fqfn, self.out_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
-        #for record in records.split('\n'):
-        #    print record
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
         print('returncode:')
-        print(p.returncode)
+        print(runner.returncode)
         # We've got different messages here that mean essentially the same
         # thing, which you get depends on platform.
-        assert os.strerror(p.returncode).lower() in ['no data available',
-                                                     'no message available on stream']
-        out_recs  = []
+        assert os.strerror(runner.returncode).lower() in ['no data available',
+                                                          'no message available on stream']
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
-        assert len(out_recs) == 0
-        p.stdin.close()
+        assert not out_recs
+        runner.stdin.close()
 
 
     def test_empty_stdin_file(self):
-        cmd = "cat %s | %s -d '|' -o %s -c 0" % (self.empty_fqfn, os.path.join(script_dir, 'gristle_freaker'),
-                                                 self.out_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
+        cmd = "cat %s | %s -d '|' -o %s -c 0" \
+              % (self.empty_fqfn, os.path.join(script_dir, 'gristle_freaker'), self.out_fqfn)
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
         # We've got different messages here that mean essentially the same
         # thing, which you get depends on platform.
-        assert os.strerror(p.returncode).lower() in ['no data available',
-                                                     'no message available on stream']
-        out_recs  = []
+        assert os.strerror(runner.returncode).lower() in ['no data available',
+                                                          'no message available on stream']
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
-        assert len(out_recs) == 0
-        p.stdin.close()
+        assert not out_recs
+        runner.stdin.close()
 
 
     def test_empty_multiple_files(self):
-        cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'), self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
+        cmd = "%s %s %s -d '|' -o %s -c 0" \
+              % (os.path.join(script_dir, 'gristle_freaker'), self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
         # We've got different messages here that mean essentially the same
         # thing, which you get depends on platform.
-        assert os.strerror(p.returncode).lower() in ['no data available',
-                                                     'no message available on stream']
-        out_recs  = []
+        assert os.strerror(runner.returncode).lower() in ['no data available',
+                                                          'no message available on stream']
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
-        assert len(out_recs) == 0
-        p.stdin.close()
+        assert not out_recs
+        runner.stdin.close()
 
 
     def test_full_single_file(self):
         """ Tests use of columns all against a single file.
         """
         cmd = "%s %s -c '1,2' -d '|' -o %s " % (os.path.join(script_dir, 'gristle_freaker'), self.easy_fqfn, self.out_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
-        assert p.returncode == 0
-        #for record in records.split('\n'):
-        #    print record
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
+        assert runner.returncode == 0
         out_rec_cnt = 0
         for rec in fileinput.input(self.out_fqfn):
             out_rec_cnt += 1
-            fields     = rec[:-1].split('-')
-            key_col_1  = fields[0].strip()
-            key_col_2  = fields[1].strip()
-            freq_cnt   = int(fields[2])
+            fields = rec[:-1].split('-')
+            key_col_1 = fields[0].strip()
+            key_col_2 = fields[1].strip()
+            freq_cnt = int(fields[2])
 
             assert key_col_1 == 'A'
             assert key_col_2 == 'B'
-            assert freq_cnt  == 100
+            assert freq_cnt == 100
 
         fileinput.close()
         assert out_rec_cnt == 1
-        p.stdin.close()
+        runner.stdin.close()
 
 
     def test_full_multiple_files(self):
         cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'),
                                               self.easy_fqfn, self.easy_fqfn, self.out_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
-        assert p.returncode == 0
-        out_recs  = []
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
+        assert runner.returncode == 0
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
         assert len(out_recs) == 100
-        p.stdin.close()
+        runner.stdin.close()
 
 
     def test_empty_and_full_multiple_files(self):
         cmd = "%s %s %s -d '|' -o %s -c 0" % (os.path.join(script_dir, 'gristle_freaker'),
                                               self.empty_fqfn, self.easy_fqfn, self.out_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
-        assert p.returncode == 0
-        out_recs  = []
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
+        assert runner.returncode == 0
+        out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
         assert len(out_recs) == 100
-        p.stdin.close()
+        runner.stdin.close()
 
 
     def test_file_with_columntype_all(self):
-        cmd = "%s %s --columntype all -d '|' -o %s " % (os.path.join(script_dir, 'gristle_freaker'),
-                                               self.easy_fqfn,
-                                               self.out_fqfn)
+        cmd = "%s %s --columntype all -d '|' -o %s " \
+           % (os.path.join(script_dir, 'gristle_freaker'), self.easy_fqfn, self.out_fqfn)
         #print cmd
         #print 'easy_fqfn: %s' % self.easy_fqfn
         #os.system('cat %s' % self.easy_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  cleaner(p.communicate()[0])
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        records = cleaner(runner.communicate()[0])
         for record in records.split('\n'):
             print(record)
 
-        assert p.returncode == 0
+        assert runner.returncode == 0
         for rec in fileinput.input(self.out_fqfn):
             fields = rec[:-1].split('-')
-            assert len(fields)    == 5
+            assert len(fields) == 5
 
             # 4-part key because 'all':
             row_id = fields[0].strip()
-            key_a  = fields[1].strip()
-            key_b  = fields[2].strip()
-            key_c  = fields[3].strip()
+            key_a = fields[1].strip()
+            key_b = fields[2].strip()
+            key_c = fields[3].strip()
 
             # actual count of above occurances:
-            cnt    = int(fields[4])
+            cnt = int(fields[4])
 
             assert 0 <= int(row_id) < 100
             assert key_a == 'A'
@@ -289,33 +259,29 @@ class TestCommandLine(object):
             assert int(cnt) == 1
 
         fileinput.close()
-        p.stdin.close()
+        runner.stdin.close()
 
 
     def test_file_with_columntype_each(self):
-        cmd = "%s %s --columntype each -d '|' -o %s " % (os.path.join(script_dir, 'gristle_freaker'),
-                                               self.easy_fqfn,
-                                               self.out_fqfn)
+        cmd = "%s %s --columntype each -d '|' -o %s " \
+               % (os.path.join(script_dir, 'gristle_freaker'), self.easy_fqfn, self.out_fqfn)
         #print cmd
         #print 'easy_fqfn: %s' % self.easy_fqfn
         #os.system('cat %s' % self.easy_fqfn)
-        p =  subprocess.Popen(cmd,
-                              stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE,
-                              close_fds=True,
-                              shell=True)
-        records =  p.communicate()[0]
-        #for record in records.split('\n'):
-        #    print record
-
-        assert p.returncode == 0
+        runner = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  close_fds=True,
+                                  shell=True)
+        _ = runner.communicate()[0]
+        assert runner.returncode == 0
         for rec in fileinput.input(self.out_fqfn):
             fields = rec[:-1].split('-')
             col = fields[0].strip()
             val = fields[1].strip()
             cnt = int(fields[2])
 
-            assert len(fields)    == 3
+            assert len(fields) == 3
 
             if col == 'col:000':
                 assert 0 <= int(val) < 100
@@ -331,7 +297,7 @@ class TestCommandLine(object):
                 assert int(cnt) == 100
 
         fileinput.close()
-        p.stdin.close()
+        runner.stdin.close()
 
 
 
@@ -342,4 +308,22 @@ def cleaner(val):
         return val.decode()
     else:
         return val
+
+
+
+def generate_test_file(delim, record_cnt, name='generic'):
+    (fd, fqfn) = tempfile.mkstemp(prefix='TestFreakerIn_%s_' % name)
+    fp = os.fdopen(fd, "w")
+
+    for i in range(record_cnt):
+        fields = []
+        fields.append(str(i))
+        fields.append('A')
+        fields.append('B')
+        fields.append('C')
+        fp.write(delim.join(fields)+'\n')
+
+    fp.close()
+    return fqfn
+
 

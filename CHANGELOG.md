@@ -1,3 +1,6 @@
+# v0.1.2 - 2017-06
+   * long-overdue code quality updates
+
 # v0.1.1 - 2017-05
    * upgraded to use python3.6
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess
-from os.path import isfile, isdir, exists
+import subprocess
+from os.path import isfile, isdir
 from os.path import dirname, basename
 from os.path import join  as pjoin
-from pprint import pprint as pp
+from typing import List
 
-import envoy
+import datagristle.csvhelper as csvhelper
 
 
 
@@ -27,12 +27,16 @@ class CSVSorter(object):
         IOError: if unix sort fails
     """
 
-    def __init__(self, dialect, key_fields_0off, tmp_dir=None, out_dir=None):
+    def __init__(self,
+                 dialect: csvhelper.Dialect,
+                 key_fields_0off: List[int],
+                 tmp_dir: str = None,
+                 out_dir: str = None) -> None:
 
         assert dialect          is not None
         assert key_fields_0off  is not None
 
-        self.dialect   = dialect
+        self.dialect = dialect
 
         if tmp_dir and not isdir(tmp_dir):
             raise ValueError('Invalid sort temp directory: %s' % tmp_dir)
@@ -46,7 +50,7 @@ class CSVSorter(object):
 
         # convert from std datagristle 0offset to sort's 1offset
         try:
-            key_fields_1off = [ int(x)+1 for x in key_fields_0off ]
+            key_fields_1off = [int(x)+1 for x in key_fields_0off]
         except ValueError:
             print('Error: invalid non-numeric sort key: %s' % key_fields_0off)
             raise
@@ -58,7 +62,7 @@ class CSVSorter(object):
             self.field_key_1off.append(field)
 
 
-    def sort_file(self, in_fqfn, out_fqfn=None):
+    def sort_file(self, in_fqfn: str, out_fqfn: str = None) -> str:
         """ Sort input file giving output file.
 
         Args:
@@ -82,9 +86,8 @@ class CSVSorter(object):
              same file.
         """
 
-        tmp_dir  = self.tmp_dir or dirname(in_fqfn)
         if not out_fqfn:
-            out_dir  = self.out_dir or dirname(in_fqfn)
+            out_dir = self.out_dir or dirname(in_fqfn)
             out_fqfn = pjoin(out_dir, basename(in_fqfn) + '.sorted')
 
         if not isfile(in_fqfn):
@@ -102,21 +105,22 @@ class CSVSorter(object):
         cmd.append('-o')
         cmd.append(out_fqfn)
 
-        p = subprocess.Popen(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             close_fds=True)
-        stdout, stderr = p.communicate()
+        proc = subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                close_fds=True)
+        stdout, stderr = proc.communicate()
 
-        if p.returncode != 0:
-            print('Invalid sort return code: %s' % p.returncode)
+        if proc.returncode != 0:
+            print('Invalid sort return code: %s' % proc.returncode)
             print('delimiter: %s' % self.dialect.delimiter)
-            raise IOError('invalid sort return code: %s' % p.returncode)
+            raise IOError('invalid sort return code: %s, %s, %s' % (proc.returncode, stdout, stderr))
 
         return out_fqfn
 
 
-    def _get_sort_del(self, delimiter):
+    @staticmethod
+    def _get_sort_del(self, delimiter: str) -> str:
         """ Gets a quoted, sort-acceptable delimiter given a regular delimiter.
             Was necessary when passing tabs as delimiters through the shell.
         """

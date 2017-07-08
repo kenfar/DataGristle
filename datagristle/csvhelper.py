@@ -5,14 +5,8 @@
     Copyright 2011, 2017 Ken Farmer
 """
 
-#--- standard modules ------------------
 import csv
-from pprint import pprint
-from typing import List, Dict, Any, Union, Optional
-from collections import namedtuple
-
-#--- datagristle modules ------------------
-import datagristle.common as comm
+from typing import Optional
 
 
 
@@ -41,9 +35,16 @@ def get_quote_name(quote_number: int) -> str:
 
 
 
-class Dialect(object):
-    def __init__(self, delimiter, hasheader, quoting, quotechar=None, doublequote=None, escapechar=None,
-                 lineterminator=None, skipinitialspace=None):
+class Dialect(csv.Dialect):
+    def __init__(self,
+                 delimiter: str,
+                 has_header: bool,
+                 quoting: int,
+                 quotechar: str = None,
+                 doublequote: Optional[str] = None,
+                 escapechar: Optional[str] = None,
+                 lineterminator: Optional[str] = None,
+                 skipinitialspace: Optional[bool] = None) -> None:
 
         assert quoting in [csv.QUOTE_NONE, csv.QUOTE_MINIMAL, csv.QUOTE_ALL, csv.QUOTE_NONNUMERIC]
 
@@ -58,5 +59,4 @@ class Dialect(object):
         self.quotechar = quotechar
         self.quoting = quoting
         self.skipinitialspace = skipinitialspace
-        self.hasheader = hasheader
-
+        self.has_header = has_header

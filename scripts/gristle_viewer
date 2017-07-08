@@ -34,7 +34,7 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013 Ken Farmer
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
 #    To do:
 #       1.  check for recnum > number of records in input file
@@ -44,26 +44,22 @@
 #       5.  improve error if no args provided - recommend -h for help
 #       6.  fix broken pipes in this program or others
 
-#--- standard modules ------------------
-import os
 import sys
 import optparse
 import csv
 import fileinput
+import os
+from pprint import pprint as pp
 from typing import List, Optional, Any, Tuple
-from pprint import pprint
-
-#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE,SIG_DFL)
-
-#--- gristle modules -------------------
-# lets get pathing set for running code out of project structure & testing it via tox
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import datagristle.file_type           as file_type
 import datagristle.field_determinator  as field_determinator
 import datagristle.field_type          as field_type
+
+#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+signal(SIGPIPE, SIG_DFL)
+
 
 debug = False
 
@@ -86,7 +82,7 @@ def main():
             print('ERROR: file %s has issues' % files[0])
             sys.exit(1)
 
-    dialect, my_fields  = get_input_file_info(files, opts)
+    dialect, my_fields = get_input_file_info(files, opts)
 
     while True:
         rec = get_rec(files,
@@ -102,7 +98,7 @@ def main():
         if opts.output:
             break
 
-        response = raw_input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
+        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
         if response == 'q':
             break
         elif response == 'p':
@@ -145,18 +141,18 @@ def get_input_file_info(input_files: List[str], opts) \
     assert input_files
     my_file = file_type.FileTyper(input_files[0],
                                   delimiter=opts.delimiter,
-                                  quoting=file_type.get_quote_number(opts.quoting))
+                                  quoting=opts.quoting)
     dialect = my_file.analyze_file()
 
     if debug:
         print('---- input dialect -----')
-        pprint(vars(dialect))
+        pp(vars(dialect))
 
-    my_fields  = field_determinator.FieldDeterminator(input_files[0]      ,
-                                                      my_file.format_type ,
-                                                      my_file.field_cnt   ,
-                                                      dialect.has_header  ,
-                                                      dialect)
+    my_fields = field_determinator.FieldDeterminator(input_files[0],
+                                                     my_file.format_type,
+                                                     my_file.field_cnt,
+                                                     dialect.has_header,
+                                                     dialect)
     my_fields.analyze_fields()
 
     return dialect, my_fields
@@ -172,10 +168,10 @@ def display_rec(rec: str,
     field_names: List[str] = []
     if my_fields:
         max_v_len = 0
-        for v in my_fields.field_names.values():
-            if len(v) > max_v_len:
-                max_v_len = len(v)
-        min_format_len  =  max_v_len + 4
+        for val in my_fields.field_names.values():
+            if len(val) > max_v_len:
+                max_v_len = len(val)
+        min_format_len = max_v_len + 4
         field_names = my_fields.field_names
     else:
         for sub in range(len(rec)):
@@ -210,19 +206,12 @@ def get_rec(files: List[str], recnum: int, dialect: csv.Dialect) -> Optional[Lis
            - possibly keep some of the data in a dictionary in case the user
              wants to navigate about
     """
-
     found = None
-    i     = 0
     for row in csv.reader(fileinput.input(files), dialect):
-        if i == recnum:
+        if fileinput.lineno() == recnum:
             found = row
             break
-        else:
-            i += 1
     fileinput.close()
-    if i == 0:             # empty file
-        sys.exit(1)
-
     return found
 
 
@@ -241,24 +230,24 @@ def get_opts_and_args():
            "   %prog  [file] -q -v -h --delimiter [value] "
            "--recnum [value] \n")
 
-    parser = optparse.OptionParser(usage = use)
+    parser = optparse.OptionParser(usage=use)
     parser.add_option('--long-help',
-           default=False,
-           action='store_true',
-           help='Print more verbose help')
+                      default=False,
+                      action='store_true',
+                      help='Print more verbose help')
     parser.add_option('-o', '--output',
-           help='Specifies the output file, defaults to stdout.')
+                      help='Specifies the output file, defaults to stdout.')
     parser.add_option('-r', '--recnum',
-           default=1,
-           type=int,
-           help='display this record number, start at 0, default to 1')
+                      default=1,
+                      type=int,
+                      help='display this record number, start at 0, default to 1')
     parser.add_option('-d', '--delimiter',
-           help='Specify a quoted field delimiter. ')
+                      help='Specify a quoted field delimiter. ')
     parser.add_option('-q', '--quoting',
-           choices=('quote_all','quote_minimal','quite_nonnumeric','quote_none'),
-           default='quote_none',
-           help='Specify field quoting - used when automatic detection '
-                'fails.   The default is quote_none')
+                      choices=('quote_all', 'quote_minimal', 'quite_nonnumeric', 'quote_none'),
+                      default='quote_none',
+                      help='Specify field quoting - used when automatic detection '
+                           'fails.   The default is quote_none')
 
     (opts, files) = parser.parse_args()
 
@@ -275,4 +264,3 @@ def get_opts_and_args():
 
 if __name__ == '__main__':
     sys.exit(main())
-

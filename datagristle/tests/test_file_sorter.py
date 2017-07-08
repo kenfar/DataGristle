@@ -1,27 +1,23 @@
 #!/usr/bin/env python
+""" See the file "LICENSE" for the full license governing this code.
+    Copyright 2015,2017 Ken Farmer
+"""
+#adjust pylint for pytest oddities:
+#pylint: disable=missing-docstring
+#pylint: disable=unused-argument
+#pylint: disable=attribute-defined-outside-init
+#pylint: disable=protected-access
+#pylint: disable=no-self-use
 
-# standard modules:
-import sys
-import os
-import copy
-import time
 import tempfile
 import shutil
-import gzip
 import fileinput
 import csv
-
 from os.path import dirname, basename
-from os.path import isfile, isdir, exists
 from os.path import join as pjoin
 
-# third-party modules:
-import envoy
 import pytest
-from pprint import pprint as pp
 
-sys.path.insert(0, dirname(dirname(dirname(os.path.abspath(__file__)))))
-sys.path.insert(0, dirname(dirname(os.path.abspath(__file__))))
 import datagristle.file_sorter as mod
 import datagristle.csvhelper as csvhelper
 
@@ -30,8 +26,8 @@ class TestSort(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
-        self.dialect  = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, hasheader=False)
-        self.fqfn     = create_test_file(self.temp_dir)
+        self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
+        self.fqfn  = create_test_file(self.temp_dir)
         self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 
     def teardown_method(self, method):
@@ -40,15 +36,15 @@ class TestSort(object):
 
     def test_sort_file_invalid_inputs(self):
         with pytest.raises(AssertionError):
-            sorter  = mod.CSVSorter(self.dialect, None)
-        sorter  = mod.CSVSorter(self.dialect, '3')
+            sorter = mod.CSVSorter(self.dialect, None)
+        sorter = mod.CSVSorter(self.dialect, '3')
         with pytest.raises(ValueError):
             sorter.sort_file('/tmp/thisfiledoesnotexist.csv')
 
     def test_sort_file_numeric(self):
         join_fields = '0'
-        sorter  = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
-        outfile  = sorter.sort_file(self.fqfn)
+        sorter = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
+        outfile = sorter.sort_file(self.fqfn)
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
@@ -67,8 +63,8 @@ class TestSort(object):
 
     def test_sort_big_file_numeric(self):
         join_fields = '0'
-        sorter  = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
-        outfile  = sorter.sort_file(self.fqfn)
+        sorter = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
+        outfile = sorter.sort_file(self.fqfn)
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
@@ -100,9 +96,9 @@ class TestSort(object):
     def test_sort_file_with_tab_delimiter(self):
         join_fields = '0'
         self.dialect.delimiter = '\t'
-        self.fqfn     = create_test_file(self.temp_dir, self.dialect.delimiter)
-        sorter  = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
-        outfile  = sorter.sort_file(self.fqfn)
+        self.fqfn = create_test_file(self.temp_dir, self.dialect.delimiter)
+        sorter = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
+        outfile = sorter.sort_file(self.fqfn)
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(self.dialect.delimiter)
@@ -120,9 +116,9 @@ class TestSort(object):
         fileinput.close()
 
     def test_sort_file_alpha_combo(self):
-        join_fields   = [1, 2]
-        sorter        = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
-        outfile       = sorter.sort_file(self.fqfn)
+        join_fields = [1, 2]
+        sorter = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.temp_dir)
+        outfile = sorter.sort_file(self.fqfn)
         assert outfile == self.fqfn + '.sorted'
         for rec in fileinput.input(self.fqfn + '.sorted'):
             fields = rec.split(',')
@@ -140,9 +136,9 @@ class TestSort(object):
         fileinput.close()
 
     def test_sort_file_outdir(self):
-        join_fields   = [1, 2]
-        sorter        = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.out_dir)
-        outfile       = sorter.sort_file(self.fqfn)
+        join_fields = [1, 2]
+        sorter = mod.CSVSorter(self.dialect, join_fields, self.temp_dir, self.out_dir)
+        outfile = sorter.sort_file(self.fqfn)
         assert dirname(outfile) == self.out_dir
         assert basename(outfile) == basename(self.fqfn) + '.sorted'
 
@@ -154,23 +150,6 @@ def create_test_file(temp_dir, delimiter=','):
         f.write(delimiter.join(['2', 'bbb', 'a23']) + '\n')
         f.write(delimiter.join(['1', 'bbb', 'b23']) + '\n')
         f.write(delimiter.join(['3', 'aaa', 'b23']) + '\n')
-    return fqfn
-
-def create_big_test_file(temp_dir, delimiter=','):
-    fqfn = pjoin(temp_dir, 'foo.csv')
-    with open(fqfn, 'w') as f:
-        f.write(delimiter.join(['4', 'aaa', 'a23']) + '\n')
-        f.write(delimiter.join(['2', 'bbb', 'a23']) + '\n')
-        f.write(delimiter.join(['10', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['1', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['2', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['9', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['3', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['8', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['4', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['7', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['6', 'bbb', 'b23']) + '\n')
-        f.write(delimiter.join(['5', 'aaa', 'b23']) + '\n')
     return fqfn
 
 

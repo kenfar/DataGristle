@@ -38,27 +38,16 @@ More info is on the DataGristle wiki here:
 
 # Installation
 
-   * Using [pip](http://www.pip-installer.org/en/latest/) (preferred) or [easyinstall](http://peak.telecommunity.com/DevCenter/EasyInstall):
+   * Using [pip](http://www.pip-installer.org/en/latest/):
 
        ~~~
        $ pip install datagristle
-       $ easy_install datagristle
-       ~~~
-
-   * Or install manually from [pypi](https://pypi.python.org/pypi/datagristle):
-
-       ~~~
-       $ mkdir ~\Downloads
-       $ wget https://pypi.python.org/packages/source/d/datagristle/datagristle-0.59.tar.gz
-       $ tar -xvf easy_install datagristle
-       $ cd ~\Downloads\datagristle-*
-       $ python setup.py install
        ~~~
       
 
 # Dependencies
 
-   * Python 2.6 or Python 2.7
+   * Python 3.6
 
 
 # Utilities Provided in This Release:
@@ -439,6 +428,13 @@ More info is on the DataGristle wiki here:
                use the source files.
 
 
+# Development & Testing
+
+   * If you're going to test directly out of the source code then set up the
+     pathing to point to the parent directory.  If using virtualenvwrapper
+     then just run:
+      * $ add2virtualenv .
+
 
 # Licensing
 
@@ -448,5 +444,5 @@ More info is on the DataGristle wiki here:
 
 # Copyright
 
-   * Copyright 2011,2012,2013,2014,2015 Ken Farmer
+   * Copyright 2011,2012,2013,2014,2015,2017 Ken Farmer
 

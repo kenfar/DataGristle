@@ -2,14 +2,13 @@ bin
 build
 development_notes.txt
 dist
-dist/*
+htmlcov
 include
 lib
 obsolete
 .pytest.restart
 *.pyc
-datagristle.egg-info
-datagristle.egg-info/*
+*.egg-info
 .*.swp
 .coverage
 __pycache__

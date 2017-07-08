@@ -1,20 +1,23 @@
 #!/usr/bin/env python
+""" See the file "LICENSE" for the full license governing this code.
+    Copyright 2011,2012,2013,2017 Ken Farmer
 """
-    See the file "LICENSE" for the full license governing this code. 
-    Copyright 2011,2012,2013 Ken Farmer
-"""
+#adjust pylint for pytest oddities:
+#pylint: disable=missing-docstring
+#pylint: disable=unused-argument
+#pylint: disable=attribute-defined-outside-init
+#pylint: disable=protected-access
+#pylint: disable=no-self-use
 
-import sys
 import os
 import tempfile
-import pytest
 
+import pytest
 from sqlalchemy import create_engine, MetaData, exc
 from sqlalchemy import Table, Column, Integer, String
-from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, CheckConstraint
+from sqlalchemy import UniqueConstraint, CheckConstraint
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import datagristle.simplesql   as simplesql
+import datagristle.simplesql as simplesql
 
 #---------------------------------------------------------
 # test classes included here:
@@ -29,16 +32,16 @@ import datagristle.simplesql   as simplesql
 class TestSurrogateKeyTable(object):
 
     def setup_method(self, method):
-        self.tempdir       = tempfile.mkdtemp()
+        self.tempdir = tempfile.mkdtemp()
 
-        self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
-        self.db            = create_engine('sqlite:////%s' % self.fqdb_name,
-                                           logging_name='/tmp/gristle_sql.log')
-        self.db.echo       = False
-        self.conn          = self.db.connect()   # only needed by some statements
-        self.metadata      = MetaData(self.db)
-        self.person_tools  = PersonTools(self.metadata, self.db)
-        self.person        = self.person_tools.table_create()
+        self.fqdb_name = os.path.join(self.tempdir, 'metadata.db')
+        self.db = create_engine('sqlite:////%s' % self.fqdb_name,
+                                logging_name='/tmp/gristle_sql.log')
+        self.db.echo = False
+        self.conn = self.db.connect()   # only needed by some statements
+        self.metadata = MetaData(self.db)
+        self.person_tools = PersonTools(self.metadata, self.db)
+        self.person = self.person_tools.table_create()
         self.metadata.create_all()
 
     def teardown_method(self, method):
@@ -55,8 +58,8 @@ class TestSurrogateKeyTable(object):
             assert len(person) == 3
             assert person.id > 0
             assert person.id < 4
-            assert person.person_name in ['joe','bob','jim']
-            assert person.person_name in ['joe','bob','jim']
+            assert person.person_name in ['joe', 'bob', 'jim']
+            assert person.person_name in ['joe', 'bob', 'jim']
 
     def test_setter_null_constraint_violation(self):
         # is missing mandatory column 'person_desc'
@@ -132,14 +135,14 @@ class TestNaturalKeyTable(object):
     def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
 
-        self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
-        self.db            = create_engine('sqlite:////%s' % self.fqdb_name,
-                                           logging_name='/tmp/gristle_sql.log')
-        self.db.echo       = False
-        self.conn          = self.db.connect()   # only needed by some statements
-        self.metadata      = MetaData(self.db)
-        self.pet_tools     = PetTools(self.metadata, self.db)
-        self.pet           = self.pet_tools.table_create()
+        self.fqdb_name = os.path.join(self.tempdir, 'metadata.db')
+        self.db = create_engine('sqlite:////%s' % self.fqdb_name,
+                                logging_name='/tmp/gristle_sql.log')
+        self.db.echo = False
+        self.conn = self.db.connect()   # only needed by some statements
+        self.metadata = MetaData(self.db)
+        self.pet_tools = PetTools(self.metadata, self.db)
+        self.pet = self.pet_tools.table_create()
         self.metadata.create_all()
 
     def teardown_method(self, method):
@@ -217,14 +220,14 @@ class TestSurrogateKeyCheckConstraintTable(object):
     def setup_method(self, method):
         self.tempdir = tempfile.mkdtemp()
 
-        self.fqdb_name     = os.path.join(self.tempdir, 'metadata.db')
-        self.db            = create_engine('sqlite:////%s' % self.fqdb_name,
+        self.fqdb_name = os.path.join(self.tempdir, 'metadata.db')
+        self.db = create_engine('sqlite:////%s' % self.fqdb_name,
                                            logging_name='/tmp/gristle_sql.log')
-        self.db.echo                = False
-        self.conn                   = self.db.connect()   # only needed by some statements
-        self.metadata               = MetaData(self.db)
-        self.animal_tools           = AnimalTools(self.metadata, self.db)
-        self.animal                 = self.animal_tools.table_create()
+        self.db.echo = False
+        self.conn = self.db.connect()   # only needed by some statements
+        self.metadata = MetaData(self.db)
+        self.animal_tools = AnimalTools(self.metadata, self.db)
+        self.animal = self.animal_tools.table_create()
         self.metadata.create_all()
 
     def teardown_method(self, method):
