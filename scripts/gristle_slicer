@@ -19,11 +19,13 @@
                             of individual offsets.
 
                             Ranges are a pair of offsets separated by a colon.
-                            The first number indicates the starting offset, 
+                            The first number indicates the starting offset,
                             and the second number indicates the stop offset +1.
 
     Arguments:
       --long-help            Print verbose help and exit.
+      -i, --inputs=<files>   One or more input files. Alternatively, could be
+                             piped in via stdin.
       -o, --output=<file>    Specify the output file.  The default is stdout.
       -c, --columns=<spec>   Provide the column inclusion specification,
                              Default is ':' which includes all columns.
@@ -48,19 +50,18 @@
                                special characters.
                              - quote_nonnumeric - only quotes text fields.
       -h, --help             Print help and exit.
-      --debug                Print debugging info
 
     Examples:
-       $ gristle_slicer sample.csv
+       $ gristle_slicer -i sample.csv
                              Prints all rows and columns
-       $ gristle_slicer sample.csv -c":5, 10:15" -C 13
+       $ gristle_slicer -i sample.csv -c":5, 10:15" -C 13
                              Prints columns 0-4 and 10,11,12,14 for all records
-       $ gristle_slicer sample.csv -C:-1
+       $ gristle_slicer -i sample.csv -C:-1
                              Prints all columns except for the last for all
                              records
-       $ gristle_slicer sample.csv -c:5 -r-100:
+       $ gristle_slicer -i sample.csv -c:5 -r-100:
                              Prints columns 0-4 for the last 100 records
-       $ gristle_slicer sample.csv -c:5 -r-100 -d'|' --quoting=quote_all:
+       $ gristle_slicer -i sample.csv -c:5 -r-100 -d'|' --quoting=quote_all:
                              Prints columns 0-4 for the last 100 records, csv
                              dialect info (delimiter, quoting) provided manually)
        $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all:
@@ -75,22 +76,25 @@
 """
 import sys
 import io
-import optparse
 import csv
 import fileinput
 import os
+from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
-from typing import List, Tuple, Any, Optional, IO, TextIO
+from typing import List, Tuple, Dict, Any, Optional, IO
 
 import datagristle.file_type as file_type
 import datagristle.location_slicer as slicer
 import datagristle.csvhelper as csvhelper
+import datagristle.configulator as configulator
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
-debug = False
+
+NAME = basename(__file__)
+SHORT_HELP = 'Extract column and row subsets out of files using python string slicing notation\n'
 
 
 def main() -> int:
@@ -101,62 +105,75 @@ def main() -> int:
             - runs each input record through process_cols to get output
             - writes records
     """
-    global debug
-    (opts, files) = get_opts_and_args()
-    debug = opts.debug
-
-    if files:
-        if not os.path.exists(files[0]):
-            print('ERROR: file %s does not exist' % files[0])
-            sys.exit(1)
+    config = get_args()
 
     try:
-        dialect = get_input_file_info(files, opts)
+        dialect = get_input_file_info(config['infiles'],
+                                      config['delimiter'],
+                                      config['quoting'],
+                                      config['quotechar'],
+                                      config['has_header'])
     except file_type.IOErrorEmptyFile:
         print('ERROR: empty file')
         sys.exit(0)
-    outfile, csv_writer = get_output_file_info(opts, dialect)
 
-    (incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer) \
-       = setup_slicer(opts, files, dialect)
+    outfile, writer = get_output_file_info(config['outfile'], dialect)
 
-    rec_cnt = -1
-    def processor(reader) -> None:
-        nonlocal rec_cnt
-        try:
-            for rec in reader:
-                rec_cnt += 1
-                new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                                      rec, incl_col_slicer, excl_col_slicer)
-                if new_rec:
-                    write_rec(csv_writer, new_rec, rec_cnt)
-        except file_type.IOErrorEmptyFile:
-            print('ERROR: empty file')
+    columns   = config['columns'].split(',')
+    excolumns = config['excolumns'].split(',') if config['excolumns'] else []
+    records   = config['records'].split(',')
+    exrecords = config['exrecords'].split(',') if config['exrecords'] else []
+
+    (incl_rec_slicer,
+     excl_rec_slicer,
+     incl_col_slicer,
+     excl_col_slicer) = setup_slicer(config['infiles'], dialect, records, exrecords, columns, excolumns)
+
+    rec_cnt = 0
+    if config['infiles'] == '-':
+        if not os.isatty(0):
+            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
+            reader = csv.reader(input_stream, dialect=dialect)
+            processor(reader, writer, rec_cnt, incl_rec_slicer, excl_rec_slicer,
+                      incl_col_slicer, excl_col_slicer)
+        else:
+            print('ERROR: stdin but isatty!')
             sys.exit(0)
-
-    if files:
-        for filename in files:
-            with open(filename, 'rt', newline='', encoding='utf-8') as infile:
-                reader = csv.reader(infile, dialect=dialect)
-                processor(reader)
-    elif not os.isatty(0):
-        input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
-        reader = csv.reader(input_stream, dialect=dialect)
-        processor(reader)
     else:
-        print('ERROR: no data found')
+        for infile in config['infiles']:
+            with open(infile, 'rt', newline='', encoding='utf-8') as inf:
+                reader = csv.reader(inf, dialect=dialect)
+                processor(reader, writer, rec_cnt, incl_rec_slicer, excl_rec_slicer,
+                          incl_col_slicer, excl_col_slicer)
 
-
-    if opts.output != '-':
+    if config['outfile'] != '-':
         outfile.close()
 
     return 0
 
 
 
+def processor(reader, writer, rec_cnt, incl_rec_slicer, excl_rec_slicer,
+              incl_col_slicer, excl_col_slicer) -> None:
+    try:
+        for rec in reader:
+            new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
+                                  rec, incl_col_slicer, excl_col_slicer)
+            if new_rec:
+                write_rec(writer, new_rec, rec_cnt)
+            rec_cnt += 1
+    except file_type.IOErrorEmptyFile:
+        print('ERROR: empty file')
+        sys.exit(0)
+    return rec_cnt
 
-#fixme: figure out typing: argparse namespace
-def get_input_file_info(input_files: List[str], opts: Any) -> csvhelper.Dialect:
+
+
+def get_input_file_info(infiles: List[str],
+                        delimiter: str,
+                        quoting: str,
+                        quotechar: str,
+                        has_header: bool) -> csvhelper.Dialect:
     """ Sets up input files based upon options and files.
 
         Supports manual csv dialect creation - which is necessary
@@ -167,95 +184,75 @@ def get_input_file_info(input_files: List[str], opts: Any) -> csvhelper.Dialect:
         Otherwise, it will attempt to use the automatic dialect
         detection - which only works for files passed in as args,
         which show up here as the input arg files.
-
-        Inputs:
-            - files
-            - opts
-        Returns:
-            - dialect
     """
-    if opts.delimiter:
-        dialect = csvhelper.Dialect(delimiter=opts.delimiter,
-                                    has_header=False,
-                                    quoting=file_type.get_quote_number(opts.quoting),
-                                    quotechar='"',
+    if delimiter:
+        dialect = csvhelper.Dialect(delimiter=delimiter,
+                                    has_header=has_header,
+                                    quoting=file_type.get_quote_number(quoting),
+                                    quotechar=quotechar,
                                     lineterminator='\n')
     else:
-        assert input_files
-        my_file = file_type.FileTyper(input_files[0])
-        try:
-            dialect = my_file.analyze_file()
-        except file_type.IOErrorEmptyFile:
-            raise
-
-    if debug:
-        print('---- input dialect -----')
-        pp(vars(dialect))
+        for infile in infiles:
+            my_file = file_type.FileTyper(infile)
+            try:
+                dialect = my_file.analyze_file()
+                break
+            except file_type.IOErrorEmptyFile:
+                raise
 
     return dialect
 
 
 
-#fixme: figure out typing: argparse namespace
-def get_output_file_info(opts: Any,
+def get_output_file_info(outfile: str,
                          dialect: csv.Dialect) -> Tuple[IO[Any], Any]:
     """ Sets up output file based upon options:
         Returns output file object
     """
-    outfile: IO[Any] = None
-    if opts.output == '-':
-        outfile = sys.stdout
+    outfile_obj: IO[Any] = None
+    if outfile == '-':
+        outfile_obj = sys.stdout
     else:
-        outfile = open(opts.output, "wt", encoding='utf-8')
+        outfile_obj = open(outfile, "wt", encoding='utf-8')
 
-    csv_writer = csv.writer(outfile, dialect=dialect)
-    return outfile, csv_writer
+    writer = csv.writer(outfile_obj, dialect=dialect)
+    return outfile_obj, writer
 
 
 
-#fixme: figure out typing: argparse namespace
-def setup_slicer(opts,
-                 files: List[str],
-                 dialect: csv.Dialect) \
-    -> Tuple[slicer.SpecProcessor,
-             slicer.SpecProcessor,
-             slicer.SpecProcessor,
-             slicer.SpecProcessor]:
+def setup_slicer(infiles: List[str],
+                 dialect: csv.Dialect,
+                 records: List[str],
+                 exrecords: List[str],
+                 columns: List[str],
+                 excolumns: List[str]) -> Tuple[slicer.SpecProcessor,
+                                                slicer.SpecProcessor,
+                                                slicer.SpecProcessor,
+                                                slicer.SpecProcessor]:
     """  Sets up the 4 slicer objects: inclusion & exclusion for
          rec and column.
 
          Then counts records and columns if negative slice references
          exist and calls the spec adjuster.
-         Args:
-            - opts
-            - files
-            - dialect
-         Returns:
-            - incl_rec_slicer
-            - excl_rec_slicer
-            - incl_col_slicer
-            - excl_col_slicer
     """
-    incl_rec_slicer = slicer.SpecProcessor(opts.records,   'incl_rec_spec')
-    excl_rec_slicer = slicer.SpecProcessor(opts.exrecords, 'excl_rec_spec')
-    incl_col_slicer = slicer.SpecProcessor(opts.columns,   'incl_col_spec')
-    excl_col_slicer = slicer.SpecProcessor(opts.excolumns, 'excl_col_spec')
+    incl_rec_slicer = slicer.SpecProcessor(records,   'incl_rec_spec')
+    excl_rec_slicer = slicer.SpecProcessor(exrecords, 'excl_rec_spec')
+    incl_col_slicer = slicer.SpecProcessor(columns,   'incl_col_spec')
+    excl_col_slicer = slicer.SpecProcessor(excolumns, 'excl_col_spec')
 
     rec_cnt = None
-    col_cnt = None
     if incl_rec_slicer.has_negatives or excl_rec_slicer.has_negatives:
-        if not files and not opts.rec_count:
-            raise ValueError('ERROR: negative record slicing with stdin requires record_count option')
-        else:
-            rec_cnt, col_cnt = get_file_counts(files, dialect, get_rec_cnt=True)
+        if infiles == '-':
+            raise ValueError('ERROR: negative record slicing with stdin')
+        rec_cnt = get_rec_count(infiles, dialect)
     incl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
     excl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
 
+    col_cnt = None
     if incl_col_slicer.has_negatives or excl_col_slicer.has_negatives:
-        if not files and not opts.column_count:
-            raise ValueError('negative column slicing with stdin requires column_count option')
-        elif not col_cnt:
-            dummy, col_cnt = get_file_counts(files, dialect, get_col_cnt=True)
+        if infiles == '-':
+            raise ValueError('negative column slicing with stdin')
+        col_cnt = get_col_count(infiles, dialect)
     incl_col_slicer.spec_adjuster(loc_max=col_cnt)
     excl_col_slicer.spec_adjuster(loc_max=col_cnt)
 
@@ -263,33 +260,29 @@ def setup_slicer(opts,
 
 
 
-def get_file_counts(files: List[str],
-                    dialect: csv.Dialect,
-                    get_rec_cnt: bool = False,
-                    get_col_cnt: bool = False) -> Tuple[Optional[int], int]:
-    """ Gets record and column counts for input files.
+def get_rec_count(files: List[str],
+                  dialect: csv.Dialect) -> Tuple[Optional[int], int]:
+    """ Gets record counts for input files.
         - Counts have an offset of 0
-        - if rec is True then it will read entire input file to get
-          record count, and return that plus the number of fields
-          based off the last record.
-        - if rec is False, then it will read just the first record to
-          get a field count.  And it will return None for rec count,
-          and the field count from the first record.
     """
-    assert get_rec_cnt is True or get_col_cnt is True
     rec_cnt = -1
-    for record in csv.reader(fileinput.input(files), dialect):
+    for _ in csv.reader(fileinput.input(files), dialect):
         rec_cnt += 1
+    fileinput.close()
+    return rec_cnt
+
+
+
+def get_col_count(files: List[str],
+                  dialect: csv.Dialect) -> int:
+    """ Gets column counts for input files.
+        - Counts have an offset of 0
+    """
+    for record in csv.reader(fileinput.input(files[0]), dialect):
         field_cnt = len(record) -1
-        if not get_rec_cnt and rec_cnt > -1:
-            break
-    if get_rec_cnt:
-        return rec_cnt, field_cnt
-    elif get_col_cnt:
-        return None, field_cnt
-    else:
-        print('logic error in get_file_counts - ')
-        sys.exit(1)
+        break
+    fileinput.close()
+    return field_cnt
 
 
 
@@ -366,91 +359,60 @@ def write_rec(outfile: Any, fields: List[str], row_cnt: int) -> None:
 
 
 
-# fixme: typing
-def get_opts_and_args() -> Tuple[optparse.Values, List[str]]:
-    """ gets opts & args and returns them
-        Input:
-            - command line args & options
-        Output:
-            - opts dictionary
-            - args dictionary
-    """
-    use = ("%prog is used to extract column and row subsets out of files "
-           "and write them out to stdout or a given filename: \n"
-           " \n"
-           "   %prog [file] [misc options]")
-    parser = optparse.OptionParser(usage = use)
+class SlicerConfigulator(configulator.Config):
 
-    parser.add_option('--long-help',
-                      default=False,
-                      action='store_true',
-                      help='Print more verbose help')
-    parser.add_option('-o', '--output',
-                      default='-',
-                      help='Specifies the output file.  The default is stdout.  Note that'
-                           'if a filename is provided the program will override any '
-                           'file of that name.')
-    parser.add_option('-c', '--columns',
-                      default=':',
-                      help=('Specify the columns to include via a comma-separated list of '
-                            'columns and colon-separated pairs of column start & '
-                            'stop ranges. The default is to include all columns (":"). '))
-    parser.add_option('-C', '--excolumns',
-                      help=('Specify the columns to exclude via a comma-separated list of '
-                            'columns and colon-separated pairs of column start & '
-                            'stop ranges.  The default is to exclude nothing. '))
-    parser.add_option('-r', '--records',
-                      default=':',
-                      help=('Specify the records to include via a comma-separated list of '
-                            'record numbers and colon-separated pairs of record start & '
-                            'stop ranges.  The default is to include all records (":").'))
-    parser.add_option('-R', '--exrecords',
-                      help=('Specify the records to exclude via a comma-separated list of '
-                            'record numbers and colon-separated pairs of record start & '
-                            'stop ranges.  The default is to exclude nothing. '))
-    parser.add_option('-d', '--delimiter',
-                      help=('Specify a quoted single-column field delimiter. This may be '
-                            'determined automatically by the program in some cases.  But'
-                            ' stdin requires this to be provided, and automatic detection'
-                            ' can also sometimes get confused.  If you provide the delimiter'
-                            ' then you should also provide the quoting instruction.'))
-    parser.add_option('-q', '--quoting',
-                      choices=('quote_all', 'quote_minimal', 'quite_nonnumeric', 'quote_none'),
-                      default='quote_none',
-                      help='Specify field quoting - used for stdin or when automatic detection '
-                           'fails.   The default is quote_none')
-    parser.add_option('--debug',
-                      default=False,
-                      action='store_true',
-                      help='Print debugging info')
+    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
+        if not config['delimiter'] and config['infiles'] == '-':
+            self.parser.error('Provide delimiter and quoting when piping data into program via stdin')
 
-    (opts, files) = parser.parse_args()
 
-    if opts.long_help:
-        print(__doc__)
-        sys.exit(0)
 
-    if not opts.delimiter:
-        if not files:
-            parser.error('Provide delimiter and quoting when piping data into program via stdin')
+def get_args() -> Dict[str, Any]:
+    config_mgr = SlicerConfigulator(NAME, SHORT_HELP, __doc__)
+    config_mgr.add_standard_config('infiles')
+    config_mgr.add_standard_config('outfile')
+    config_mgr.add_standard_config('delimiter')
+    config_mgr.add_standard_config('quoting')
+    config_mgr.add_standard_config('quotechar')
+    config_mgr.add_standard_config('escapechar')
+    config_mgr.add_standard_config('has_header')
+    config_mgr.add_custom_config(name='columns',
+                                 short_name='c',
+                                 arg_type='option',
+                                 default=':',
+                                 config_type=str,
+                                 help_msg='Specify the columns to include via a comma-separated '
+                                          'list of columns and colon-separated pairs of column '
+                                          'start & stop ranges. Default is to include all '
+                                          'columns (":"). ')
+    config_mgr.add_custom_config(name='excolumns',
+                                 short_name='C',
+                                 arg_type='option',
+                                 default='',
+                                 config_type=str,
+                                 help_msg='Specify the columns to exclude via a comma-separated '
+                                          'list of columns and colon-separated pairs of column '
+                                          'start & stop ranges.  Default is to exclude nothing.')
+    config_mgr.add_custom_config(name='records',
+                                 short_name='r',
+                                 arg_type='option',
+                                 default=':',
+                                 config_type=str,
+                                 help_msg='Specify the records to include via a comma-separated '
+                                          'list of record numbers and colon-separated pairs of '
+                                          'record start & stop ranges.  Default is to include all '
+                                          'records (":").')
+    config_mgr.add_custom_config(name='exrecords',
+                                 short_name='R',
+                                 arg_type='option',
+                                 default='',
+                                 config_type=str,
+                                 help_msg='Specify the records to exclude via a comma-separated list '
+                                          'of record numbers and colon-separated pairs of record '
+                                          'start & stop ranges.  Default is to exclude nothing.')
+    config_mgr.process_configs()
+    return config_mgr.config
 
-    def lister(arg_string: str) -> List[str]:
-        """ converts input commma-delimited string into a list
-        """
-        if arg_string:
-            if ',' in arg_string:
-                return arg_string.split(',')
-            else:
-                return [arg_string]
-        else:
-            return []
-
-    opts.columns   = lister(opts.columns)
-    opts.excolumns = lister(opts.excolumns)
-    opts.records   = lister(opts.records)
-    opts.exrecords = lister(opts.exrecords)
-
-    return opts, files
 
 
 

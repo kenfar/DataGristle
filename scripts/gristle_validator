@@ -127,7 +127,6 @@ def main() -> int:
     """
     args = get_args()
 
-    #----- set up files
     input_handler = InputHandler(args.files,
                                  args.delimiter,
                                  args.quoting,
@@ -145,19 +144,17 @@ def main() -> int:
                                    args.silent,
                                    args.randomout)
 
-    #----- set up validation info
+
     rec_schema = load_schema(args.valid_schema)
     rec_validator = RecValidator(valid_field_cnt=args.field_cnt,
                                  rec_schema=rec_schema)
 
-    #----- run all checks -----
     invalid_cnt = process_all_records(input_handler,
                                       outgood_handler,
                                       outerr_handler,
                                       rec_validator,
                                       args.stats)
 
-    #----- housekeeping -----
     outgood_handler.close()
     outerr_handler.close()
 
