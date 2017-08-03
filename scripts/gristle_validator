@@ -17,7 +17,6 @@ usage: gristle_validator [-h]
                          [-d DELIMITER]
                          [--quoting QUOTING]
                          [--quotechar QUOTECHAR]
-                         [--recdelimiter RECDELIMITER]
                          [--hasheader]
                          [--schemaid SCHEMA_ID]
                          [--validschema VALID_SCHEMA] [-s]
@@ -54,8 +53,6 @@ optional arguments:
   --quotechar QUOTECHAR
                         Specify field quoting character - generally only used
                         for stdin data.  Default is double-quote
-  --recdelimiter RECDELIMITER
-                        Specify a quoted end-of-record delimiter.
   --hasheader           Indicates that there is a header in the file.
                         Validation will mostly ignore the header.
   --hasnoheader         Indicates that there is no header in the file.
@@ -110,6 +107,7 @@ import yaml
 import datagristle.file_type as file_type
 import datagristle.common as common
 import datagristle.csvhelper as csvhelper
+import datagristle.file_io as file_io
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
@@ -127,22 +125,25 @@ def main() -> int:
     """
     args = get_args()
 
-    input_handler = InputHandler(args.files,
-                                 args.delimiter,
-                                 args.quoting,
-                                 args.quotechar,
-                                 args.recdelimiter,
-                                 args.hasheader)
-    outgood_handler = OutputHandler(input_handler.dialect,
-                                    args.outgood,
-                                    sys.stdout,
-                                    args.silent,
-                                    args.randomout)
-    outerr_handler = OutputHandler(input_handler.dialect,
-                                   args.outerr,
-                                   sys.stderr,
-                                   args.silent,
-                                   args.randomout)
+    try:
+        input_handler = file_io.InputHandler(args.files,
+                                            args.delimiter,
+                                            args.quoting,
+                                            args.quotechar,
+                                            args.hasheader)
+    except EOFError:
+        return errno.ENODATA  # is a 61 on linux
+
+    outgood_handler = file_io.OutputHandler(args.outgood,
+                                            input_handler.dialect,
+                                            sys.stdout,
+                                            args.silent,
+                                            args.randomout)
+    outerr_handler = file_io.OutputHandler(args.outerr,
+                                           input_handler.dialect,
+                                           sys.stderr,
+                                           args.silent,
+                                           args.randomout)
 
 
     rec_schema = load_schema(args.valid_schema)
@@ -155,12 +156,13 @@ def main() -> int:
                                       rec_validator,
                                       args.stats)
 
+    input_handler.close()
     outgood_handler.close()
     outerr_handler.close()
 
     if invalid_cnt > 0:
         return errno.EBADMSG  # is a 74 on linux
-    elif input_handler.rec_cnt == 0:
+    elif input_handler.rec_cnt == 0:  # catches empty stdin
         return errno.ENODATA  # is a 61 on linux
     else:
         return 0
@@ -200,10 +202,11 @@ def process_all_records(input_handler: 'InputHandler',
 
         if valid_rec:
             valid_cnt += 1
-            outgood_handler.write(rec)
+            outgood_handler.write_rec(rec)
         else:
             invalid_cnt += 1
-            outerr_handler.write(rec, common.coalesce(field_cnt_msg, schema_msg))
+            rec.append(common.coalesce(field_cnt_msg, schema_msg))
+            outerr_handler.write_rec(rec)
 
     write_stats(stats,
                 input_handler.rec_cnt,
@@ -233,121 +236,6 @@ def load_schema(schema_file: str) -> Optional[Dict[Any, Any]]:
         schema_dict = yaml.safe_load(schema_file)
     return schema_dict
 
-
-
-class OutputHandler(object):
-    """ Handles all aspects of writing to output files: opening file,
-        writing records, managing random writes, keeping counts,
-        closing the file, etc.
-    """
-
-    def __init__(self,
-                 dialect: csvhelper.Dialect,
-                 arg_output: str,
-                 default_output,
-                 silent: bool,
-                 randomout: int):
-        """ Performs initial housekeeping on output handling:
-               - validates args
-               - sets output to either stdout or a file
-               - sets up writing through cvs module.
-        """
-
-        assert silent in [True, False]
-        assert 100 >= randomout >= -1
-        self.silent = silent
-        self.randomout = randomout
-        if arg_output == '-':
-            self.outfile = default_output
-        else:
-            self.outfile = open(arg_output, "w")
-        self.writer = csv.writer(self.outfile, dialect=dialect)
-
-    def write(self, record: List[str], msg: str = None) -> None:
-        """ Write a record to output.
-            If silent arg was provided, then write is suppressed.
-            If randomout arg was provided, then randomly determine
-               whether or not to write record.
-        """
-        if self.silent:
-            return
-        if self.randomout > -1:
-            if random.randint(1, 100) > self.randomout:
-                return
-        if msg:
-            record.append(msg)
-
-        try:
-            self.writer.writerow(record)
-        except csv.Error:
-            print('Invalid record: %s' % record)
-            raise
-
-    def close(self):
-        self.outfile.close()
-
-
-
-
-class InputHandler(object):
-
-    def __init__(self,
-                 files: List[str],
-                 delimiter: Optional[str] = None,
-                 quoting: Optional[str] = None,
-                 quotechar: Optional[str] = None,
-                 recdelimiter: Optional[str] = None,
-                 hasheader: Optional[bool] = None):
-
-        self.files = files
-        self.files_read = 0
-        self.rec_cnt = 0
-        # look at updated code
-        # should probably do:
-        # a. use explicitely provided values if available
-        # b. use values from metadata if available
-        # c. use values from analysis of file - if len(files) == 1
-        #self.dialect = self._get_dialect(files, delimiter, quoting, quotechar,
-        #                                 recdelimiter, hasheader)
-        self.dialect = file_type.get_dialect(files,
-                                             delimiter,
-                                             quoting,
-                                             quotechar,
-                                             recdelimiter,
-                                             hasheader)
-        if files[0] == '-':
-            if os.isatty(0):  # checks if data was pipped into stdin
-                #raise ValueError, "No files or stdin provided"
-                sys.exit(errno.ENODATA)
-            else:
-                self.infile = sys.stdin
-                self.files_read = 1
-        else:
-            self.infile = open(files[0], 'r')
-            self.files_read = 1
-        self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        """ Returns the next input record.   Can handle data piped in as well
-            as multiple input files.   All data is assumed to be csv files.
-        """
-        try:
-            rec = self.csv_reader.__next__()
-            self.rec_cnt += 1
-        except StopIteration:
-            if self.files_read < len(self.files): # another file to read!
-                self.files_read += 1
-                self.infile = self.files[self.files_read - 1]
-                self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
-                rec = self.csv_reader.next()
-                self.rec_cnt += 1
-            else:
-                raise
-        else:
-            return rec
 
 
 
@@ -647,8 +535,6 @@ def get_args() -> argparse.Namespace:
                         default='"',
                         help='Specify field quoting character - generally only used for '
                              'stdin data.  Default is double-quote')
-    parser.add_argument('--recdelimiter',
-                        help='Specify a quoted end-of-record delimiter. ')
     parser.add_argument('--hasheader',
                         dest='hasheader',
                         default=None,
@@ -677,8 +563,8 @@ def get_args() -> argparse.Namespace:
                         action='store_true',
                         help='Causes pgm to print no stats, no valid or invalid recs.  Default is off.')
     parser.add_argument('--randomout',
-                        default=-1,
-                        type=int,
+                        default=1.0,
+                        type=float,
                         help='Causes pgm to write only a percentage of records out.')
     parser.add_argument('--errmsg',
                         default=False,
@@ -704,8 +590,8 @@ def get_args() -> argparse.Namespace:
         if len(args.files) > 1 and not args.delimiter:
             parser.error('Please provide delimiter when reading multiple input files')
 
-    if args.randomout > 100 or args.randomout < -1:
-        parser.error('Valid values for randomout are from 0 to 100')
+    if args.randomout > 1.0 or args.randomout < 0.0:
+        parser.error('Valid values for randomout are from 0.0 to 1.0')
 
 
     return args
