@@ -3,24 +3,33 @@
     displayed as labels to the left of the field values.  Also allows simple
     navigation between records.
 
-    Arguments & Options:
-      <filename>            Can be more or more csv files.  Stdin is not supported.
-       --long-help          Print verbose help and exit.
-      -o, --output=<fn>     Specify the output file.  The default is stdout.
-      -r, --recnum=<int>    Specify the record number to display.  Starts with an offset of
-                            0, defaults to 1.
-      -d, --delimiter=<del> Specify a single-character field delimiter.  Typically
-                            useful if automatic csv dialect detection fails to correctly
-                            interpret file. If provided then quoting should also be provided.
-       -q, --quoting=<qt>   Specify quoting behavior.  Typically used when automatic
-                            csv dialect detection fails.  Values:
-                               - quote_all - all fields are quoted
-                               - quote_none - no fields are quoted.  This is the
-                                 default used if the delimiter is overridden.
-                               - quote_minimal - only quoting of fields with
-                                 special characters.
-                               - quote_nonnumeric - only quotes text fields.
-       -h, --help           Print help and exit.
+    usage: View one record at a time from a csv formatted with headers
+
+        [-h] [-i [INFILES [INFILES ...]]] [-o OUTFILE] [-d DELIMITER]
+        [-q {quote_all,quote_minimal,quote_nonnumeric,quote_none}]
+        [--quotechar QUOTECHAR] [--escapechar ESCAPECHAR] [--has-header]
+        [-r RECNUM] [-V] [--long-help]
+
+    optional arguments:
+    -h, --help            show this help message and exit
+    -i [INFILES [INFILES ...]], --infiles [INFILES [INFILES ...]]
+                            input filenames or default to for stdin
+    -o OUTFILE, --outfile OUTFILE
+                            output filename or '-' for stdout (the default)
+    -d DELIMITER, --delimiter DELIMITER
+                            csv delimiter
+    -q {quote_all,quote_minimal,quote_nonnumeric,quote_none}, --quoting {quote_all,quote_minimal,quote_nonnumeric,quote_none}
+                            csv quoting
+    --quotechar QUOTECHAR
+                            csv quotechar
+    --escapechar ESCAPECHAR
+                            csv escapechar
+    --has-header          csv dialect - indicates header exists
+    -r RECNUM, --recnum RECNUM
+                            Displays this record number based on 0 offset,
+                            defaulting to 1
+    -V, --version         show version number then exit
+    --long-help           Print more verbose help
 
     Examples:
        $ gristle_viewer sample.csv -r 3
@@ -42,81 +51,78 @@
 #           to speed navigation for files.
 #       3.  confirm that record counting works identical for each situation
 #       5.  improve error if no args provided - recommend -h for help
-#       6.  fix broken pipes in this program or others
 
 import sys
-import optparse
 import csv
 import fileinput
-import os
+from os.path import basename
 from pprint import pprint as pp
-from typing import List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple
 from signal import signal, SIGPIPE, SIG_DFL
 
-import datagristle.file_type           as file_type
+import datagristle.file_type as file_type
 import datagristle.field_determinator  as field_determinator
-import datagristle.field_type          as field_type
+import datagristle.field_type as field_type
+import datagristle.configulator as configulator
+import datagristle.csvhelper as csvhelper
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
-
-debug = False
+NAME = basename(__file__)
+SHORT_HELP = 'View one record at a time from a csv formatted with headers\n'
 
 
 def main():
     """ Analyzes file then displays a single record and allows simple
         navigation between records.
     """
-    (opts, files) = get_opts_and_args()
-
-    if not os.path.exists(files[0]):
-        print('ERROR: file %s does not exist' % files[0])
-        sys.exit(1)
-    if len(files) == 1:
-        try:
-            if os.path.getsize(files[0]) == 0:
-                print('ERROR: file %s is empty' % files[0])
-                sys.exit(1)
-        except OSError:
-            print('ERROR: file %s has issues' % files[0])
-            sys.exit(1)
-
-    dialect, my_fields = get_input_file_info(files, opts)
+    config = get_args()
+    try:
+        dialect, field_names = get_input_file_info(config['infiles'],
+                                                   config['delimiter'],
+                                                   config['quoting'],
+                                                   config['quotechar'],
+                                                   config['has_header'])
+    except file_type.IOErrorEmptyFile:
+        print('ERROR: empty file')
+        sys.exit(0)
 
     while True:
-        rec = get_rec(files,
-                      opts.recnum,
+        rec = get_rec(config['infiles'],
+                      config['recnum'],
                       dialect)
         if rec is None:
             print('No record found')
             return
 
-        display_rec(rec, my_fields, opts.output)
+        display_rec(rec, field_names, config['outfile'])
 
         # Need to end here if data is being directed to a file - and not interactive
-        if opts.output:
+        if config['outfile'] != '-':
             break
 
-        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % opts.recnum).lower()
+        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % config['recnum']).lower()
         if response == 'q':
             break
         elif response == 'p':
-            opts.recnum -= 1
+            config['recnum'] -= 1
         elif response == 'n':
-            opts.recnum += 1
+            config['recnum'] += 1
         elif response == 't':
-            opts.recnum = 0
+            config['recnum'] = 0
         elif field_type._get_type(response) == 'integer':
-            opts.recnum = int(response)
+            config['recnum'] = int(response)
         else:
             print('Invalid response, please enter q, p, n, t, or a specific record number')
 
 
 
-#fixme: typing
-def get_input_file_info(input_files: List[str], opts) \
-        -> Tuple[csv.Dialect, field_determinator.FieldDeterminator]:
+def get_input_file_info(input_files: List[str],
+                        delimiter: str,
+                        quoting: str,
+                        quotechar: str,
+                        has_header: bool) -> Tuple[csvhelper.Dialect, List[str]]:
     """ Gets information about csv dialect and field info from input files
         and user-supplied options.
 
@@ -129,24 +135,27 @@ def get_input_file_info(input_files: List[str], opts) \
         detection - which only works for files passed in as args,
         which show up here as the input arg files.
 
-        Inputs:
-            - files
-            - opts
         Returns:
             - dialect
-            - my_fields
+            - field_names
         Raises:
             - file_type.IOErrorEmptyFile
     """
     assert input_files
-    my_file = file_type.FileTyper(input_files[0],
-                                  delimiter=opts.delimiter,
-                                  quoting=opts.quoting)
-    dialect = my_file.analyze_file()
 
-    if debug:
-        print('---- input dialect -----')
-        pp(vars(dialect))
+    my_file = file_type.FileTyper(input_files[0],
+                                  delimiter=delimiter,
+                                  quoting=quoting)
+
+    if delimiter:
+        dialect = csvhelper.Dialect(delimiter=delimiter,
+                                    has_header=has_header,
+                                    quoting=file_type.get_quote_number(quoting),
+                                    quotechar=quotechar,
+                                    lineterminator='\n')
+        my_file.analyze_file()
+    else:
+        dialect = my_file.analyze_file()
 
     my_fields = field_determinator.FieldDeterminator(input_files[0],
                                                      my_file.format_type,
@@ -155,43 +164,40 @@ def get_input_file_info(input_files: List[str], opts) \
                                                      dialect)
     my_fields.analyze_fields()
 
-    return dialect, my_fields
+    return dialect, my_fields.field_names
 
 
 
 def display_rec(rec: str,
-                my_fields: field_determinator.FieldDeterminator,
+                field_names: List[str],
                 outfile_name: str) -> None:
     """ Displays a single record
     """
     # figure out label length for formatting:
-    field_names: List[str] = []
-    if my_fields:
+    if field_names:
         max_v_len = 0
-        for val in my_fields.field_names.values():
+        for val in field_names.values():
             if len(val) > max_v_len:
                 max_v_len = len(val)
         min_format_len = max_v_len + 4
-        field_names = my_fields.field_names
     else:
-        for sub in range(len(rec)):
-            field_names.append('field_%d' % sub)
+        for f_sub in range(len(rec)):
+            field_names.append('field_%d' % f_sub)
         min_format_len = 12
 
-    if outfile_name:
+    if outfile_name != '-':
         outfile = open(outfile_name, 'w')
     else:
         outfile = sys.stdout
 
     # write in column order:
-    for sub in range(len(rec)):
+    for f_sub in range(len(rec)):
         try:
-            outfile.write('%-*s  -  %-40s\n' % (min_format_len, field_names[sub], rec[sub]))
+            outfile.write('%-*s  -  %-40s\n' % (min_format_len, field_names[f_sub], rec[f_sub]))
         except KeyError:
             outfile.write('*** Missing Field - possibly due to csv parsing issues ***\n')
 
-    # don't close stdout
-    if outfile_name:
+    if outfile_name != '-':
         outfile.close()
 
 
@@ -208,57 +214,36 @@ def get_rec(files: List[str], recnum: int, dialect: csv.Dialect) -> Optional[Lis
     """
     found = None
     for row in csv.reader(fileinput.input(files), dialect):
-        if fileinput.lineno() == recnum:
+        if fileinput.lineno() == recnum+1:
             found = row
             break
     fileinput.close()
     return found
 
 
+class ViewerConfigulator(configulator.Config):
+    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
+        if config['infiles'] == '-':
+            self.parser.error('An input filename is required')
 
 
-
-def get_opts_and_args():
-    """ gets opts & args and returns them
-        Input:
-            - command line args & options
-        Output:
-            - opts dictionary
-            - args dictionary
-    """
-    use = ("The %prog is used to view data one record at a time. \n"
-           "   %prog  [file] -q -v -h --delimiter [value] "
-           "--recnum [value] \n")
-
-    parser = optparse.OptionParser(usage=use)
-    parser.add_option('--long-help',
-                      default=False,
-                      action='store_true',
-                      help='Print more verbose help')
-    parser.add_option('-o', '--output',
-                      help='Specifies the output file, defaults to stdout.')
-    parser.add_option('-r', '--recnum',
-                      default=1,
-                      type=int,
-                      help='display this record number, start at 0, default to 1')
-    parser.add_option('-d', '--delimiter',
-                      help='Specify a quoted field delimiter. ')
-    parser.add_option('-q', '--quoting',
-                      choices=('quote_all', 'quote_minimal', 'quite_nonnumeric', 'quote_none'),
-                      default='quote_none',
-                      help='Specify field quoting - used when automatic detection '
-                           'fails.   The default is quote_none')
-
-    (opts, files) = parser.parse_args()
-
-    if opts.long_help:
-        print(__doc__)
-        sys.exit(0)
-
-    if not files:
-        parser.error('Please provide the files to view as an argument')
-
-    return opts, files
+def get_args() -> Dict[str, Any]:
+    config_mgr = ViewerConfigulator(NAME, SHORT_HELP, __doc__)
+    config_mgr.add_standard_config('infiles')
+    config_mgr.add_standard_config('outfile')
+    config_mgr.add_standard_config('delimiter')
+    config_mgr.add_standard_config('quoting')
+    config_mgr.add_standard_config('quotechar')
+    config_mgr.add_standard_config('escapechar')
+    config_mgr.add_standard_config('has_header')
+    config_mgr.add_custom_config(name='recnum',
+                                 short_name='r',
+                                 arg_type='option',
+                                 default=0,
+                                 config_type=int,
+                                 help_msg='Displays this record number based on 0 offset, defaulting to 1')
+    config_mgr.process_configs()
+    return config_mgr.config
 
 
 

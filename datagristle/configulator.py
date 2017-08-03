@@ -53,12 +53,22 @@ STANDARD_CONFIGS['escapechar'] = {'default': None,
                                   'required': True,
                                   'help': 'csv escapechar',
                                   'type': str,
+                                  'arg_type': 'option',
                                   'arg_type': 'option'}
 STANDARD_CONFIGS['has_header'] = {'default': False,
                                   'required': True,
                                   'help': 'csv dialect - indicates header exists',
                                   'type': bool,
+                                  'arg_type': 'option',
+                                  'action': 'store_true',
                                   'arg_type': 'option'}
+STANDARD_CONFIGS['has_no_header'] = {'default': None,
+                                     'required': True,
+                                     'help': 'csv dialect - indicates header exists',
+                                     'type': bool,
+                                     'arg_type': 'option',
+                                     'action': 'store_false',
+                                     'dest': 'has_header'}
 ARG_ONLY_CONFIGS = ['version', 'long_help']
 
 VALID_ARG_TYPES = ('argument', 'option')
@@ -153,8 +163,11 @@ class Config(object):
                 elif property_name == 'max_length':
                     if not int(property_value):
                         raise ValueError(f"{arg}.max_length is not an int")
+                elif property_name == 'action':
+                    if property_value not in ('store_true', 'store_false'):
+                        raise ValueError(f"{arg}.action is not either 'store_true' or 'store_false'")
                 else:
-                    raise ValueError(f'unknown meta_config property: {property}')
+                    raise ValueError(f'unknown meta_config property: {property_name}')
 
 
     def _get_arg_config(self, desc: str) -> CONFIG_TYPE:
@@ -178,11 +191,15 @@ class Config(object):
                 kwargs['nargs'] = self.meta_config[key]['nargs']
 
             kwargs['help'] = self.meta_config[key]['help']
-            kwargs['type'] = self.meta_config[key]['type']
             if 'choices' in self.meta_config[key]:
                 kwargs['choices'] = self.meta_config[key]['choices']
-            if 'action' in self.meta_config[key]:
-                kwargs['action'] = self.meta_config[key]['action']
+            if self.meta_config[key]['type'] is bool:
+                if 'action' in self.meta_config[key]:
+                    kwargs['action'] = self.meta_config[key]['action']
+                if 'dest' in self.meta_config[key]:
+                    kwargs['dest'] = self.meta_config[key]['dest']
+            else:
+                kwargs['type'] = self.meta_config[key]['type'] # don't include type for booleans
 
             self.parser.add_argument(*args, **kwargs)
 
@@ -213,7 +230,14 @@ class Config(object):
         for envkey, envval in os.environ.items():
             if envkey in ['%s_' % self.name + x for x in self.meta_config.keys()]:
                 short_key = envkey[len('%s_' % self.name):]
-                env_config[short_key] = self.meta_config[short_key]['type'](envval)
+                if self.meta_config[short_key]['type'] is bool:
+                    if self.meta_config[short_key]['dest'] == short_key:
+                        # issue: assumes env true/false matches meta_config 'store_true'/'store_false'
+                        env_config[short_key] = self.meta_config[short_key]['type'](envval)
+                    else:
+                        pass # ignore booleans used to reverse a different boolean
+                else:
+                    env_config[short_key] = self.meta_config[short_key]['type'](envval)
         return env_config
 
 

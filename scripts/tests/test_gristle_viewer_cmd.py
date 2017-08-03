@@ -53,7 +53,7 @@ class TestCommandLine(object):
         test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'ViewerTest'))
 
     def test_easy_file(self):
-        cmd = '%s %s -r 10 -o %s' % (fq_pgm, self.in_fqfn, self.out_fqfn)
+        cmd = '%s -i %s -r 9 -o %s' % (fq_pgm, self.in_fqfn, self.out_fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -89,7 +89,7 @@ class TestCommandLine(object):
         """
 
         p_outrecs = []
-        cmd = '%s %s -r 999 -o %s' % (fq_pgm, self.in_fqfn, self.out_fqfn)
+        cmd = '%s -i %s -r 999 -o %s' % (fq_pgm, self.in_fqfn, self.out_fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -103,7 +103,7 @@ class TestCommandLine(object):
 
 
     def test_empty_file(self):
-        cmd = "%s %s -o %s -r 999 " % (fq_pgm, self.empty_fqfn, self.out_fqfn)
+        cmd = "%s -i %s -o %s -r 999 " % (fq_pgm, self.empty_fqfn, self.out_fqfn)
         _ = envoy.run(cmd)
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
@@ -113,7 +113,7 @@ class TestCommandLine(object):
 
 
     def test_full_multiple_files(self):
-        cmd = "%s %s %s -o %s -r 10 -d','" % (fq_pgm, self.in_fqfn, self.in_fqfn, self.out_fqfn)
+        cmd = "%s -i %s %s -o %s -r 9 -d','" % (fq_pgm, self.in_fqfn, self.in_fqfn, self.out_fqfn)
         _ = envoy.run(cmd)
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
@@ -126,7 +126,7 @@ class TestCommandLine(object):
 
 
     def test_full_multiple_empty_files(self):
-        cmd = "%s %s %s -o %s -r 10 -d',' " % (fq_pgm, self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "%s -i %s %s -o %s -r 9 -d',' " % (fq_pgm, self.empty_fqfn, self.empty_fqfn, self.out_fqfn)
         _ = envoy.run(cmd)
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
@@ -137,7 +137,7 @@ class TestCommandLine(object):
 
     def test_full_multiple_empty_and_full_files(self):
         # NOTE: this test only passes if non-empty file is provided first!
-        cmd = "%s %s %s -o %s -r 10 -d','" % (fq_pgm, self.in_fqfn, self.empty_fqfn, self.out_fqfn)
+        cmd = "%s -i %s %s -o %s -r 9 -d','" % (fq_pgm, self.in_fqfn, self.empty_fqfn, self.out_fqfn)
         _ = envoy.run(cmd)
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
