@@ -63,7 +63,7 @@ class Test7x7File(object):
         opt = comm.coalesce(' ', f"{options}")
         pgm = fq_pgm  # get it local for string formatting
 
-        cmd = f'''{pgm} {in_fqfn}
+        cmd = f'''{pgm}  -i {in_fqfn}
                          -o {out_fqfn}
                          {irs}
                          {ers}
@@ -232,7 +232,7 @@ class TestEmptyFile(object):
     def test_empty_file(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = '%s %s -o %s -r 15:20' % (fq_pgm, self.empty_fqfn, self.out_fqfn)
+        cmd = '%s -i %s -o %s -r 15:20' % (fq_pgm, self.empty_fqfn, self.out_fqfn)
         r = envoy.run(cmd)
         print(r.std_out)
         print(r.std_err)
@@ -248,6 +248,8 @@ class TestEmptyFile(object):
         """
         cmd = "cat %s | %s -d ',' -o %s -r 15:20" % (self.empty_fqfn, fq_pgm, self.out_fqfn)
         r = envoy.run(cmd)
+        print(r.std_out)
+        print(r.std_err)
         assert r.status_code == 0
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
@@ -337,13 +339,13 @@ class TestCSVDialects(object):
 
 
         if runtype == 'arg':
-            arg_cmd = f'''{pgm}    {in_fqfn}
-                                    -o {out_fqfn}
-                                    {irs}
-                                    {ers}
-                                    {ics}
-                                    {ecs}
-                                    {opt}
+            arg_cmd = f'''{pgm} -i {in_fqfn}
+                                -o {out_fqfn}
+                                   {irs}
+                                   {ers}
+                                   {ics}
+                                   {ecs}
+                                   {opt}
                       '''
             rc, recs = run_cmd(arg_cmd)
         else:

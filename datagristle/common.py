@@ -131,7 +131,7 @@ class ArgProcessor(object):
                                  help='Specify escaping character - generally only used for '
                                       ' stdin data.  Default is "')
         self.parser.add_argument('--quoting',
-                                 choices=('quote_all', 'quote_minimal', 'quite_nonnumeric', 'quote_none'),
+                                 choices=('quote_all', 'quote_minimal', 'quote_nonnumeric', 'quote_none'),
                                  default='quote_none',
                                  help='Specify field quoting - generally only used for stdin data.'
                                       '  The default: is quote_none.')

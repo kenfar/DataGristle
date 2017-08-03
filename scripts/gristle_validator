@@ -127,7 +127,6 @@ def main() -> int:
     """
     args = get_args()
 
-    #----- set up files
     input_handler = InputHandler(args.files,
                                  args.delimiter,
                                  args.quoting,
@@ -145,19 +144,17 @@ def main() -> int:
                                    args.silent,
                                    args.randomout)
 
-    #----- set up validation info
+
     rec_schema = load_schema(args.valid_schema)
     rec_validator = RecValidator(valid_field_cnt=args.field_cnt,
                                  rec_schema=rec_schema)
 
-    #----- run all checks -----
     invalid_cnt = process_all_records(input_handler,
                                       outgood_handler,
                                       outerr_handler,
                                       rec_validator,
                                       args.stats)
 
-    #----- housekeeping -----
     outgood_handler.close()
     outerr_handler.close()
 
@@ -182,9 +179,7 @@ def process_all_records(input_handler: 'InputHandler',
     valid_cnt = 0
     invalid_cnt = 0
 
-    rec = input_handler.get_next()
-    while rec is not None:
-
+    for rec in input_handler:
         valid_rec = True
         field_cnt_msg = None
         schema_msg = None
@@ -209,8 +204,6 @@ def process_all_records(input_handler: 'InputHandler',
         else:
             invalid_cnt += 1
             outerr_handler.write(rec, common.coalesce(field_cnt_msg, schema_msg))
-
-        rec = input_handler.get_next()
 
     write_stats(stats,
                 input_handler.rec_cnt,
@@ -322,7 +315,6 @@ class InputHandler(object):
                                              quotechar,
                                              recdelimiter,
                                              hasheader)
-
         if files[0] == '-':
             if os.isatty(0):  # checks if data was pipped into stdin
                 #raise ValueError, "No files or stdin provided"
@@ -335,7 +327,10 @@ class InputHandler(object):
             self.files_read = 1
         self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
 
-    def get_next(self):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
         """ Returns the next input record.   Can handle data piped in as well
             as multiple input files.   All data is assumed to be csv files.
         """
@@ -347,15 +342,12 @@ class InputHandler(object):
                 self.files_read += 1
                 self.infile = self.files[self.files_read - 1]
                 self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
-                try:
-                    rec = self.csv_reader.next()
-                    self.rec_cnt += 1
-                except StopIteration:
-                    rec = None
+                rec = self.csv_reader.next()
+                self.rec_cnt += 1
             else:
-                rec = None
-
-        return rec
+                raise
+        else:
+            return rec
 
 
 
