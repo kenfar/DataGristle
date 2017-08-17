@@ -4,37 +4,37 @@
     being the count of occurances.
 
     Examples:
-       $ gristle_freaker sample.csv -d '|'  -c 0
+       $ gristle_freaker -i sample.csv -d '|'  -c 0
                              Creates two columns from the input - the first with
                              unique keys from column 0, the second with a count
                              of how many times each exists.
-       $ gristle_freaker sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward
-         --writelimit 25
+       $ gristle_freaker -i sample.csv -d '|'  -c 0 --sort-col 1 --sort-order forward
+         --write-limit 25
                              In addition to what was described in the first
                              example, this example adds sorting of the output
                              by count ascending and just prints the first 25
                              entries.
-       $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3
-         --sampling_method interval
+       $ gristle_freaker -i sample.csv -d '|'  -c 0 --sampling-rate 3
+         --sampling-method interval
                              In addition to what was described in the first
                              example, this example adds a sampling in which it
                              only references every third record.
-       $ gristle_freaker sample.csv -d '|'  -c 0,1
+       $ gristle_freaker -i sample.csv -d '|'  -c 0 1
                              Creates three columns from the input - the first
                              two with unique key combinations from columns 0
                              & 1, the third with the number of times each
                              combination exists.
-       $ gristle_freaker sample.csv -d '|'  -c -1
+       $ gristle_freaker -i sample.csv -d '|'  -c -1
                              Creates two columns from the input - the first
                              with unique keys from the last column of the file
                              (negative numbers wrap), then a second with the
                              number of times each exists.
-       $ gristle_freaker sample.csv -d '|'  --columntype all
+       $ gristle_freaker -i sample.csv -d '|'  --col-type all
                              Creates two columns from the input - all columns
                              combined into a key, then a second with the number
                              of times each combination exists.
-       $ gristle_freaker sample.csv -d '|'  --columntype each
-                             Unless all other examples, this one performs a
+       $ gristle_freaker -i sample.csv -d '|'  --col-type each
+                             Unlike all other examples, this one performs a
                              separate analysis for every single column of the
                              file.  Each analysis produces three columns from
                              the input - the first is a column number, second
@@ -42,153 +42,99 @@
                              is the number of times that value appeared.
                              This output is repeated for each column.
 
-    To do:
-    - add sampling method of random
-    - improve error msg if no input provided - tell user about -h
-
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
     Copyright 2011,2012,2013,2017 Ken Farmer
 """
 import sys
-import io
-import optparse
-import csv
 import operator
-import os
+from os.path import basename
 import errno
-from typing import Dict, List, Tuple, Optional
+from pprint import pprint as pp
+from typing import Dict, List, Tuple, Optional, Any
 from signal import signal, SIGPIPE, SIG_DFL
 
-import datagristle.file_type as file_type
-import datagristle.csvhelper as csvhelper
-import datagristle.common as common
+from datagristle.common import abort
+import datagristle.file_io as file_io
+import datagristle.configulator as configulator
 
 # Ignore SIG_PIPE and don't throw exceptions on it...
 # (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
+NAME = basename(__file__)
+SHORT_HELP = 'Creates a frequency distribution of values from columns of the input file'
+
 
 
 def main() -> int:
-    """ Run the frequency distribution process in the following steps:
-        - get cmdline options & determine dialect
-        - build the freq distribution dictionary
-        - calculate field lengths for write formatting
-        - sort frequency distribution
-        - write dictionary to output
-    """
 
-    #----- initialize -----
-    cmd_parser = CommandLineParser()
-    opts = cmd_parser.opts
-    files = cmd_parser.files
-    dialect = get_dialect(opts, files)
+    args = get_args()
     return_code = 0 # success
 
-    # set up an array of sets of columns to process.
-    curr_col_set = []
-    if opts.col_type == 'each':
-        curr_col_set.append(0)      # special op - multiple runs
+    if args['col_type'] in ('each', 'all'):
+        col_set = [0]
     else:
-        curr_col_set = opts.columns # normal op - single run
+        col_set = args['columns']
 
-    # Run frequency processing in a loop - in case we have a columntype
-    # of 'each' - which requires a separate run for every column starting
-    # with the leftmost.  Other columntypes of 'specified' or 'all' will
-    # only go through this loop once.
+    # Run once for each col_set.  Only col_type of 'each' will have > 1 col_set,
+    # in which they'll run the following loop once for each column.  Other col_types
+    # will just run a single iteration of the loop.
+    total_read_cnt = 0
     while True:
-
-        #----- build the frequency distribution dictionary -----
-        col_freaker = ColFreaker(files,
-                                 dialect,
-                                 opts.col_type,
-                                 opts.number,
-                                 opts.sampling_method,
-                                 opts.sampling_rate,
-                                 opts.sortorder,
-                                 opts.sortcol,
-                                 opts.maxkeylen)
-        col_freaker.create_freq_from_column_set(curr_col_set)
-
-        #----- set up special column for 'each' columntype -----
-        if opts.col_type == 'each':
-            key_label = 'col:%03d - ' % curr_col_set[0]
-        else:
-            key_label = ''
-
-        #----- write sorted list to output -----
-        write_output(col_freaker.sort_freq,
-                     opts.output,
-                     col_freaker.col_len,
-                     opts.writelimit,
-                     key_label)
-
-
-        #----- handle looping -----
-        if col_freaker.truncated:
-            return_code = errno.ENOMEM # too many unique values
-            break
-        elif opts.col_type != 'each' and col_freaker.read_cnt == 0:
-            return_code = errno.ENODATA # empty file
-            break
-        elif col_freaker.sort_freq == []:
-            break # columntype 'each' just ran out of cols
-        elif opts.col_type == 'each':
-            curr_col_set[0] += 1  # columntype each has data
-        else:
-            break # non-'each' columntype - only runs once
-
-    return return_code # will be return code
-
-
-
-def get_dialect(opts, files: List[str]) -> csvhelper.Dialect:
-    """ Determine the csv dialect properties for the input file(s).
-        If there's only a single input file and the gristle_file_type module
-        was imported - then use that to determine csv dialect.  Otherwise, rely
-        on option input.
-    """
-    if len(files) == 1 and file_type:
-        my_file = file_type.FileTyper(files[0],
-                                      opts.delimiter,
-                                      opts.recdelimiter,
-                                      opts.has_header)
         try:
-            my_file.analyze_file()
-        except file_type.IOErrorEmptyFile:
-            # going to let this continue in order to handle messaging
-            # thru main
-            # all values are being set to defaults just to get csv reader to
-            # work - no actual data will be read
-            dialect = csvhelper.Dialect
-            dialect.quoting = csv.QUOTE_NONE
-            dialect.delimiter = ','
-            dialect.lineterminator = '\n'                 # naive assumption
+            input_handler = file_io.InputHandler(args['infiles'],
+                                                 args['delimiter'],
+                                                 args['quoting'],
+                                                 args['quotechar'],
+                                                 args['has_header'])
+        except EOFError:
+            print('Warning: empty file')
+            return errno.ENODATA # empty file
+        output_handler = file_io.OutputHandler(args['outfile'],
+                                               input_handler.dialect)
+
+        colset_freaker = ColSetFreaker(input_handler,
+                                       output_handler,
+                                       args['col_type'],
+                                       args['number'],
+                                       args['sampling_method'],
+                                       args['sampling_rate'],
+                                       args['sort_order'],
+                                       args['sort_col'],
+                                       args['max_key_len'])
+        colset_freaker.create_freq_from_column_set(col_set)
+        total_read_cnt += colset_freaker.read_cnt
+
+        colset_freaker.write_output(args['outfile'],
+                                    args['write_limit'],
+                                    col_set[0])
+
+        if colset_freaker.more_columns():   # col_type is 'each'
+            col_set[0] += 1
         else:
-            dialect = my_file.dialect
-    else:
-        # dialect parameters needed for stdin - since the normal code can't
-        # analyze this data.
-        dialect = csvhelper.Dialect
-        dialect.delimiter = opts.delimiter
-        dialect.quoting = csv.QUOTE_MINIMAL if opts.quoting else csv.QUOTE_NONE
-        dialect.quotechar = opts.quotechar
-        dialect.has_header = opts.has_header
-        dialect.lineterminator = '\n'                     # naive assumption
-    return dialect
+            if total_read_cnt == 0:
+                return_code = errno.ENODATA # 61: empty file
+            elif colset_freaker.truncated:
+                return_code = errno.ENOMEM  # 12: too many unique values
+            break
+
+        input_handler.close()
+        output_handler.close()
+
+
+    return return_code
 
 
 
 
 
-
-class ColFreaker(object):
+class ColSetFreaker(object):
 
     def __init__(self,
-                 files: List[str],
-                 dialect: csv.Dialect,
+                 input_handler,
+                 output_handler,
                  col_type: str,
                  number: int,
                  sampling_method: str,
@@ -197,8 +143,8 @@ class ColFreaker(object):
                  sort_col: int,
                  max_key_len: int) -> None:
 
-        self.files = files
-        self.dialect = dialect
+        self.input_handler = input_handler
+        self.output_handler = output_handler
         self.col_type = col_type
         self.number = number
         self.sampling_method = sampling_method
@@ -206,11 +152,12 @@ class ColFreaker(object):
         self.sort_order = sort_order
         self.sort_col = sort_col
         self.max_key_len = max_key_len
-        self.col_len = None
+        self.col_len_tracker = None
         self.field_freq = None
         self.sort_freq = None
         self.truncated: bool = None
         self.read_cnt = 0
+
 
     def create_freq_from_column_set(self, col_set: List[int]) -> None:
 
@@ -219,13 +166,14 @@ class ColFreaker(object):
 
         #----- sort the field_freq ------
         revorder = (True if self.sort_order == 'reverse' else False)
-        self.sort_freq = self._dict_sorter(self.field_freq, self.sort_col,
-                                           revorder)
+        self.sort_freq = sorted(self.field_freq.items(),
+                                key=operator.itemgetter(self.sort_col),
+                                reverse=revorder)
 
         #----- calculate field lengths for output formmating -----
-        self.col_len = ColumnLengthTracker()
-        self.col_len.add_all_values(self.sort_freq)
-        self.col_len.trunc_all_col_lengths(self.max_key_len)
+        self.col_len_tracker = ColumnLengthTracker()
+        self.col_len_tracker.add_all_values(self.sort_freq)
+        self.col_len_tracker.trunc_all_col_lengths(self.max_key_len)
 
 
     def build_freq(self, columns: List[int]) -> None:
@@ -243,39 +191,31 @@ class ColFreaker(object):
         self.field_freq = {}
         self.truncated = False
 
-        def read_recs(reader) -> None:
+        def process_rec(record: List[str]) -> None:
             nonlocal freq_cnt
-            for record in reader:
-                self.read_cnt += 1
-                if self.read_cnt == 1 and self.dialect.has_header:
-                    continue
-                if self.sampling_method == 'interval':
-                    if self.read_cnt % self.sampling_rate != 0:
-                        continue
-                key = self._create_key(record, columns)
-                if key:
-                    try:
-                        self.field_freq[key] += 1
-                    except KeyError:
-                        self.field_freq[key] = 1
-                        freq_cnt += 1
-                        if freq_cnt >= self.number:
-                            self.truncated = True
-                            print('WARNING: freq dict is too large - will truncate')
-                            break
+            self.read_cnt += 1
+            if self.read_cnt == 1 and self.input_handler.dialect.has_header:
+                return
+            if self.sampling_method == 'interval':
+                if self.read_cnt % self.sampling_rate != 0:
+                    return
+            key = self._create_key(record, columns)
+            if key:
+                try:
+                    self.field_freq[key] += 1
+                except KeyError:
+                    self.field_freq[key] = 1
+                    freq_cnt += 1
+                    if freq_cnt >= self.number:
+                        self.truncated = True
+                        print('WARNING: freq dict is too large - will truncate')
+                        raise TooLargeError
 
-        if self.files:
-            for filename in self.files:
-                with open(filename, 'rt', newline='', encoding='utf-8') as infile:
-                    reader = csv.reader(infile, dialect=self.dialect)
-                    read_recs(reader)
-        elif not os.isatty(0):
-            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
-            reader = csv.reader(input_stream, dialect=self.dialect)
-            read_recs(reader)
-        else:
-            print('ERROR: no data found')
-
+        for rec in self.input_handler:
+            try:
+                process_rec(rec)
+            except TooLargeError:
+                break
 
 
     def _create_key(self,
@@ -300,30 +240,64 @@ class ColFreaker(object):
         return tuple(key)
 
 
+ 
+    def more_columns(self):
+        if self.col_type == 'each':
+            if self.sort_freq == []:   # columntype 'each' just ran out of cols
+                return False
+            else:
+                return True
+        else:
+            return False
 
-    @staticmethod
-    def _dict_sorter(field_freq: Dict[Tuple[str], int],
-                     sortcol: int,
-                     revorder: bool) -> common.FreqType:
-        """ Inputs:
-                - field_freq - a dictionary of tuples in which each tuple consists
-                                of two parts: a key tuple and value.
-                             - ex: {('8', 'A', 'B', 'C'): 1, ('30', 'A', 'B', 'C'): 1}
-                - sortcol    - indicates which column to sort - either 0 or 1
-                - revorder   - True indicates sorting in reverse order, False otherwise.
-            Output:
-                - a list of tuples - in which each tuple contains 2 items:
-                    - key - this is a tuple so it can handle multiple columns
-                    - count - number of times the key occurs
-                - ex: [(('8', 'A', 'B', 'C'), 1), (('30', 'A', 'B', 'C'), 1)]
-            Tested via test harness
+
+    def write_output(self,
+                     output: str,
+                     write_limit: int,
+                     col_set_num: int):
+        if output == '-':
+            outfile = sys.stdout
+            #outfile = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', newline='')
+        else:
+            outfile = open(output, 'a')
+
+        write_cnt = 0
+        for key_tup in self.sort_freq:
+            write_cnt += 1
+            if write_limit and write_cnt > write_limit:
+                break
+            row = self.create_output_row(key_tup, col_set_num)
+            outfile.write(row)
+
+        if output != '-':
+            outfile.close()
+
+
+    def create_output_row(self,
+                          freq_tup: Tuple[Tuple[str, ...], int],
+                          col_set_num: int) -> str:
+        """ input:
+            - freq_tup - is a tuple consisting of two entries: key & count.
+                Each key is also a tuple.  So it looks like this:
+                    (('key1a', 'key1b', 'key1c'), 5   )
+            output:
+            - an entire row to be written as output
+            tested via test-harness
         """
-        assert revorder in [True, False]
-        assert sortcol in [0, 1]
-        sort_freq = sorted(field_freq.items(),
-                           key=operator.itemgetter(sortcol),
-                           reverse=revorder)
-        return sort_freq
+        if self.col_type == 'each':
+            key_label = 'col:%03d - ' % col_set_num
+        else:
+            key_label = ''
+
+        key_part = ''
+        for colnum, key in enumerate(freq_tup[0]):
+            key_string = ' %-*.*s  - ' % (self.col_len_tracker.max_dict[colnum],
+                                          self.col_len_tracker.max_dict[colnum],
+                                          key)
+            key_part += key_string
+        row = '%s%s %s\n' % (key_label, key_part, freq_tup[1])
+        return row
+
 
 
 
@@ -379,279 +353,120 @@ class ColumnLengthTracker(object):
 
 
 
-def write_output(freq: common.FreqType,
-                 output: str,
-                 col_len: ColumnLengthTracker,
-                 write_limit: int,
-                 col_label: str = None):
-    """ freq input - is a list of tuples, each tuple must consist of
-        two entries: key & count.   Each key is also a tuple.
-                 [ (tup1),
-                   (tup2) ]
-        output - is the user-provided output filename
-        col_len - is an object that has the max lengths of all columns
-    """
-    if output == '-':
-        outfile = sys.stdout
-        #outfile = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', newline='')
-    else:
-        outfile = open(output, 'a')
-
-    write_cnt = 0
-    for key_tup in freq:
-        write_cnt += 1
-        if write_limit and write_cnt > write_limit:
-            break
-        row = create_output_row(key_tup, col_len, col_label)
-        outfile.write(row)
-
-    # don't close stdout
-    if output != '-':
-        outfile.close()
+class Configulator(configulator.Config):
+    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
+       pass
 
 
+def get_args() -> Dict[str, Any]:
+    config_mgr = Configulator(NAME, SHORT_HELP, __doc__)
+    config_mgr.add_standard_config('infiles')
+    config_mgr.add_standard_config('outfile')
+    config_mgr.add_standard_config('delimiter')
+    config_mgr.add_standard_config('quoting')
+    config_mgr.add_standard_config('quotechar')
+    config_mgr.add_standard_config('escapechar')
+    config_mgr.add_standard_config('has_header')
+    config_mgr.add_standard_config('has_no_header')
+    config_mgr.add_custom_config(name='columns',
+                                 short_name='c',
+                                 arg_type='option',
+                                 default=None,
+                                 config_type=int,
+                                 nargs='*',
+                                 help_msg='Specify the columns to include via a comma-separated '
+                                          'list of columns.')
+    config_mgr.add_custom_config(name='col_type',
+                                 arg_type='option',
+                                 default='specified',
+                                 choices=['specified', 'all', 'each'],
+                                 config_type=str,
+                                 help_msg='Indicates how to process one or all columns')
+    config_mgr.add_custom_config(name='number',
+                                 short_name='n',
+                                 arg_type='option',
+                                 default=10_000_000,
+                                 config_type=int,
+                                 help_msg='Identifies the maximum number of items in frequency dictionary.   Default is 10m which would require approx 300 MB of mem to store 10 million 20 byte keys.')
+    config_mgr.add_custom_config(name='max_key_len',
+                                 arg_type='option',
+                                 config_type=int,
+                                 default=50,
+                                 help_msg='Identifies max length of key written to output.  Default is 50.')
+    config_mgr.add_custom_config(name='write_limit',
+                                 arg_type='option',
+                                 config_type=int,
+                                 default=0,
+                                 help_msg='Identifies max records to write.  Default of 0 indicates no limit.')
+    config_mgr.add_custom_config(name='sort_col',
+                                 arg_type='option',
+                                 config_type=int,
+                                 default=1,
+                                 help_msg='Specifies col to sort by - either 1 (count) or 0 (key). Default is 1')
+    config_mgr.add_custom_config(name='sort_order',
+                                 arg_type='option',
+                                 config_type=str,
+                                 choices=['forward', 'reverse'],
+                                 default='reverse',
+                                 help_msg='Specifies sort order of forward or reverse.  Default is reverse.')
+    config_mgr.add_custom_config(name='sampling_method',
+                                 arg_type='option',
+                                 config_type=str,
+                                 choices=['non', 'interval'],
+                                 default='non',
+                                 help_msg='Specifies which sampling method to use.  Choices are non (no sampling) or interval.  Default is non.')
+    config_mgr.add_custom_config(name='sampling_rate',
+                                 arg_type='option',
+                                 config_type=int,
+                                 default=None,
+                                 help_msg='Specifies number of records to skip if using interval sammpling-method.')
 
-def create_output_row(freq_tup: Tuple[Tuple[str, ...], int],
-                      col_len: ColumnLengthTracker,
-                      key_label: Optional[str]) -> str:
-    """ input:
-           - freq_tup - is a tuple consisting of two entries: key & count.
-             Each key is also a tuple.  So it looks like this:
-                  (('key1a', 'key1b', 'key1c'), 5   )
-           - col_len - is an object that has the max lengths of all columns
-           - key_label - first column only populated for 'each columntype
-        output:
-           - an entire row to be written as output
-        tested via test-harness
-    """
-    key_part = ''
-    for colnum, key in enumerate(freq_tup[0]):
-        key_string = ' %-*.*s  - ' % (col_len.max_dict[colnum],
-                                      col_len.max_dict[colnum],
-                                      key)
-        key_part += key_string
-    row = '%s%s %s\n' % (key_label, key_part, freq_tup[1])
-    return row
-
-
-
-class CommandLineParser(object):
-    """ Manages all parsing, formating and validating of command line options
-        and args.
-        Tested via test-harness.
-    """
-
-    def __init__(self) -> None:
-        use = ('%prog is used to print a frequency distribution of one or more'
-               'columns from the input file: \n'
-               '\n'
-               '   %prog [file] [misc options] '
-               '\n')
-        self.parser = optparse.OptionParser(usage=use)
-
-        self._define_parsers()
-        self.opts, self.files = self.parser.parse_args()
-
-        if self.opts.long_help:
-            print(__doc__)
-            sys.exit(0)
-
-        self._validate_sampling()
-        self._validate_misc()
-        self._format_columns()
-
-
-    def _define_parsers(self) -> None:
-        """ Define all cmdline parsers.
-        """
-        self.parser.add_option('--long-help',
-                               default=False,
-                               action='store_true',
-                               help='Print verbose help and exit.')
-
-        self.parser.add_option('-c', '--columns',
-                               type='string',# could be 1 or 3,10 or "15,20,21"
-                               help="One or many comma-separated column numbers to analyze."
-                                    "Are only used with default columntype of 'specified'.")
-
-        self.parser.add_option('--columntype',
-                               dest="col_type",
-                               choices=['specified', 'all', 'each'],
-                               default='specified',
-                               help='Indicates type of column processing:  '
-                                    'All == all columns are joined into a single concatenated '
-                                    'key.  '
-                                    'Each == each column is processed individually, and the '
-                                    'results are written to the same output file with along '
-                                    'with a column number prefix.'
-                                    'Specified == the typical use (and default) that indicates '
-                                    'that the user specified columns to operate upon.')
-
-        self.parser.add_option('-n', '--number',
-                               type=int,
-                               default=10000000,    # 10 million
-                               help='Specifies the max number of items in frequency dictionary.'
-                                    'Default is 10 million - expressed as 10000000.  This '
-                                    'results in approx 300 MBytes of memory used to store 10 '
-                                    'million 20 byte keys.')
-
-        self.parser.add_option('--maxkeylen',
-                               default=50,
-                               type=int,
-                               help='Specifies the maximum length of the key when written, not '
-                                    'when the data is collected.  The default is 50 chars.')
-
-        self.parser.add_option('--writelimit',
-                               type=int,
-                               default=0,
-                               help='Specifies a limit to the number of rows written. '
-                                    'The default of 0 indicates no limit.')
-
-        self.parser.add_option('--sortcol',
-                               type=int,
-                               default=1,
-                               #choices=[0, 1], # choices not allowed for type=int
-                               help='Specifies which column to sort by - 0 (key) or 1 (count). '
-                                    'The default is 1 (count). ')
-
-        self.parser.add_option('--sortorder',
-                               default='reverse',
-                               choices=['forward', 'reverse'],
-                               help='Specifies whether to sort the column in forward or reverse'
-                                    ' order. The default is reverse')
-
-        self.parser.add_option('--sampling_method',
-                               default='non',
-                               choices=['non', 'interval'],
-                               help='Specifies method of sampling to use.  Choices are non'
-                                    ' or interval.  Default is non.')
-
-        self.parser.add_option('--sampling_rate',
-                               default=None,
-                               type='float',
-                               help='Specifies which to use in frequency distribution. If the'
-                                    'method is interval, then this number describes how many'
-                                    'records to skip between each one to use.')
-
-        self.parser.add_option('-o', '--output',
-                               default='-',
-                               help="Specifies the output file, defaults to stdout indicated by"
-                                    " '-'.")
-
-        self.parser.add_option('-q', '--quiet',
-                               action='store_false',
-                               dest='verbose',
-                               default=True,
-                               help='provides less detail')
-
-        self.parser.add_option('-v', '--verbose',
-                               action='store_true',
-                               dest='verbose',
-                               default=True,
-                               help='provides more detail')
-
-        self.parser.add_option('-d', '--delimiter',
-                               help=('Specify a quoted single-column field delimiter. This may '
-                                     'be determined automatically by the program - unless you '
-                                     'pipe the data in.'))
-
-        self.parser.add_option('--quoting',
-                               default=False,
-                               action='store_true',
-                               help='Specify field quoting - generally only used for stdin '
-                                    'data.  The default is False.')
-
-        self.parser.add_option('--quotechar',
-                               default='"',
-                               help='Specify field quoting character - generally only used for '
-                                    'stdin data.  Default is double-quote')
-
-        self.parser.add_option('--recdelimiter',
-                               help='Specify quoted end-of-record delimiter.')
-
-        self.parser.add_option('--has-header',
-                               dest='has_header',
-                               default=None,
-                               action='store_true',
-                               help='indicates that there is a header in the file.')
-
-        self.parser.add_option('--has-no-header',
-                               dest='has_header',
-                               default=None,
-                               action='store_false',
-                               help=('Indicates that there is no header in the file.'
-                                     'Useful for overriding automatic csv dialect-guessing'
-                                     ' behavior.'))
+    config_mgr.process_configs()
+    validate_config(config_mgr.config)
+    return config_mgr.config
 
 
 
-    def _format_columns(self) -> None:
-        """ Converts input commma-delimited string into a list of integers.
-            Also validates columns vs columntype.
-        """
-        args: List[str] = []
-        valid: List[int] = []
-        if self.opts.columns:
-            if ',' in self.opts.columns:
-                args = self.opts.columns.split(',')
-            else:
-                args.append(self.opts.columns)
-        for arg in args:
-            try:
-                valid.append(int(arg))
-            except ValueError:
-                self.parser.error('Columns must consist only of comma-separated'
-                                  ' integers that refer to column offsets in'
-                                  ' source file')
-        self.opts.columns = valid
+
+def validate_config(config) -> None:
+
+    if config['columns'] is not None and config['col_type'] != 'specified':
+        abort('Columns can only be specified for col_type != specified.')
+    elif config['columns'] is None and config['col_type'] == 'specified':
+        abort("Columns must be provided for col_type of 'specified'.")
+
+    if config['number'] < 1000:
+        abort('Please provided a value between 1001 and 1000000000 for number')
+
+    if config['infiles'] != '-':
+        if len(config['infiles']) > 1 and not config['delimiter']:
+            abort('Please provide delimiter when piping or reading multiple input files')
+    else:   # stdin
+        if not config['delimiter']:
+            abort('Please provide delimiter when piping or reading multiple input files')
+
+    if config['sort_col'] not in (0, 1):
+        abort('Please provide a sortcol value of 0 or 1')
+
+    if 1 > config['max_key_len'] > 500:
+        abort('Please provide a maxkeylen > 0 and < 500')
 
 
-    def _validate_misc(self) -> None:
-        """  Perform validations on all columns
-        """
-        if self.opts.columns is not None and self.opts.col_type != 'specified':
-            self.parser.error('Columns can only be specified for columntype '
-                              '!= specified.')
-        elif self.opts.columns is None and self.opts.col_type == 'specified':
-            self.parser.error("Columns must be provided for columntype of "
-                              "'specified'.")
-
-        if self.opts.number < 1000:
-            self.parser.error('Please provided a value between 1001 and '
-                              '1000000000 for number')
-
-        if self.files:
-            if len(self.files) > 1 and not self.opts.delimiter:
-                self.parser.error('Please provide delimiter when piping data '
-                                  'into program via stdin or reading multiple '
-                                  'input files')
-        else:   # stdin
-            if not self.opts.delimiter:
-                self.parser.error('Please provide delimiter when piping data '
-                                  'into program via stdin or reading multiple '
-                                  'input files')
-        if self.opts.sortcol not in [0, 1]:
-            self.parser.error('Please provide a sortcol value of 0 or 1')
-
-        if 1 > self.opts.maxkeylen > 500:
-            self.parser.error('Please provide a maxkeylen > 0 and < 500')
+    if config['sampling_method'] == 'non':
+        if config['sampling_rate']:
+            abort('Sampling_rate must be left to default if sampling_method is "non"')
+    elif config['sampling_method'] == 'interval':
+        if config['sampling_rate']:
+            if config['sampling_rate'] != int(config['sampling_rate']):
+                abort('Inverval sampling rate must be an int')
+        else:
+            abort('Integer sampling_rate must be provided if sampling_method == "interval"')
 
 
-    def _validate_sampling(self) -> None:
-        """ Perform validation on the two sampling options.
-        """
-        if self.opts.sampling_method == 'non':
-            if self.opts.sampling_rate:
-                self.parser.error('Sampling_rate must be left to default if '
-                                  'sampling_method is "non"')
-        elif self.opts.sampling_method == 'interval':
-            if self.opts.sampling_rate:
-                if self.opts.sampling_rate != int(self.opts.sampling_rate):
-                    self.parser.error('Inverval sampling rate must be an int')
-            else:
-                self.parser.error('Integer sampling_rate must be provided if '
-                                  'sampling_method == "interval"')
 
+
+class TooLargeError(Exception):
+    pass
 
 
 

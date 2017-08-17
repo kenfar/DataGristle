@@ -119,8 +119,8 @@ def main() -> int:
 
     output_handler = file_io.OutputHandler(config['outfile'], input_handler.dialect)
 
-    for rec_cnt, rec in enumerate(input_handler):
-        new_rec = process_rec(rec_cnt,
+    for rec in input_handler:
+        new_rec = process_rec(input_handler.rec_cnt - 1,
                               incl_rec_slicer,
                               excl_rec_slicer,
                               rec,
@@ -277,6 +277,7 @@ def get_args() -> Dict[str, Any]:
     config_mgr.add_standard_config('quotechar')
     config_mgr.add_standard_config('escapechar')
     config_mgr.add_standard_config('has_header')
+    config_mgr.add_standard_config('has_no_header')
     config_mgr.add_custom_config(name='columns',
                                  short_name='c',
                                  arg_type='option',

@@ -58,7 +58,6 @@ def main():
             - processes directory
        Terminates program
     """
-    #----- set up ----
     args = get_args()
     config, config_fn = get_config(arg_config_file=args.config_file,
                                    arg_config_name=args.config_name)

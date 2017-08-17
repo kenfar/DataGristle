@@ -150,6 +150,13 @@ class TestSpecProcessorEvaluator(object):
         self.sp = mod.SpecProcessor(spec, spec_name)
         self.sp.spec_adjuster(loc_max)
 
+    def test_evaluate_starting_offsets(self):
+
+        self.simple_setup(['0'], 'rec_incl_spec', 80)
+        assert self.sp.adj_spec == self.sp.orig_spec
+        assert self.sp.spec_evaluator(0)
+        assert self.sp.spec_evaluator(1) is False
+
     def test_evaluate_positive_specs(self):
 
         self.simple_setup(['5'], 'rec_incl_spec', 80)

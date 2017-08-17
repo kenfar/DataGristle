@@ -1,3 +1,23 @@
+v0.1.3 - 2017-08
+================
+
+-  additional improvements to code quality, but with some breaking
+   changes
+-  changed argument handling for multiple utilities to simplify code and
+   get more consistency.
+
+   -  affects: gristle\_freaker, gristle\_slicer, and gristle\_viewer
+   -  This means words are separated by hyphens, not underscores.
+      --sortorder is --sort-order.
+
+-  changed file handling for multiple utilities to simplify code and get
+   more consistency.
+
+   -  affects: gristle\_freaker, gristle\_slicer, gristle\_validator,
+      and gristle\_viewer
+   -  This means that behavior in handling multiple files, piped input,
+      and other edge cases is more consistent between utilities.
+
 v0.1.2 - 2017-06
 ================
 

@@ -107,7 +107,7 @@ class Test7x7File(object):
         valid.append('0-0,0-1,0-2,0-3,0-4,0-5,0-6')
 
         actual = self.runner('-r 0', None, None, None,
-                             options='''--delimiter=',' --quoting=quote_none''')
+                             options='''--delimiter=',' --quoting=quote_none --has-no-header''')
         assert valid == actual
 
     def test_select_first_col(self):

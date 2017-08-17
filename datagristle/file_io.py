@@ -32,24 +32,37 @@ class InputHandler(object):
         self.files = files
         self.files_read = 0
         self.rec_cnt = 0
+        self.curr_file_rec_cnt = 0
+        self.infile = None
         self.dialect = self._get_dialect(files,
                                          delimiter,
                                          quoting,
                                          quotechar,
                                          has_header)
-        if files[0] == '-':
+        self._open_next_input_file()
+
+
+    def _open_next_input_file(self):
+
+        if self.files[0] == '-' and self.files_read == 0:
+
             if os.isatty(0):  # checks if data was pipped into stdin
                 #raise ValueError, "No files or stdin provided"
                 sys.exit(errno.ENODATA)
-            else:
-                input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
-                self.csv_reader = csv.reader(input_stream, dialect=self.dialect)
-                self.infile = sys.stdin
-                self.files_read = 1
-        else:
-            self.infile = open(files[0], 'rt', newline='', encoding='utf-8')
-            self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
+
+            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
+            self.csv_reader = csv.reader(input_stream, dialect=self.dialect)
+            self.infile = sys.stdin
             self.files_read = 1
+            self.curr_file_rec_cnt = 1
+
+        elif self.files_read < len(self.files):
+            self.infile = open(self.files[self.files_read - 1], 'rt', newline='', encoding='utf-8')
+            self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
+            self.files_read += 1
+            self.curr_file_rec_cnt = 1
+        else:
+            raise StopIteration
 
 
 
@@ -59,17 +72,33 @@ class InputHandler(object):
                      quoting: Optional[str],
                      quotechar: Optional[str],
                      has_header: Optional[bool]) -> csvhelper.Dialect:
-        if delimiter:
-            dialect = csvhelper.Dialect(delimiter=delimiter,
-                                        has_header=has_header,
-                                        quoting=file_type.get_quote_number(quoting),
-                                        quotechar=quotechar,
-                                        lineterminator='\n')
+
+        def overrider(dialect):
+            dialect.delimiter  = delimiter or dialect.delimiter
+
+            if quoting:
+                dialect.quoting = file_type.get_quote_number(quoting) if quoting else dialect.quoting
+            elif dialect.quoting:
+                pass
+            else:
+                dialect.quoting = file_type.get_quote_number('quote_none')
+
+            dialect.quotechar  = quotechar or dialect.quotechar
+            try:
+                dialect.has_header = has_header if has_header is not None else dialect.has_header
+            except AttributeError:
+                dialect.has_header = False
+            dialect.lineterminator = '\n'
+            return dialect
+
+        if infiles[0] == '-':
+            dialect = overrider(csvhelper.Dialect)
         else:
             for infile in infiles:
                 my_file = file_type.FileTyper(infile)
                 try:
                     dialect = my_file.analyze_file()
+                    dialect = overrider(dialect)
                     break
                 except file_type.IOErrorEmptyFile:
                     continue
@@ -78,31 +107,47 @@ class InputHandler(object):
         return dialect
 
 
+# correct behavior?
+# if has_header - generally ignore header in processing:
+#   slicer
+#   freaker
+#   determinator
+#   differ
+# if has_header - then record counts generally start at 2nd record
+# if has_header - then ignore header in each file if multiple files
+# if has_header - then copy it on output when output is also a csv:
+#   slicer?  not unless we have an output-header column?
+#   differ?  not unless we have a output-header column?
+
+
     def __iter__(self):
         return self
+
 
     def __next__(self):
         """ Returns the next input record.   Can handle data piped in as well
             as multiple input files.   All data is assumed to be csv files.
         """
-        try:
-            rec = self.csv_reader.__next__()
-            self.rec_cnt += 1
-        except StopIteration:
-            if self.files_read < len(self.files): # another file to read!
-                self.files_read += 1
-                self.infile = open(self.files[self.files_read - 1], 'rt', newline='', encodings='utf-8')
-                self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
-                rec = self.csv_reader.next()
-                self.rec_cnt += 1
-            else:
-                raise
-        else:
-            return rec
+        while True:
+            try:
+                rec = self._read_next_rec()
+                return rec
+            except StopIteration:   # end of file, loop around and get another
+                self.infile.close()
+                self._open_next_input_file()  # will raise StopIteration if out of files
+
+
+    def _read_next_rec(self):
+        if self.curr_file_rec_cnt == 0 and self.dialect.has_header:
+            self.header = self.csv_reader.__next__()
+        rec = self.csv_reader.__next__()
+        self.rec_cnt += 1
+        self.curr_file_rec_cnt += 1
+        return rec
 
 
     def close(self):
-        if self.files[0] != '-':
+        if self.files[0] != '-' and self.infile:
             self.infile.close()
 
 
@@ -127,6 +172,7 @@ class OutputHandler(object):
         self.output_filename = output_filename
         self.dry_run = dry_run
         self.random_out = random_out
+        self.dialect = dialect
         if self.output_filename == '-':
             self.outfile = default_output
         else:

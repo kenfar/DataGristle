@@ -35,7 +35,8 @@ STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'min_length': 1,
                                  'max_length': 1}
 STANDARD_CONFIGS['quoting'] = {'short_name': 'q',
-                               'default': 'quote_none',
+                               #'default': 'quote_none',
+                               'default': None,
                                'required': True,
                                'choices': ['quote_all', 'quote_minimal',
                                            'quote_nonnumeric', 'quote_none'],
@@ -55,19 +56,21 @@ STANDARD_CONFIGS['escapechar'] = {'default': None,
                                   'type': str,
                                   'arg_type': 'option',
                                   'arg_type': 'option'}
-STANDARD_CONFIGS['has_header'] = {'default': False,
+STANDARD_CONFIGS['has_header'] = {'default': None,
                                   'required': True,
                                   'help': 'csv dialect - indicates header exists',
                                   'type': bool,
                                   'arg_type': 'option',
-                                  'action': 'store_true',
+                                  'action': 'store_const',
+                                  'const': True,
                                   'arg_type': 'option'}
 STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'required': True,
                                      'help': 'csv dialect - indicates header exists',
                                      'type': bool,
                                      'arg_type': 'option',
-                                     'action': 'store_false',
+                                     'action': 'store_const',
+                                     'const': False,
                                      'dest': 'has_header'}
 ARG_ONLY_CONFIGS = ['version', 'long_help']
 
@@ -91,17 +94,28 @@ class Config(object):
 
     def add_custom_config(self,
                           name: str,
-                          short_name: str,
                           default: Any,
                           config_type: Callable,
                           help_msg: str,
-                          arg_type: str):
+                          arg_type: str,
+                          short_name: str = None,
+                          nargs: str = None,
+                          choices: List[str] = []):
         assert arg_type in VALID_ARG_TYPES
         self.meta_config[name] = {'short_name': short_name,
                                   'default': default,
                                   'type': config_type,
                                   'help': help_msg,
-                                  'arg_type': arg_type}
+                                  'arg_type': arg_type,
+                                  'nargs': nargs,
+                                  'choices': choices}
+        if self.meta_config[name]['short_name'] is None:
+            del self.meta_config[name]['short_name']
+        if self.meta_config[name]['choices'] == []:
+            del self.meta_config[name]['choices']
+        if self.meta_config[name]['nargs'] is None:
+            del self.meta_config[name]['nargs']
+
 
 
     def add_standard_config(self, name):
@@ -112,14 +126,29 @@ class Config(object):
         self.validate_metadata()
 
         arg_config = self._get_arg_config(self.short_help)
+        #print('')
+        #print('--------- arg -------------')
+        #pp(arg_config)
         env_config = self._get_env_config()
+        #print('')
+        #print('--------- env -------------')
+        #pp(env_config)
         consolidated_config = self._consolidate_configs(env_config, arg_config)
+        #print('')
+        #print('--------- consolidated -------------')
+        #pp(consolidated_config)
 
         defaulted_config = self._apply_std_defaults(consolidated_config)
         final_config = self.apply_custom_defaults(defaulted_config)
+        #print('')
+        #print('--------- final -------------')
+        #pp(final_config)
 
         self._validate_std_config(final_config)
         self.validate_custom_config(final_config)
+        #print('')
+        #print('--------- final -------------')
+        #pp(final_config)
 
         self.named_config = collections.namedtuple('Config', final_config.keys())(**final_config)
         self.config = final_config
@@ -164,10 +193,18 @@ class Config(object):
                     if not int(property_value):
                         raise ValueError(f"{arg}.max_length is not an int")
                 elif property_name == 'action':
-                    if property_value not in ('store_true', 'store_false'):
-                        raise ValueError(f"{arg}.action is not either 'store_true' or 'store_false'")
+                    if arg_parameters['type'] is not bool:
+                        raise ValueError(f"dest is only valid for type of bool")
+                    if property_value not in ('store_const'):
+                        raise ValueError(f"{arg}.action is not 'store_const'")
+                elif property_name == 'dest':
+                    if arg_parameters['type'] is not bool:
+                        raise ValueError(f"dest is only valid for type of bool")
+                elif property_name == 'const':
+                    if arg_parameters['type'] is not bool:
+                        raise ValueError(f"const is only valid for type of bool")
                 else:
-                    raise ValueError(f'unknown meta_config property: {property_name}')
+                    raise ValueError(f'unknown meta_config property: {arg}.{property_name}')
 
 
     def _get_arg_config(self, desc: str) -> CONFIG_TYPE:
@@ -196,12 +233,15 @@ class Config(object):
             if self.meta_config[key]['type'] is bool:
                 if 'action' in self.meta_config[key]:
                     kwargs['action'] = self.meta_config[key]['action']
+                    kwargs['const'] = self.meta_config[key]['const']
                 if 'dest' in self.meta_config[key]:
                     kwargs['dest'] = self.meta_config[key]['dest']
             else:
                 kwargs['type'] = self.meta_config[key]['type'] # don't include type for booleans
 
+            #pp(kwargs)
             self.parser.add_argument(*args, **kwargs)
+        #pp(self.meta_config)
 
         self.parser.add_argument('-V', '--version',
                                  action='store_true',
@@ -244,9 +284,15 @@ class Config(object):
     def _consolidate_configs(self, envvars: CONFIG_TYPE, args: CONFIG_TYPE) -> CONFIG_TYPE:
         consolidated_config = {}
         for key in self.meta_config:
-            consolidated_config[key] = None
+            if 'dest' in self.meta_config[key]:
+                consolidated_config[self.meta_config[key]['dest']] = None
+            else:
+                consolidated_config[key] = None
         for key, val in envvars.items():
-            consolidated_config[key] = val
+            if self.meta_config[key]['dest']:
+                consolidated_config[self.meta_config[key]['dest']] = val
+            else:
+                consolidated_config[key] = val
         for key, val in args.items():
             if val is not None:
                 consolidated_config[key] = val
@@ -288,17 +334,5 @@ class Config(object):
 
     def validate_custom_config(self, config: CONFIG_TYPE) -> None:
         raise NotImplementedError('should be overridden')
-
-
-
-def nobool(val):
-    if val in (True, False):
-        return val
-    elif val.lower().strip() in ('true', 'false'):
-        val = val.lower().strip()
-        val = True if val == 'true' else False
-        return val
-    else:
-        raise TypeError(f'invalid boolean value: {val}')
 
 
