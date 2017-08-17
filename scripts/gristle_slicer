@@ -75,166 +75,90 @@
     Copyright 2011,2012,2013,2017 Ken Farmer
 """
 import sys
-import io
 import csv
 import fileinput
-import os
 from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Tuple, Dict, Any, Optional, IO
 
-import datagristle.file_type as file_type
 import datagristle.location_slicer as slicer
-import datagristle.csvhelper as csvhelper
 import datagristle.configulator as configulator
+import datagristle.file_io as file_io
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
-
 
 NAME = basename(__file__)
 SHORT_HELP = 'Extract column and row subsets out of files using python string slicing notation\n'
 
 
+
 def main() -> int:
-    """ runs all processes:
-            - gets opts & args
-            - analyzes file to determine csv characteristics unless data is
-              provided via stdin
-            - runs each input record through process_cols to get output
-            - writes records
-    """
     config = get_args()
 
     try:
-        dialect = get_input_file_info(config['infiles'],
-                                      config['delimiter'],
-                                      config['quoting'],
-                                      config['quotechar'],
-                                      config['has_header'])
-    except file_type.IOErrorEmptyFile:
-        print('ERROR: empty file')
-        sys.exit(0)
-
-    outfile, writer = get_output_file_info(config['outfile'], dialect)
-
-    columns   = config['columns'].split(',')
-    excolumns = config['excolumns'].split(',') if config['excolumns'] else []
-    records   = config['records'].split(',')
-    exrecords = config['exrecords'].split(',') if config['exrecords'] else []
+        input_handler = file_io.InputHandler(config['infiles'],
+                                             config['delimiter'],
+                                             config['quoting'],
+                                             config['quotechar'],
+                                             config['has_header'])
+    except EOFError:
+        print('Warning: empty file')
+        return 0
 
     (incl_rec_slicer,
      excl_rec_slicer,
      incl_col_slicer,
-     excl_col_slicer) = setup_slicer(config['infiles'], dialect, records, exrecords, columns, excolumns)
+     excl_col_slicer) = setup_slicers(config['infiles'],
+                                      input_handler.dialect,
+                                      config['records'],
+                                      config['exrecords'],
+                                      config['columns'],
+                                      config['excolumns'])
 
-    rec_cnt = 0
-    if config['infiles'] == '-':
-        if not os.isatty(0):
-            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
-            reader = csv.reader(input_stream, dialect=dialect)
-            processor(reader, writer, rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                      incl_col_slicer, excl_col_slicer)
-        else:
-            print('ERROR: stdin but isatty!')
-            sys.exit(0)
-    else:
-        for infile in config['infiles']:
-            with open(infile, 'rt', newline='', encoding='utf-8') as inf:
-                reader = csv.reader(inf, dialect=dialect)
-                processor(reader, writer, rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                          incl_col_slicer, excl_col_slicer)
+    output_handler = file_io.OutputHandler(config['outfile'], input_handler.dialect)
 
-    if config['outfile'] != '-':
-        outfile.close()
+    for rec in input_handler:
+        new_rec = process_rec(input_handler.rec_cnt - 1,
+                              incl_rec_slicer,
+                              excl_rec_slicer,
+                              rec,
+                              incl_col_slicer,
+                              excl_col_slicer)
+        if new_rec:
+            output_handler.write_rec(new_rec)
+
+    input_handler.close()
+    output_handler.close()
 
     return 0
 
 
 
-def processor(reader, writer, rec_cnt, incl_rec_slicer, excl_rec_slicer,
-              incl_col_slicer, excl_col_slicer) -> None:
-    try:
-        for rec in reader:
-            new_rec = process_rec(rec_cnt, incl_rec_slicer, excl_rec_slicer,
-                                  rec, incl_col_slicer, excl_col_slicer)
-            if new_rec:
-                write_rec(writer, new_rec, rec_cnt)
-            rec_cnt += 1
-    except file_type.IOErrorEmptyFile:
-        print('ERROR: empty file')
-        sys.exit(0)
-    return rec_cnt
 
-
-
-def get_input_file_info(infiles: List[str],
-                        delimiter: str,
-                        quoting: str,
-                        quotechar: str,
-                        has_header: bool) -> csvhelper.Dialect:
-    """ Sets up input files based upon options and files.
-
-        Supports manual csv dialect creation - which is necessary
-        for stdin or when file_type gets confused about a file format.
-        Manual csv dialect creation is triggered by the existance of
-        a delimiter in opts.
-
-        Otherwise, it will attempt to use the automatic dialect
-        detection - which only works for files passed in as args,
-        which show up here as the input arg files.
-    """
-    if delimiter:
-        dialect = csvhelper.Dialect(delimiter=delimiter,
-                                    has_header=has_header,
-                                    quoting=file_type.get_quote_number(quoting),
-                                    quotechar=quotechar,
-                                    lineterminator='\n')
-    else:
-        for infile in infiles:
-            my_file = file_type.FileTyper(infile)
-            try:
-                dialect = my_file.analyze_file()
-                break
-            except file_type.IOErrorEmptyFile:
-                raise
-
-    return dialect
-
-
-
-def get_output_file_info(outfile: str,
-                         dialect: csv.Dialect) -> Tuple[IO[Any], Any]:
-    """ Sets up output file based upon options:
-        Returns output file object
-    """
-    outfile_obj: IO[Any] = None
-    if outfile == '-':
-        outfile_obj = sys.stdout
-    else:
-        outfile_obj = open(outfile, "wt", encoding='utf-8')
-
-    writer = csv.writer(outfile_obj, dialect=dialect)
-    return outfile_obj, writer
-
-
-
-def setup_slicer(infiles: List[str],
-                 dialect: csv.Dialect,
-                 records: List[str],
-                 exrecords: List[str],
-                 columns: List[str],
-                 excolumns: List[str]) -> Tuple[slicer.SpecProcessor,
-                                                slicer.SpecProcessor,
-                                                slicer.SpecProcessor,
-                                                slicer.SpecProcessor]:
+def setup_slicers(infiles: List[str],
+                  dialect: csv.Dialect,
+                  config_records: str,
+                  config_exrecords: str,
+                  config_columns: str,
+                  config_excolumns: str) -> Tuple[slicer.SpecProcessor,
+                                                  slicer.SpecProcessor,
+                                                  slicer.SpecProcessor,
+                                                  slicer.SpecProcessor]:
     """  Sets up the 4 slicer objects: inclusion & exclusion for
          rec and column.
 
          Then counts records and columns if negative slice references
          exist and calls the spec adjuster.
     """
+
+    # first parse the config items;
+    columns   = config_columns.split(',')
+    excolumns = config_excolumns.split(',') if config_excolumns else []
+    records   = config_records.split(',')
+    exrecords = config_exrecords.split(',') if config_exrecords else []
+
     incl_rec_slicer = slicer.SpecProcessor(records,   'incl_rec_spec')
     excl_rec_slicer = slicer.SpecProcessor(exrecords, 'excl_rec_spec')
     incl_col_slicer = slicer.SpecProcessor(columns,   'incl_col_spec')
@@ -335,29 +259,6 @@ def process_rec(rec_number: int,
 
 
 
-# fixme: typing
-def write_rec(outfile: Any, fields: List[str], row_cnt: int) -> None:
-    """ Writes record to output object - using the same dialect as the input
-        file.
-        Input:
-            - output object
-            - list of fields to write
-        Output:
-            - delimited output record written to output object
-    """
-    try:
-        outfile.writerow(fields)
-    except csv.Error as e:
-        print('')
-        print('ERROR from csv module')
-        print('This could be a problem with dirty data.  Consider providing'
-              ' quoting and delimiter manually or inspecting file with'
-              ' gristle_validator.')
-        print('Error encountered on input row: %d (offset from 0)' % row_cnt)
-        print('')
-        raise
-
-
 
 class SlicerConfigulator(configulator.Config):
 
@@ -376,6 +277,7 @@ def get_args() -> Dict[str, Any]:
     config_mgr.add_standard_config('quotechar')
     config_mgr.add_standard_config('escapechar')
     config_mgr.add_standard_config('has_header')
+    config_mgr.add_standard_config('has_no_header')
     config_mgr.add_custom_config(name='columns',
                                  short_name='c',
                                  arg_type='option',

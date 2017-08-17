@@ -368,7 +368,7 @@ class TestFieldCount(object):
         assert valid_cnt_found
 
 
-    def test_randomout_100(self):
+    def test_randomout_1(self):
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
         self.cmd = """%(pgm)s %(in_fqfn)s          \
                          -d ','                    \
@@ -376,7 +376,7 @@ class TestFieldCount(object):
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
                          --outerr  %(outerr)s      \
-                         --randomout 100           \
+                         --randomout 1.0           \
                    """ % {'pgm':     self.pgm,
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
@@ -416,7 +416,7 @@ class TestFieldCount(object):
         assert not self.good_output
 
 
-    def test_randomout_10(self):
+    def test_randomout_01(self):
 
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
         self.cmd = """%(pgm)s %(in_fqfn)s          \
@@ -425,7 +425,7 @@ class TestFieldCount(object):
                          --quoting 'quote_none'    \
                          --outgood %(outgood)s     \
                          --outerr  %(outerr)s      \
-                         --randomout 10            \
+                         --randomout 0.1           \
                    """ % {'pgm':     self.pgm,
                           'outgood': self.outgood_fqfn,
                           'outerr':  self.outerr_fqfn,
