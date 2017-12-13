@@ -361,7 +361,7 @@ class RecValidator(object):
                     return err
                 except IndexError:
                     return 'Failed to validate field due to parsing error.  Wrong delimiter?'
-            elif 'dg_maximum' in col_info:
+            if 'dg_maximum' in col_info:
                 try:
                     if caster(record[index]) > caster(col_info['dg_maximum']):
                         msg = self._msg_formatter(index, 'dg_maximum', record[index], col_info)
@@ -389,8 +389,8 @@ class RecValidator(object):
         else:
             field_title = ' '
 
-        msg = f'''Failed to validate field number {field_num} {field_title}
-                  failed {field_check} check with actual value of {field_value}'''
+        msg = (f'Failed to validate field number {field_num} {field_title} - '
+               f'failed {field_check} check with actual value of {field_value}')
         return msg
 
 

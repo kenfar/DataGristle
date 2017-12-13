@@ -167,16 +167,11 @@ class TestFieldCount(object):
         self.pgm = fq_pgm
         self.std_7x7_fqfn, self.data_7x7 = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_',
                                                                              delimiter=',', dirname=self.tmp_dir)
-        (dummy, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_', dir=self.tmp_dir)
-        (dummy, self.outerr_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_', dir=self.tmp_dir)
+        (_, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_', dir=self.tmp_dir)
+        (_, self.outerr_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_', dir=self.tmp_dir)
 
     def teardown_method(self, method):
-
         shutil.rmtree(self.tmp_dir)
-        ###test_tools.temp_file_remover(self.std_7x7_fqfn)
-        ###test_tools.temp_file_remover(self.outgood_fqfn)
-        ###test_tools.temp_file_remover(self.outerr_fqfn)
-        ###test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'TestGristleValidator'))
 
     def get_outputs(self, response):
         print(response.status_code)
@@ -514,10 +509,10 @@ class TestSchemaValidation(object):
 
         self.tmp_dir = tempfile.mkdtemp(prefix='TestGristleValidator_')
         self.pgm = fq_pgm
-        self.std_7x7_fqfn, self.data_7x7 = test_tools.generate_7x7_test_file('TestGristleValidator7x7In_',
-                                           delimiter=',', dirname=self.tmp_dir)
-        (_, self.outgood_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutGood_', dir=self.tmp_dir)
-        (_, self.outerr_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7OutErr_', dir=self.tmp_dir)
+        self.std_7x7_fqfn, _ = test_tools.generate_7x7_test_file('test_7x7_in_',
+                                                                 delimiter=',', dirname=self.tmp_dir)
+        (_, self.outgood_fqfn) = tempfile.mkstemp(prefix='test_7x7_out_good_', dir=self.tmp_dir)
+        (_, self.outerr_fqfn) = tempfile.mkstemp(prefix='test_7x7_out_drr_', dir=self.tmp_dir)
         self.schema_fqfn = _generate_7x7_schema_file(self.tmp_dir)
 
     def teardown_method(self, method):
@@ -569,6 +564,45 @@ class TestSchemaValidation(object):
         assert self.status_code == 0
         assert not self.err_output
         assert len(self.good_output) == 7
+        assert not self.std_out
+        # std_err should be 0, but coverage.py might write 46 bytes to it:
+        assert not self.std_err or (len(self.std_err) < 50 and 'Coverage.py' in self.std_err)
+
+
+    def test_valid_schema_invalid_dgmin_and_dgmax(self):
+
+        dlm = ','
+        data_7x7 = []
+        (fd, input_fqfn) = tempfile.mkstemp(prefix='TestGristleValidator7x7In_', dir=self.tmp_dir)
+        with open(input_fqfn, 'w') as out:
+            out.write('"foo","bar","batz","1.7","2","0"\n')
+            out.write('"foo","bar","batz","0.7","3","1"\n')   # will be rejected for the value 0.7
+            out.write('"foo","bar","batz","2.9","999","2"\n') # will be rejected for the value 2.9
+        schema = _generate_foobarbatz_schema()
+        schema_fqfn = _write_schema_file('foobarbatz', schema, dir_name=self.tmp_dir)
+
+        self.cmd = """%(pgm)s %(in_fqfn)s
+                         -d ','
+                         --fieldcnt 6
+                         --quoting 'quote_all'
+                         --outgood %(outgood)s
+                         --outerr  %(outerr)s
+                         --validschema %(schema)s
+                   """ % {'pgm':     self.pgm,
+                          'outgood': self.outgood_fqfn,
+                          'outerr':  self.outerr_fqfn,
+                          'in_fqfn': input_fqfn,
+                          'schema':  schema_fqfn}
+        print(self.cmd)
+        runner = envoy.run(self.cmd)
+        self.get_outputs(runner)
+        print(self.std_out)
+        print(self.std_err)
+        print(self.err_output)
+
+        assert self.status_code == 74
+        assert len(self.err_output) == 2
+        assert len(self.good_output) == 1
         assert not self.std_out
         # std_err should be 0, but coverage.py might write 46 bytes to it:
         assert not self.std_err or (len(self.std_err) < 50 and 'Coverage.py' in self.std_err)
