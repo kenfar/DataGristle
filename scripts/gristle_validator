@@ -139,6 +139,10 @@ def main() -> int:
                                             sys.stdout,
                                             args.silent,
                                             args.randomout)
+    #from pprint import pprint as pp
+    #pp(repr(input_handler.dialect))
+    #pp(repr(input_handler.dialect.delimiter))
+    #pp(repr(input_handler.dialect.__dict__))
     outerr_handler = file_io.OutputHandler(args.outerr,
                                            input_handler.dialect,
                                            sys.stderr,
@@ -205,6 +209,7 @@ def process_all_records(input_handler: 'InputHandler',
             outgood_handler.write_rec(rec)
         else:
             invalid_cnt += 1
+            #rec.append(common.coalesce(field_cnt_msg.strip(), schema_msg.strip()))
             rec.append(common.coalesce(field_cnt_msg, schema_msg))
             outerr_handler.write_rec(rec)
 
@@ -361,7 +366,7 @@ class RecValidator(object):
                     return err
                 except IndexError:
                     return 'Failed to validate field due to parsing error.  Wrong delimiter?'
-            elif 'dg_maximum' in col_info:
+            if 'dg_maximum' in col_info:
                 try:
                     if caster(record[index]) > caster(col_info['dg_maximum']):
                         msg = self._msg_formatter(index, 'dg_maximum', record[index], col_info)
@@ -389,8 +394,8 @@ class RecValidator(object):
         else:
             field_title = ' '
 
-        msg = f'''Failed to validate field number {field_num} {field_title}
-                  failed {field_check} check with actual value of {field_value}'''
+        msg = (f'Failed to validate field number {field_num} {field_title} - '
+               f'failed {field_check} check with actual value of {field_value}')
         return msg
 
 
