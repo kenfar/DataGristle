@@ -139,10 +139,6 @@ def main() -> int:
                                             sys.stdout,
                                             args.silent,
                                             args.randomout)
-    #from pprint import pprint as pp
-    #pp(repr(input_handler.dialect))
-    #pp(repr(input_handler.dialect.delimiter))
-    #pp(repr(input_handler.dialect.__dict__))
     outerr_handler = file_io.OutputHandler(args.outerr,
                                            input_handler.dialect,
                                            sys.stderr,
@@ -209,7 +205,6 @@ def process_all_records(input_handler: 'InputHandler',
             outgood_handler.write_rec(rec)
         else:
             invalid_cnt += 1
-            #rec.append(common.coalesce(field_cnt_msg.strip(), schema_msg.strip()))
             rec.append(common.coalesce(field_cnt_msg, schema_msg))
             outerr_handler.write_rec(rec)
 

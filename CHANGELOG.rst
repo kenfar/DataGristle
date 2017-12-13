@@ -1,3 +1,9 @@
+v0.1.4 - 2017-12
+================
+
+-  fixed gristle\_validator bug in which checks on dg\_maximum were not
+   being run
+
 v0.1.3 - 2017-08
 ================
 
@@ -27,6 +33,7 @@ v0.1.1 - 2017-05
 ================
 
 -  upgraded to use python3.6
+-  changed versioning format, which has broken pypy for history
 
 v0.59 - 2016-11
 ===============
