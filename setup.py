@@ -3,7 +3,6 @@
 import os
 import uuid
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
 
 def read(*paths):
     """Build a file path from *paths* and return the contents."""
@@ -20,7 +19,10 @@ def read_version():
 
 version = read_version()
 DESCRIPTION = 'A toolbox and library of ETL, data quality, and data analysis tools'
-REQUIREMENTS = [str(ir.req) for ir in parse_requirements('requirements.txt', session=uuid.uuid1())]
+
+with open("requirements.txt") as reqs_file:
+    REQUIREMENTS = reqs_file.readlines()
+
 
 setup(name='datagristle',
       version=version,
