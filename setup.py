@@ -5,27 +5,17 @@ import uuid
 from setuptools import setup, find_packages
 
 def read(*paths):
-    """Build a file path from *paths* and return the contents."""
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
 
-def read_version():
-    rec = read('datagristle/_version.py')
-    fields = rec.split('=')
-    version = fields[1].strip()[1:-1]
-    assert version.count('.') == 2
-    return version
-
-
-version = read_version()
+VERSION = read('datagristle/_version.py').split('=')[1].strip()[1:-1]
+REQUIREMENTS = read('requirements.txt')
 DESCRIPTION = 'A toolbox and library of ETL, data quality, and data analysis tools'
 
-with open("requirements.txt") as reqs_file:
-    REQUIREMENTS = reqs_file.readlines()
-
+assert VERSION.count('.') == 2
 
 setup(name='datagristle',
-      version=version,
+      version=VERSION,
       description=DESCRIPTION,
       long_description=(read('README.rst') + '\n\n' + read('CHANGELOG.rst')),
       keywords="data analysis quality utility etl",

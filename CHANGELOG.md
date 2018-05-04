@@ -1,3 +1,6 @@
+# v0.1.5 - 2018-05
+   * fixed setup.py bug in which pip10 no longer includes req module
+
 # v0.1.4 - 2017-12
    * fixed gristle_validator bug in which checks on dg_maximum were not being run
 
