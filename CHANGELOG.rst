@@ -1,3 +1,8 @@
+v0.1.5 - 2018-05
+================
+
+-  fixed setup.py bug in which pip10 no longer includes req module
+
 v0.1.4 - 2017-12
 ================
 
