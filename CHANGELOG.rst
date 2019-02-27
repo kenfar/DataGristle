@@ -1,3 +1,8 @@
+v0.1.6 - 2019-02
+================
+
+-  upgraded to support and require python3.7
+
 v0.1.5 - 2018-05
 ================
 

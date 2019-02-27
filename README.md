@@ -47,7 +47,7 @@ More info is on the DataGristle wiki here:
 
 # Dependencies
 
-   * Python 3.6
+   * Python 3.7
 
 
 # Utilities Provided in This Release:
