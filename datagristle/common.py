@@ -6,6 +6,7 @@
 """
 import sys
 import argparse
+import logging
 import math
 import errno
 import csv
@@ -275,8 +276,15 @@ def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
             print('=== ', end='')
             print('%-71.71s' % details[i*68:(i*68)+68], end='')
             print(' ===')
-
     print('=' * 79)
+
+    try:
+        logger.critical(summary)
+        if details:
+            logger.critical(details)
+    except NameError:
+        pass
+
     sys.exit(rc)
 
 
