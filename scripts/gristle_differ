@@ -427,7 +427,7 @@ class ArgProcessor(comm.ArgProcessor):
         self.add_option_config_name()
         self.add_option_config_fn()
         self.add_option_csv_dialect()
-        self.add_option_logging()
+        #self.add_option_logging()
 
 
 def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
