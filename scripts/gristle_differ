@@ -167,6 +167,8 @@ import datagristle.file_delta   as gdelta
 import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
 
+import validictory
+
 #Ignore SIG_PIPE and don't throw exceptions on it...
 #(http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -425,7 +427,7 @@ class ArgProcessor(comm.ArgProcessor):
         self.add_option_config_name()
         self.add_option_config_fn()
         self.add_option_csv_dialect()
-        #self.add_option_logging()  # removing temporarily
+        self.add_option_logging()
 
 
 def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -521,26 +523,14 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
         config.add_file(app_name=APP_NAME,
                         config_fn='%s.yml' % args['config_name'])
 
-    print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
-    print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
-    print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
-    print("config['variables']: %s" % config.cm_config.get('variables', None))
-    print("config['col_names']: %s" % config.cm_config.get('col_names', None))
-
-    #--- next add args
+    #--- remove empty args to enable config to provide them
     if args.get('files', None) == []:
         args.pop('files')
-    #if args.get('variables', None) == []:
-    #    args.pop('files')
-    #if args.get('compare_cols', None) == []:
-    #    args.pop('compare_cols')
-    #if args.get('ignore_cols', None) == []:
-    #    args.pop('ignore_cols')
-    #if args.get('key_cols', None) == []:
-    #    args.pop('key_cols')
 
+    #--- load cli args
     config.add_iterable(args)
-    print("config['files']: %s" % config.cm_config['files'])
+
+    print("config['files']: %s" % config.cm_config.get('files'))
     print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
     print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
     print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
@@ -556,14 +546,22 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
     config.add_defaults(config_defaults)
 
     #--- validate the consolidated config: ---
-    config.validate()                   # validates using json schema
-    validate_config(config.cm_config)   # custom validation
+    try:
+        config.validate()
+    except validictory.validator.RequiredFieldValidationError as err:
+        if '''Required field '<obj>.files' is missing''' in str(err):
+            abort(summary='Error: no files were provided',
+                  details='For usage: gristle_differ --help')
+        else:
+            print(__doc__)
+        raise
+    config_bonus_validator(config.cm_config)
 
-    return config.cm_config # config dict
+    return config.cm_config
 
 
 
-def validate_config(config: Dict[str, Any]) -> None:
+def config_bonus_validator(config: Dict[str, Any]) -> None:
     """ Provide additional validation of config.
 
     Purpose is to provide additional validation beyond what's done by JSON

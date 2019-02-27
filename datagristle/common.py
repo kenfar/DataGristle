@@ -267,13 +267,13 @@ def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
     print('=' * 79)
 
     print('=== ', end='')
-    print('%-69.69s' % summary, end='')
+    print('%-71.71s' % summary, end='')
     print(' ===')
 
     if details:
         for i in range(int(math.ceil(len(details)/68))):
             print('=== ', end='')
-            print('%-69.69s' % details[i*68:(i*68)+68], end='')
+            print('%-71.71s' % details[i*68:(i*68)+68], end='')
             print(' ===')
 
     print('=' * 79)
