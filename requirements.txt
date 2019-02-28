@@ -1,10 +1,10 @@
-Flask       == 0.10.1
+Flask       == 1.0.2
 Jinja2      == 2.7.3
-PyYAML      == 3.11
-SQLAlchemy  == 0.9.8
+PyYAML      == 3.13
+SQLAlchemy  == 1.2.18
 Werkzeug    == 0.9.6
 appdirs     == 1.4.3
 cletus      == 1.0.15
 envoy       == 0.0.3
 pytest      == 3.1.2
-validictory == 1.0.0
+validictory == 1.1.2

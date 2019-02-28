@@ -119,9 +119,9 @@ class ProcessDir(object):
         config_validator = ConfigValidator(kwargs)
         if (not os.path.exists(self.kwargs['gathering_phase']['dir'])
                 or  not os.path.isdir(self.kwargs['gathering_phase']['dir'])):
-            abort('ERROR: invalid config file',
-                  'The config file dir in gathering_phase.dir was not found '
-                  'or is not a directory: %s' % self.kwargs['gathering_phase']['dir'], 1)
+            comm.abort('ERROR: invalid config file',
+                       'The config file dir in gathering_phase.dir was not found '
+                       'or is not a directory: %s' % self.kwargs['gathering_phase']['dir'], 1)
 
 
     def walk(self):
@@ -191,7 +191,7 @@ class FileActioner(object):
                 if e[0] == errno.ENOENT:
                     logger.warning('Delete failed - file already gone: %s' % fqfn)
                 else:
-                    abort('delete failed: %s' % fqfn, 'Delete msg: %s' % e)
+                    comm.abort('delete failed: %s' % fqfn, 'Delete msg: %s' % e)
         elif os.path.isdir(fqfn):
             try:
                 shutil.rmtree(fqfn)
@@ -200,7 +200,7 @@ class FileActioner(object):
                 if e[0] == errno.ENOENT:
                     logger.warning('Delete failed - dir already gone: %s' % fqfn)
                 else:
-                    abort('delete failed: %s' % fqfn, 'Delete msg: %s' % e)
+                    comm.abort('delete failed: %s' % fqfn, 'Delete msg: %s' % e)
 
     def _action_list(self, fqfn):
         logger.debug('%s on file %s' % ('list', self.file_name))
@@ -420,7 +420,7 @@ class FileAnalyzer(object):
                     or token[1] != '-'
                     or not isnumeric(token[2])
                     or token[3] not in self.seconds_translator.keys()):
-                abort('ERROR: Config file is invalid',
+                comm.abort('ERROR: Config file is invalid',
                       'fntime_time should have format like: current_time - n days'
                       'What was found:  %s' % time_delta, 1)
             else:
@@ -431,16 +431,16 @@ class FileAnalyzer(object):
         else:
             unit = time_delta[-1:]
             if unit not in ['s', 'm', 'h', 'd', 'w', 'M', 'y']:
-                abort('ERROR: Config file is invalid',
-                      'fntime_time should have format like: n[unit] where n is an integer and '
-                      'unit is a time abbreviation, one of: s,m,h,d,w,M,y. '
-                      'What was found: %s' % time_delta, 1)
+                comm.abort('ERROR: Config file is invalid',
+                           'fntime_time should have format like: n[unit] where n is an integer and '
+                           'unit is a time abbreviation, one of: s,m,h,d,w,M,y. '
+                           'What was found: %s' % time_delta, 1)
             measure = time_delta[:-1]
             if not isnumeric(measure):
-                abort('ERROR: Config file is invalid',
-                      'fntime_time should have format like: n[unit] where n is an integer and '
-                      'unit is a time abbreviation, one of: s,m,h,d,w,M,y. '
-                      'What was found: %s' % time_delta, 1)
+                comm.abort('ERROR: Config file is invalid',
+                           'fntime_time should have format like: n[unit] where n is an integer and '
+                           'unit is a time abbreviation, one of: s,m,h,d,w,M,y. '
+                           'What was found: %s' % time_delta, 1)
 
         delta_seconds = int(measure) * self.seconds[unit]
         return delta_seconds
@@ -472,8 +472,8 @@ def get_config(arg_config_file=None, arg_config_name=None):
                                  'gristle_processor',
                                  '%s.yml' % arg_config_name)
     else:
-        abort('ERROR: config file missing',
-              'User must provide either a config-fn or config-name', 1)
+        comm.abort('ERROR: config file missing',
+                   'User must provide either a config-fn or config-name', 1)
 
     if not os.path.exists(config_fn):
         abort('ERROR: config file does not exist',
@@ -513,8 +513,8 @@ class ConfigValidator(object):
         if 'gathering_phase' in self.config:
             self._validate_gathering_phase(self.config['gathering_phase'])
         else:
-            abort('ERROR: invalid config file',
-                  'The required gathering_phase was not in the config', 1)
+            comm.abort('ERROR: invalid config file',
+                       'The required gathering_phase was not in the config', 1)
 
         if 'inclusion_phase' in self.config:
             self._validate_inclusion_phase(self.config['inclusion_phase'])
@@ -522,8 +522,8 @@ class ConfigValidator(object):
         if 'action_phase' in self.config:
             self._validate_action_phase(self.config['action_phase'])
         else:
-            abort('ERROR: invalid config file',
-                  'The required action_phase was not in the config', 1)
+            comm.abort('ERROR: invalid config file',
+                       'The required action_phase was not in the config', 1)
 
 
 
@@ -536,7 +536,7 @@ class ConfigValidator(object):
         try:
             valid.validate(gathering_config, gathering_schema)
         except valid.validator.FieldValidationError as e:
-            abort('ERROR: Config file is invalid', str(e), 1)
+            comm.abort('ERROR: Config file is invalid', str(e), 1)
 
 
     def _validate_inclusion_phase(self, inclusion_config):
@@ -557,7 +557,7 @@ class ConfigValidator(object):
         try:
             valid.validate(inclusion_config, inclusion_schema)
         except valid.validator.FieldValidationError as e:
-            abort('ERROR: Config file is invalid', str(e), 1)
+            comm.abort('ERROR: Config file is invalid', str(e), 1)
 
 
         #--- if fntime set was included, make sure all necessary items are
@@ -568,17 +568,17 @@ class ConfigValidator(object):
                 or  'fntime_format' in inclusion_config
                 or  'fntime_op' in inclusion_config):
             if 'fntime_time' not in inclusion_config:
-                abort('ERROR: config is invalid',
-                      'fntime_time_time is missing from inclusion_config', 1)
+                comm.abort('ERROR: config is invalid',
+                           'fntime_time_time is missing from inclusion_config', 1)
             elif 'fntime_op' not in inclusion_config:
-                abort('ERROR: config is invalid',
-                      'fntime_op is missing from inclusion_config', 1)
+                comm.abort('ERROR: config is invalid',
+                           'fntime_op is missing from inclusion_config', 1)
             elif 'fntime_format' not in inclusion_config:
-                abort('ERROR: config is invalid',
-                      'fntime_format is missing from inclusion_config', 1)
+                comm.abort('ERROR: config is invalid',
+                           'fntime_format is missing from inclusion_config', 1)
             elif 'fntime_extract_regex' not in inclusion_config:
-                abort('ERROR: config is invalid',
-                      'fntime_extract_regex is missing from inclusion_config', 1)
+                comm.abort('ERROR: config is invalid',
+                           'fntime_extract_regex is missing from inclusion_config', 1)
 
 
 
@@ -594,44 +594,12 @@ class ConfigValidator(object):
         try:
             valid.validate(action_config, action_schema)
         except valid.validator.FieldValidationError as e:
-            abort('ERROR: Config file is invalid', str(e), 1)
+            comm.abort('ERROR: Config file is invalid', str(e), 1)
 
         if ('action_builtin' in action_config
                 and 'action_external' in action_config):
-            abort('ERROR: config is invalid',
-                  'both builtin and external actions provided.', 1)
-
-
-
-def abort(summary, details, rc=1):
-    """ Creates formatted error message within a box of = characters
-        then exits.
-    """
-
-    #---prints top line:
-    print('=' * 79)
-
-    #---prints message within = characters, assumes it is kinda short:
-    print('=== ', end='')
-    print('%-69.69s' % summary, end='')
-    print(' ===')
-    if logger:
-        logger.critical(summary)
-
-    #---prints exception msg, breaks it into multiple lines:
-    for i in range(int(math.ceil(len(details)/68))):
-        print('=== ', end='')
-        print('%-69.69s' % details[i*68:(i*68)+68], end='')
-        print(' ===')
-    if logger:
-        logger.critical(details)
-
-    #---prints bottom line:
-    print('=' * 79)
-
-    sys.exit(rc)
-
-
+            comm.abort('ERROR: config is invalid',
+                       'both builtin and external actions provided.', 1)
 
 
 
