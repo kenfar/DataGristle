@@ -2,7 +2,7 @@ Flask       == 1.0.2
 Jinja2      == 2.7.3
 PyYAML      == 3.13
 SQLAlchemy  == 1.2.18
-Werkzeug    == 0.9.6
+Werkzeug    == 0.15.3
 appdirs     == 1.4.3
 cletus      == 1.0.15
 envoy       == 0.0.3
