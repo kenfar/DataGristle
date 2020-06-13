@@ -186,6 +186,8 @@ class FileDelta(object):
             out_fn = in_fn[:-12]  #todo: make less fragile
         elif fn.endswith('.uniq'):
             out_fn = in_fn[:-5]   #todo: make less fragile
+        elif fn.endswith('.sorted'):
+            out_fn = in_fn[:-7]   #todo: make less fragile
         else:
             out_fn = fn
         return out_fn + '.' + out_type
