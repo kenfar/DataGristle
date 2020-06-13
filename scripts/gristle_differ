@@ -220,11 +220,11 @@ def main():
         print('   File1/newfile records:  %d' % file_delta.new_read_cnt)
         print('')
         print('Write Stats:')
-        print('   *.delete records:       %d' % file_delta.out_counts['delete'])
-        print('   *.insert records:       %d' % file_delta.out_counts['insert'])
-        print('   *.same records:         %d' % file_delta.out_counts['same'])
-        print('   *.chgold records:       %d' % file_delta.out_counts['chgold'])
-        print('   *.chgnew records:       %d' % file_delta.out_counts['chgnew'])
+        print('   *.delete records:       %d' % file_delta.out_counts.get('delete', 0))
+        print('   *.insert records:       %d' % file_delta.out_counts.get('insert', 0))
+        print('   *.same records:         %d' % file_delta.out_counts.get('same', 0))
+        print('   *.chgold records:       %d' % file_delta.out_counts.get('chgold', 0))
+        print('   *.chgnew records:       %d' % file_delta.out_counts.get('chgnew', 0))
 
     return 0
 
@@ -343,6 +343,10 @@ def prep_file(filename: str,
         dups_removed: count of duplicates removed
     Raises:
         Multiple (see CSVSorter & CSVDeDuper
+    Misc:
+        - sorted_fn - ends in .sorted or .csv (if already-sorted)
+        - deduped_fn - ends in .uniq
+        - final_name - ends in .uniq or .csv (if already-sorted)
     """
     if already_sorted:
         sorted_fn = filename
