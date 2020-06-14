@@ -15,7 +15,7 @@ any duplicates based on this key (leaving 1 of any duplicate set behind).
 Comparisons of matching records can be limited to specific columns in two ways:
     - using --compare-cols to assume no cols will be compared other than these
       specifically identified.
-    - using --ignore-cols to assume all cols will be compared, and explicitely
+    - using --ignore-cols to assume all cols will be compared, and explicitly
       idenitify those not to compare.
 
 After the comparison post-delta transformations can be performed in order to
@@ -33,7 +33,7 @@ See gristle_differ on the wiki for the most thorough documentation here:
     https://github.com/kenfar/DataGristle/wiki/gristle_differ
 
 Example 1: Simple Comparison
-    $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
+    $ gristle_differ file0.dat file1.dat --key-cols 0 2 --ignore-cols 19 22 33
 
     Produces the following files:
        - file1.dat.insert
@@ -78,15 +78,21 @@ Keyword arguments:
                         Columns to compare - described by their position using
                         a zero-offset.  If col_names are provided then names
                         can be used as well as positions.  This option is
-                        mutually exclusive with ignore-cols.
+                        mutually exclusive with ignore-cols and key-cols.
+                        If no value is provided then all non-key cols will be compared.
   -i [IGNORE_COLS [IGNORE_COLS ...]], --ignore-cols [IGNORE_COLS [IGNORE_COLS ...]]
                         Columns to ignore - described by their position using a
                         zero-offset. If col_names are provided then names can be
                         used as well as positions.  This option is mutually
-                        exclusive with compare-cols.
+                        exclusive with compare-cols and key-cols.  If this column
+                        is provided then all cols except for these identified here and
+                        key-cols will be compared.
   --col_names [COL_NAMES [COL_NAMES ...]]
                         Column names - allows other args to reference col names
-                        as well as positions.
+                        as well as positions.  If nothing is provided but the files
+                        have headers they will automatically be added to col_names
+                        with a couple of changes: all values are turned to lowercase,
+                        and spaces are replaced with underscores.
   --variables [VARIABLES [VARIABLES ...]]
                         Variables to reference with post-delta assignments.
                         Typical examples are a batch_id, sequence starting num,
@@ -155,6 +161,7 @@ import copy
 import csv
 import os
 from  os.path import exists, dirname, basename
+from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Union, Dict, Any, Tuple
 
@@ -211,6 +218,9 @@ def main():
     dialect = gftype.get_dialect(config['files'], config['delimiter'], config['quoting'],
                                  config['quotechar'], config['recdelimiter'], config['has_header'])
 
+    config['col_names'] = comm.get_best_col_names(config, dialect)
+    print_config(config, dialect)
+
     file_delta = delta_runner(config, dialect)
 
     if config['stats']:
@@ -220,11 +230,11 @@ def main():
         print('   File1/newfile records:  %d' % file_delta.new_read_cnt)
         print('')
         print('Write Stats:')
-        print('   *.delete records:       %d' % file_delta.out_counts['delete'])
-        print('   *.insert records:       %d' % file_delta.out_counts['insert'])
-        print('   *.same records:         %d' % file_delta.out_counts['same'])
-        print('   *.chgold records:       %d' % file_delta.out_counts['chgold'])
-        print('   *.chgnew records:       %d' % file_delta.out_counts['chgnew'])
+        print('   *.delete records:       %d' % file_delta.out_counts.get('delete', 0))
+        print('   *.insert records:       %d' % file_delta.out_counts.get('insert', 0))
+        print('   *.same records:         %d' % file_delta.out_counts.get('same', 0))
+        print('   *.chgold records:       %d' % file_delta.out_counts.get('chgold', 0))
+        print('   *.chgnew records:       %d' % file_delta.out_counts.get('chgnew', 0))
 
     return 0
 
@@ -240,18 +250,19 @@ def delta_runner(config: Dict[str, Any], dialect: csv.Dialect) -> gdelta.FileDel
     adj_out_dir = config['out_dir']  or dirname(config['files'][1])
 
     #--- handle all key, compare and ignore logic --------------
-    def convert_cols(col_title: str, cols: Dict[str, Any]):
+    def convert_cols(col_title: str, lookup_cols: Dict[str, Any]):
         try:
-            off0 = comm.colnames_to_coloff0(config['col_names'], cols)
-        except (KeyError, ValueError) as err:
+            off0 = comm.colnames_to_coloff0(config['col_names'], lookup_cols)
+        except (KeyError, ValueError, TypeError) as err:
             print(err)
-            print('Column lookup list: %s' % ','.join(cols))
+            print('Column lookup list: %s' % ','.join(lookup_cols))
+            print('Column names known: %s' % ','.join(config['col_names']))
             abort('Invalid config cols for %s: ' % col_title)
         return off0
 
     keys_off0 = convert_cols('key_cols', config['key_cols'])
-    compare_off0 = convert_cols('key_cols', config['compare_cols'])
-    ignore_off0 = convert_cols('key_cols', config['ignore_cols'])
+    compare_off0 = convert_cols('compare_cols', config['compare_cols'])
+    ignore_off0 = convert_cols('ignore_cols', config['ignore_cols'])
 
     delta = gdelta.FileDelta(adj_out_dir, dialect)
     for col in keys_off0:
@@ -343,6 +354,10 @@ def prep_file(filename: str,
         dups_removed: count of duplicates removed
     Raises:
         Multiple (see CSVSorter & CSVDeDuper
+    Misc:
+        - sorted_fn - ends in .sorted or .csv (if already-sorted)
+        - deduped_fn - ends in .uniq
+        - final_name - ends in .uniq or .csv (if already-sorted)
     """
     if already_sorted:
         sorted_fn = filename
@@ -357,9 +372,8 @@ def prep_file(filename: str,
         deduper = gdeduper.CSVDeDuper(dialect, key_cols, out_dir)
         final_name, read_cnt, write_cnt = deduper.dedup_file(sorted_fn)
         dups_removed = read_cnt - write_cnt
-
-    if sorted_fn != filename:
-        os.remove(sorted_fn)
+        if sorted_fn != filename:
+            os.remove(sorted_fn)
 
     return final_name, dups_removed
 
@@ -393,16 +407,22 @@ class ArgProcessor(comm.ArgProcessor):
                     nargs='*',
                     default=None,
                     help=('Columns to compare - described by their position using a zero-offset.'
-                          '  Mutually exclusive with ignore-cols'))
+                          '  Mutually exclusive with ignore-cols and key-cols.  If no value is provided'
+                          '  then all columns except for key-cols will be compared.'
+                          '  Indicate multiple columns with a space-delimited list of numbers.'))
         par_add_arg('-i', '--ignore-cols',
                     nargs='*',
                     default=None,
                     help=('Columns to ignore - described by their position using a zero-offset.'
-                          ' Mutually exclusive with compare-cols'))
+                          '  Mutually exclusive with compare-cols. If this option is provided then '
+                          '  all columns will be compared except for those specified here and key-cols.'
+                          '  Indicate multiple columns with a space-delimited list of numbers.'))
         par_add_arg('--col_names',
                     nargs='*',
                     default=None,
-                    help=('Column names - allows other cols to use names rather than offsets'))
+                    help=('Column names - allows other cols to use names rather than offsets. This will '
+                          '  default to the file headers if they exist.  Note that those file header values '
+                          '  will be converted to lowercase and have spaces converted to underscores.'))
         par_add_arg('--variables',
                     nargs='*',
                     default=None,
@@ -530,13 +550,6 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
     #--- load cli args
     config.add_iterable(args)
 
-    print("config['files']: %s" % config.cm_config.get('files'))
-    print("config['key_cols']: %s" % config.cm_config.get('key_cols', None))
-    print("config['compare_cols']: %s" % config.cm_config.get('compare_cols', None))
-    print("config['ignore_cols']: %s" % config.cm_config.get('ignore_cols', None))
-    print("config['variables']: %s" % config.cm_config.get('variables', None))
-    print("config['col_names']: %s" % config.cm_config.get('col_names', None))
-
     #--- fix correctables - this handles tabs, etc for delimiters:
     if config.cm_config.get('delimiter') is not None:
         new_val = comm.dialect_del_fixer(config.cm_config.get('delimiter'))
@@ -583,10 +596,20 @@ def config_bonus_validator(config: Dict[str, Any]) -> None:
     elif not exists(config['files'][1]):
         abort("Error: The second file does not exist: %s" % config['files'][1])
 
+    if len(config['key_cols']) == 0:
+        abort("Error: at least one key_col must be provided")
+
     if config['compare_cols'] and config['ignore_cols']:
         abort("Error: Provide only one of compare_cols or ignore_cols, not both")
-    elif config['compare_cols'] == [] and config['ignore_cols'] == []:
-        abort("Error: One of compare_cols or ignore_cols must be provided")
+
+    if len(list(set(config['ignore_cols']) & set(config['key_cols']))) > 0:
+        config['ignore_cols'] = [x for x in config['ignore_cols'] if x not in config['key_cols']]
+        print("Warning: some key-cols removed from ignore-cols")
+        print("Revised config['ignore_cols']: %s" % config.get('ignore_cols', None))
+    elif len(list(set(config['compare_cols']) & set(config['key_cols']))) > 0:
+        config['compare_cols'] = [x for x in config['compare_cols'] if x not in config['key_cols']]
+        print("Warning: some key-cols removed from compare-cols")
+        print("Revised config['compare_cols']: %s" % config.get('compare_cols', None))
 
     if config['has_header']:
         abort("Error: has_header is not supported yet.")
@@ -603,6 +626,16 @@ def config_bonus_validator(config: Dict[str, Any]) -> None:
             if isinstance(assign['dest_field'], list):
                 abort('Assignment dest_field must be a string (refers to col_name)'
                       'or an integer - it is a list')
+
+
+def print_config(config, dialect):
+    print("config['files']: %s" % config.get('files'))
+    print("config['key_cols']: %s" % config.get('key_cols', None))
+    print("config['compare_cols']: %s" % config.get('compare_cols', None))
+    print("config['ignore_cols']: %s" % config.get('ignore_cols', None))
+    print("config['variables']: %s" % config.get('variables', None))
+    print("config['col_names']: %s" % config.get('col_names', None))
+    print("dialect.has_header']: %s" % dialect.has_header)
 
 
 if __name__ == '__main__':
