@@ -151,14 +151,14 @@ class ArgProcessor(object):
                                  dest='has_header',
                                  default=None,
                                  action='store_false',
-                                 help=('Indicate that there is no header in the file.'
+                                 help=('Indicate that there is no header in the file.  '
                                        'Occasionally helpful in overriding automatic '
                                        'csv dialect guessing.'))
 
     def add_option_dry_run(self, help_msg: str = None) -> None:
         """
         """
-        help_info = help_msg or 'Performs most processing except for final changes.'
+        help_info = help_msg or 'Performs most processing except for final changes or output.'
         self.parser.add_argument('--dry-run',
                                  default=False,
                                  action='store_true',

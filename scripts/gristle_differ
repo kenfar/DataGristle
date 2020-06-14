@@ -401,28 +401,29 @@ class ArgProcessor(comm.ArgProcessor):
                     default=None,
                     nargs='*',
                     help='Specify the columns that constitute a unique row with a comma-'
-                         'delimited list of numbers using a 0-offset.  This is a '
-                         'required option.')
+                         'delimited list of numbers using a 0-offset.\n'
+                         'This is a required option.')
         par_add_arg('-c', '--compare-cols',
                     nargs='*',
                     default=None,
-                    help=('Columns to compare - described by their position using a zero-offset.'
-                          '  Mutually exclusive with ignore-cols and key-cols.  If no value is provided'
-                          '  then all columns except for key-cols will be compared.'
-                          '  Indicate multiple columns with a space-delimited list of numbers.'))
+                    help=('Columns to compare - described by their position using a zero-offset.\n'
+                          'Mutually exclusive with ignore-cols and key-cols.\n'
+                          'If no value is provided then all columns except for key-cols will be compared.\n'
+                          'Indicate multiple columns with a space-delimited list of numbers.'))
         par_add_arg('-i', '--ignore-cols',
                     nargs='*',
                     default=None,
-                    help=('Columns to ignore - described by their position using a zero-offset.'
-                          '  Mutually exclusive with compare-cols. If this option is provided then '
-                          '  all columns will be compared except for those specified here and key-cols.'
-                          '  Indicate multiple columns with a space-delimited list of numbers.'))
-        par_add_arg('--col_names',
+                    help=('Columns to ignore - described by their position using a zero-offset.\n'
+                          'Mutually exclusive with compare-cols.\n'
+                          'If this option is provided then all columns will be compared except '
+                          'for those specified here and key-cols.\n'
+                          'Indicate multiple columns with a space-delimited list of numbers.'))
+        par_add_arg('--col-names',
                     nargs='*',
                     default=None,
-                    help=('Column names - allows other cols to use names rather than offsets. This will '
-                          '  default to the file headers if they exist.  Note that those file header values '
-                          '  will be converted to lowercase and have spaces converted to underscores.'))
+                    help=('Column names - allows other cols to use names rather than offsets.\n'
+                          'This will default to the file headers if they exist.\n'
+                          'Note that those file header values will be converted to lowercase and have spaces converted to underscores.'))
         par_add_arg('--variables',
                     nargs='*',
                     default=None,
