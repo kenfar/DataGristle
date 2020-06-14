@@ -80,7 +80,7 @@ class ArgProcessor(object):
     """ Perform standard datagristle arg parsing as well as custom script parsing.
 
     Objective is to establish consistency between args of all scripts.  User must
-    override add_custom_args(), adding to it any other arg groups desired (via 
+    override add_custom_args(), adding to it any other arg groups desired (via
     appropriate method calls).
 
     Args:
@@ -321,3 +321,27 @@ def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[in
                 raise KeyError('column number %s not found in colname list' % x)
 
     return result
+
+
+
+def get_best_col_names(config: Dict[str, Any],
+                       dialect: csv.Dialect) -> Dict[str, Any]:
+    if dialect.has_header:
+        if len(config['col_names']):
+            return config['col_names']
+        else:
+            return get_col_names_from_header(config['files'][0], dialect)
+    else:
+        return config['col_names']
+
+
+def get_col_names_from_header(file1_fqfn: str,
+                              dialect: csv.Dialect) -> List[str]:
+    with open(file1_fqfn, newline='') as f:
+        reader = csv.reader(f, dialect=dialect)
+        header = reader.__next__()
+    col_names = [x.lower().replace(' ', '_') for x in header]
+    return col_names
+
+
+

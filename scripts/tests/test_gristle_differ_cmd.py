@@ -789,6 +789,66 @@ class TestCommandLine(object):
         assert self.file_cnt(fn2, '.same') == 0
 
 
+    def test_option_column_names_default(self):
+        """
+        Note that header records are not skipped, but can get used for column_names
+        """
+        file1_recs = [['rowkey' , 'col1', 'col2'],
+                      ['chg-row', '4', '14'],
+                      ['del-row', '6', '16']]
+        fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
+        fn1 = basename(fqfn1)
+        file2_recs = [['rowkey' , 'col1', 'col2'],
+                      ['chg-row', '4', '1a'],
+                      ['new-row', '13a', '45b']]
+        fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+        fn2 = basename(fqfn2)
+        assert isfile(fqfn1)
+        assert isfile(fqfn2)
+
+        cmd = ''' %s %s %s -k rowkey -c col2 --temp-dir %s  ''' % (pjoin(script_dir, 'gristle_differ'),
+                                                                   fqfn1, fqfn2, self.temp_dir)
+        executor(cmd)
+
+        pp(os.listdir(self.temp_dir))
+        assert self.file_cnt(fn2, '.insert') == 1
+        assert self.file_cnt(fn2, '.delete') == 1
+        assert self.file_cnt(fn2, '.chgold') == 1
+        assert self.file_cnt(fn2, '.chgnew') == 1
+        assert self.file_cnt(fn2, '.same')   == 1
+
+
+    def test_option_column_names_explicit(self):
+        """
+        Note that header records are not skipped, but can get used for column_names
+        """
+        file1_recs = [['badkey' , 'badcol1', 'badcol2'],
+                      ['chg-row', '4', '14'],
+                      ['del-row', '6', '16']]
+        fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
+        fn1 = basename(fqfn1)
+        file2_recs = [['badkey' , 'badcol1', 'badcol2'],
+                      ['chg-row', '4', '1a'],
+                      ['new-row', '13a', '45b']]
+        fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+        fn2 = basename(fqfn2)
+        assert isfile(fqfn1)
+        assert isfile(fqfn2)
+
+        cmd = ''' %s %s %s -k rowkey -c col2 --temp-dir %s  --col_names rowkey col1 col2   ''' \
+            % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2, self.temp_dir)
+
+        executor(cmd)
+
+        pp(os.listdir(self.temp_dir))
+        assert self.file_cnt(fn2, '.insert') == 1
+        assert self.file_cnt(fn2, '.delete') == 1
+        assert self.file_cnt(fn2, '.chgold') == 1
+        assert self.file_cnt(fn2, '.chgnew') == 1
+        assert self.file_cnt(fn2, '.same')   == 1
+
+
+
 
 
 
