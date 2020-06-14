@@ -835,7 +835,7 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k rowkey -c col2 --temp-dir %s  --col_names rowkey col1 col2   ''' \
+        cmd = ''' %s %s %s -k rowkey -c col2 --temp-dir %s  --col-names rowkey col1 col2   ''' \
             % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2, self.temp_dir)
 
         executor(cmd)
