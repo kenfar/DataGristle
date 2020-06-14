@@ -48,6 +48,7 @@ More info is on the DataGristle wiki here:
 # Dependencies
 
    * Python 3.7
+   * or Python 3.6
 
 
 # Utilities Provided in This Release:
@@ -330,7 +331,7 @@ More info is on the DataGristle wiki here:
 
     Examples:
 
-       $ gristle_differ file0.dat file1.dat --key-cols '0, 2' --ignore_cols '19,22,33'
+       $ gristle_differ file0.dat file1.dat --key-cols 0  2 --ignore_cols  19 22 33 
 
             - Sorts both files on columns 0 & 2
             - Dedupes both files on column 0
@@ -343,7 +344,7 @@ More info is on the DataGristle wiki here:
                - file1.dat.chgnew
                - file1.dat.chgold
 
-       $ gristle_differ file0.dat file1.dat --key-cols '0' --compare_cols '1,2,3,4,5,6,7' -d '|'
+       $ gristle_differ file0.dat file1.dat --key-cols 0 --compare-cols 1 2 3 4 5 6 7  -d '|'
 
             - Sorts both files on columns 0 
             - Dedupes both files on column 0
