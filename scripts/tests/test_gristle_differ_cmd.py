@@ -848,6 +848,26 @@ class TestCommandLine(object):
         assert self.file_cnt(fn2, '.same')   == 1
 
 
+    def test_missing_key_cols(self):
+        """
+        """
+        file1_recs = [['badkey' , 'badcol1', 'badcol2'],
+                      ['chg-row', '4', '14'],
+                      ['del-row', '6', '16']]
+        fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
+        fn1 = basename(fqfn1)
+        file2_recs = [['badkey' , 'badcol1', 'badcol2'],
+                      ['chg-row', '4', '1a'],
+                      ['new-row', '13a', '45b']]
+        fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
+        fn2 = basename(fqfn2)
+        assert isfile(fqfn1)
+        assert isfile(fqfn2)
+
+        cmd = ''' %s %s %s -c 2 --temp-dir %s  ''' \
+            % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2, self.temp_dir)
+
+        executor(cmd, expect_success=False)
 
 
 
