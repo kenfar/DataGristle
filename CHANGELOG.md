@@ -1,5 +1,15 @@
+
+# v0.1.7 - 2020-07
+   * upgraded to support python3.8
+   * dropped support for python3.6
+   * bumped versions on dependent modules to eliminate vulnerabilities
+   * gristle_differ
+     - fixed a variety of bugs
+     - added ability to use column names from file headers
+     - breaking change: col_names renamed to col-names for consistency
+
 # v0.1.6 - 2019-02
-   * upgraded to support and require python3.7
+   * upgraded to support python3.7
 
 # v0.1.5 - 2018-05
    * fixed setup.py bug in which pip10 no longer includes req module

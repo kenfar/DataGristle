@@ -35,6 +35,9 @@ See gristle_differ on the wiki for the most thorough documentation here:
 Example 1: Simple Comparison
     $ gristle_differ file0.dat file1.dat --key-cols 0 2 --ignore-cols 19 22 33
 
+    In this case the two files are each sorted and deduped on columns 0 & 2, and
+    then all columns except 19, 22, and 33 are used for the comparison.
+
     Produces the following files:
        - file1.dat.insert
        - file1.dat.delete
@@ -152,7 +155,7 @@ either of two ways:
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
     http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013,2014,2015,2017 Ken Farmer
+Copyright 2011-2020 Ken Farmer
 
 """
 import sys
@@ -174,7 +177,7 @@ import datagristle.file_delta   as gdelta
 import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
 
-import validictory
+import jsonschema
 
 #Ignore SIG_PIPE and don't throw exceptions on it...
 #(http://docs.python.org/library/signal.html)
@@ -526,6 +529,49 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                          },
                      'additionalProperties': False
                     }
+    config_schema2 = {'type': 'object',
+                     'properties': {
+                         'files':           {"type":     "array"},
+                         'temp_dir':        {},
+                         'out_dir':         {"type":     ["null", "string"]},
+                         'config_fn':       {},
+                         'config_name':     {},
+                         'col_names':       {},
+                         'key_cols':        {"type":     "array"},
+                         'ignore_cols':     {"type":     "array"},
+                         'compare_cols':    {"type":     "array"},
+                         'variables':       {"type":     "array"},
+                         'already_sorted':  {"type":     "boolean"},
+                         'already_uniq':    {"type":     "boolean"},
+                         'assignments':     {"type":     "array",
+                                             "properties": {
+                                                 "dest_file":       {"type":    "string"},
+                                                 "dest_field":      {"type":    "string"},
+                                                 "src_type":        {"type":    "string"},
+                                                 "src_val":         {"type":    "string"},
+                                                 "src_file":        {"type":    "string"},
+                                                 "src_field":       {"type":    "string"},
+                                                 "comments":        {"type":    "string"}}},
+                         'delimiter':       {"type":     ["null", "string"]},
+                         'has_header':      {'type':     ["null", "boolean"]},
+                         'recdelimiter':    {"type":     ["null", "string"]},
+                         'quoting':         {'type':     ["null", "string"],
+                                             "enum":     ["quote_none", "quote_all",
+                                                          "quote_minimal", "quote_nonnumeric",
+                                                          "0", "1", "2", "3"]},
+                         'quotechar':       {"type":     ["null", "string"]},
+                         'escapechar':      {"type":     ["null", "string"]},
+                         'stats':           {"type":     "boolean"},
+                         'dry_run':         {"type":     "boolean"},
+                         'long_help':       {"type":     "boolean"},
+                         'help':            {"type":     "boolean"},
+                         'version':         {'type':     'string'},
+                         },
+                     'additionalProperties': False,
+                     'required': []
+                    }
+
+
     config_defaults = {'dry_run':      False,
                        'key_cols':     [],
                        'compare_cols': [],
@@ -560,6 +606,9 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
     config.add_defaults(config_defaults)
 
     #--- validate the consolidated config: ---
+    jsonschema.validate(instance=config.cm_config, schema=config_schema2)
+
+
     try:
         config.validate()
     except validictory.validator.RequiredFieldValidationError as err:
