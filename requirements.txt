@@ -8,3 +8,4 @@ cletus      == 1.0.15
 envoy       == 0.0.3
 pytest      == 3.1.2
 validictory == 1.1.2
+jsonschema  == 3.2.0

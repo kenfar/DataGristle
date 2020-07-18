@@ -51,8 +51,8 @@ Installation
 Dependencies
 ============
 
--  Python 3.7
--  or Python 3.6
+-  Python 3.8
+-  or Python 3.7
 
 Utilities Provided in This Release:
 ===================================
@@ -373,6 +373,8 @@ gristle_differ
    populate fields with static values, values from other fields, variables
    from the command line, or incrementing sequence numbers.
 
+   More info on the wiki here:  https://github.com/kenfar/DataGristle/wiki/gristle_differ
+
    Examples:
 
       $ gristle_differ file0.dat file1.dat --key-cols 0  2 --ignore_cols  19 22 33 
@@ -482,15 +484,6 @@ gristle_dir_merger
               files that have changed in both directories, but always want to
               use the source files.
 
-Development & Testing
-=====================
-
--  If you’re going to test directly out of the source code then set up
-   the pathing to point to the parent directory. If using
-   virtualenvwrapper then just run:
-
-   -  $ add2virtualenv .
-
 Licensing
 =========
 
@@ -500,4 +493,4 @@ Licensing
 Copyright
 =========
 
--  Copyright 2011,2012,2013,2014,2015,2017 Ken Farmer
+-  Copyright 2011-2020 Ken Farmer

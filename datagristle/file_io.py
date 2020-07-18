@@ -34,6 +34,7 @@ class InputHandler(object):
         self.rec_cnt = 0
         self.curr_file_rec_cnt = 0
         self.infile = None
+        self.input_stream = None
         self.dialect = self._get_dialect(files,
                                          delimiter,
                                          quoting,
@@ -41,6 +42,11 @@ class InputHandler(object):
                                          has_header)
         self._open_next_input_file()
 
+    def seek(self, offset):
+        return self.input_stream.seek(offset)
+
+    def tell(self):
+        return self.input_stream.tell()
 
     def _open_next_input_file(self):
 
@@ -50,8 +56,8 @@ class InputHandler(object):
                 #raise ValueError, "No files or stdin provided"
                 sys.exit(errno.ENODATA)
 
-            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
-            self.csv_reader = csv.reader(input_stream, dialect=self.dialect)
+            self.input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
+            self.csv_reader = csv.reader(self.input_stream, dialect=self.dialect)
             self.infile = sys.stdin
             self.files_read = 1
             self.curr_file_rec_cnt = 1

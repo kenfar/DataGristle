@@ -9,6 +9,7 @@
     Copyright 2011,2017 Ken Farmer
 """
 import os
+import os.path
 import sys
 import fileinput
 import collections
@@ -36,9 +37,6 @@ def get_quote_number(quote_name: str) -> int:
     if quote_name is None:
         raise ValueError('Invalid quote_name: %s' % quote_name)
 
-#    if quote_name is None:
-#        return None
-#    else:
     try:
         return int(csv.__dict__[quote_name.upper()])
     except KeyError:
@@ -139,6 +137,9 @@ class FileTyper(object):
             Then performs additional processing to try to improve accuracy of
             quoting.
         """
+        # Verify we have an actual file - have had problems with files & lists of files due to upstream flexibility.
+        assert os.path.isfile(self.fqfn)
+
         with open(self.fqfn, 'rt') as csvfile:
             try:
                 dialect = csv.Sniffer().sniff(csvfile.read(50000))
