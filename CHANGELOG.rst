@@ -1,14 +1,23 @@
 v0.1.7 - 2020-07
 ================
 
--  upgraded to support python3.8
--  dropped support for python3.6
--  bumped versions on dependent modules to eliminate vulnerabilities
+-  Improvement: now supports python versions 3.7 and 3.8
+-  BREAKING CHANGE: dropped support for python version 3.6
+-  Bumped versions on dependent modules to eliminate vulnerabilities
 -  gristle_differ
 
-   -  fixed a variety of bugs
-   -  added ability to use column names from file headers
-   -  breaking change: col_names renamed to col-names for consistency
+   -  BREAKING CHANGE: col_names renamed to col-names for consistency
+   -  Fixes –already-unix option bug with file parsing
+   -  Fixes –stats bug with empty files
+   -  Improvement: added ability to use column names from file headers
+   -  Improvement: if a key-col is in the ignore-cols - it will simply
+      be ignored, and the program will continue processing.
+   -  Improvement: if a key-col is in the compare-cols - it will simply
+      be ignored, and the program will continue processing.
+   -  Improvement: if neither compare or ignore cols are provided it
+      will use all cols as compare-cols and continue processing.
+   -  Improvement: CLI help is updated to provide more details and
+      accurate examples of these options.
 
 v0.1.6 - 2019-02
 ================
