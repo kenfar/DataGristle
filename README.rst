@@ -377,7 +377,7 @@ gristle_differ
 
    Examples:
 
-      $ gristle_differ file0.dat file1.dat --key-cols 0  2 --ignore_cols  19 22 33 
+      $ gristle_differ file0.dat file1.dat --key-cols 0 2 --ignore_cols  19 22 33 
 
            - Sorts both files on columns 0 & 2
            - Dedupes both files on column 0
