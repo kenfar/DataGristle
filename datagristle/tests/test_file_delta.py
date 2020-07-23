@@ -26,6 +26,7 @@ from datagristle.csvhelper import Dialect
 LOG_NAME = 'main'
 
 
+
 class TestAssignment(object):
 
     def setup_method(self, method):
@@ -324,6 +325,22 @@ class TestComparisonHelpers(object):
         delta.old_rec = [1, 9, 9]
         compare_fields  = [2]
         assert delta._data_match(ignore_fields, compare_fields) is False
+
+    def test_get_name_suffix_pruning(self):
+        delta = mod.FileDelta(self.temp_dir, self.dialect)
+        assert delta._get_name('foo.csv', 'insert') == 'foo.csv.insert'
+        assert delta._get_name('foo.csv.sorted.uniq', 'insert') == 'foo.csv.insert'
+        assert delta._get_name('foo.csv.sorted', 'insert') == 'foo.csv.insert'
+        assert delta._get_name('foo.csv.uniq', 'insert') == 'foo.csv.insert'
+
+    def test_get_name_absolute_directory_handling(self):
+        delta = mod.FileDelta(self.temp_dir, self.dialect)
+        assert delta._get_name('/blah/blah/blah/foo.csv', 'insert') == 'foo.csv.insert'
+
+    def test_get_name_relative_directory_handling(self):
+        delta = mod.FileDelta(self.temp_dir, self.dialect)
+        assert delta._get_name('../blah/foo.csv', 'insert') == 'foo.csv.insert'
+
 
 
 
