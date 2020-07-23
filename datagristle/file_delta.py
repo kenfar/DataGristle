@@ -176,18 +176,18 @@ class FileDelta(object):
             in_fn: input file name
             out_type: one of insert, delete, same, chgnew, chgold
         Returns:
-            out_fn: which is the in_fn, with .uniq or .sorted.uniq removed,
+            out_fn: which is the basename of in_fn, with .uniq or .sorted.uniq removed,
                     then with out_type added
         Notes:
             parsing is fragile should improve
         """
         fn = basename(in_fn)
         if fn.endswith('.sorted.uniq'):
-            out_fn = in_fn[:-12]  #todo: make less fragile
+            out_fn = fn[:-12]  #todo: make less fragile
         elif fn.endswith('.uniq'):
-            out_fn = in_fn[:-5]   #todo: make less fragile
+            out_fn = fn[:-5]   #todo: make less fragile
         elif fn.endswith('.sorted'):
-            out_fn = in_fn[:-7]   #todo: make less fragile
+            out_fn = fn[:-7]   #todo: make less fragile
         else:
             out_fn = fn
         return out_fn + '.' + out_type

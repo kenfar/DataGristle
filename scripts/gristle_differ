@@ -222,7 +222,9 @@ def main():
                                  config['quotechar'], config['recdelimiter'], config['has_header'])
 
     config['col_names'] = comm.get_best_col_names(config, dialect)
-    print_config(config, dialect)
+
+    #Only used when debugging:
+    #print_config(config, dialect)
 
     file_delta = delta_runner(config, dialect)
 
