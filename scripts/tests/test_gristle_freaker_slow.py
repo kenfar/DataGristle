@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -46,10 +46,7 @@ class Test_build_freq(object):
         files.append(generate_test_file(dialect.delimiter, 10_000_000))
         (fd, outfile) = tempfile.mkstemp(prefix='FreakerTestOut_')
         input_handler = file_io.InputHandler(files,
-                                             dialect.delimiter,
-                                             dialect.quoting,
-                                             dialect.quotechar,
-                                             dialect.has_header)
+                                             dialect)
         output_handler = file_io.OutputHandler(outfile,
                                                input_handler.dialect)
 

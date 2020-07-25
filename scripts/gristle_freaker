@@ -45,7 +45,7 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
 import sys
 import operator
@@ -57,6 +57,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 
 from datagristle.common import abort
 import datagristle.file_io as file_io
+import datagristle.csvhelper as csvhelper
 import datagristle.configulator as configulator
 
 # Ignore SIG_PIPE and don't throw exceptions on it...
@@ -70,49 +71,43 @@ SHORT_HELP = 'Creates a frequency distribution of values from columns of the inp
 
 def main() -> int:
 
-    args = get_args()
     return_code = 0 # success
 
-    if args['col_type'] in ('each', 'all'):
-        col_set = [0]
-    else:
-        col_set = args['columns']
+    try:
+        config_manager = ConfigManager()
+        config = config_manager.get_config()
+    except EOFError:
+        print('Warning: empty file')
+        sys.exit(errno.ENODATA) # 61: empty file
 
     # Run once for each col_set.  Only col_type of 'each' will have > 1 col_set,
     # in which they'll run the following loop once for each column.  Other col_types
     # will just run a single iteration of the loop.
     total_read_cnt = 0
     while True:
-        try:
-            input_handler = file_io.InputHandler(args['infiles'],
-                                                 args['delimiter'],
-                                                 args['quoting'],
-                                                 args['quotechar'],
-                                                 args['has_header'])
-        except EOFError:
-            print('Warning: empty file')
-            return errno.ENODATA # empty file
-        output_handler = file_io.OutputHandler(args['outfile'],
+        input_handler = file_io.InputHandler(config['infiles'],
+                                             config['dialect'])
+        output_handler = file_io.OutputHandler(config['outfile'],
                                                input_handler.dialect)
 
         colset_freaker = ColSetFreaker(input_handler,
                                        output_handler,
-                                       args['col_type'],
-                                       args['number'],
-                                       args['sampling_method'],
-                                       args['sampling_rate'],
-                                       args['sort_order'],
-                                       args['sort_col'],
-                                       args['max_key_len'])
-        colset_freaker.create_freq_from_column_set(col_set)
+                                       config['col_type'],
+                                       config['number'],
+                                       config['sampling_method'],
+                                       config['sampling_rate'],
+                                       config['sort_order'],
+                                       config['sort_col'],
+                                       config['max_key_len'])
+        colset_freaker.create_freq_from_column_set(config['col_set'])
         total_read_cnt += colset_freaker.read_cnt
 
-        colset_freaker.write_output(args['outfile'],
-                                    args['write_limit'],
-                                    col_set[0])
+        colset_freaker.write_output(config['outfile'],
+                                    config['write_limit'],
+                                    config['col_set'][0])
 
         if colset_freaker.more_columns():   # col_type is 'each'
-            col_set[0] += 1
+            config['col_set'][0] += 1
         else:
             if total_read_cnt == 0:
                 return_code = errno.ENODATA # 61: empty file
@@ -125,7 +120,6 @@ def main() -> int:
 
 
     return return_code
-
 
 
 
@@ -240,7 +234,6 @@ class ColSetFreaker(object):
         return tuple(key)
 
 
- 
     def more_columns(self):
         if self.col_type == 'each':
             if self.sort_freq == []:   # columntype 'each' just ran out of cols
@@ -353,115 +346,149 @@ class ColumnLengthTracker(object):
 
 
 
-class Configulator(configulator.Config):
+
+
+
+class ConfigManager(configulator.Config):
+
+    def __init__(self):
+        self.config = None
+        super().__init__(NAME, SHORT_HELP, __doc__)
+
+
+    def get_config(self) -> Dict[str, Any]:
+        """ Raises:
+            - EOFError - if input file is empty when checking for dialect
+        """
+        self.get_user_config()
+        self.validate_user_config()
+        self.extend_config()
+        return self.config
+
+
+    def get_user_config(self) -> Dict[str, Any]:
+        """ Get the configuration elements from arguements and config files
+        """
+
+        self.add_standard_config('infiles')
+        self.add_standard_config('outfile')
+        self.add_standard_config('delimiter')
+        self.add_standard_config('quoting')
+        self.add_standard_config('quotechar')
+        self.add_standard_config('escapechar')
+        self.add_standard_config('has_header')
+        self.add_standard_config('has_no_header')
+        self.add_custom_config(name='columns',
+                               short_name='c',
+                               arg_type='option',
+                               default=None,
+                               config_type=int,
+                               nargs='*',
+                               help_msg='Specify the columns to include via a comma-separated '
+                                            'list of columns.')
+        self.add_custom_config(name='col_type',
+                               arg_type='option',
+                               default='specified',
+                               choices=['specified', 'all', 'each'],
+                               config_type=str,
+                               help_msg='Indicates how to process one or all columns')
+        self.add_custom_config(name='number',
+                               short_name='n',
+                               arg_type='option',
+                               default=10_000_000,
+                               config_type=int,
+                               help_msg='Identifies the maximum number of items in frequency dictionary.   Default is 10m which would require approx 300 MB of mem to store 10 million 20 byte keys.')
+        self.add_custom_config(name='max_key_len',
+                               arg_type='option',
+                               config_type=int,
+                               default=50,
+                               help_msg='Identifies max length of key written to output.  Default is 50.')
+        self.add_custom_config(name='write_limit',
+                               arg_type='option',
+                               config_type=int,
+                               default=0,
+                               help_msg='Identifies max records to write.  Default of 0 indicates no limit.')
+        self.add_custom_config(name='sort_col',
+                               arg_type='option',
+                               config_type=int,
+                               default=1,
+                               help_msg='Specifies col to sort by - either 1 (count) or 0 (key). Default is 1')
+        self.add_custom_config(name='sort_order',
+                               arg_type='option',
+                               config_type=str,
+                               choices=['forward', 'reverse'],
+                               default='reverse',
+                               help_msg='Specifies sort order of forward or reverse.  Default is reverse.')
+        self.add_custom_config(name='sampling_method',
+                               arg_type='option',
+                               config_type=str,
+                               choices=['non', 'interval'],
+                               default='non',
+                               help_msg='Specifies which sampling method to use.  Choices are non (no sampling) or interval.  Default is non.')
+        self.add_custom_config(name='sampling_rate',
+                               arg_type='option',
+                               config_type=int,
+                               default=None,
+                               help_msg='Specifies number of records to skip if using interval sammpling-method.')
+
+        self.process_configs()
+
+
+    def validate_user_config(self) -> None:
+        config = self.config
+
+        if config['columns'] is not None and config['col_type'] != 'specified':
+            abort('Columns can only be specified for col_type != specified.')
+        elif config['columns'] is None and config['col_type'] == 'specified':
+            abort("Columns must be provided for col_type of 'specified'.")
+
+        if config['number'] < 1000:
+            abort('Please provided a value between 1001 and 1000000000 for number')
+
+        if config['infiles'] != '-':
+            if len(config['infiles']) > 1 and not config['delimiter']:
+                abort('Please provide delimiter when piping or reading multiple input files')
+        else:   # stdin
+            if not config['delimiter']:
+                abort('Please provide delimiter when piping or reading multiple input files')
+
+        if config['sort_col'] not in (0, 1):
+            abort('Please provide a sortcol value of 0 or 1')
+
+        if 1 > config['max_key_len'] > 500:
+            abort('Please provide a maxkeylen > 0 and < 500')
+
+
+        if config['sampling_method'] == 'non':
+            if config['sampling_rate']:
+                abort('Sampling_rate must be left to default if sampling_method is "non"')
+        elif config['sampling_method'] == 'interval':
+            if config['sampling_rate']:
+                if config['sampling_rate'] != int(config['sampling_rate']):
+                    abort('Inverval sampling rate must be an int')
+            else:
+                abort('Integer sampling_rate must be provided if sampling_method == "interval"')
+
+
+    def extend_config(self):
+        """ Add derrived or extended elements to config.
+            Note: csvhelper.get_dialect could raise EOFError
+        """
+        config = self.config
+        config['dialect'] = csvhelper.get_dialect(config['infiles'],
+                                                  config['delimiter'],
+                                                  config['quoting'],
+                                                  config['quotechar'],
+                                                  config['has_header'])
+
+        if config['col_type'] in ('each', 'all'):
+            config['col_set'] = [0]
+        else:
+            config['col_set'] = config['columns']
+
+
     def validate_custom_config(self, config: configulator.CONFIG_TYPE):
        pass
-
-
-def get_args() -> Dict[str, Any]:
-    config_mgr = Configulator(NAME, SHORT_HELP, __doc__)
-    config_mgr.add_standard_config('infiles')
-    config_mgr.add_standard_config('outfile')
-    config_mgr.add_standard_config('delimiter')
-    config_mgr.add_standard_config('quoting')
-    config_mgr.add_standard_config('quotechar')
-    config_mgr.add_standard_config('escapechar')
-    config_mgr.add_standard_config('has_header')
-    config_mgr.add_standard_config('has_no_header')
-    config_mgr.add_custom_config(name='columns',
-                                 short_name='c',
-                                 arg_type='option',
-                                 default=None,
-                                 config_type=int,
-                                 nargs='*',
-                                 help_msg='Specify the columns to include via a comma-separated '
-                                          'list of columns.')
-    config_mgr.add_custom_config(name='col_type',
-                                 arg_type='option',
-                                 default='specified',
-                                 choices=['specified', 'all', 'each'],
-                                 config_type=str,
-                                 help_msg='Indicates how to process one or all columns')
-    config_mgr.add_custom_config(name='number',
-                                 short_name='n',
-                                 arg_type='option',
-                                 default=10_000_000,
-                                 config_type=int,
-                                 help_msg='Identifies the maximum number of items in frequency dictionary.   Default is 10m which would require approx 300 MB of mem to store 10 million 20 byte keys.')
-    config_mgr.add_custom_config(name='max_key_len',
-                                 arg_type='option',
-                                 config_type=int,
-                                 default=50,
-                                 help_msg='Identifies max length of key written to output.  Default is 50.')
-    config_mgr.add_custom_config(name='write_limit',
-                                 arg_type='option',
-                                 config_type=int,
-                                 default=0,
-                                 help_msg='Identifies max records to write.  Default of 0 indicates no limit.')
-    config_mgr.add_custom_config(name='sort_col',
-                                 arg_type='option',
-                                 config_type=int,
-                                 default=1,
-                                 help_msg='Specifies col to sort by - either 1 (count) or 0 (key). Default is 1')
-    config_mgr.add_custom_config(name='sort_order',
-                                 arg_type='option',
-                                 config_type=str,
-                                 choices=['forward', 'reverse'],
-                                 default='reverse',
-                                 help_msg='Specifies sort order of forward or reverse.  Default is reverse.')
-    config_mgr.add_custom_config(name='sampling_method',
-                                 arg_type='option',
-                                 config_type=str,
-                                 choices=['non', 'interval'],
-                                 default='non',
-                                 help_msg='Specifies which sampling method to use.  Choices are non (no sampling) or interval.  Default is non.')
-    config_mgr.add_custom_config(name='sampling_rate',
-                                 arg_type='option',
-                                 config_type=int,
-                                 default=None,
-                                 help_msg='Specifies number of records to skip if using interval sammpling-method.')
-
-    config_mgr.process_configs()
-    validate_config(config_mgr.config)
-    return config_mgr.config
-
-
-
-
-def validate_config(config) -> None:
-
-    if config['columns'] is not None and config['col_type'] != 'specified':
-        abort('Columns can only be specified for col_type != specified.')
-    elif config['columns'] is None and config['col_type'] == 'specified':
-        abort("Columns must be provided for col_type of 'specified'.")
-
-    if config['number'] < 1000:
-        abort('Please provided a value between 1001 and 1000000000 for number')
-
-    if config['infiles'] != '-':
-        if len(config['infiles']) > 1 and not config['delimiter']:
-            abort('Please provide delimiter when piping or reading multiple input files')
-    else:   # stdin
-        if not config['delimiter']:
-            abort('Please provide delimiter when piping or reading multiple input files')
-
-    if config['sort_col'] not in (0, 1):
-        abort('Please provide a sortcol value of 0 or 1')
-
-    if 1 > config['max_key_len'] > 500:
-        abort('Please provide a maxkeylen > 0 and < 500')
-
-
-    if config['sampling_method'] == 'non':
-        if config['sampling_rate']:
-            abort('Sampling_rate must be left to default if sampling_method is "non"')
-    elif config['sampling_method'] == 'interval':
-        if config['sampling_rate']:
-            if config['sampling_rate'] != int(config['sampling_rate']):
-                abort('Inverval sampling rate must be an int')
-        else:
-            abort('Integer sampling_rate must be provided if sampling_method == "interval"')
-
 
 
 

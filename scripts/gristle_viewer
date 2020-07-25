@@ -37,14 +37,8 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
-#    To do:
-#       1.  check for recnum > number of records in input file
-#       2.  consider adding records up to some threshold to dictionary
-#           to speed navigation for files.
-#       3.  confirm that record counting works identical for each situation
-#       5.  improve error if no args provided - recommend -h for help
 
 import sys
 from os.path import basename
@@ -70,27 +64,25 @@ def main():
     """ Analyzes file then displays a single record and allows simple
         navigation between records.
     """
-    config = get_args()
+
+    try:
+        config_manager  = ConfigManager()
+        config = config_manager.get_config()
+    except EOFError:
+        sys.exit(errno.ENODATA) # 61: empty file
+
     field_names = None
 
     while True:
-        try:
-            input_handler = file_io.InputHandler(config['infiles'],
-                                                 config['delimiter'],
-                                                 config['quoting'],
-                                                 config['quotechar'],
-                                                 config['has_header'])
-        except EOFError:
-            print('Warning: empty file')
-            return 0
-        else:
-            if not field_names:
-                field_names = get_field_names(config['infiles'], input_handler.dialect)
-            rec = get_rec(input_handler, config['recnum'])
-            input_handler.close()
-            if rec is None:
-                print('No record found')
-                return
+        input_handler = file_io.InputHandler(config['infiles'],
+                                             config['dialect'])
+        if not field_names:
+            field_names = get_field_names(config['infiles'], input_handler.dialect)
+        rec = get_rec(input_handler, config['recnum'])
+        input_handler.close()
+        if rec is None:
+            print('No record found')
+            return
 
         output_handler = file_io.OutputHandler(config['outfile'], dialect=None)
         display_rec(rec, field_names, output_handler)
@@ -179,30 +171,46 @@ def get_rec(input_handler, recnum: int) -> Optional[List[Any]]:
 
 
 
-class ViewerConfigulator(configulator.Config):
-    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
+class ConfigManager(configulator.Config):
+
+    def __init__(self) -> None:
+        self.config = None
+        super().__init__(NAME, SHORT_HELP, __doc__)
+
+    def get_config(self) -> Dict[str, Any]:
+        self.get_user_config()
+        self.extend_config()
+        return self.config
+
+    def get_user_config(self) -> None:
+        self.add_standard_config('infiles')
+        self.add_standard_config('outfile')
+        self.add_standard_config('delimiter')
+        self.add_standard_config('quoting')
+        self.add_standard_config('quotechar')
+        self.add_standard_config('escapechar')
+        self.add_standard_config('has_header')
+        self.add_custom_config(name='recnum',
+                                    short_name='r',
+                                    arg_type='option',
+                                    default=0,
+                                    config_type=int,
+                                    help_msg='Displays this record number based on 0 offset, defaulting to 1')
+        self.process_configs()
+
+    def extend_config(self) -> None:
+        config = self.config
+
+        self.config['dialect'] = csvhelper.get_dialect(config['infiles'],
+                                                       config['delimiter'],
+                                                       config['quoting'],
+                                                       config['quotechar'],
+                                                       config['has_header'])
+
+    def validate_custom_config(self,
+                               config: configulator.CONFIG_TYPE):
         if config['infiles'] == '-':
             self.parser.error('An input filename is required')
-
-
-
-def get_args() -> Dict[str, Any]:
-    config_mgr = ViewerConfigulator(NAME, SHORT_HELP, __doc__)
-    config_mgr.add_standard_config('infiles')
-    config_mgr.add_standard_config('outfile')
-    config_mgr.add_standard_config('delimiter')
-    config_mgr.add_standard_config('quoting')
-    config_mgr.add_standard_config('quotechar')
-    config_mgr.add_standard_config('escapechar')
-    config_mgr.add_standard_config('has_header')
-    config_mgr.add_custom_config(name='recnum',
-                                 short_name='r',
-                                 arg_type='option',
-                                 default=0,
-                                 config_type=int,
-                                 help_msg='Displays this record number based on 0 offset, defaulting to 1')
-    config_mgr.process_configs()
-    return config_mgr.config
 
 
 

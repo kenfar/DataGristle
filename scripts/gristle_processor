@@ -15,7 +15,7 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2014,2017 Ken Farmer
+Copyright 2014-2020 Ken Farmer
 """
 import sys
 import argparse
@@ -444,9 +444,6 @@ class FileAnalyzer(object):
 
         delta_seconds = int(measure) * self.seconds[unit]
         return delta_seconds
-
-
-
 
 
 
