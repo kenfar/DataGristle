@@ -72,7 +72,7 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
 import sys
 import csv
@@ -82,9 +82,10 @@ from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Tuple, Dict, Any, Optional, IO
 
-import datagristle.location_slicer as slicer
 import datagristle.configulator as configulator
+import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
+import datagristle.location_slicer as slicer
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -95,17 +96,16 @@ SHORT_HELP = 'Extract column and row subsets out of files using python string sl
 
 
 def main() -> int:
-    config = get_args()
 
     try:
-        input_handler = file_io.InputHandler(config['infiles'],
-                                             config['delimiter'],
-                                             config['quoting'],
-                                             config['quotechar'],
-                                             config['has_header'])
+        config_manager = ConfigManager()
+        config = config_manager.get_config()
     except EOFError:
         print('Warning: empty file')
         return 0
+
+    input_handler = file_io.InputHandler(config['infiles'],
+                                         config['dialect'])
 
     (incl_rec_slicer,
      excl_rec_slicer,
@@ -259,61 +259,74 @@ def process_rec(rec_number: int,
 
 
 
+class ConfigManager(configulator.Config):
 
-class SlicerConfigulator(configulator.Config):
+    def __init__(self):
+        super().__init__(NAME, SHORT_HELP, __doc__)
+
+    def get_config(self) -> Dict[str, Any]:
+        self.get_user_config()
+        self.extend_config()
+        return self.config
+
+    def get_user_config(self) -> None:
+        self.add_standard_config('infiles')
+        self.add_standard_config('outfile')
+        self.add_standard_config('delimiter')
+        self.add_standard_config('quoting')
+        self.add_standard_config('quotechar')
+        self.add_standard_config('escapechar')
+        self.add_standard_config('has_header')
+        self.add_standard_config('has_no_header')
+        self.add_custom_config(name='columns',
+                               short_name='c',
+                               arg_type='option',
+                               default=':',
+                               config_type=str,
+                               help_msg='Specify the columns to include via a comma-separated '
+                                        'list of columns and colon-separated pairs of column '
+                                        'start & stop ranges. Default is to include all '
+                                        'columns (":"). ')
+        self.add_custom_config(name='excolumns',
+                               short_name='C',
+                               arg_type='option',
+                               default='',
+                               config_type=str,
+                               help_msg='Specify the columns to exclude via a comma-separated '
+                                        'list of columns and colon-separated pairs of column '
+                                        'start & stop ranges.  Default is to exclude nothing.')
+        self.add_custom_config(name='records',
+                               short_name='r',
+                               arg_type='option',
+                               default=':',
+                               config_type=str,
+                               help_msg='Specify the records to include via a comma-separated '
+                                        'list of record numbers and colon-separated pairs of '
+                                        'record start & stop ranges.  Default is to include all '
+                                        'records (":").')
+        self.add_custom_config(name='exrecords',
+                               short_name='R',
+                               arg_type='option',
+                               default='',
+                               config_type=str,
+                               help_msg='Specify the records to exclude via a comma-separated list '
+                                        'of record numbers and colon-separated pairs of record '
+                                        'start & stop ranges.  Default is to exclude nothing.')
+        self.process_configs()
+
 
     def validate_custom_config(self, config: configulator.CONFIG_TYPE):
         if not config['delimiter'] and config['infiles'] == '-':
             self.parser.error('Provide delimiter and quoting when piping data into program via stdin')
 
 
+    def extend_config(self) -> None:
 
-def get_args() -> Dict[str, Any]:
-    config_mgr = SlicerConfigulator(NAME, SHORT_HELP, __doc__)
-    config_mgr.add_standard_config('infiles')
-    config_mgr.add_standard_config('outfile')
-    config_mgr.add_standard_config('delimiter')
-    config_mgr.add_standard_config('quoting')
-    config_mgr.add_standard_config('quotechar')
-    config_mgr.add_standard_config('escapechar')
-    config_mgr.add_standard_config('has_header')
-    config_mgr.add_standard_config('has_no_header')
-    config_mgr.add_custom_config(name='columns',
-                                 short_name='c',
-                                 arg_type='option',
-                                 default=':',
-                                 config_type=str,
-                                 help_msg='Specify the columns to include via a comma-separated '
-                                          'list of columns and colon-separated pairs of column '
-                                          'start & stop ranges. Default is to include all '
-                                          'columns (":"). ')
-    config_mgr.add_custom_config(name='excolumns',
-                                 short_name='C',
-                                 arg_type='option',
-                                 default='',
-                                 config_type=str,
-                                 help_msg='Specify the columns to exclude via a comma-separated '
-                                          'list of columns and colon-separated pairs of column '
-                                          'start & stop ranges.  Default is to exclude nothing.')
-    config_mgr.add_custom_config(name='records',
-                                 short_name='r',
-                                 arg_type='option',
-                                 default=':',
-                                 config_type=str,
-                                 help_msg='Specify the records to include via a comma-separated '
-                                          'list of record numbers and colon-separated pairs of '
-                                          'record start & stop ranges.  Default is to include all '
-                                          'records (":").')
-    config_mgr.add_custom_config(name='exrecords',
-                                 short_name='R',
-                                 arg_type='option',
-                                 default='',
-                                 config_type=str,
-                                 help_msg='Specify the records to exclude via a comma-separated list '
-                                          'of record numbers and colon-separated pairs of record '
-                                          'start & stop ranges.  Default is to exclude nothing.')
-    config_mgr.process_configs()
-    return config_mgr.config
+        self.config['dialect'] = csvhelper.get_dialect(self.config['infiles'],
+                                                       self.config['delimiter'],
+                                                       self.config['quoting'],
+                                                       self.config['quotechar'],
+                                                       self.config['has_header'])
 
 
 

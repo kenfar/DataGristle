@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -20,6 +20,7 @@ import pytest
 
 import datagristle.test_tools as test_tools
 import datagristle.file_io as file_io
+import datagristle.csvhelper as csvhelper
 
 pgm_path = dirname(dirname(os.path.realpath((__file__))))
 mod = test_tools.load_script(pjoin(pgm_path, 'gristle_freaker'))
@@ -47,10 +48,7 @@ class TestBuildFreq(object):
         self.tempdir = tempfile.mkdtemp(prefix='test_gristle_freaker_')
         self.outfile = pjoin(self.tempdir, 'outfile.txt')
         self.input_handler = file_io.InputHandler(self.files,
-                                                  self.dialect.delimiter,
-                                                  self.dialect.quoting,
-                                                  self.dialect.quotechar,
-                                                  self.dialect.has_header)
+                                                  self.dialect)
         self.output_handler = file_io.OutputHandler(self.outfile,
                                                     self.input_handler.dialect)
 
@@ -133,22 +131,29 @@ class TestGetArgs(object):
 
     def test_happy_path(self):
         sys.argv = ['../gristle_freaker', '-i', 'census.csv', '-c', '1']
-        args = mod.get_args()
-        assert args['columns'] == [1]
-        assert args['outfile'] == '-'
-        assert args['write_limit'] == 0
-        assert args['delimiter'] is None
-        assert args['quoting'] == None
-        assert args['has_header'] is None
-        assert args['sampling_method'] == 'non'
-        assert args['sampling_rate'] is None
-        assert args['sort_col'] == 1
-        assert args['sort_order'] == 'reverse'
+
+        config_manager = mod.ConfigManager()
+        config_manager.get_user_config()
+        config_manager.validate_user_config()
+        config = config_manager.config
+
+        assert config['columns'] == [1]
+        assert config['outfile'] == '-'
+        assert config['write_limit'] == 0
+        assert config['delimiter'] is None
+        assert config['quoting'] == None
+        assert config['has_header'] is None
+        assert config['sampling_method'] == 'non'
+        assert config['sampling_rate'] is None
+        assert config['sort_col'] == 1
+        assert config['sort_order'] == 'reverse'
 
     def test_check_invalid_columns(self):
         sys.argv = ['../gristle_freaker', '-i', 'census.csv', '-c', 'd']
         try:
-            _ = mod.get_args()
+            config_manager = mod.ConfigManager()
+            config_manager.get_user_config()
+            config_manager.validate_user_config()
         except SystemExit:
             pass
         except Exception as e:
@@ -159,7 +164,9 @@ class TestGetArgs(object):
     def test_check_invalid_maxkenlen(self):
         sys.argv = ['../gristle_freaker', '-i', 'census.csv', '--max-key-len', 'blah']
         try:
-            _ = mod.get_args()
+            config_manager = mod.ConfigManager()
+            config_manager.get_user_config()
+            config_manager.validate_user_config()
         except SystemExit:
             pass
         except Exception as e:
@@ -171,8 +178,11 @@ class TestGetArgs(object):
         sys.argv = ['../gristle_freaker', '-i', 'census.csv', '-c', '0', '--max-key-len', '50']
 
         try:
-            args = mod.get_args()
-            if args['max_key_len'] != 50:
+            config_manager = mod.ConfigManager()
+            config_manager.get_user_config()
+            config_manager.validate_user_config()
+            config = config_manager.config
+            if config['max_key_len'] != 50:
                 pytest.fail('max-key-len results did not match expected values: ')
         except SystemExit:
             pytest.fail('Unexpected exception thrown')
@@ -196,10 +206,7 @@ class TestCreateKey(object):
         sortorder = 'reverse'
         sortcol = 1
         input_handler = file_io.InputHandler(files,
-                                             dialect.delimiter,
-                                             dialect.quoting,
-                                             dialect.quotechar,
-                                             dialect.has_header)
+                                             dialect)
         output_handler = file_io.OutputHandler(outfile,
                                                input_handler.dialect)
         self.col_freak = mod.ColSetFreaker(input_handler, output_handler, col_type,
@@ -304,7 +311,7 @@ class TestColumnLengthTracker(object):
 def generate_col_freaker_dependencies():
     dialect = csv.Dialect
     dialect.delimiter = '|'
-    dialect.quoting = 'quote_minimal'
+    dialect.quoting = csvhelper.get_quote_number('quote_minimal')
     dialect.quotechar = '"'
     dialect.has_header = False
     dialect.lineterminator = '\n'

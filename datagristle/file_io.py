@@ -2,7 +2,7 @@
 """ Contains standard io reading & writing code
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2017 Ken Farmer
+    Copyright 2017-2020 Ken Farmer
 """
 import os
 import sys
@@ -24,22 +24,15 @@ class InputHandler(object):
 
     def __init__(self,
                  files: List[str],
-                 delimiter: Optional[str],
-                 quoting: Optional[str],
-                 quotechar: Optional[str],
-                 has_header: Optional[bool]) -> None:
+                 dialect) -> None:
 
+        self.dialect = dialect
         self.files = files
         self.files_read = 0
         self.rec_cnt = 0
         self.curr_file_rec_cnt = 0
         self.infile = None
         self.input_stream = None
-        self.dialect = self._get_dialect(files,
-                                         delimiter,
-                                         quoting,
-                                         quotechar,
-                                         has_header)
         self._open_next_input_file()
 
     def seek(self, offset):
@@ -70,47 +63,6 @@ class InputHandler(object):
         else:
             raise StopIteration
 
-
-
-    def _get_dialect(self,
-                     infiles: List[str],
-                     delimiter: Optional[str],
-                     quoting: Optional[str],
-                     quotechar: Optional[str],
-                     has_header: Optional[bool]) -> csvhelper.Dialect:
-
-        def overrider(dialect):
-            dialect.delimiter  = delimiter or dialect.delimiter
-
-            if quoting:
-                dialect.quoting = file_type.get_quote_number(quoting) if quoting else dialect.quoting
-            elif dialect.quoting:
-                pass
-            else:
-                dialect.quoting = file_type.get_quote_number('quote_none')
-
-            dialect.quotechar  = quotechar or dialect.quotechar
-            try:
-                dialect.has_header = has_header if has_header is not None else dialect.has_header
-            except AttributeError:
-                dialect.has_header = False
-            dialect.lineterminator = '\n'
-            return dialect
-
-        if infiles[0] == '-':
-            dialect = overrider(csvhelper.Dialect)
-        else:
-            for infile in infiles:
-                my_file = file_type.FileTyper(infile)
-                try:
-                    dialect = my_file.analyze_file()
-                    dialect = overrider(dialect)
-                    break
-                except file_type.IOErrorEmptyFile:
-                    continue
-            else:
-                raise EOFError
-        return dialect
 
 
 # correct behavior?
@@ -179,7 +131,9 @@ class OutputHandler(object):
         self.dry_run = dry_run
         self.random_out = random_out
         self.dialect = dialect
+        self.rec_cnt = 0
         if self.output_filename == '-':
+            #print('*************** writing to stdout *******************')
             self.outfile = default_output
         else:
             self.outfile = open(output_filename, "wt", encoding='utf-8')
@@ -203,6 +157,7 @@ class OutputHandler(object):
                 return
         try:
             self.writer.writerow(record)
+            self.rec_cnt += 1
         except csv.Error:
             print('Invalid record: %s' % record)
             raise

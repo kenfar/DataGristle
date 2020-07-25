@@ -89,7 +89,7 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2011,2012,2013,2014,2017 Ken Farmer
+Copyright 2011-2020 Ken Farmer
 """
 import sys
 import os
@@ -123,38 +123,37 @@ def main() -> int:
             - runs each input record through process_cols to get output
             - writes records
     """
-    args = get_args()
 
     try:
-        input_handler = file_io.InputHandler(args.files,
-                                            args.delimiter,
-                                            args.quoting,
-                                            args.quotechar,
-                                            args.hasheader)
+        config_manager = ConfigManager()
+        config = config_manager.get_config()
     except EOFError:
-        return errno.ENODATA  # is a 61 on linux
+        sys.exit(errno.ENODATA) # 61: empty file
 
-    outgood_handler = file_io.OutputHandler(args.outgood,
+    input_handler = file_io.InputHandler(config.files,
+                                         config.dialect)
+
+    outgood_handler = file_io.OutputHandler(config.outgood,
                                             input_handler.dialect,
                                             sys.stdout,
-                                            args.silent,
-                                            args.randomout)
-    outerr_handler = file_io.OutputHandler(args.outerr,
+                                            config.silent,
+                                            config.randomout)
+    outerr_handler = file_io.OutputHandler(config.outerr,
                                            input_handler.dialect,
                                            sys.stderr,
-                                           args.silent,
-                                           args.randomout)
+                                           config.silent,
+                                           config.randomout)
 
 
-    rec_schema = load_schema(args.valid_schema)
-    rec_validator = RecValidator(valid_field_cnt=args.field_cnt,
+    rec_schema = load_schema(config.valid_schema)
+    rec_validator = RecValidator(valid_field_cnt=config.field_cnt,
                                  rec_schema=rec_schema)
 
     invalid_cnt = process_all_records(input_handler,
                                       outgood_handler,
                                       outerr_handler,
                                       rec_validator,
-                                      args.stats)
+                                      config.stats)
 
     input_handler.close()
     outgood_handler.close()
@@ -485,116 +484,135 @@ class ValidateTheValidator(object):
 
 
 
+class ConfigManager(object):
 
-def get_args() -> argparse.Namespace:
-    """ gets args and returns them
-        Input:
-            - command line args & options
-        Output:
-            - args dictionary
-    """
-    use = ("%prog is used to validate the number of fields in a file. It "
-           "writes records with a fieldcnt other than provided to output "
-           "file or stdout \n"
-           " \n"
-           "   %prog [file] [misc options]")
-    parser = argparse.ArgumentParser(description=use,
-                                     formatter_class=argparse.RawTextHelpFormatter)
+    def __init__(self):
+        self.config = None
 
-    parser.add_argument('files',
-                        default=['-'],
-                        nargs='*',
-                        help='Specifies the input file.  The default is stdin.  Multiple '
-                             'filenames can be provided.')
-    parser.add_argument('-o', '--outgood',
-                        default='-',
-                        help='Specifies the output file.  The default is stdout.  Note that'
-                             'if a filename is provided the program will override any '
-                             'file of that name.')
-    parser.add_argument('-e', '--outerr',
-                        default='-',
-                        help='Specifies the output file for invalid records.  The default '
-                             'is stderr.  Note that if a filename is provided the program '
-                             'will override any file of that name.')
-
-    parser.add_argument('-f', '--fieldcnt',
-                        type=int,
-                        dest='field_cnt',
-                        help=('Specify the number of fields in the record.  If not provided'
-                              ' it will default to number of fields on first record'))
-
-    parser.add_argument('-d', '--delimiter',
-                        help=('Specify a quoted single-column field delimiter. This may be'
-                              'determined automatically by the program.'))
-    parser.add_argument('--quoting',
-                        default=None,
-                        choices=[None, 'quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
-                        help='Specify field quoting - generally only used for stdin data.'
-                             '  The default is to have the program determine quoting.')
-    parser.add_argument('--quotechar',
-                        default='"',
-                        help='Specify field quoting character - generally only used for '
-                             'stdin data.  Default is double-quote')
-    parser.add_argument('--hasheader',
-                        dest='hasheader',
-                        default=None,
-                        action='store_true',
-                        help='Indicate that there is a header in the file.')
-    parser.add_argument('--hasnoheader',
-                        dest='hasheader',
-                        default=None,
-                        action='store_false',
-                        help=('Indicate that there is no header in the file.'
-                              'Occasionally helpful in overriding automatic '
-                              'csv dialect guessing.'))
-
-    parser.add_argument('--validschema',
-                        dest='valid_schema',
-                        type=argparse.FileType('r'),
-                        help=('Name of validation schema file'))
-
-    parser.add_argument('-s', '--stats',
-                        default=False,
-                        action='store_true',
-                        help='Causes pgm to print counts.  Default is False.')
-
-    parser.add_argument('--silent',
-                        default=False,
-                        action='store_true',
-                        help='Causes pgm to print no stats, no valid or invalid recs.  Default is off.')
-    parser.add_argument('--randomout',
-                        default=1.0,
-                        type=float,
-                        help='Causes pgm to write only a percentage of records out.')
-    parser.add_argument('--errmsg',
-                        default=False,
-                        action='store_true',
-                        help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
-    parser.add_argument('--long-help',
-                        default=False,
-                        action='store_true',
-                        help='Print more verbose help')
-
-    args = parser.parse_args()
-
-    if args.long_help:
-        print(__doc__)
-        sys.exit(0)
-
-    if args.files[0] == '-':  # stdin
-        if not args.delimiter:
-            parser.error('Please provide delimiter when piping data into program via stdin')
-        if not args.quoting:
-            args.quoting = 'quote_minimal'
-    else:
-        if len(args.files) > 1 and not args.delimiter:
-            parser.error('Please provide delimiter when reading multiple input files')
-
-    if args.randomout > 1.0 or args.randomout < 0.0:
-        parser.error('Valid values for randomout are from 0.0 to 1.0')
+    def get_config(self) -> argparse.Namespace:
+        self.get_user_config()
+        self.validate_user_config()
+        self.extend_config()
+        return self.config
 
 
-    return args
+    def get_user_config(self) -> None:
+        """ gets args and returns them
+            Input:
+                - command line args & options
+            Output:
+                - args dictionary
+        """
+        use = ("%prog is used to validate the number of fields in a file. It "
+            "writes records with a fieldcnt other than provided to output "
+            "file or stdout \n"
+            " \n"
+            "   %prog [file] [misc options]")
+        parser = argparse.ArgumentParser(description=use,
+                                        formatter_class=argparse.RawTextHelpFormatter)
+
+        parser.add_argument('files',
+                            default=['-'],
+                            nargs='*',
+                            help='Specifies the input file.  The default is stdin.  Multiple '
+                                'filenames can be provided.')
+        parser.add_argument('-o', '--outgood',
+                            default='-',
+                            help='Specifies the output file.  The default is stdout.  Note that'
+                                'if a filename is provided the program will override any '
+                                'file of that name.')
+        parser.add_argument('-e', '--outerr',
+                            default='-',
+                            help='Specifies the output file for invalid records.  The default '
+                                'is stderr.  Note that if a filename is provided the program '
+                                'will override any file of that name.')
+
+        parser.add_argument('-f', '--fieldcnt',
+                            type=int,
+                            dest='field_cnt',
+                            help=('Specify the number of fields in the record.  If not provided'
+                                ' it will default to number of fields on first record'))
+
+        parser.add_argument('-d', '--delimiter',
+                            help=('Specify a quoted single-column field delimiter. This may be'
+                                'determined automatically by the program.'))
+        parser.add_argument('--quoting',
+                            default=None,
+                            choices=[None, 'quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
+                            help='Specify field quoting - generally only used for stdin data.'
+                                '  The default is to have the program determine quoting.')
+        parser.add_argument('--quotechar',
+                            default='"',
+                            help='Specify field quoting character - generally only used for '
+                                'stdin data.  Default is double-quote')
+        parser.add_argument('--hasheader',
+                            dest='hasheader',
+                            default=None,
+                            action='store_true',
+                            help='Indicate that there is a header in the file.')
+        parser.add_argument('--hasnoheader',
+                            dest='hasheader',
+                            default=None,
+                            action='store_false',
+                            help=('Indicate that there is no header in the file.'
+                                'Occasionally helpful in overriding automatic '
+                                'csv dialect guessing.'))
+
+        parser.add_argument('--validschema',
+                            dest='valid_schema',
+                            type=argparse.FileType('r'),
+                            help=('Name of validation schema file'))
+
+        parser.add_argument('-s', '--stats',
+                            default=False,
+                            action='store_true',
+                            help='Causes pgm to print counts.  Default is False.')
+
+        parser.add_argument('--silent',
+                            default=False,
+                            action='store_true',
+                            help='Causes pgm to print no stats, no valid or invalid recs.  Default is off.')
+        parser.add_argument('--randomout',
+                            default=1.0,
+                            type=float,
+                            help='Causes pgm to write only a percentage of records out.')
+        parser.add_argument('--errmsg',
+                            default=False,
+                            action='store_true',
+                            help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
+        parser.add_argument('--long-help',
+                            default=False,
+                            action='store_true',
+                            help='Print more verbose help')
+
+        self.config = parser.parse_args()
+
+        if self.config.long_help:
+            print(__doc__)
+            sys.exit(0)
+
+
+    def validate_user_config(self) -> None:
+
+        if self.config.files[0] == '-':  # stdin
+            if not self.config.delimiter:
+                parser.error('Please provide delimiter when piping data into program via stdin')
+            if not self.config.quoting:
+                self.config.quoting = 'quote_minimal'
+        else:
+            if len(self.config.files) > 1 and not self.config.delimiter:
+                parser.error('Please provide delimiter when reading multiple input files')
+
+        if self.config.randomout > 1.0 or self.config.randomout < 0.0:
+            parser.error('Valid values for randomout are from 0.0 to 1.0')
+
+
+    def extend_config(self):
+        self.config.dialect = csvhelper.get_dialect(self.config.files,
+                                                    self.config.delimiter,
+                                                    self.config.quoting,
+                                                    self.config.quotechar,
+                                                    self.config.hasheader)
 
 
 

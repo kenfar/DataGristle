@@ -6,7 +6,7 @@
       - explore details around quoting flags - they seem very inaccurate
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
 import os
 import os.path
@@ -89,14 +89,13 @@ class FileTyper(object):
         self.quote_char = quote_char
         self.fqfn = fqfn
         self.format_type: Optional[str] = None
-        #self.fixed_length = None
         self.field_cnt: Optional[int] = None
         self.record_cnt: Optional[int] = None
         self.record_cnt_is_est: Optional[bool] = None
         self.dialect: Optional[csvhelper.Dialect] = None
         self.read_limit: int = read_limit
 
-    def analyze_file(self) -> csvhelper.Dialect:
+    def analyze_file(self) -> csv.Dialect:
         """ analyzes a file to determine the structure of the file in terms
             of whether or it it is delimited, what the delimiter is, etc.
         """
@@ -131,7 +130,7 @@ class FileTyper(object):
         return self.dialect
 
 
-    def _get_dialect(self) -> csvhelper.Dialect:
+    def _get_dialect(self) -> csv.Dialect:
         """ gets the dialect for a file
             Uses the csv.Sniffer class
             Then performs additional processing to try to improve accuracy of
@@ -153,7 +152,7 @@ class FileTyper(object):
 
 
 
-    def _get_dialect_quoting(self, dialect: csvhelper.Dialect) -> int:
+    def _get_dialect_quoting(self, dialect: csv.Dialect) -> int:
         """ Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
             get a more accurate guess.  In the event that there's an extremely
             consistent set of data that is either all quoted or not quoted at
@@ -334,8 +333,12 @@ class FileTyper(object):
 
 
 
-def get_dialect(files: List[str], delimiter: str, quotename: str, quotechar: str, recdelimiter: str, has_header: bool)\
-                -> csvhelper.Dialect:
+def get_dialect(files: List[str],
+                delimiter: str,
+                quotename: str,
+                quotechar: str,
+                recdelimiter: str,
+                has_header: bool) -> csv.Dialect:
     """ Gets a csv dialect for a csv file or set of attributes.
 
     If files are provided and are not '-' -then use files and run file_type.FileTyper
