@@ -1,0 +1,153 @@
+#!/usr/bin/env python
+"""
+"""
+import sys
+import argparse
+from pprint import pprint as pp
+import errno
+from typing import Dict, List, Any, Optional, Union
+
+from signal import signal, SIGPIPE, SIG_DFL
+
+import datagristle.csvhelper as csvhelper
+import datagristle.file_sorter as file_sorter
+
+#--- Ignore SIG_PIPE and don't throw exceptions on it
+#--- (http://docs.python.org/library/signal.html)
+signal(SIGPIPE, SIG_DFL)
+
+
+
+def main() -> int:
+    """ runs all processes:
+            - gets args
+            - analyzes file to determine csv characteristics unless data is
+              provided via stdin
+            - runs each input record through process_cols to get output
+            - writes records
+    """
+    try:
+        config_manager = ConfigManager()
+        config = config_manager.get_config()
+    except EOFError:
+        sys.exit(errno.ENODATA) # 61: empty file
+
+    sorter = file_sorter.CSVPythonSorter(config.infile,
+                                         config.outfile,
+                                         config.sort_keys,
+                                         config.dialect,
+                                         config.dedupe)
+
+    sorter.sort_file()
+    sorter.close()
+
+
+
+class ConfigManager(object):
+
+    def __init__(self):
+        self.config = None
+
+    def get_config(self) -> argparse.Namespace:
+        self.get_user_config()
+        self.validate_user_config()
+        self.extend_config()
+        return self.config
+
+    def get_user_config(self) -> None:
+        """ gets args and returns them
+            Input:
+                - command line args & options
+            Output:
+                - args dictionary
+        """
+        use = ("%prog is used to validate the number of fields in a file. It "
+               "writes records with a fieldcnt other than provided to output "
+               "file or stdout \n"
+               " \n"
+               "   %prog [file] [misc options]")
+        self.parser = argparse.ArgumentParser(description=use,
+                                              formatter_class=argparse.RawTextHelpFormatter)
+
+        self.parser.add_argument('-i', '--infile',
+                                 default='-',
+                                 help='Specifies the input file.  The default is stdin.')
+        self.parser.add_argument('-o', '--outfile',
+                                 default='-',
+                                 help='Specifies the output file.  The default is stdout.  Note that'
+                                      'if a filename is provided the program will override any '
+                                      'file of that name.')
+        self.parser.add_argument('-D', '--dedupe',
+                                 default=False,
+                                 action='store_true',
+                                 help='Directs program to remove duplicates - based on the key provided. '
+                                      'Note that this will treat 0 and 0.0 the same if the keys are specified '
+                                      'as numeric. '
+                                      'However, case differences will not be ignored.')
+        self.parser.add_argument('-k', '--keys',
+                                 required=True,
+                                 nargs='+',
+                                 help='Specifies the key configuration. Each key specified consists of three values: '
+                                      '1) position (0-offset), 2) type (s=string, i=integer, f=float), '
+                                      '3) order (f=forward, r=reverse). '
+                                      'All 3 values are required for each key.  Multiple keys can be specified by '
+                                      'separating groups of 3 with a comma or including all within quotes and '
+                                      'separating the groups with a space.')
+
+        self.parser.add_argument('-d', '--delimiter',
+                                 help=('Specify a quoted single-column field delimiter. This may be'
+                                       'determined automatically by the program.'))
+        self.parser.add_argument('--quoting',
+                                 default=None,
+                                 choices=[None, 'quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
+                                 help='Specify field quoting - generally only used for stdin data.'
+                                      '  The default is to have the program determine quoting.')
+        self.parser.add_argument('--quotechar',
+                                 default='"',
+                                 help='Specify field quoting character - generally only used for '
+                                      'stdin data.  Default is double-quote')
+        self.parser.add_argument('--hasheader',
+                                 dest='hasheader',
+                                 default=None,
+                                 action='store_true',
+                                 help='Indicate that there is a header in the file.')
+        self.parser.add_argument('--hasnoheader',
+                                 dest='hasheader',
+                                 default=None,
+                                 action='store_false',
+                                 help=('Indicate that there is no header in the file.'
+                                       'Occasionally helpful in overriding automatic '
+                                       'csv dialect guessing.'))
+
+        self.parser.add_argument('--long-help',
+                                 default=False,
+                                 action='store_true',
+                                 help='Print more verbose help')
+
+        self.config = self.parser.parse_args()
+
+
+    def validate_user_config(self):
+
+        if self.config.long_help:
+            print(__doc__)
+            sys.exit(0)
+
+        if self.config.infile == '-':  # stdin
+            if not self.config.delimiter:
+                self.parser.error('Please provide delimiter when piping data into program via stdin')
+            if not self.config.quoting:
+                self.config.quoting = 'quote_minimal'
+
+    def extend_config(self):
+        self.config.dialect = csvhelper.get_dialect([self.config.infile],
+                                                    self.config.delimiter,
+                                                    self.config.quoting,
+                                                    self.config.quotechar,
+                                                    self.config.hasheader)
+        self.config.sort_keys = file_sorter.SortKeysConfig(self.config.keys)
+
+
+
+if __name__ == '__main__':
+    sys.exit(main())
