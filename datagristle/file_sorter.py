@@ -1,12 +1,277 @@
 #!/usr/bin/env python
 
-import subprocess
+import csv
+from dataclasses import dataclass
+import errno
+from operator import itemgetter
 from os.path import isfile, isdir
 from os.path import dirname, basename
 from os.path import join  as pjoin
-from typing import List
+from pprint import pprint as pp
+import subprocess
+import sys
+import time
+from typing import List, Dict, Any, Union
 
 import datagristle.csvhelper as csvhelper
+import datagristle.file_io as file_io
+
+
+class SortKeysConfig(object):
+
+    def __init__(self,
+                 sort_keys: str):
+        self.key_fields = []
+        self.load_config(sort_keys)
+
+
+    def load_config(self,
+                    key_fields: List[str]) -> None:
+
+        for key_field in key_fields:
+            sort_key_rec = SortKeyRecord(key_field)
+            self.key_fields.append(sort_key_rec)
+
+
+    def multi_string_orders(self) -> bool:
+        string_orders = set([x.order for x in self.key_fields if x.type == 'str'])
+        return bool(len(string_orders) > 1)
+
+
+    def get_primary_order(self) -> str:
+        """Returns:
+             - A string - either 'forward' or 'reverse'
+        """
+        string_order = list(set([x.order for x in self.key_fields if x.type == 'str']))
+        if string_order:
+            return string_order[0]
+        else:
+            return self.key_fields[0].order # yep, returning any ole arbitrary type
+
+    def get_sort_fields(self) -> List[int]:
+        """ Get the list of columns to sort the self.keys list on
+            This will always be a sequential list of numbers starting with 0.
+        """
+        return list(range(len(self.key_fields)))
+
+
+
+@dataclass
+class SortKeyRecord:
+    position: int
+    type: str
+    order: str
+
+    def __init__(self,
+                 key_field: str) -> None:
+        self.order_transform = {'f':'forward',
+                                'r':'reverse'}
+        self.type_transform = {'s':'str',
+                               'i':'int',
+                               'f':'float'}
+        self.load_from_string(key_field)
+
+
+    def load_from_string(self,
+                         key_field: str) -> None:
+        """ The input string looks like this: '5SF 3ir 2ff'
+        """
+        if len(key_field) < 3:
+            raise ValueError(f'Invalid key field value: {key_field} - expect 3+ characters')
+
+        try:
+            self.order = self.order_transform[key_field[-1].lower()]
+        except KeyError:
+            raise ValueError(f"Invalid key order value - should be forward or reverse ")
+
+        try:
+            self.type = self.type_transform[key_field[-2].lower()]
+        except KeyError:
+            raise ValueError(f"Invalid key type value - should be str, int or float ")
+
+        try:
+            self.position = int(key_field[:-2])
+        except ValueError:
+            raise ValueError(f"Invalid key position value - should be an integer")
+
+
+
+
+class CSVPythonSorter(object):
+    """
+    """
+
+    def __init__(self,
+                 in_fqfn: str,
+                 out_fqfn: str,
+                 sort_keys_config: SortKeysConfig,
+                 dialect: csv.Dialect,
+                 dedupe: bool) -> None:
+
+        self.dedupe = dedupe
+        self.sort_key_config = sort_keys_config
+
+        self.header_rec = None
+        self.all_recs = []
+        self.keys = []
+
+        self.stats = {}
+        self.stats['recs_deduped'] = 0
+
+        #todo: handle relative path subtleties:
+        #    for reference:  https://stackoverflow.com/questions/918154/relative-paths-in-python
+        #if not isdir(dirname(out_fqfn)):
+        #    raise ValueError('Invalid sort output directory: %s' % out_fqfn)
+
+        self.input_handler = file_io.InputHandler([in_fqfn], dialect)
+
+        self.output_handler = file_io.OutputHandler(out_fqfn,
+                                                    self.input_handler.dialect,
+                                                    sys.stdout)
+
+    def sort_file(self) -> Dict[str, int]:
+        """ Sort input file giving output file
+            Returns a dictionary of counts.
+        """
+        self._load_file_and_prepare_data()
+
+        if self.sort_key_config.multi_string_orders():
+            self._multipass_sort()
+        else:
+            self._singlepass_sort()
+
+        self._write_file_and_dedupe()
+
+        self.stats['recs_read'] = self.input_handler.rec_cnt
+        self.stats['recs_written'] = self.output_handler.rec_cnt
+
+
+    def close(self) -> int:
+        self.input_handler.close()
+        self.output_handler.close()
+
+        if self.input_handler.rec_cnt == 0:  # catches empty stdin
+            return errno.ENODATA  # is a 61 on linux
+        else:
+            return 0
+
+
+
+
+    def _load_file_and_prepare_data(self) -> None:
+        #print('\n ------------------ Read Phase: -------------------------')
+        start_time = time.time()
+        keys = self.keys
+        all_recs = self.all_recs
+        primary_order = self.sort_key_config.get_primary_order()
+        if self.input_handler.dialect.has_header:
+            has_header_adjustment = 1
+        else:
+            has_header_adjustment = 0
+
+        for rec in self.input_handler:
+            if self.input_handler.dialect.has_header and self.input_handler.rec_cnt == 1:
+                self.header_rec = rec
+            else:
+                all_recs.append(rec)
+                sort_values = self._get_sort_values(self.sort_key_config.key_fields, rec, primary_order)
+                keys.append((*sort_values, self.input_handler.rec_cnt - 1 - has_header_adjustment))
+        #print(f'    duration = {(time.time() - start_time):.4f}')
+
+
+
+    def _get_sort_values(self,
+                         key_fields: List[Any],
+                         rec: List[Union[str, int, float]],
+                         primary_order: str) -> List[Any]:
+
+        return [transform(rec[key_field.position], key_field, primary_order) for key_field in key_fields]
+
+
+
+    def _singlepass_sort(self) -> None:
+
+        #print('\n ------------------ Sort Phase: -------------------------')
+        start_time = time.time()
+        sort_fields = self.sort_key_config.get_sort_fields()
+        primary_order = self.sort_key_config.get_primary_order()
+        if primary_order == 'forward':
+            self.keys.sort(key=itemgetter(*sort_fields))
+        else:
+            self.keys.sort(key=itemgetter(*sort_fields), reverse=True)
+        #print(f'    duration = {(time.time() - start_time):.6f}')
+
+
+    def _multipass_sort(self) -> None:
+
+        #print('\n ------------------ Multi-Pass Sort Phase: -------------------------')
+        start_time = time.time()
+
+        sort_fields = self.sort_key_config.get_sort_fields()
+        for i, key_field in enumerate(reversed(self.sort_key_config.key_fields)):
+            sort_field = sort_fields[len(sort_fields) - (i+1)]
+            if key_field.order == 'reverse':
+                self.keys.sort(key=itemgetter(sort_field), reverse=True)
+            else:
+                self.keys.sort(key=itemgetter(sort_field))
+        #print(f'    duration = {(time.time() - start_time):.6f}')
+
+
+    def _write_file_and_dedupe(self) -> None:
+        #print('\n ------------------ Write Phase: -------------------------')
+        keys = self.keys
+        all_recs = self.all_recs
+        stats = self.stats
+
+        start_time = time.time()
+
+        # Run it once to initiate - especially for unit testing.
+        isduplicate(None)
+
+        if self.header_rec:
+            self.output_handler.write_rec(self.header_rec)
+
+        for key in keys:
+            if self.dedupe and isduplicate(key=key[:-1]):
+                stats['recs_deduped'] += 1
+            else:
+                self.output_handler.write_rec(all_recs[key[-1]])
+        #print(f'    duration = {(time.time() - start_time):.6f}')
+
+
+
+def isduplicate(key: Union[str, int, float],
+                last_key: Union[str, int, float] = [None]) -> bool:
+
+    if last_key[0] is not None and last_key[0] == key:
+        return True
+    else:
+        last_key.clear()
+        last_key.append(key)
+        return False
+
+
+
+def transform(field_value: str,
+              key_field: SortKeyRecord,
+              primary_order: str) -> Union[str, int, float]:
+
+    if key_field.type == 'str':
+        transformed_field_value = field_value
+    elif key_field.type == 'int':
+        transformed_field_value = int(field_value)
+    elif key_field.type == 'float':
+        transformed_field_value = float(field_value)
+    else:
+        raise ValueError(f'Invalid key-field type: {key_field.type}')
+
+    if (primary_order == 'forward'
+            and key_field.type in ('int', 'float')
+            and key_field.order == 'reverse'):
+                return transformed_field_value * -1
+    else:
+        return transformed_field_value
+
 
 
 
