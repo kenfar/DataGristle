@@ -376,6 +376,7 @@ class ConfigManager(configulator.Config):
         self.add_standard_config('quoting')
         self.add_standard_config('quotechar')
         self.add_standard_config('escapechar')
+        self.add_standard_config('doublequote')
         self.add_standard_config('has_header')
         self.add_standard_config('has_no_header')
         self.add_custom_config(name='columns',
@@ -479,7 +480,9 @@ class ConfigManager(configulator.Config):
                                                   config['delimiter'],
                                                   config['quoting'],
                                                   config['quotechar'],
-                                                  config['has_header'])
+                                                  config['has_header'],
+                                                  config['doublequote'],
+                                                  config['escapechar'])
 
         if config['col_type'] in ('each', 'all'):
             config['col_set'] = [0]

@@ -105,7 +105,7 @@ class CSVPythonSorter(object):
                  in_fqfn: str,
                  out_fqfn: str,
                  sort_keys_config: SortKeysConfig,
-                 dialect: csv.Dialect,
+                 dialect: csvhelper.Dialect,
                  dedupe: bool) -> None:
 
         self.dedupe = dedupe
@@ -124,10 +124,20 @@ class CSVPythonSorter(object):
         #    raise ValueError('Invalid sort output directory: %s' % out_fqfn)
 
         self.input_handler = file_io.InputHandler([in_fqfn], dialect)
+        #print('------------------------------------------------')
+        #pp(repr(self.input_handler.dialect))
+        #pp(repr(self.input_handler.dialect.__dict__))
+        #pp(repr(dialect.__dict__))
+        #print('------------------------------------------------')
+
 
         self.output_handler = file_io.OutputHandler(out_fqfn,
                                                     self.input_handler.dialect,
                                                     sys.stdout)
+        #print('================================================')
+        #pp(repr(self.output_handler.dialect))
+        #pp(repr(self.output_handler.dialect.__dict__))
+        #print('================================================')
 
     def sort_file(self) -> Dict[str, int]:
         """ Sort input file giving output file
@@ -170,6 +180,7 @@ class CSVPythonSorter(object):
             has_header_adjustment = 0
 
         for rec in self.input_handler:
+            #pp(rec)
             if self.input_handler.dialect.has_header and self.input_handler.rec_cnt == 1:
                 self.header_rec = rec
             else:

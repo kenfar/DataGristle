@@ -40,6 +40,7 @@
     Copyright 2011-2020 Ken Farmer
 """
 
+import errno
 import sys
 from os.path import basename
 from pprint import pprint as pp
@@ -66,7 +67,7 @@ def main():
     """
 
     try:
-        config_manager  = ConfigManager()
+        config_manager = ConfigManager()
         config = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
@@ -188,14 +189,15 @@ class ConfigManager(configulator.Config):
         self.add_standard_config('delimiter')
         self.add_standard_config('quoting')
         self.add_standard_config('quotechar')
+        self.add_standard_config('doublequote')
         self.add_standard_config('escapechar')
         self.add_standard_config('has_header')
         self.add_custom_config(name='recnum',
-                                    short_name='r',
-                                    arg_type='option',
-                                    default=0,
-                                    config_type=int,
-                                    help_msg='Displays this record number based on 0 offset, defaulting to 1')
+                               short_name='r',
+                               arg_type='option',
+                               default=0,
+                               config_type=int,
+                               help_msg='Displays this record number based on 0 offset, defaulting to 1')
         self.process_configs()
 
     def extend_config(self) -> None:
@@ -205,7 +207,9 @@ class ConfigManager(configulator.Config):
                                                        config['delimiter'],
                                                        config['quoting'],
                                                        config['quotechar'],
-                                                       config['has_header'])
+                                                       config['has_header'],
+                                                       config['doublequote'],
+                                                       config['escapechar'])
 
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):

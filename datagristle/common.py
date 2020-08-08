@@ -2,7 +2,7 @@
 """ Used to hold all common  general-purpose functions and classes
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2017 Ken Farmer
+    Copyright 2011-2020 Ken Farmer
 """
 import sys
 import argparse
@@ -154,6 +154,17 @@ class ArgProcessor(object):
                                  help=('Indicate that there is no header in the file.  '
                                        'Occasionally helpful in overriding automatic '
                                        'csv dialect guessing.'))
+        self.parser.add_argument('--doublequote',
+                                 dest='doublequote',
+                                 default=None,
+                                 action='store_true',
+                                 help='Turn on escaping of quotes with doublequotes.')
+        self.parser.add_argument('--no-doublequote',
+                                 dest='doublequote',
+                                 default=None,
+                                 action='store_false',
+                                 help='Turn off escaping of quotes with doublequotes.')
+
 
     def add_option_dry_run(self, help_msg: str = None) -> None:
         """

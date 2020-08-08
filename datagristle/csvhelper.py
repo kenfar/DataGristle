@@ -6,6 +6,7 @@
 """
 
 import csv
+import os.path
 from typing import Optional, List
 
 import datagristle.file_type as file_type
@@ -69,23 +70,52 @@ def get_dialect(infiles: List[str],
                 delimiter: Optional[str],
                 quoting: Optional[str],
                 quotechar: Optional[str],
-                has_header: Optional[bool]) -> Dialect:
+                has_header: Optional[bool],
+                doublequote: Optional[bool],
+                escapechar: Optional[str]) -> Dialect:
     """ Get the csv dialect from an inspection of the file and user input
         Raises:
             - EOFError if manual inspection of the file determines that it is empty.
     """
 
     if infiles[0] == '-':
-        dialect = override_dialect(Dialect, delimiter, quoting, quotechar, has_header)
+        print('cvshelper - getting dialect from cmdline for -')
+        dialect = override_dialect(Dialect,
+                                   delimiter,
+                                   quoting,
+                                   quotechar,
+                                   has_header,
+                                   doublequote,
+                                   escapechar)
     else:
         for infile in infiles:
-            my_file = file_type.FileTyper(infile)
-            try:
-                dialect = my_file.analyze_file()
-                dialect = override_dialect(dialect, delimiter, quoting, quotechar, has_header)
-                break
-            except file_type.IOErrorEmptyFile:
-                continue
+            if delimiter and quoting:
+                dialect = Dialect(delimiter=delimiter,
+                                  has_header=has_header,
+                                  quoting=get_quote_number(quoting),   #todo: do we need this function on each of these?
+                                  quotechar=quotechar,
+                                  doublequote=doublequote,
+                                  escapechar=escapechar)
+                if os.path.getsize(infile) == 0:
+                    print('debug - it thinks file is empty')
+                    raise EOFError
+                else:
+                    break
+            else:
+                my_file = file_type.FileTyper(infile)
+                try:
+                    dialect = my_file.analyze_file()
+                    print('cvshelper - about to override dialect!')
+                    dialect = override_dialect(dialect,
+                                               delimiter,
+                                               quoting,
+                                               quotechar,
+                                               has_header,
+                                               doublequote,
+                                               escapechar)
+                    break
+                except file_type.IOErrorEmptyFile:
+                    continue
         else:
             raise EOFError
 
@@ -97,7 +127,9 @@ def override_dialect(dialect: Dialect,
                      delimiter: Optional[str],
                      quoting: Optional[str],
                      quotechar: Optional[str],
-                     has_header: Optional[bool]) -> Dialect:
+                     has_header: Optional[bool],
+                     doublequote: Optional[bool],
+                     escapechar: Optional[str]) -> Dialect:
     """ Consolidates individual dialect fields with a csv Dialect structure.
 
         Most commonly used by entry points / scripts to combine explicit csv dialect fields
@@ -106,7 +138,7 @@ def override_dialect(dialect: Dialect,
         by the user and so these values will usually be None.
     """
 
-    dialect.delimiter  = delimiter or dialect.delimiter
+    dialect.delimiter = delimiter or dialect.delimiter
 
     if quoting:
         dialect.quoting = file_type.get_quote_number(quoting) if quoting else dialect.quoting
@@ -122,6 +154,8 @@ def override_dialect(dialect: Dialect,
     except AttributeError:
         dialect.has_header = False
 
+    dialect.doublequote = doublequote if doublequote is not None else dialect.doublequote
+    dialect.escapechar = escapechar or dialect.escapechar
     dialect.lineterminator = '\n'
 
     return dialect
