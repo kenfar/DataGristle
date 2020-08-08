@@ -488,6 +488,7 @@ class ConfigManager(object):
 
     def __init__(self):
         self.config = None
+        self.parser = None
 
     def get_config(self) -> argparse.Namespace:
         self.get_user_config()
@@ -508,84 +509,99 @@ class ConfigManager(object):
             "file or stdout \n"
             " \n"
             "   %prog [file] [misc options]")
-        parser = argparse.ArgumentParser(description=use,
-                                        formatter_class=argparse.RawTextHelpFormatter)
+        self.parser = argparse.ArgumentParser(description=use,
+                                              formatter_class=argparse.RawTextHelpFormatter)
 
-        parser.add_argument('files',
-                            default=['-'],
-                            nargs='*',
-                            help='Specifies the input file.  The default is stdin.  Multiple '
-                                'filenames can be provided.')
-        parser.add_argument('-o', '--outgood',
-                            default='-',
-                            help='Specifies the output file.  The default is stdout.  Note that'
-                                'if a filename is provided the program will override any '
-                                'file of that name.')
-        parser.add_argument('-e', '--outerr',
-                            default='-',
-                            help='Specifies the output file for invalid records.  The default '
-                                'is stderr.  Note that if a filename is provided the program '
-                                'will override any file of that name.')
+        self.parser.add_argument('files',
+                                 default=['-'],
+                                 nargs='*',
+                                 help='Specifies the input file.  The default is stdin.  Multiple '
+                                     'filenames can be provided.')
+        self.parser.add_argument('-o', '--outgood',
+                                 default='-',
+                                 help='Specifies the output file.  The default is stdout.  Note that'
+                                      'if a filename is provided the program will override any '
+                                      'file of that name.')
+        self.parser.add_argument('-e', '--outerr',
+                                 default='-',
+                                 help='Specifies the output file for invalid records.  The default '
+                                      'is stderr.  Note that if a filename is provided the program '
+                                      'will override any file of that name.')
 
-        parser.add_argument('-f', '--fieldcnt',
-                            type=int,
-                            dest='field_cnt',
-                            help=('Specify the number of fields in the record.  If not provided'
-                                ' it will default to number of fields on first record'))
+        self.parser.add_argument('-f', '--fieldcnt',
+                                 type=int,
+                                 dest='field_cnt',
+                                 help=('Specify the number of fields in the record.  If not provided'
+                                       ' it will default to number of fields on first record'))
 
-        parser.add_argument('-d', '--delimiter',
-                            help=('Specify a quoted single-column field delimiter. This may be'
-                                'determined automatically by the program.'))
-        parser.add_argument('--quoting',
-                            default=None,
-                            choices=[None, 'quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
-                            help='Specify field quoting - generally only used for stdin data.'
-                                '  The default is to have the program determine quoting.')
-        parser.add_argument('--quotechar',
-                            default='"',
-                            help='Specify field quoting character - generally only used for '
-                                'stdin data.  Default is double-quote')
-        parser.add_argument('--hasheader',
-                            dest='hasheader',
-                            default=None,
-                            action='store_true',
-                            help='Indicate that there is a header in the file.')
-        parser.add_argument('--hasnoheader',
-                            dest='hasheader',
-                            default=None,
-                            action='store_false',
-                            help=('Indicate that there is no header in the file.'
-                                'Occasionally helpful in overriding automatic '
-                                'csv dialect guessing.'))
+        self.parser.add_argument('-d', '--delimiter',
+                                 help=('Specify a quoted single-column field delimiter. This may be'
+                                       'determined automatically by the program.'))
+        self.parser.add_argument('--quoting',
+                                 default=None,
+                                 choices=[None, 'quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
+                                 help='Specify field quoting - generally only used for stdin data.'
+                                      '  The default is to have the program determine quoting.')
+        self.parser.add_argument('--quotechar',
+                                 default='"',
+                                 help='Specify field quoting character - generally only used for '
+                                      'stdin data.  Default is double-quote')
+        self.parser.add_argument('--escapechar',
+                                 default=None,
+                                 help='Escape quotes within fields by ecaping them with this character')
+        self.parser.add_argument('--doublequote',
+                                 dest='doublequote',
+                                 default=None,
+                                 action='store_true',
+                                 help='Turns on escaping quotes through double-quoting')
+        self.parser.add_argument('--nodoublequote',
+                                 dest='doublequote',
+                                 default=None,
+                                 action='store_false',
+                                 help='Turns off escaping quotes through double-quoting.')
 
-        parser.add_argument('--validschema',
-                            dest='valid_schema',
-                            type=argparse.FileType('r'),
-                            help=('Name of validation schema file'))
 
-        parser.add_argument('-s', '--stats',
-                            default=False,
-                            action='store_true',
-                            help='Causes pgm to print counts.  Default is False.')
+        self.parser.add_argument('--hasheader',
+                                 dest='hasheader',
+                                 default=None,
+                                 action='store_true',
+                                 help='Indicate that there is a header in the file.')
+        self.parser.add_argument('--hasnoheader',
+                                 dest='hasheader',
+                                 default=None,
+                                 action='store_false',
+                                 help=('Indicate that there is no header in the file.'
+                                       'Occasionally helpful in overriding automatic '
+                                       'csv dialect guessing.'))
 
-        parser.add_argument('--silent',
-                            default=False,
-                            action='store_true',
-                            help='Causes pgm to print no stats, no valid or invalid recs.  Default is off.')
-        parser.add_argument('--randomout',
-                            default=1.0,
-                            type=float,
-                            help='Causes pgm to write only a percentage of records out.')
-        parser.add_argument('--errmsg',
-                            default=False,
-                            action='store_true',
-                            help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
-        parser.add_argument('--long-help',
-                            default=False,
-                            action='store_true',
-                            help='Print more verbose help')
+        self.parser.add_argument('--validschema',
+                                 dest='valid_schema',
+                                 type=argparse.FileType('r'),
+                                 help=('Name of validation schema file'))
 
-        self.config = parser.parse_args()
+        self.parser.add_argument('-s', '--stats',
+                                 default=False,
+                                 action='store_true',
+                                 help='Causes pgm to print counts.  Default is False.')
+
+        self.parser.add_argument('--silent',
+                                 default=False,
+                                 action='store_true',
+                                 help='Causes pgm to print no stats, no valid or invalid recs.  Default is off.')
+        self.parser.add_argument('--randomout',
+                                 default=1.0,
+                                 type=float,
+                                 help='Causes pgm to write only a percentage of records out.')
+        self.parser.add_argument('--errmsg',
+                                 default=False,
+                                 action='store_true',
+                                 help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
+        self.parser.add_argument('--long-help',
+                                 default=False,
+                                 action='store_true',
+                                 help='Print more verbose help')
+
+        self.config = self.parser.parse_args()
 
         if self.config.long_help:
             print(__doc__)
@@ -596,15 +612,15 @@ class ConfigManager(object):
 
         if self.config.files[0] == '-':  # stdin
             if not self.config.delimiter:
-                parser.error('Please provide delimiter when piping data into program via stdin')
+                self.parser.error('Please provide delimiter when piping data into program via stdin')
             if not self.config.quoting:
                 self.config.quoting = 'quote_minimal'
         else:
             if len(self.config.files) > 1 and not self.config.delimiter:
-                parser.error('Please provide delimiter when reading multiple input files')
+                self.parser.error('Please provide delimiter when reading multiple input files')
 
         if self.config.randomout > 1.0 or self.config.randomout < 0.0:
-            parser.error('Valid values for randomout are from 0.0 to 1.0')
+            self.parser.error('Valid values for randomout are from 0.0 to 1.0')
 
 
     def extend_config(self):
@@ -612,7 +628,9 @@ class ConfigManager(object):
                                                     self.config.delimiter,
                                                     self.config.quoting,
                                                     self.config.quotechar,
-                                                    self.config.hasheader)
+                                                    self.config.hasheader,
+                                                    self.config.doublequote,
+                                                    self.config.escapechar)
 
 
 

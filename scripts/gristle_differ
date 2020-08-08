@@ -178,6 +178,7 @@ import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
 
 import jsonschema
+import validictory
 
 #Ignore SIG_PIPE and don't throw exceptions on it...
 #(http://docs.python.org/library/signal.html)
@@ -517,6 +518,7 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                                                           "quote_minimal", "quote_nonnumeric",
                                                           "0", "1", "2", "3"]},
                          'quotechar':       {"type":     ["null", "string"]},
+                         'doublequote':     {"type":     ["null", "boolean"]},
                          'escapechar':      {"type":     ["null", "string"],
                                              "required": False},
                          'stats':           {"type":     "boolean",
@@ -531,6 +533,9 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                          },
                      'additionalProperties': False
                     }
+
+
+    # todo: eliminate this duplicate structure.  I don't recall why it's here.
     config_schema2 = {'type': 'object',
                      'properties': {
                          'files':           {"type":     "array"},
@@ -562,6 +567,7 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                                                           "quote_minimal", "quote_nonnumeric",
                                                           "0", "1", "2", "3"]},
                          'quotechar':       {"type":     ["null", "string"]},
+                         'doublequote':     {"type":     ["null", "boolean"]},
                          'escapechar':      {"type":     ["null", "string"]},
                          'stats':           {"type":     "boolean"},
                          'dry_run':         {"type":     "boolean"},
@@ -572,7 +578,6 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
                      'additionalProperties': False,
                      'required': []
                     }
-
 
     config_defaults = {'dry_run':      False,
                        'key_cols':     [],
@@ -609,7 +614,6 @@ def setup_config(args: Dict[str, Any]) -> Dict[str, Any]:
 
     #--- validate the consolidated config: ---
     jsonschema.validate(instance=config.cm_config, schema=config_schema2)
-
 
     try:
         config.validate()

@@ -24,7 +24,7 @@ class InputHandler(object):
 
     def __init__(self,
                  files: List[str],
-                 dialect) -> None:
+                 dialect: csvhelper.Dialect) -> None:
 
         self.dialect = dialect
         self.files = files
@@ -133,10 +133,9 @@ class OutputHandler(object):
         self.dialect = dialect
         self.rec_cnt = 0
         if self.output_filename == '-':
-            #print('*************** writing to stdout *******************')
             self.outfile = default_output
         else:
-            self.outfile = open(output_filename, "wt", encoding='utf-8')
+            self.outfile = open(output_filename, "wt", encoding='utf-8', newline='')
         if dialect:
             self.writer = csv.writer(self.outfile, dialect=dialect)
         else:

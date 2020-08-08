@@ -275,6 +275,7 @@ class ConfigManager(configulator.Config):
         self.add_standard_config('delimiter')
         self.add_standard_config('quoting')
         self.add_standard_config('quotechar')
+        self.add_standard_config('doublequote')
         self.add_standard_config('escapechar')
         self.add_standard_config('has_header')
         self.add_standard_config('has_no_header')
@@ -326,7 +327,9 @@ class ConfigManager(configulator.Config):
                                                        self.config['delimiter'],
                                                        self.config['quoting'],
                                                        self.config['quotechar'],
-                                                       self.config['has_header'])
+                                                       self.config['has_header'],
+                                                       self.config['doublequote'],
+                                                       self.config['escapechar'])
 
 
 
