@@ -15,6 +15,7 @@ import argparse
 import collections
 import copy
 import os
+from os.path import basename, splitext
 from pprint import pprint as pp
 import sys
 from typing import List, Dict, Tuple, Any, Union, Callable, NamedTuple
@@ -39,6 +40,13 @@ STANDARD_CONFIGS['outfile'] = {'short_name': 'o',
                                'help': "output filename or '-' for stdout (the default)",
                                'type': str,
                                'arg_type': 'option'}
+
+STANDARD_CONFIGS['config-fn'] = {'default': None,
+                                 'required': True,
+                                 'help': "Name of config file where more options can be found",
+                                 'type': str,
+                                 'arg_type': 'option'}
+
 STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'default': None,
                                  'required': True,
@@ -70,6 +78,7 @@ STANDARD_CONFIGS['escapechar'] = {'default': None,
                                   'arg_type': 'option',
                                   'min_length': 1,
                                   'max_length': 1}
+
 STANDARD_CONFIGS['doublequote'] = {'default': None,
                                    'required': True,
                                    'help': 'csv dialect - quotes are escaped thru doublequoting',
@@ -84,6 +93,7 @@ STANDARD_CONFIGS['nodoublequote'] = {'default': None,
                                      'arg_type': 'option',
                                      'action': 'store_const',
                                      'const': False}
+
 STANDARD_CONFIGS['has_header'] = {'default': None,
                                   'required': True,
                                   'help': 'csv dialect - indicates header exists',
@@ -99,6 +109,7 @@ STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'action': 'store_const',
                                      'const': False,
                                      'dest': 'has_header'}
+
 ARG_ONLY_CONFIGS = ['version', 'long_help']
 
 VALID_ARG_TYPES = ('argument', 'option')
@@ -120,13 +131,18 @@ class Config(object):
       - add case?
     """
 
-    def __init__(self, name: str, short_help: str, long_help: str) -> None:
-        self.name = os.path.splitext(name)[0]
+    def __init__(self,
+                 app_name: str,
+                 short_help: str,
+                 long_help: str) -> None:
+
+        self.app_name = splitext(basename(app_name))[0]
         self.short_help = short_help
         self.long_help = long_help
         self.app_config: APP_CONFIG_TYPE = {}
         self.config = None                      # final config dictionary
         self.named_config = None                # final config dictionary as namedtuple
+        self.nconfig = None                     # alias for named_config
         self.parser = None                      # argparser object - referenced here for error msging
 
 
@@ -148,7 +164,8 @@ class Config(object):
                           short_name: str = None,
                           nargs: str = None,
                           choices: List[str] = [],
-                          dest: str = None):
+                          dest: str = None,
+                          const: bool = None):
         """ Add a custom config element (ex: --silent) for your app.
         This function will validate your configuration metadata,
         then will assign this metadata to the app config metadata - which will
@@ -160,7 +177,9 @@ class Config(object):
         if short_name:
             assert len(short_name) == 1
         if dest:
-            assert arg_type == 'bool'
+            assert config_type is bool
+        if const:
+            assert config_type is bool
 
         # assignment:
         self.app_config[name] = {'short_name': short_name,
@@ -170,9 +189,11 @@ class Config(object):
                                  'arg_type': arg_type,
                                  'nargs': nargs,
                                  'choices': choices}
-
-        if dest:
-            self.app_config[name]['dest'] = dest
+        if config_type == bool:
+            if const:
+                self.app_config[name]['const'] = const
+            if dest:
+                self.app_config[name]['dest'] = dest
 
         # remove empty options:
         if self.app_config[name]['short_name'] is None:
@@ -195,7 +216,8 @@ class Config(object):
     def validate_custom_config(self, config: CONFIG_TYPE) -> None:
         """Deprecated name - use custom_config_validator instead
         """
-        raise NotImplementedError('should be overridden')
+        #raise NotImplementedError('should be overridden')
+        pass
 
     def custom_config_validator(self, config: CONFIG_TYPE) -> None:
         """ Override this method to implement custom configurations for your app
@@ -204,21 +226,29 @@ class Config(object):
 
 
 
-    def process_configs(self) -> Tuple[CONFIG_TYPE, collections.namedtuple]:
+    def process_configs(self,
+                        test_cli_args: List = None) -> Tuple[CONFIG_TYPE, collections.namedtuple]:
         """ Handles all config acqusition, consolidation, and validation.
         """
         self._validate_metadata()
 
-        cli_args_manager = _CommandLineArgs(self.short_help, self.long_help, self.app_config)
-        cli_args = cli_args_manager.args
-        self.parser = cli_args_manager.parser
-        #print('\n--------- arg -------------')
-        #pp(cli_args)
-
-        env_args_manager = _EnvironmentalArgs(self.name, self.app_config)
+        env_args_manager = _EnvironmentalArgs(self.app_name, self.app_config)
         env_args = env_args_manager.env_gristle_app_args
         #print('\n--------- env -------------')
         #pp(env_args)
+
+        #print('')
+        #print('\n--------- arg -------------')
+        cli_args_manager = _CommandLineArgs(self.short_help, self.long_help, self.app_config)
+        cli_args_manager.get_args(test_cli_args)
+        cli_args = cli_args_manager.args
+        self.parser = cli_args_manager.parser
+        #pp(cli_args)
+
+        #file_args_manager = _FileArgs(self.app_name, self.app_config)
+        #file_args = file_args_manager.file_gristle_app_args
+        #print('\n--------- config file-------------')
+        #pp(file_args)
 
         consolidated_config = self._consolidate_args(env_args, cli_args)
         #pp('\n--------- consolidated -------------\n')
@@ -233,11 +263,27 @@ class Config(object):
         self.custom_config_validator(final_config)
         #print('\n--------- validation complete-------------')
 
-        self.named_config = collections.namedtuple('Config', final_config.keys())(**final_config)
         self.config = final_config
+        self._generate_named_config()
 
-        return self.config, self.named_config
+        return self.config, self.nconfig
 
+
+    def extend_config(self,
+                      name: str,
+                      value: Any) -> None:
+        """ Extend the config with additional information after processing.
+
+        This could be useful to a program when they determine new configuration info deeper into their
+        processing.
+        """
+        self.config[name] = value
+        self._generate_named_config()
+
+
+    def _generate_named_config(self):
+        self.named_config = collections.namedtuple('Config', self.config.keys())(**self.config)
+        self.nconfig = self.named_config
 
 
     def _validate_metadata(self):
@@ -273,7 +319,7 @@ class Config(object):
                     if property_value not in ('option', 'argument'):
                         raise ValueError(f"{arg}.arg_type's value is invalid: {property_value}")
                 elif property_name == 'nargs':
-                    if property_value not in ('*', '?', '+'):
+                    if (property_value not in ('*', '?', '+') and not type(property_value) == type(1)):
                         raise ValueError(f"{arg}.narg's value is invalid: {property_value}")
                 elif property_name == 'choices':
                     if not isinstance(property_value, list):
@@ -314,6 +360,10 @@ class Config(object):
         for key in self.app_config:
             actual_key = self.app_config[key].get('dest', key)
             consolidated_args[actual_key] = None
+
+        #for key, val in file_args.items():
+        #    actual_key = self.app_config[key].get('dest', key)
+        #    consolidated_args[actual_key] = val
 
         for key, val in env_args.items():
             actual_key = self.app_config[key].get('dest', key)
@@ -396,7 +446,7 @@ class _EnvironmentalArgs(object):
         Note that the vals will be converted to the appropriate type.
         """
         env_config = {}
-        for envkey, envval in self.env_args:
+        for envkey, envval in sorted(self.env_args):
             if envkey in self._transform_config_keys_to_env_keys():
                 option_name = self._transform_env_key_to_option_name(envkey)
                 if self.app_config[option_name]['type'] is bool:
@@ -426,6 +476,41 @@ class _EnvironmentalArgs(object):
 
 
 
+class _FileArgs(object):
+    """ Manages all file-based configuration arguments related to the gristle app
+
+        This class will collect these arguments from a config file,
+        format them,
+        then provide them via class attributes:
+           self.file_gristle_app_args
+    """
+
+    def __init__(self,
+                 gristle_app_name: str,
+                 app_config: APP_CONFIG_TYPE) -> None:
+
+        self.gristle_app_name = gristle_app_name
+        self.app_config = app_config
+        self.file_gristle_app_args = self._get_gristle_app_args()
+
+    def _get_gristle_app_args(self) -> CONFIG_TYPE:
+        """ Returns a dictionary of environment keys & vals associated with the calling program.
+
+        Note that the vals will be converted to the appropriate type.
+        """
+        file_args = {}
+
+        if 'config-fn' not in self.app_config:
+            return file_args
+
+        # read in json (or yaml) file
+
+        # translate into args?
+
+        return file_args
+
+
+
 class _CommandLineArgs(object):
     """ Manages commandline arguments.
 
@@ -445,16 +530,16 @@ class _CommandLineArgs(object):
         self.short_help = short_help
         self.long_help = long_help
         self.app_config_metadata = app_config_metadata
-        self.args = self._get_args()                    # Will be referenced by calling code
         self.parser = None                              # Will be referenced by calling code
 
-
-    def _get_args(self) -> CONFIG_TYPE:
+    def get_args(self,
+                  test_args: List = None) -> CONFIG_TYPE:
         """ Build an argparser, parse the arguments, and return the results as a dict
         """
         self._make_argparse_parser_from_app_config_metadata()
 
-        allargs = self.parser.parse_args()
+        allargs = self.parser.parse_args(test_args)
+
         if allargs.version:
             print(__version__)
             sys.exit(0)
@@ -462,7 +547,8 @@ class _CommandLineArgs(object):
             print(self.long_help)
             sys.exit(0)
 
-        return vars(allargs)
+        self.args = vars(allargs)
+        return self.args
 
 
     def _make_argparse_parser_from_app_config_metadata(self):
@@ -529,6 +615,8 @@ class _CommandLineArgs(object):
         else:
             arg_properties['type'] = arg_metadata['type'] # don't include type for booleans
 
+        #pp(args)
+        #pp(arg_properties)
         self.parser.add_argument(*args, **arg_properties)
 
 
