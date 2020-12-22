@@ -12,7 +12,7 @@ import collections
 import copy
 import os
 from pprint import pprint as pp
-from typing import List, Dict, Tuple, Any, Union, Callable, Optional
+from typing import List, Dict, Tuple, Any, Union, Callable, Optional, NamedTuple
 
 from datagristle._version import __version__
 import datagristle.csvhelper as csvhelper
@@ -111,6 +111,8 @@ class Config(object):
         self.short_help = short_help
         self.long_help = long_help
         self.meta_config: META_CONFIG_TYPE = {}
+        self.config: Dict = {}
+        self.nconfig: Optional[NamedTuple] = None
 
     def add_custom_config(self,
                           name: str,

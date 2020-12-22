@@ -99,25 +99,25 @@ def main() -> int:
 
     try:
         config_manager = ConfigManager()
-        config = config_manager.get_config()
+        nconfig = config_manager.get_config()
     except EOFError:
         print('Warning: empty file')
         return 0
 
-    input_handler = file_io.InputHandler(config['infiles'],
-                                         config['dialect'])
+    input_handler = file_io.InputHandler(nconfig.infiles,
+                                         nconfig.dialect)
 
     (incl_rec_slicer,
      excl_rec_slicer,
      incl_col_slicer,
-     excl_col_slicer) = setup_slicers(config['infiles'],
+     excl_col_slicer) = setup_slicers(nconfig.infiles,
                                       input_handler.dialect,
-                                      config['records'],
-                                      config['exrecords'],
-                                      config['columns'],
-                                      config['excolumns'])
+                                      nconfig.records,
+                                      nconfig.exrecords,
+                                      nconfig.columns,
+                                      nconfig.excolumns)
 
-    output_handler = file_io.OutputHandler(config['outfile'], input_handler.dialect)
+    output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
 
     for rec in input_handler:
         new_rec = process_rec(input_handler.rec_cnt - 1,
@@ -264,21 +264,23 @@ class ConfigManager(configulator.Config):
     def __init__(self):
         super().__init__(NAME, SHORT_HELP, __doc__)
 
-    def get_config(self) -> Dict[str, Any]:
-        self.get_user_config()
-        self.extend_config()
-        return self.config
 
-    def get_user_config(self) -> None:
+    def get_config(self) -> Dict[str, Any]:
+        self.define_user_config()
+        self.process_configs()
+        self.extend_config()
+        return self.nconfig
+
+
+    def define_user_config(self) -> None:
+        """ Defines the user config or metadata.
+
+        Does not get the user input.
+        """
         self.add_standard_config('infiles')
         self.add_standard_config('outfile')
-        self.add_standard_config('delimiter')
-        self.add_standard_config('quoting')
-        self.add_standard_config('quotechar')
-        self.add_standard_config('doublequote')
-        self.add_standard_config('escapechar')
-        self.add_standard_config('has_header')
-        self.add_standard_config('has_no_header')
+        self.add_all_csv_configs()
+
         self.add_custom_config(name='columns',
                                short_name='c',
                                arg_type='option',
@@ -313,7 +315,6 @@ class ConfigManager(configulator.Config):
                                help_msg='Specify the records to exclude via a comma-separated list '
                                         'of record numbers and colon-separated pairs of record '
                                         'start & stop ranges.  Default is to exclude nothing.')
-        self.process_configs()
 
 
     def validate_custom_config(self, config: configulator.CONFIG_TYPE):
@@ -322,15 +323,7 @@ class ConfigManager(configulator.Config):
 
 
     def extend_config(self) -> None:
-
-        self.config['dialect'] = csvhelper.get_dialect(self.config['infiles'],
-                                                       self.config['delimiter'],
-                                                       self.config['quoting'],
-                                                       self.config['quotechar'],
-                                                       self.config['has_header'],
-                                                       self.config['doublequote'],
-                                                       self.config['escapechar'])
-
+        self.generate_csv_dialect_config()
 
 
 

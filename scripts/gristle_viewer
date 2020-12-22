@@ -41,18 +41,18 @@
 """
 
 import errno
-import sys
 from os.path import basename
 from pprint import pprint as pp
-from typing import Dict, List, Optional, Any, Tuple
 from signal import signal, SIGPIPE, SIG_DFL
+import sys
+from typing import Dict, List, Optional, Any, Tuple
 
-import datagristle.file_type as file_type
-import datagristle.field_determinator  as field_determinator
-import datagristle.field_type as field_type
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
+import datagristle.field_determinator  as field_determinator
+import datagristle.field_type as field_type
 import datagristle.file_io as file_io
+import datagristle.file_type as file_type
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -68,41 +68,41 @@ def main():
 
     try:
         config_manager = ConfigManager()
-        config = config_manager.get_config()
+        nconfig = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
     field_names = None
 
     while True:
-        input_handler = file_io.InputHandler(config['infiles'],
-                                             config['dialect'])
+        input_handler = file_io.InputHandler(nconfig.infiles,
+                                             nconfig.dialect)
         if not field_names:
-            field_names = get_field_names(config['infiles'], input_handler.dialect)
-        rec = get_rec(input_handler, config['recnum'])
+            field_names = get_field_names(nconfig.infiles, input_handler.dialect)
+        rec = get_rec(input_handler, nconfig.recnum)
         input_handler.close()
         if rec is None:
             print('No record found')
             return
 
-        output_handler = file_io.OutputHandler(config['outfile'], dialect=None)
+        output_handler = file_io.OutputHandler(nconfig.outfile, dialect=None)
         display_rec(rec, field_names, output_handler)
         output_handler.close()
 
-        if config['outfile'] != '-':
+        if nconfig.outfile != '-':
             break
 
-        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % config['recnum']).lower()
+        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % nconfig.recnum).lower()
         if response == 'q':
             break
         elif response == 'p':
-            config['recnum'] -= 1
+            nconfig.recnum -= 1
         elif response == 'n':
-            config['recnum'] += 1
+            nconfig.recnum += 1
         elif response == 't':
-            config['recnum'] = 0
+            nconfig.recnum = 0
         elif field_type._get_type(response) == 'integer':
-            config['recnum'] = int(response)
+            nconfig.recnum = int(response)
         else:
             print('Invalid response, please enter q, p, n, t, or a specific record number')
     return 0
@@ -181,17 +181,13 @@ class ConfigManager(configulator.Config):
     def get_config(self) -> Dict[str, Any]:
         self.get_user_config()
         self.extend_config()
-        return self.config
+        return self.nconfig
 
     def get_user_config(self) -> None:
         self.add_standard_config('infiles')
         self.add_standard_config('outfile')
-        self.add_standard_config('delimiter')
-        self.add_standard_config('quoting')
-        self.add_standard_config('quotechar')
-        self.add_standard_config('doublequote')
-        self.add_standard_config('escapechar')
-        self.add_standard_config('has_header')
+        self.add_all_csv_configs()
+
         self.add_custom_config(name='recnum',
                                short_name='r',
                                arg_type='option',
@@ -201,15 +197,8 @@ class ConfigManager(configulator.Config):
         self.process_configs()
 
     def extend_config(self) -> None:
-        config = self.config
+        self.generate_csv_dialect_config()
 
-        self.config['dialect'] = csvhelper.get_dialect(config['infiles'],
-                                                       config['delimiter'],
-                                                       config['quoting'],
-                                                       config['quotechar'],
-                                                       config['has_header'],
-                                                       config['doublequote'],
-                                                       config['escapechar'])
 
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
