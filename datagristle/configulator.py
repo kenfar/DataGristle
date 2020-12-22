@@ -183,26 +183,26 @@ class Config(object):
         """ Replaces the dictionary and named-tuple versions of the config
         """
         self.config = new_config
-        self.named_config = collections.namedtuple('Config', self.config.keys())(**self.config)
+        self.nconfig = collections.namedtuple('Config', self.config.keys())(**self.config)
 
 
     def update_config(self, key, value):
         """ Writes a key-value to the config.
         """
         self.config[key] = value
-        self.named_config = collections.namedtuple('Config', self.config.keys())(**self.config)
+        self.nconfig = collections.namedtuple('Config', self.config.keys())(**self.config)
 
 
     def generate_csv_dialect_config(self):
         """ Replaces the dictionary and named-tuple versions of the config
         """
-        self.update_config('dialect', csvhelper.get_dialect(self.named_config.infiles,
-                                                            self.named_config.delimiter,
-                                                            self.named_config.quoting,
-                                                            self.named_config.quotechar,
-                                                            self.named_config.has_header,
-                                                            self.named_config.doublequote,
-                                                            self.named_config.escapechar))
+        self.update_config('dialect', csvhelper.get_dialect(self.nconfig.infiles,
+                                                            self.nconfig.delimiter,
+                                                            self.nconfig.quoting,
+                                                            self.nconfig.quotechar,
+                                                            self.nconfig.has_header,
+                                                            self.nconfig.doublequote,
+                                                            self.nconfig.escapechar))
 
     def _validate_metadata(self):
         """ Validates the program's configuration metadata (not the user's input).

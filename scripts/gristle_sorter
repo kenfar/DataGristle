@@ -28,15 +28,15 @@ def main() -> int:
     """
     try:
         config_manager = ConfigManager()
-        named_config = config_manager.get_config()
+        nconfig = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
-    sorter = file_sorter.CSVPythonSorter(named_config.infiles[0],
-                                         named_config.outfile,
-                                         named_config.sort_keys,
-                                         named_config.dialect,
-                                         named_config.dedupe)
+    sorter = file_sorter.CSVPythonSorter(nconfig.infiles[0],
+                                         nconfig.outfile,
+                                         nconfig.sort_keys,
+                                         nconfig.dialect,
+                                         nconfig.dedupe)
 
     sorter.sort_file()
     sorter.close()
@@ -55,7 +55,7 @@ class ConfigManager(configulator.Config):
         self.define_user_config()
         self.process_configs()
         self.extend_config()
-        return self.named_config
+        return self.nconfig
 
 
     def define_user_config(self) -> None:
@@ -108,7 +108,7 @@ class ConfigManager(configulator.Config):
         """ Add derrived attributes to our config so they're all in one place.
         """
         self.generate_csv_dialect_config()
-        self.update_config('sort_keys', file_sorter.SortKeysConfig(self.named_config.keys))
+        self.update_config('sort_keys', file_sorter.SortKeysConfig(self.nconfig.keys))
 
 
 
