@@ -10,13 +10,13 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import tempfile
-import shutil
 import csv
 from pprint  import pprint as pp
 import os
 from os.path import dirname
 from os.path import join as pjoin
+import shutil
+import tempfile
 
 import envoy
 
@@ -299,7 +299,7 @@ class TestFileContents(object):
                         -k 1sf
                         --quoting {csvhelper.get_quote_name(self.dialect.quoting).lower()}
                         --delimiter '{self.dialect.delimiter}'
-                        --hasheader
+                        --has-header
                     '''
         if self.dialect.escapechar:
             self.cmd += f"--escapechar '{self.dialect.escapechar}' "

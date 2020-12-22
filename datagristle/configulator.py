@@ -1,13 +1,21 @@
 #!/usr/bin/env python
+
+""" Manages user config - arguments and environmental variables.
+
+    See the file "LICENSE" for the full license governing this code.
+    Copyright 2020 Ken Farmer
+"""
+
 import sys
 import argparse
 import collections
 import copy
 import os
 from pprint import pprint as pp
-from typing import List, Dict, Tuple, Any, Union, Callable
+from typing import List, Dict, Tuple, Any, Union, Callable, Optional
 
 from datagristle._version import __version__
+import datagristle.csvhelper as csvhelper
 
 
 CONFIG_TYPE = Dict[str, Any]
@@ -35,7 +43,6 @@ STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'min_length': 1,
                                  'max_length': 1}
 STANDARD_CONFIGS['quoting'] = {'short_name': 'q',
-                               #'default': 'quote_none',
                                'default': None,
                                'required': True,
                                'choices': ['quote_all', 'quote_minimal',
@@ -68,7 +75,8 @@ STANDARD_CONFIGS['no_doublequote'] = {'default': None,
                                       'type': bool,
                                       'arg_type': 'option',
                                       'action': 'store_const',
-                                      'const': False}
+                                      'const': False,
+                                      'dest': 'doublequote'}
 STANDARD_CONFIGS['has_header'] = {'default': None,
                                   'required': True,
                                   'help': 'csv dialect - indicates header exists',
@@ -106,67 +114,100 @@ class Config(object):
 
     def add_custom_config(self,
                           name: str,
-                          default: Any,
                           config_type: Callable,
                           help_msg: str,
                           arg_type: str,
-                          short_name: str = None,
-                          nargs: str = None,
-                          choices: List[str] = []):
+                          default: Any = None,
+                          required: bool = False,
+                          action: Optional[str] = None,
+                          const: Any = None,
+                          short_name: Optional[str] = None,
+                          nargs: Optional[str] = None,
+                          choices: List[str] = [],
+                          dest: Optional[str] = None):
         assert arg_type in VALID_ARG_TYPES
-        self.meta_config[name] = {'short_name': short_name,
-                                  'default': default,
+        self.meta_config[name] = {'default': default,
                                   'type': config_type,
                                   'help': help_msg,
                                   'arg_type': arg_type,
-                                  'nargs': nargs,
-                                  'choices': choices}
-        if self.meta_config[name]['short_name'] is None:
-            del self.meta_config[name]['short_name']
-        if self.meta_config[name]['choices'] == []:
-            del self.meta_config[name]['choices']
-        if self.meta_config[name]['nargs'] is None:
-            del self.meta_config[name]['nargs']
-
+                                  'required': required}
+        if short_name:
+            self.meta_config[name]['short_name'] = short_name
+        if choices:
+            self.meta_config[name]['choices'] = choices
+        if nargs:
+            self.meta_config[name]['nargs'] = nargs
+        if action:
+            self.meta_config[name]['action'] = action
+            self.meta_config[name]['const'] = const
+        if arg_type is bool:
+            self.meta_config[name]['dest'] = dest or name
 
 
     def add_standard_config(self, name):
         self.meta_config[name] = STANDARD_CONFIGS[name]
 
 
+    def add_all_csv_configs(self):
+        """ Adds the whole standard set of csv config items.
+
+        This is how all csv utilities should pick these up - rather than doing it individually.
+        """
+        self.add_standard_config('delimiter')
+        self.add_standard_config('quoting')
+        self.add_standard_config('quotechar')
+        self.add_standard_config('doublequote')
+        self.add_standard_config('no_doublequote')
+        self.add_standard_config('escapechar')
+        self.add_standard_config('has_header')
+        self.add_standard_config('has_no_header')
+
+
     def process_configs(self):
-        self.validate_metadata()
+        self._validate_metadata()
 
         arg_config = self._get_arg_config(self.short_help)
-        #print('')
-        #print('--------- arg -------------')
-        #pp(arg_config)
         env_config = self._get_env_config()
-        #print('')
-        #print('--------- env -------------')
-        #pp(env_config)
         consolidated_config = self._consolidate_configs(env_config, arg_config)
-        #print('')
-        #print('--------- consolidated -------------')
-        #pp(consolidated_config)
 
         defaulted_config = self._apply_std_defaults(consolidated_config)
         final_config = self.apply_custom_defaults(defaulted_config)
-        #print('')
-        #print('--------- final -------------')
-        #pp(final_config)
 
         self._validate_std_config(final_config)
         self.validate_custom_config(final_config)
-        #print('')
-        #print('--------- final -------------')
-        #pp(final_config)
 
-        self.named_config = collections.namedtuple('Config', final_config.keys())(**final_config)
-        self.config = final_config
+        self.replace_configs(final_config)
 
 
-    def validate_metadata(self):
+    def replace_configs(self, new_config):
+        """ Replaces the dictionary and named-tuple versions of the config
+        """
+        self.config = new_config
+        self.named_config = collections.namedtuple('Config', self.config.keys())(**self.config)
+
+
+    def update_config(self, key, value):
+        """ Writes a key-value to the config.
+        """
+        self.config[key] = value
+        self.named_config = collections.namedtuple('Config', self.config.keys())(**self.config)
+
+
+    def generate_csv_dialect_config(self):
+        """ Replaces the dictionary and named-tuple versions of the config
+        """
+        self.update_config('dialect', csvhelper.get_dialect(self.named_config.infiles,
+                                                            self.named_config.delimiter,
+                                                            self.named_config.quoting,
+                                                            self.named_config.quotechar,
+                                                            self.named_config.has_header,
+                                                            self.named_config.doublequote,
+                                                            self.named_config.escapechar))
+
+    def _validate_metadata(self):
+        """ Validates the program's configuration metadata (not the user's input).
+
+        """
         # additional checks we could make:
         #     assert that we don't have combo: positional long name + short_name
         #     assert that we don't have > 1 positional arguments
@@ -207,7 +248,7 @@ class Config(object):
                 elif property_name == 'action':
                     if arg_parameters['type'] is not bool:
                         raise ValueError(f"dest is only valid for type of bool")
-                    if property_value not in ('store_const'):
+                    if property_value not in ('store_const', 'store_true'):
                         raise ValueError(f"{arg}.action is not 'store_const'")
                 elif property_name == 'dest':
                     if arg_parameters['type'] is not bool:
@@ -220,8 +261,9 @@ class Config(object):
 
 
     def _get_arg_config(self, desc: str) -> CONFIG_TYPE:
+        """ Gets config items from cli arguments.
+        """
         #fixme: can only handle 1 positional argument: it doesn't actually have 'position' for positionals
-        #self.parser = argparse.ArgumentParser(desc, argument_default=argparse.SUPPRESS)
         self.parser = argparse.ArgumentParser(desc)
         for key in self.meta_config:
             long_name = (f'--{key}' if self.meta_config[key]['arg_type'] == 'option' else key).replace('_', '-')
@@ -245,15 +287,17 @@ class Config(object):
             if self.meta_config[key]['type'] is bool:
                 if 'action' in self.meta_config[key]:
                     kwargs['action'] = self.meta_config[key]['action']
-                    kwargs['const'] = self.meta_config[key]['const']
+                    if self.meta_config[key].get('const') is not None:
+                        kwargs['const'] = self.meta_config[key]['const']
+                    if self.meta_config[key]['action'] == 'store_true':
+                        kwargs['const'] = True
                 if 'dest' in self.meta_config[key]:
                     kwargs['dest'] = self.meta_config[key]['dest']
             else:
                 kwargs['type'] = self.meta_config[key]['type'] # don't include type for booleans
 
-            #pp(kwargs)
+            pp(kwargs)
             self.parser.add_argument(*args, **kwargs)
-        #pp(self.meta_config)
 
         self.parser.add_argument('-V', '--version',
                                  action='store_true',
@@ -278,6 +322,8 @@ class Config(object):
 
 
     def _get_env_config(self) -> CONFIG_TYPE:
+        """ Gets config items from environmental variables.
+        """
         env_config= {}
         for envkey, envval in os.environ.items():
             if envkey in ['%s_' % self.name + x for x in self.meta_config.keys()]:
@@ -294,6 +340,8 @@ class Config(object):
 
 
     def _consolidate_configs(self, envvars: CONFIG_TYPE, args: CONFIG_TYPE) -> CONFIG_TYPE:
+        """ Consolidates environmental and cli configs.
+        """
         consolidated_config = {}
         for key in self.meta_config:
             if 'dest' in self.meta_config[key]:
@@ -312,6 +360,8 @@ class Config(object):
 
 
     def _apply_std_defaults(self, config: CONFIG_TYPE) -> CONFIG_TYPE:
+        """ Applies defaults to standard config items.
+        """
         temp_config = copy.copy(config)
         for key, val in temp_config.items():
             if val is None:
@@ -320,10 +370,16 @@ class Config(object):
 
 
     def apply_custom_defaults(self, config: CONFIG_TYPE) -> CONFIG_TYPE:
+        """ Applies defaults to custom config items.
+
+        This is intended to be overriden by the user.
+        """
         return config
 
 
     def _validate_std_config(self, config: CONFIG_TYPE) -> None:
+        """ Validates standard config items.
+        """
         for key, val in config.items():
             if key in ARG_ONLY_CONFIGS:
                 continue
@@ -345,6 +401,10 @@ class Config(object):
 
 
     def validate_custom_config(self, config: CONFIG_TYPE) -> None:
+        """ Validates custom config items.
+
+        This is intended to be overriden by the user.
+        """
         raise NotImplementedError('should be overridden')
 
 
