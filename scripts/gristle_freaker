@@ -75,7 +75,7 @@ def main() -> int:
 
     try:
         config_manager = ConfigManager()
-        config = config_manager.get_config()
+        nconfig = config_manager.get_config()
     except EOFError:
         print('Warning: empty file')
         sys.exit(errno.ENODATA) # 61: empty file
@@ -85,29 +85,29 @@ def main() -> int:
     # will just run a single iteration of the loop.
     total_read_cnt = 0
     while True:
-        input_handler = file_io.InputHandler(config['infiles'],
-                                             config['dialect'])
-        output_handler = file_io.OutputHandler(config['outfile'],
+        input_handler = file_io.InputHandler(nconfig.infiles,
+                                             nconfig.dialect)
+        output_handler = file_io.OutputHandler(nconfig.outfile,
                                                input_handler.dialect)
 
         colset_freaker = ColSetFreaker(input_handler,
                                        output_handler,
-                                       config['col_type'],
-                                       config['number'],
-                                       config['sampling_method'],
-                                       config['sampling_rate'],
-                                       config['sort_order'],
-                                       config['sort_col'],
-                                       config['max_key_len'])
-        colset_freaker.create_freq_from_column_set(config['col_set'])
+                                       nconfig.col_type,
+                                       nconfig.number,
+                                       nconfig.sampling_method,
+                                       nconfig.sampling_rate,
+                                       nconfig.sort_order,
+                                       nconfig.sort_col,
+                                       nconfig.max_key_len)
+        colset_freaker.create_freq_from_column_set(nconfig.col_set)
         total_read_cnt += colset_freaker.read_cnt
 
-        colset_freaker.write_output(config['outfile'],
-                                    config['write_limit'],
-                                    config['col_set'][0])
+        colset_freaker.write_output(nconfig.outfile,
+                                    nconfig.write_limit,
+                                    nconfig.col_set[0])
 
         if colset_freaker.more_columns():   # col_type is 'each'
-            config['col_set'][0] += 1
+            nconfig.col_set[0] += 1
         else:
             if total_read_cnt == 0:
                 return_code = errno.ENODATA # 61: empty file
@@ -360,25 +360,20 @@ class ConfigManager(configulator.Config):
         """ Raises:
             - EOFError - if input file is empty when checking for dialect
         """
-        self.get_user_config()
-        self.validate_user_config()
+        self.define_user_config()
+        self.process_configs()
         self.extend_config()
-        return self.config
+        return self.nconfig
 
 
-    def get_user_config(self) -> Dict[str, Any]:
+    def define_user_config(self) -> Dict[str, Any]:
         """ Get the configuration elements from arguements and config files
         """
 
         self.add_standard_config('infiles')
         self.add_standard_config('outfile')
-        self.add_standard_config('delimiter')
-        self.add_standard_config('quoting')
-        self.add_standard_config('quotechar')
-        self.add_standard_config('escapechar')
-        self.add_standard_config('doublequote')
-        self.add_standard_config('has_header')
-        self.add_standard_config('has_no_header')
+        self.add_all_csv_configs()
+
         self.add_custom_config(name='columns',
                                short_name='c',
                                arg_type='option',
@@ -432,12 +427,12 @@ class ConfigManager(configulator.Config):
                                default=None,
                                help_msg='Specifies number of records to skip if using interval sammpling-method.')
 
-        self.process_configs()
 
 
-    def validate_user_config(self) -> None:
-        config = self.config
+    def validate_custom_config(self,
+                               config) -> None:
 
+        # Handle columns & col_type relationship
         if config['columns'] is not None and config['col_type'] != 'specified':
             abort('Columns can only be specified for col_type != specified.')
         elif config['columns'] is None and config['col_type'] == 'specified':
@@ -446,6 +441,7 @@ class ConfigManager(configulator.Config):
         if config['number'] < 1000:
             abort('Please provided a value between 1001 and 1000000000 for number')
 
+        # Handle required delimiter:
         if config['infiles'] != '-':
             if len(config['infiles']) > 1 and not config['delimiter']:
                 abort('Please provide delimiter when piping or reading multiple input files')
@@ -460,6 +456,7 @@ class ConfigManager(configulator.Config):
             abort('Please provide a maxkeylen > 0 and < 500')
 
 
+        # Validate the sampling fields
         if config['sampling_method'] == 'non':
             if config['sampling_rate']:
                 abort('Sampling_rate must be left to default if sampling_method is "non"')
@@ -475,23 +472,12 @@ class ConfigManager(configulator.Config):
         """ Add derrived or extended elements to config.
             Note: csvhelper.get_dialect could raise EOFError
         """
-        config = self.config
-        config['dialect'] = csvhelper.get_dialect(config['infiles'],
-                                                  config['delimiter'],
-                                                  config['quoting'],
-                                                  config['quotechar'],
-                                                  config['has_header'],
-                                                  config['doublequote'],
-                                                  config['escapechar'])
+        self.generate_csv_dialect_config()
 
-        if config['col_type'] in ('each', 'all'):
-            config['col_set'] = [0]
+        if self.nconfig.col_type in ('each', 'all'):
+            self.update_config('col_set', [0])
         else:
-            config['col_set'] = config['columns']
-
-
-    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
-       pass
+            self.update_config('col_set', self.nconfig.columns)
 
 
 

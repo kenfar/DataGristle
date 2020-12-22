@@ -298,7 +298,6 @@ class Config(object):
             else:
                 kwargs['type'] = self.meta_config[key]['type'] # don't include type for booleans
 
-            pp(kwargs)
             self.parser.add_argument(*args, **kwargs)
 
         self.parser.add_argument('-V', '--version',
