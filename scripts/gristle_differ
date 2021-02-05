@@ -167,8 +167,6 @@ from signal import signal, SIGPIPE, SIG_DFL
 import sys
 from typing import List, Union, Dict, Any, Tuple
 
-import cletus.cletus_config as conf
-
 import datagristle.common       as comm
 from   datagristle.common  import abort
 import datagristle.configulator as configulator
@@ -178,7 +176,6 @@ import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
 
 import jsonschema
-import validictory
 
 #Ignore SIG_PIPE and don't throw exceptions on it...
 #(http://docs.python.org/library/signal.html)
