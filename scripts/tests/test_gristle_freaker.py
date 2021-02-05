@@ -156,7 +156,7 @@ class TestGetArgs(object):
         assert nconfig.sort_order == 'reverse'
 
     def test_check_invalid_columns(self):
-        
+
         sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', 'd']
         try:
             config_manager = mod.ConfigManager()

@@ -63,33 +63,34 @@ class ConfigManager(configulator.Config):
 
         Does not get the user input.
         """
-        self.add_standard_config('infiles')
-        self.add_standard_config('outfile')
+        self.add_standard_metadata('infiles')
+        self.add_standard_metadata('outfile')
         self.add_all_csv_configs()
 
-        self.add_custom_config(name='dedupe',
-                               short_name='D',
-                               arg_type='option',
-                               action='store_const',
-                               const=True,
-                               default=False,
-                               config_type=bool,
-                               help_msg='Directs program to remove duplicates - based on the key provided. '
-                                        'Note that this will treat 0 and 0.0 the same if the keys are specified '
-                                        'as numeric. '
-                                        'However, case differences will not be ignored.')
-        self.add_custom_config(name='keys',
-                               short_name='k',
-                               arg_type='option',
-                               config_type=bool,
-                               required=True,
-                               nargs='+',
-                               help_msg='Specifies the key configuration. Each key specified consists of three values: '
-                                        '1) position (0-offset), 2) type (s=string, i=integer, f=float), '
-                                        '3) order (f=forward, r=reverse). '
-                                        'All 3 values are required for each key.  Multiple keys can be specified by '
-                                        'separating groups of 3 with a comma or including all within quotes and '
-                                        'separating the groups with a space.')
+        self.add_custom_metadata(name='dedupe',
+                                 short_name='D',
+                                 arg_type='option',
+                                 action='store_const',
+                                 const=True,
+                                 default=False,
+                                 config_type=bool,
+                                 help_msg='Directs program to remove duplicates - based on the key provided. '
+                                          'Note that this will treat 0 and 0.0 the same if the keys are specified '
+                                          'as numeric. '
+                                          'However, case differences will not be ignored.')
+        self.add_custom_metadata(name='keys',
+                                 short_name='k',
+                                 arg_type='option',
+                                 #config_type=bool,
+                                 config_type=str,
+                                 required=True,
+                                 nargs='+',
+                                 help_msg='Specifies the key configuration. Each key specified consists of three values: '
+                                          '1) position (0-offset), 2) type (s=string, i=integer, f=float), '
+                                          '3) order (f=forward, r=reverse). '
+                                          'All 3 values are required for each key.  Multiple keys can be specified by '
+                                          'separating groups of 3 with a comma or including all within quotes and '
+                                          'separating the groups with a space.')
 
 
     def validate_custom_config(self,
