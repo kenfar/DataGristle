@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -116,7 +116,7 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
+        cmd = '''%s  --infiles %s %s -k 0 -c 2 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                                                          fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
@@ -163,7 +163,7 @@ class TestCommandLine(object):
         fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
         fn2 = basename(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 1 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
+        cmd = ''' %s --infiles %s %s -k 0 -c 1 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                                                          fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
@@ -185,7 +185,7 @@ class TestCommandLine(object):
         fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
         fn2 = basename(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 1 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
+        cmd = ''' %s --infiles %s %s -k 0 -c 1 --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'),
                                                          fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
@@ -212,7 +212,8 @@ class TestCommandLine(object):
 
         # switching to subprocess here because envoy was choking on pipe
         # delimiter
-        cmd = [pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2,
+        cmd = [pjoin(script_dir, 'gristle_differ'),
+               '--infiles', fqfn1, fqfn2,
                '-k', '0',
                '-c', '2',
                '--delimiter', '|',
@@ -249,7 +250,9 @@ class TestCommandLine(object):
         fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
         fn2 = basename(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 2 \
+        cmd = ''' %s \
+                  --infiles %s %s \
+                  -k 0 -c 2 \
                   --delimiter tab --quoting quote_none  --has-no-header \
                   --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
@@ -284,7 +287,9 @@ class TestCommandLine(object):
         fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
         fn2 = basename(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 2 \
+        cmd = ''' %s \
+                  --infiles %s %s \
+                  -k 0 -c 2 \
                   --config-fn %s \
                   --temp-dir %s''' % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2,
                                       config.config_fqfn, self.temp_dir)
@@ -320,7 +325,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.write_config()
 
         cmd = ''' %s   \
@@ -358,7 +363,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.add_assignment('delete', 1, 'literal', 'd', None, None)
         config.write_config()
 
@@ -373,7 +378,6 @@ class TestCommandLine(object):
         assert self.file_cnt(fn2, '.chgnew') == 1
         assert self.file_cnt(fn2, '.same') == 1
 
-        print(get_file_contents(pjoin(self.temp_dir, fn2+'.delete'), self.dialect))
         assert get_file_contents(pjoin(self.temp_dir, fn2+'.delete'),
                                  self.dialect)[0][1] == 'd'
 
@@ -399,7 +403,7 @@ class TestCommandLine(object):
         config.add_property({'compare_cols': ['2']})
         config.add_property({'variables': ['foo:bar', 'baz:gorilla']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.add_assignment('delete', 1, 'special', 'foo', None, None)
         config.add_assignment('insert', 3, 'special', 'baz', None, None)
         config.write_config()
@@ -444,7 +448,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.add_assignment('chgnew', 1, 'copy', None, 'old', 0)
         config.write_config()
 
@@ -485,7 +489,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['1']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         #config.add_assignment('insert',1,'sequence',None,'old',2)
         config.add_assignment('insert', 2, 'sequence', None, 'old', 2)
         config.write_config()
@@ -535,7 +539,7 @@ class TestCommandLine(object):
         config.add_property({'compare_cols': ['1']})
         config.add_property({'variables': ['foo:7']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.add_assignment('insert', 2, 'sequence', 'foo', None, None)
         config.write_config()
 
@@ -576,7 +580,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['0', '1']})
         config.add_property({'compare_cols': ['2', '3']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.write_config()
 
         cmd = ''' %s   \
@@ -614,7 +618,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['col0']})
         config.add_property({'compare_cols': ['col2']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.write_config()
 
         cmd = ''' %s   \
@@ -652,7 +656,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['col0']})
         config.add_property({'ignore_cols': ['col1', 3]})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.write_config()
 
         cmd = ''' %s   \
@@ -690,7 +694,7 @@ class TestCommandLine(object):
         config.add_property({'key_cols': ['0']})
         config.add_property({'compare_cols': ['2']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [fqfn1, fqfn2]})
+        config.add_property({'infiles': [fqfn1, fqfn2]})
         config.add_assignment('chgnew', 'col1', 'copy', None, 'old', 'col0')
         config.write_config()
 
@@ -724,8 +728,11 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s --already-sorted''' % (pjoin(script_dir, 'gristle_differ'),
-                                                                          fqfn1, fqfn2, self.temp_dir)
+        cmd = ''' %s \
+                 --infiles %s %s \
+                 -k 0 -c 2 --temp-dir %s\
+                 --already-sorted''' % (pjoin(script_dir, 'gristle_differ'),
+                                        fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
         assert self.file_cnt(fn2, '.insert') == 1
@@ -751,8 +758,11 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s --already-uniq''' % (pjoin(script_dir, 'gristle_differ'),
-                                                                          fqfn1, fqfn2, self.temp_dir)
+        cmd = ''' %s \
+                  --infiles %s %s \
+                  -k 0 -c 2 --temp-dir %s \
+                  --already-uniq''' % (pjoin(script_dir, 'gristle_differ'),
+                                       fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
         pp(os.listdir(self.temp_dir))
@@ -777,8 +787,10 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k 0 -c 2 --temp-dir %s --stats''' % (pjoin(script_dir, 'gristle_differ'),
-                                                                 fqfn1, fqfn2, self.temp_dir)
+        cmd = ''' %s \
+                  --infiles %s %s \
+                  -k 0 -c 2 --temp-dir %s --stats''' % (pjoin(script_dir, 'gristle_differ'),
+                                                        fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
         pp(os.listdir(self.temp_dir))
@@ -806,8 +818,10 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k rowkey -c col2 --temp-dir %s  ''' % (pjoin(script_dir, 'gristle_differ'),
-                                                                   fqfn1, fqfn2, self.temp_dir)
+        cmd = ''' %s \
+                  --infiles %s %s \
+                  -k rowkey -c col2 --temp-dir %s  ''' % (pjoin(script_dir, 'gristle_differ'),
+                                                          fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
         pp(os.listdir(self.temp_dir))
@@ -835,7 +849,9 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -k rowkey -c col2 --temp-dir %s  --col-names rowkey col1 col2   ''' \
+        cmd = ''' %s \
+                  --infiles %s %s \
+                  -k rowkey -c col2 --temp-dir %s  --col-names rowkey col1 col2   ''' \
             % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2, self.temp_dir)
 
         executor(cmd)
@@ -864,7 +880,8 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s %s %s -c 2 --temp-dir %s  ''' \
+        cmd = ''' %s \
+                  --infiles %s %s -c 2 --temp-dir %s  ''' \
             % (pjoin(script_dir, 'gristle_differ'), fqfn1, fqfn2, self.temp_dir)
 
         executor(cmd, expect_success=False)
