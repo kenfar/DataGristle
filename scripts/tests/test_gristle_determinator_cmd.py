@@ -7,7 +7,7 @@
     should be.  This should be redesigned.
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -17,16 +17,16 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import tempfile
 import csv
 import errno
-import shutil
 import os
+import shutil
+import tempfile
 from os.path import join as pjoin, dirname
 from pprint import pprint as pp
 
-import pytest
 import envoy
+import pytest
 
 import datagristle.test_tools as test_tools
 import datagristle.file_type as file_type
@@ -65,7 +65,6 @@ def get_value(parsable_out, division, section, subsection, key):
     mydialect.lineterminator = '\n'
 
     csvobj = csv.reader(parsable_out.split('\n'), dialect=mydialect)
-
     for record in csvobj:
         if not record:
             continue
@@ -87,6 +86,9 @@ def get_value(parsable_out, division, section, subsection, key):
 
 
 class TestEmptyFile(object):
+    """ Temporarily suppressing - I think the problem is that the behavior for handling empty files was changed with the
+    new config
+    """
 
     def setup_method(self, method):
         self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
@@ -101,7 +103,7 @@ class TestEmptyFile(object):
     def test_empty_file(self):
         fqfn = pjoin(self.tmp_dir, 'empty.csv')
         test_tools.touch(fqfn)
-        cmd = '%s %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -112,7 +114,7 @@ class TestEmptyFile(object):
     def test_empty_file_with_header(self):
         fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
         self.create_empty_file_with_header(fqfn)
-        cmd = '%s %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -123,7 +125,7 @@ class TestEmptyFile(object):
     def test_empty_file_with_header_and_hasheader_arg(self):
         fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
         self.create_empty_file_with_header(fqfn)
-        cmd = '%s %s --outputformat=parsable --has-header' % (pjoin(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable --has-header' % (pjoin(script_path, 'gristle_determinator'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -148,7 +150,7 @@ class TestOutputFormattingAndContents(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
-        cmd = '%s %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -161,7 +163,6 @@ class TestOutputFormattingAndContents(object):
         mydialect.lineterminator = '\n'
 
         csvobj = csv.reader(runner.std_out.split('\n'), dialect=mydialect)
-        pp(csvobj)
         for record in csvobj:
             if not record:
                 continue
@@ -191,6 +192,7 @@ class TestOutputFormattingAndContents(object):
         shutil.rmtree(self.tmp_dir)
 
     def test_file_info(self):
+        pp(self.file_struct)
         assert self.file_struct['record_count'] == '5'
         assert self.file_struct['skipinitialspace'] == 'False'
         assert self.file_struct['quoting'] == 'QUOTE_NONE'
@@ -265,7 +267,10 @@ class TestReadLimit(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
-        cmd = '%s %s --read-limit 4 --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s \
+               --infiles %s \
+               --read-limit 4 \
+               --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -350,7 +355,10 @@ class TestMaxFreq(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
-        cmd = '%s %s --max-freq 10  --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s \
+               --infiles %s \
+               --max-freq 10  \
+               --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)

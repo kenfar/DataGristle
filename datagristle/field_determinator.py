@@ -15,10 +15,10 @@
       - change returned data format to be based on field
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 from operator import itemgetter
-from pprint import pprint
+from pprint import pprint as pp
 from typing import Optional, List, Tuple, Dict, Any
 
 import datagristle.field_type as typer
@@ -62,6 +62,7 @@ class FieldDeterminator(object):
                  has_header: bool,
                  dialect: csvhelper.Dialect,
                  verbose: bool = False) -> None:
+
         self.filename = filename
         self.format_type = format_type
         self.field_cnt = field_cnt
@@ -117,6 +118,7 @@ class FieldDeterminator(object):
             Returns:
                - Nothing directly - populates instance variables.
         """
+        assert field_number is None or field_number > -1
         self.max_freq_number = max_freq_number
 
         if self.verbose:
@@ -187,7 +189,6 @@ class FieldDeterminator(object):
         """ returns a frequency-distribution dictionary that is the
             self.field_freqs with unknown values removed.
         """
-
         return [val for val in self.field_freqs[fieldno]
                 if typer.is_unknown(val) is False]
 

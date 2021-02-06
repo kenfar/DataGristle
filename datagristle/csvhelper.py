@@ -78,7 +78,7 @@ def get_dialect(infiles: List[str],
     """
 
     if infiles[0] == '-':
-        print('cvshelper - getting dialect from cmdline for -')
+        #print('cvshelper - getting dialect from cmdline for -')
         dialect = override_dialect(Dialect,
                                    delimiter,
                                    quoting,
@@ -104,7 +104,7 @@ def get_dialect(infiles: List[str],
                 my_file = file_type.FileTyper(infile)
                 try:
                     dialect = my_file.analyze_file()
-                    print('cvshelper - about to override dialect!')
+                    #print('cvshelper - about to override dialect!')
                     dialect = override_dialect(dialect,
                                                delimiter,
                                                quoting,

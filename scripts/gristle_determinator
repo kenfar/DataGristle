@@ -9,7 +9,9 @@ Usage: gristle_determinator [file] [misc options]
     Options:
     -h, --help            show this help message and exit
     --long-help           show more verbose help
-    -o OUTPUT, --output=OUTPUT
+    -i INFILES, --infiles=INFILES
+                          One input file
+    -o OUTFILE, --outfile=OUTFILE
                           Specify output file.  Default is stdout.
     --outputformat        Choices include: readable, parsable, metadata with a
                           default of readable.
@@ -32,21 +34,21 @@ Usage: gristle_determinator [file] [misc options]
     --has-header          Indicates that there is a header in the file.
     --has-no-header       Indicates that there is no header in the file. Useful
                           for overriding automatic csv-guessing behavior.
-    -T COLUMN_TYPES, --types=COLUMN_TYPES
+    -COLUMN_TYPES=COLUMN_TYPES
                           Allows manual specification of field types: integer,
                           float, string, timestamp. Use format: "colno:type,
                           colno:type,  colno:type"
     --metadata            Indicates whether or not to write results into
                           metadata database
-    --schemaid=SCHEMA_ID  Used with metadata outputformat to identify structure
+    --schema_idid=SCHEMA_ID  Used with metadata outputformat to identify structure
                           set being analyzed.
-    --collectionid=COLLECTION_ID
+    --collection_id=COLLECTION_ID
                           Used with metadata outputformat to identify structure
                           being analyzed.
 
 Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the delimiter and quoting info - but will let it figure these out itself.  There's no header - so it doesn't know the names of the fields, but otherwise is getting everything correct.
 
-$ gristle_determinator /etc/passwd
+$ gristle_determinator --infiles /etc/passwd
 
 File Structure:
   format type:       csv
@@ -193,23 +195,28 @@ $ ./gristle_determinator /etc/passwd  --outputformat parsable
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
 http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013,2017 Ken Farmer
+Copyright 2011-2021 Ken Farmer
 """
-import sys
-import os
-import optparse
-import errno
 import csv
+import errno
+import os
+import sys
+from os.path import basename
 from pprint import pprint as pp
-from typing import List, Tuple, Dict, Any, Optional
 from signal import signal, SIGPIPE, SIG_DFL
+from typing import List, Tuple, Dict, Any, Optional
 
 import datagristle.file_type as file_type
 import datagristle.field_determinator as field_determinator
 import datagristle.metadata as metadata
+import datagristle.configulator as configulator
+from datagristle.common import abort
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE,SIG_DFL)
+
+NAME = basename(__file__)
+SHORT_HELP = 'Analyze and profile csv files'
 
 # pylint is confused on some inheritance issues
 # pylint: disable=E1101 
@@ -220,60 +227,60 @@ signal(SIGPIPE,SIG_DFL)
 def main() -> int:
     """ Allows users to directly call determinator from command line
     """
-    (opts, files) = get_opts_and_args()
     md_man = None
 
-    # turn off verbose if parsable output is going to stdout
-    if opts.outputformat == 'parsable' and not opts.output:
-        opts.verbose = False  # don't mix data and info
+    try:
+        config_manager = ConfigManager()
+        nconfig = config_manager.get_config()
+    except EOFError:
+        sys.exit(errno.ENODATA) #61: empty file
 
-    if opts.metadata:
-        md_man = MetadataManager(opts.schema_id, opts.collection_id)
+    if nconfig.metadata:
+        md_man = MetadataManager(nconfig.schemaid, nconfig.collectionid)
 
-
-    out_writer = OutputWriter(output_filename=opts.output,
-                              output_format=opts.outputformat)
+    out_writer = OutputWriter(output_filename=nconfig.outfile,
+                              output_format=nconfig.outputformat)
 
     # Get Analysis on File:
-    my_file = file_type.FileTyper(files[0],
-                                  opts.delimiter,
+    my_file = file_type.FileTyper(nconfig.infiles[0],
+                                  nconfig.delimiter,
                                   None,
-                                  opts.has_header,
+                                  nconfig.has_header,
                                   quoting=file_type.get_quote_name(csv.QUOTE_MINIMAL),
-                                  read_limit=opts.read_limit)
+                                  read_limit=nconfig.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
         return errno.ENODATA
 
     out_writer.write_file_results(my_file)
-    if opts.metadata:
+    if nconfig.metadata:
         md_man.write_file_results(my_file)
 
-    if opts.brief:
+    if nconfig.brief:
         return 0
 
 
     # Get Analysis on ALL Fields:
-    my_fields = field_determinator.FieldDeterminator(files[0],
+    my_fields = field_determinator.FieldDeterminator(nconfig.infiles[0],
                                                      my_file.format_type,
                                                      my_file.field_cnt,
                                                      my_file.dialect.has_header,
                                                      my_file.dialect,
-                                                     opts.verbose)
+                                                     nconfig.verbose)
 
-    if opts.column_type_overrides:
-        assert max(opts.column_type_overrides) < my_file.field_cnt,   \
+    if nconfig.column_type_overrides:
+        assert max(nconfig.column_type_overrides) < my_file.field_cnt,   \
            "ERROR: column_type_override references non-existing column_number"
 
-    my_fields.analyze_fields(opts.column_number,
-                             opts.column_type_overrides,
-                             opts.max_freq,
-                             opts.read_limit)
+    my_fields.analyze_fields(nconfig.column_types,
+                             nconfig.column_type_overrides,
+                             nconfig.max_freq,
+                             nconfig.read_limit)
 
-    out_writer.write_field_results(my_fields, opts.column_number)
-    if opts.metadata:
-        md_man.write_field_results(my_fields, opts.column_number)
+    out_writer.write_field_results(my_fields, nconfig.column_types)
+    if nconfig.metadata:
+        md_man.write_field_results(my_fields, nconfig.column_types)
 
     out_writer.terminate()
     return 0
@@ -400,7 +407,7 @@ class OutputWriter(object):
         self.output_format = output_format
         assert self.output_format in ['readable', 'parsable', 'metadata']
 
-        if self.output_filename:
+        if self.output_filename not in ('-', None):
             self.outfile = open(self.output_filename, 'w')
         else:
             self.outfile = sys.stdout
@@ -433,7 +440,6 @@ class OutputWriter(object):
             self.write_string('delimiter', "'|'")
         else:
             self.write_string('delimiter', my_file.dialect.delimiter)
-        #self.write_string('csv quoting', my_file.csv_quoting)
         self.write_string('skipinitialspace', my_file.dialect.skipinitialspace)
         self.write_string('quoting', file_type.get_quote_name(my_file.dialect.quoting))
         self.write_string('doublequote', my_file.dialect.doublequote)
@@ -522,6 +528,7 @@ class OutputWriter(object):
                      indent: int = 0,
                      key_width: int = 20,
                      use_repr: bool = False) -> None:
+
         if self.output_format == 'parsable' and self._parsify(self.subsection) != 'top_values':
             trunc_key = self._parsify(key[:key_width])
             trunc_value = '"%s"' % str(value)[:30]
@@ -546,135 +553,129 @@ class OutputWriter(object):
 
 
 
+class ConfigManager(configulator.Config):
+
+    def __init__(self):
+        use = ("gristle_determinator determines file structure then analyzes contents of each "
+               "column.\n"
+               "Once complete it then prints the results for the user\n"
+               "\n"
+               "Usage: gristle_determinator --infiles [files] [misc options]"
+               "\n")
+        super().__init__(NAME, use, __doc__)
+
+    def get_config(self) -> Dict[str, Any]:
+        self.define_user_config()
+        self.process_configs()
+        self.extend_config()
+        return self.nconfig
+
+    def define_user_config(self) -> None:
+        """ Defines the user config or metadata.   Does not get the user input.
+        """
+        self.add_standard_metadata('infiles')
+        self.add_standard_metadata('outfile')
+        self.add_standard_metadata('verbose')
+        self.add_all_csv_configs()
+
+        self.add_custom_metadata(name='outputformat',
+                                 arg_type='option',
+                                 default='readable',
+                                 config_type=str,
+                                 help_msg="describe output format, provide one of: 'readable', 'parsable', or 'none' " )
+        self.add_custom_metadata(name='brief',
+                                 short_name='b',
+                                 arg_type='option',
+                                 default=False,
+                                 config_type=bool,
+                                 action='store_const',
+                                 const=True,
+                                 help_msg="skips field-level analysis")
+        self.add_custom_metadata(name='read_limit',
+                                 arg_type='option',
+                                 default=-1,
+                                 config_type=int,
+                                 help_msg="Specify a maximum number of records to read from input file")
+        self.add_custom_metadata(name='column_number',
+                                 short_name='c',
+                                 arg_type='option',
+                                 default=None,
+                                 config_type=int,
+                                 help_msg='Restrict analysis to a single column (field number) - using a zero-offset')
+        self.add_custom_metadata(name='max_freq',
+                                 arg_type='option',
+                                 config_type=int,
+                                 help_msg='Specify a maximum number of entries for freq dictionary. '
+                                          'This is applied separately to each column.  The default is'
+                                          ' set at approximately 1 million entries. ')
+        self.add_custom_metadata(name='column_types',
+                                 arg_type='option',
+                                 config_type=str,
+                                 help_msg='Allows manual specification of field types: integer, float, '
+                                          'string, timestamp. Use format: "colno:type, colno:type, '
+                                          ' colno:type" ')
+        self.add_custom_metadata(name='metadata',
+                                 arg_type='option',
+                                 config_type=bool,
+                                 action='store_const',
+                                 const=True,
+                                 help_msg='Indicates whether or not to write results into metadata database')
+        self.add_custom_metadata(name='schema_id',
+                                 arg_type='option',
+                                 config_type=int,
+                                 help_msg='Used with metadata outputformat to identify structure set being analyzed.')
+        self.add_custom_metadata(name='collection_id',
+                                 arg_type='option',
+                                 config_type=int,
+                                 help_msg='Used with metadata outputformat to identify structure set being analyzed.')
+
+    def validate_custom_config(self,
+                               config: configulator.CONFIG_TYPE):
+
+        if not config['delimiter'] and config['infiles'] == '-':
+            abort('Provide delimiter and quoting when piping data into pgm via stdin')
+
+        if len(config['infiles']) > 1:
+            abort("multiple files not yet supported")
+
+        if config['brief'] and config['column_number']:
+            abort('must not specify both brevity and column number')
+
+        if config['max_freq'] is not None and config['max_freq'] < 10:
+            abort('please specify a max-freq between 10 and 1000000000')
+
+        if (config['schema_id'] or config['collection_id']) and not config['metadata']:
+            abort('schema_id and collection_id are only for metadata')
+
+        if (config['schema_id'] is None or config['collection_id'] is None) and config['metadata']:
+            abort('metadata requires schema_id and collection_id')
 
 
-def get_opts_and_args() -> Tuple[optparse.OptionParser, List[str]]:
-    """ gets opts & args and returns them
-        run program with -h or --help for command line args
-    """
-    use = ("%prog determines file structure then analyzes contents of each "
-           "column.\n"
-           "Once complete it then prints the results for the user\n"
-           "\n"
-           "Usage: %prog [file] [misc options]"
-           "\n")
-    parser = optparse.OptionParser(usage=use)
-    parser.add_option('--long-help',
-                      default=False,
-                      action='store_true',
-                      help='Print more verbose help')
-    parser.add_option('-o', '--output',
-                      help='Specify output file.  Default is stdout.')
-    parser.add_option('--outputformat',
-                      choices=['readable', 'parsable', 'metadata'],
-                      default='readable',
-                      help="describe output format, provide one of: 'readable', 'parsable', or 'none'")
-    parser.add_option('-v', '--verbose',
-                      action='store_true',
-                      dest='verbose',
-                      default=True,
-                      help='provides more detail')
-    parser.add_option('-b', '--brief',
-                      action='store_true',
-                      dest='brief',
-                      default=False,
-                      help='skips field-level analysis')
-    parser.add_option('--read-limit',
-                      type=int,
-                      default=-1,
-                      help='Specify a maximum number of records to read from input file')
-    parser.add_option('-c', '--column',
-                      type=int,
-                      dest='column_number',
-                      help=('Restrict analysis to a single column (field number)'
-                            ' - using a zero-offset'))
-    parser.add_option('--max-freq',
-                      type=int,
-                      help='Specify a maximum number of entries for freq dictionary. '
-                           'This is applied separately to each column.  The default is'
-                           ' set at approximately 1 million entries. ')
-    parser.add_option('-n', '--number',
-                      type=int,
-                      dest='max_freq',
-                      help='Deprecated version of max-freq')
-    parser.add_option('-d', '--delimiter',
-                      help=('Specify a quoted field delimiter.'
-                            'This is essential for multi-column delimiters.'))
-    parser.add_option('--has-header',
-                      default=None,
-                      action='store_true',
-                      dest='has_header',
-                      help='Indicates that there is a header in the file. ')
-    parser.add_option('--has-no-header',
-                      default=None,
-                      action='store_false',
-                      dest='has_header',
-                      help=('Indicates that there is no header in the file. Useful for '
-                            'overriding automatic csv-guessing behavior.'))
-    parser.add_option('-T', '--types',
-                      type='string',
-                      dest='column_types',
-                      help=('Allows manual specification of field types: integer, float, '
-                            'string, timestamp. Use format: "colno:type, colno:type, '
-                            ' colno:type"'))
-    parser.add_option('--metadata',
-                      default=False,
-                      action='store_true',
-                      help=('Indicates whether or not to write results into metadata database'))
-    parser.add_option('--schemaid',
-                      type='int',
-                      dest='schema_id',
-                      help=('Used with metadata outputformat to identify structure '
-                            'set being analyzed.'))
-    parser.add_option('--collectionid',
-                      type='int',
-                      dest='collection_id',
-                      help=('Used with metadata outputformat to identify structure '
-                            'being analyzed.'))
+    def extend_config(self) -> None:
+        self.generate_csv_dialect_config()
 
-    (opts, files) = parser.parse_args()
+        # turn off verbose if parsable output is going to stdout
+        if self.nconfig.outputformat == 'parsable' \
+        and (not self.nconfig.outfile or self.nconfig.outfile == '-'):
+            self.config['verbose'] = False  # don't mix data and info
+            self.replace_configs(self.config)
 
-    if opts.long_help:
-        print(__doc__)
-        sys.exit(0)
-
-    # validate opts
-    if not files:
-        parser.error("no filename was provided")
-    elif len(files) > 1:
-        parser.error("multiple files not yet supported")
-    elif not os.path.exists(files[0]):
-        parser.error("filename %s could not be accessed" % files[0])
-
-    if opts.brief and opts.column_number:
-        parser.error('must not specify both brevity and column number')
-
-    if opts.max_freq is not None and opts.max_freq < 10:
-        parser.error('please specify a max-freq between 10 and 1000000000')
-
-    if (opts.schema_id or opts.collection_id) and not opts.metadata:
-        parser.error('schemaid and collectionid are only for metadata')
-
-    if (opts.schema_id is None or opts.collection_id is None) and opts.metadata:
-        parser.error('metadata requires schemaid and collectionid')
-
-    # set up column_type_overrides
-    opts.column_type_overrides = {}
-    if opts.column_types:
-        for col_type_pair in opts.column_types.split(','):
-            try:
-                (col_no, col_type) = col_type_pair.split(':')
+        # set up column_type_overrides
+        self.config['column_type_overrides'] = {}
+        if self.config['column_types']:
+            for col_type_pair in self.config['column_types'].split(','):
                 try:
-                    int(col_no)
+                    (col_no, col_type) = col_type_pair.split(':')
+                    try:
+                        int(col_no)
+                    except ValueError:
+                        abort('invalid column number for types option')
+                    if col_type not in ['integer', 'float', 'string', 'timestamp']:
+                        abort('invalid type for types option')
                 except ValueError:
-                    parser.error('invalid column number for types option')
-                if col_type not in ['integer', 'float', 'string', 'timestamp']:
-                    parser.error('invalid type for types option')
-            except ValueError:
-                parser.error('invalid format for types option')
-            opts.column_type_overrides[int(col_no)] = col_type
-
-    return opts, files
+                    abort('invalid format for types option')
+                self.config['column_type_overrides'][int(col_no)] = col_type
+        self.replace_configs(self.config)
 
 
 

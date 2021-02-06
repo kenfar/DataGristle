@@ -3,7 +3,7 @@
 """ Manages user config - arguments and environmental variables.
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2020 Ken Farmer
+    Copyright 2020-2021 Ken Farmer
 
     Challenges:
     1. config files are hierarchical, args & envs are flat
@@ -11,16 +11,17 @@
     3. some input is intended to be interactive-only - such as --version --help --long-help
 """
 
-import sys
 import argparse
 import collections
 import copy
 import json
 import os
+import sys
+import yaml
+
 from os.path import isfile, splitext, basename
 from pprint import pprint as pp
 from typing import List, Dict, Tuple, Any, Union, Callable, Optional, NamedTuple
-import yaml
 
 from datagristle._version import __version__
 import datagristle.common as comm
@@ -124,6 +125,14 @@ STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'const': False,
                                      'dest': 'has_header'}
 
+
+STANDARD_CONFIGS['verbose'] = {'default': False,
+                               'required': False,
+                               'help': 'Prints more detailed logs',
+                               'type': bool,
+                               'arg_type': 'option',
+                               'action': 'store_const',
+                               'const': True}
 STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'required': False,
                                'help': 'Performs most processing except for final changes or output',
@@ -278,12 +287,12 @@ class Config(object):
 
         # fix incorrect types coming in from files
         for key, val in config.items():
-           if key in ARG_ONLY_CONFIGS:
-               continue
-           intended_type = self._app_metadata[key]['type']
-           if intended_type is str:
-               if type(val) is int:
-                   config[key] = str(val)
+            if key in ARG_ONLY_CONFIGS:
+                continue
+            intended_type = self._app_metadata[key]['type']
+            if intended_type is str:
+                if type(val) is int:
+                    config[key] = str(val)
 
         return config
 

@@ -24,9 +24,9 @@
 
     Arguments:
       --long-help            Print verbose help and exit.
-      -i, --inputs=<files>   One or more input files. Alternatively, could be
+      -i, --infiles=<infiles>One or more input files. Alternatively, could be
                              piped in via stdin.
-      -o, --output=<file>    Specify the output file.  The default is stdout.
+      -o, --outfile=<infile> Specify the output file.  The default is stdout.
       -c, --columns=<spec>   Provide the column inclusion specification,
                              Default is ':' which includes all columns.
       -C, --excolumns=<spec> Provide the column exclusion specification.
