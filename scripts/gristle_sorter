@@ -10,6 +10,7 @@ import sys
 from typing import Dict, List, Any, Optional, Union
 
 
+import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.file_sorter as file_sorter
@@ -98,9 +99,9 @@ class ConfigManager(configulator.Config):
         """ Validate the application's config and modify as necessary
         """
 
-        if custom_config['infiles'] == '-':  # stdin
+        if custom_config['infiles'][0] == '-':  # stdin
             if not custom_config['delimiter']:
-                self.parser.error('Please provide delimiter when piping data into program via stdin')
+                comm.abort('Please provide delimiter when piping data into program via stdin')
             if not custom_config['quoting']:
                 custom_config['quoting'] = 'quote_minimal'
 

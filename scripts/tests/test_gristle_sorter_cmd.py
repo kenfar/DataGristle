@@ -52,7 +52,7 @@ class TestKeyOptions(object):
         assert recs[2][0] == '3'
         assert recs[3][0] == '4'
 
-    def broketest_two_keys(self):
+    def test_two_keys(self):
         in_fqfn = create_complex_test_file(self.temp_dir, header=False)
         dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=False, doublequote=False)
         out_fqfn = in_fqfn + '.sorted'
