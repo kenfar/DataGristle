@@ -133,6 +133,13 @@ STANDARD_CONFIGS['verbose'] = {'default': False,
                                'arg_type': 'option',
                                'action': 'store_const',
                                'const': True}
+STANDARD_CONFIGS['non_verbose'] = {'required': False,
+                                   'help': 'Prints more detailed logs',
+                                   'type': bool,
+                                   'dest': 'verbose',
+                                   'arg_type': 'option',
+                                   'action': 'store_const',
+                                   'const': False}
 STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'required': False,
                                'help': 'Performs most processing except for final changes or output',
@@ -369,15 +376,15 @@ class Config(object):
                         raise ValueError(f"{arg}.max_length is not an int")
                 elif property_name == 'action':
                     if arg_parameters['type'] is not bool:
-                        raise ValueError(f"dest is only valid for type of bool")
+                        raise ValueError(f"{arg}.action is only valid for type of bool")
                     if property_value not in ('store_const', 'store_true'):
                         raise ValueError(f"{arg}.action is not 'store_const'")
                 elif property_name == 'dest':
                     if arg_parameters['type'] is not bool:
-                        raise ValueError(f"dest is only valid for type of bool")
+                        raise ValueError(f"{arg}.dest is only valid for type of bool")
                 elif property_name == 'const':
                     if arg_parameters['type'] is not bool:
-                        raise ValueError(f"const is only valid for type of bool")
+                        raise ValueError(f"{arg}.const is only valid for type of bool")
                 elif property_name == 'transformer':
                     pass
                 else:

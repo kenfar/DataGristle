@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -16,40 +16,40 @@ import os
 from os.path import dirname
 from pprint import pprint as pp
 
+import envoy
 import pytest
 
-script_path = dirname(dirname(os.path.realpath((__file__))))
+SCRIPT_PATH = dirname(dirname(os.path.realpath((__file__))))
+PGM = os.path.join(SCRIPT_PATH, 'gristle_file_converter')
 
 
 
 class TestCommandLine(object):
 
     def setup_method(self, method):
-        self.easy_fqfn = generate_test_file(delim='|', record_cnt=100)
-        self.empty_fqfn = generate_test_file(delim='|', record_cnt=0)
+        self.easy_fqfn = generate_test_file(delim='$', record_cnt=100)
+        self.empty_fqfn = generate_test_file(delim='$', record_cnt=0)
 
     def teardown_method(self, method):
         os.remove(self.easy_fqfn)
         os.remove(self.empty_fqfn)
 
     def test_input_and_output_del(self):
-
-        cmd = [os.path.join(script_path, 'gristle_file_converter'),
-               self.easy_fqfn,
-               '-d', '|',
-               '-D', ',']
+        cmd = f"{PGM} -i {self.easy_fqfn} -d '$' -D ',' "
         runner = subprocess.Popen(cmd,
                                   stdout=subprocess.PIPE,
-                                  close_fds=True)
+                                  close_fds=True,
+                                  shell=True)
         r_output = cleaner(runner.communicate()[0])
         r_recs = r_output[:-1].split('\n')
+
         for rec in r_recs:
             assert rec.count(',') == 3
         assert len(r_recs) == 100
 
 
     def test_output_del_only(self):
-        cmd = "%s  %s -D ',' " % (os.path.join(script_path, 'gristle_file_converter'), self.easy_fqfn)
+        cmd = f"{PGM} -i {self.easy_fqfn} -D ',' "
         runner = subprocess.Popen(cmd,
                                   stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
@@ -58,18 +58,16 @@ class TestCommandLine(object):
 
         r_output = cleaner(runner.communicate()[0])
         r_recs = r_output[:-1].split('\n')
-        pp(r_recs)
         for rec in r_recs:
             assert rec.count(',') == 3
         assert len(r_recs) == 100
 
 
     def test_empty_file(self):
-        cmd = "%s  %s -d'|' -D ',' " % (os.path.join(script_path, 'gristle_file_converter'),
-                                        self.empty_fqfn)
-        runner =  subprocess.Popen(cmd,
-                                   stdout=subprocess.PIPE,
-                                   shell=True)
+        cmd = f"{PGM} -i {self.easy_fqfn} -D ',' "
+        runner = subprocess.Popen(cmd,
+                                  stdout=subprocess.PIPE,
+                                  shell=True)
         r_output = cleaner(runner.communicate()[0])
         out_recs = r_output[:-1].split('\n')
         if not out_recs:
