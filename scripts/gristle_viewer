@@ -47,6 +47,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 import sys
 from typing import Dict, List, Optional, Any, Tuple
 
+import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.field_determinator  as field_determinator
@@ -203,7 +204,7 @@ class ConfigManager(configulator.Config):
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
         if config['infiles'] == '-':
-            self.parser.error('An input filename is required')
+            comm.abort('An input filename is required')
 
 
 
