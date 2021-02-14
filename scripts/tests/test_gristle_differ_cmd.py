@@ -789,8 +789,8 @@ class TestCommandLine(object):
 
         cmd = ''' %s \
                   --infiles %s %s \
-                  -k 0 -c 2 --temp-dir %s --stats''' % (pjoin(script_dir, 'gristle_differ'),
-                                                        fqfn1, fqfn2, self.temp_dir)
+                  -k 0 -c 2 --temp-dir %s --verbosity high''' % (pjoin(script_dir, 'gristle_differ'),
+                                                                 fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
         pp(os.listdir(self.temp_dir))

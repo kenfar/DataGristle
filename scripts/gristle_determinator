@@ -267,7 +267,7 @@ def main() -> int:
                                                      my_file.field_cnt,
                                                      my_file.dialect.has_header,
                                                      my_file.dialect,
-                                                     nconfig.verbose)
+                                                     nconfig.verbosity)
 
     if nconfig.column_type_overrides:
         assert max(nconfig.column_type_overrides) < my_file.field_cnt,   \
@@ -575,8 +575,6 @@ class ConfigManager(configulator.Config):
         """
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
-        self.add_standard_metadata('verbose')
-        self.add_all_csv_configs()
 
         self.add_custom_metadata(name='outputformat',
                                  arg_type='option',
@@ -629,6 +627,10 @@ class ConfigManager(configulator.Config):
                                  config_type=int,
                                  help_msg='Used with metadata outputformat to identify structure set being analyzed.')
 
+        self.add_standard_metadata('verbosity')
+        self.add_all_csv_configs()
+
+
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
 
@@ -657,13 +659,13 @@ class ConfigManager(configulator.Config):
         # turn off verbose if parsable output is going to stdout
         if self.nconfig.outputformat == 'parsable' \
         and (not self.nconfig.outfile or self.nconfig.outfile == '-'):
-            self.config['verbose'] = False  # don't mix data and info
+            self.config['verbosty'] = configulator.VERBOSITY_QUIET  # don't mix data and info
             self.replace_configs(self.config)
 
         # set up column_type_overrides
         self.config['column_type_overrides'] = {}
-        if self.config['column_types']:
-            for col_type_pair in self.config['column_types'].split(','):
+        if self.nconfig.column_types:
+            for col_type_pair in self.nconfig.column_types.split(','):
                 try:
                     (col_no, col_type) = col_type_pair.split(':')
                     try:

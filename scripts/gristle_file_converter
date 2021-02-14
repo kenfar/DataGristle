@@ -263,9 +263,6 @@ class ConfigManager(configulator.Config):
         """
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
-        self.add_standard_metadata('verbose')
-        self.add_standard_metadata('non_verbose')
-        self.add_all_csv_configs()
 
         self.add_custom_metadata(name='out_delimiter',
                                  short_name='D',
@@ -296,13 +293,6 @@ class ConfigManager(configulator.Config):
                                  action='store_const',
                                  const=True,
                                  help_msg='Specifies there is a header in output file.')
-        self.add_custom_metadata(name='out_has_no_header',
-                                 arg_type='option',
-                                 config_type=bool,
-                                 action='store_const',
-                                 const=False,
-                                 dest='out_has_header',
-                                 help_msg='Specifies there is NO header in output file.')
         self.add_custom_metadata(name='stripfields',
                                  arg_type='option',
                                  config_type=bool,
@@ -310,6 +300,11 @@ class ConfigManager(configulator.Config):
                                  const=True,
                                  default=False,
                                  help_msg='Strips ledaing and trailing spaces from each field.')
+
+        self.add_standard_metadata('verbosity')
+
+        self.add_all_csv_configs()
+
 
     def validate_custom_config(self,
                                custom_config: configulator.CONFIG_TYPE) -> None:

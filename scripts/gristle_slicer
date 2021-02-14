@@ -82,6 +82,7 @@ from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Tuple, Dict, Any, Optional, IO
 
+import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
@@ -279,7 +280,6 @@ class ConfigManager(configulator.Config):
         """
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
-        self.add_all_csv_configs()
 
         self.add_custom_metadata(name='columns',
                                  short_name='c',
@@ -315,11 +315,12 @@ class ConfigManager(configulator.Config):
                                  help_msg='Specify the records to exclude via a comma-separated list '
                                           'of record numbers and colon-separated pairs of record '
                                           'start & stop ranges.  Default is to exclude nothing.')
+        self.add_all_csv_configs()
 
 
     def validate_custom_config(self, config: configulator.CONFIG_TYPE):
         if not config['delimiter'] and config['infiles'] == '-':
-            self.parser.error('Provide delimiter and quoting when piping data into program via stdin')
+            comm.abort('Provide delimiter and quoting when piping data into program via stdin')
 
 
     def extend_config(self) -> None:

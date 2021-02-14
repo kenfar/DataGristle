@@ -230,7 +230,7 @@ def main():
 
     file_delta = delta_runner(nconfig, dialect)
 
-    if nconfig.stats:
+    if nconfig.verbosity in ('high', 'debug'):
         print('')
         print('Read Stats:')
         print('   File0/oldfile records:  %d' % file_delta.old_read_cnt)
@@ -309,7 +309,7 @@ def delta_runner(nconfig,
 
     #--- finally, run the comparison ---
     delta.compare_files(f0_sorted_uniq_fn, f1_sorted_uniq_fn,
-                        dry_run=nconfig.dry_run)
+                        dry_run=False)
 
     #--- housekeeping ---
     os.remove(f0_sorted_uniq_fn)
@@ -406,13 +406,7 @@ class ConfigManager(configulator.Config):
 
         Does not get the user input.
         """
-        self.add_all_csv_configs()
         self.add_standard_metadata('infiles')
-        self.add_standard_metadata('dry_run')
-        self.add_standard_metadata('stats')
-        self.add_standard_metadata('no_stats')
-        self.add_standard_metadata('config_name')
-        self.add_standard_metadata('config_fn')
 
         self.add_custom_metadata(name='key_cols',
                                  short_name='k',
@@ -488,12 +482,17 @@ class ConfigManager(configulator.Config):
                                  config_type=list,
                                  help_msg=(''))
 
+        self.add_standard_metadata('config_fn')
+        self.add_standard_metadata('verbosity')
+        self.add_all_csv_configs()
+
+
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
 
         pp(config)
         if not config['delimiter'] and config['infiles'] == '-':
-            raise ValueError('Provide delimiter and quoting when piping data into program via stdin')
+            abort('Provide delimiter and quoting when piping data into program via stdin')
 
         config_schema = {'type': 'object',
                          'properties': {
@@ -527,7 +526,13 @@ class ConfigManager(configulator.Config):
                             'quotechar':       {"type":     ["null", "string"]},
                             'doublequote':     {"type":     ["null", "boolean"]},
                             'escapechar':      {"type":     ["null", "string"]},
-                            'stats':           {"type":     "boolean"},
+                            #'verbosity':       {'type':     ["null", "integer"],
+                            'verbosity':       {'type':     ["null", "string"],
+                                                "enum":     [None, 'quiet', 'normal', 'high', 'debug']},
+                                                #"enum":     [None, configulator.VERBOSITY_QUIET,
+                                                #                   configulator.VERBOSITY_NORMAL,
+                                                #                   configulator.VERBOSITY_HIGH,
+                                                #                   configulator.VERBOSITY_DEBUG]},
                             'dry_run':         {"type":     "boolean"},
                             'long_help':       {"type":     "boolean"},
                             'help':            {"type":     "boolean"},
@@ -597,16 +602,6 @@ def config_bonus_validator(config: Dict[str, Any]) -> None:
             if isinstance(assign['dest_field'], list):
                 abort('Assignment dest_field must be a string (refers to col_name)'
                       'or an integer - it is a list')
-
-
-def print_config(config, dialect):
-    print("config['files']: %s" % config.get('files'))
-    print("config['key_cols']: %s" % config.get('key_cols', None))
-    print("config['compare_cols']: %s" % config.get('compare_cols', None))
-    print("config['ignore_cols']: %s" % config.get('ignore_cols', None))
-    print("config['variables']: %s" % config.get('variables', None))
-    print("config['col_names']: %s" % config.get('col_names', None))
-    print("dialect.has_header']: %s" % dialect.has_header)
 
 
 if __name__ == '__main__':

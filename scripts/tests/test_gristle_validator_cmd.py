@@ -292,8 +292,8 @@ class TestFieldCount(object):
                          --fieldcnt 70             \
                          --quoting 'quote_none'    \
                          --outfile %(outfile)s     \
-                         --errfile  %(errfile)s     \
-                         --stats                   \
+                         --errfile  %(errfile)s    \
+                         --verbosity high          \
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -617,7 +617,6 @@ class TestValidatingTheValidator(object):
                          --quoting 'quote_none'
                          --outfile %(outfile)s
                          --errfile %(errfile)s
-                         --non-verbose
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -647,7 +646,6 @@ class TestValidatingTheValidator(object):
                          --quoting 'quote_none'    \
                          --outfile %(outfile)s     \
                          --errfile  %(errfile)s    \
-                         --non-verbose             \
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -681,7 +679,6 @@ class TestValidatingTheValidator(object):
                          --quoting 'quote_none'
                          --outfile %(outfile)s
                          --errfile  %(errfile)s
-                         --non-verbose
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -771,7 +768,6 @@ class TestCSVDialects(object):
                          --quoting quote_nonnumeric
                          --outfile %(outfile)s
                          --errfile  %(errfile)s
-                         --non-verbose
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,

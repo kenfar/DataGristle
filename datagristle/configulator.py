@@ -49,6 +49,10 @@ def transform_quoting(val):
 
 
 
+VERBOSITY_QUIET = 0
+VERBOSITY_NORMAL = 1
+VERBOSITY_HIGH = 2
+VERBOSITY_DEBUG = 3
 
 STANDARD_CONFIGS: META_CONFIG_TYPE = {}
 STANDARD_CONFIGS['infiles'] = {'short_name': 'i',
@@ -103,7 +107,7 @@ STANDARD_CONFIGS['doublequote'] = {'default': None,
                                    'const': True}
 STANDARD_CONFIGS['no_doublequote'] = {'default': None,
                                       'required': True,
-                                      'help': 'csv dialect - quotes are escaped thru doublequoting',
+                                      'help': 'csv dialect - quotes are not escaped thru doublequoting',
                                       'type': bool,
                                       'arg_type': 'option',
                                       'action': 'store_const',
@@ -118,28 +122,20 @@ STANDARD_CONFIGS['has_header'] = {'default': None,
                                   'const': True}
 STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'required': True,
-                                     'help': 'csv dialect - indicates header exists',
+                                     'help': 'csv dialect - indicates no header exists',
                                      'type': bool,
                                      'arg_type': 'option',
                                      'action': 'store_const',
                                      'const': False,
                                      'dest': 'has_header'}
 
+STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
+                                 'required': False,
+                                 'help': 'controls level of logging - with 0=quiet, 1=normal, 2=high, 3=debug levels',
+                                 'type': str,
+                                 'choices': ['quiet', 'normal', 'high', 'debug'],
+                                 'arg_type': 'option'}
 
-STANDARD_CONFIGS['verbose'] = {'default': False,
-                               'required': False,
-                               'help': 'Prints more detailed logs',
-                               'type': bool,
-                               'arg_type': 'option',
-                               'action': 'store_const',
-                               'const': True}
-STANDARD_CONFIGS['non_verbose'] = {'required': False,
-                                   'help': 'Prints more detailed logs',
-                                   'type': bool,
-                                   'dest': 'verbose',
-                                   'arg_type': 'option',
-                                   'action': 'store_const',
-                                   'const': False}
 STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'required': False,
                                'help': 'Performs most processing except for final changes or output',
@@ -147,21 +143,6 @@ STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'arg_type': 'option',
                                'action': 'store_const',
                                'const': True}
-
-STANDARD_CONFIGS['stats'] = {'default': False,
-                             'required': False,
-                             'help': 'Writes detailed processing stats',
-                             'type': bool,
-                             'arg_type': 'option',
-                             'action': 'store_const',
-                             'const': True}
-STANDARD_CONFIGS['no_stats'] = {'required': False,
-                                'help': 'Turns off detailed processing stats',
-                                'type': bool,
-                                'arg_type': 'option',
-                                'action': 'store_const',
-                                'const': False,
-                                'dest': 'stats'}
 
 STANDARD_CONFIGS['config_name'] = {'default': None,
                                    'required': False,
@@ -176,7 +157,7 @@ STANDARD_CONFIGS['config_fn'] = {'default': None,
 
 
 
-ARG_ONLY_CONFIGS = ['version', 'long_help']
+ARG_ONLY_CONFIGS = ['version', 'long_help', 'configfn', 'config_name', 'long-help']
 VALID_ARG_TYPES = ('argument', 'option')
 
 

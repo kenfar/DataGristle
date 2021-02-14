@@ -21,11 +21,12 @@ from operator import itemgetter
 from pprint import pprint as pp
 from typing import Optional, List, Tuple, Dict, Any
 
+import datagristle.common as common
+import datagristle.configulator as configulator
+import datagristle.csvhelper as csvhelper
 import datagristle.field_type as typer
 import datagristle.field_math as mather
 import datagristle.field_misc as miscer
-import datagristle.csvhelper as csvhelper
-import datagristle.common as common
 
 #------------------------------------------------------------------------------
 # override miscer.get_field_freq max dictionary size defaults:
@@ -61,14 +62,15 @@ class FieldDeterminator(object):
                  field_cnt: int,
                  has_header: bool,
                  dialect: csvhelper.Dialect,
-                 verbose: bool = False) -> None:
+                 verbosity: str='normal') -> None:
+                 #verbosity: int = configulator.VERBOSITY_NORMAL) -> None:
 
         self.filename = filename
         self.format_type = format_type
         self.field_cnt = field_cnt
         self.has_header = has_header
         self.dialect = dialect
-        self.verbose = verbose
+        self.verbosity = verbosity
         self.max_freq_number:   Optional[int] = None  # will be set in analyze_fields
 
         #--- public field dictionaries - organized by field_number --- #
@@ -121,7 +123,8 @@ class FieldDeterminator(object):
         assert field_number is None or field_number > -1
         self.max_freq_number = max_freq_number
 
-        if self.verbose:
+        #if self.verbosity > configulator.VERBOSITY_NORMAL:
+        if self.verbosity in ('high', 'debug'):
             print('Field Analysis Progress: ')
 
         for f_no in range(self.field_cnt):
@@ -129,7 +132,7 @@ class FieldDeterminator(object):
                 if f_no != field_number:
                     continue
 
-            if self.verbose:
+            if self.verbosity in ('high', 'debug'):
                 print('   Analyzing field: %d' % f_no)
 
             self.field_names[f_no] = miscer.get_field_name(self.filename, self.dialect, f_no)

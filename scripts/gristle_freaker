@@ -372,7 +372,6 @@ class ConfigManager(configulator.Config):
 
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
-        self.add_all_csv_configs()
 
         self.add_custom_metadata(name='columns',
                                  short_name='c',
@@ -427,6 +426,7 @@ class ConfigManager(configulator.Config):
                                  default=None,
                                  help_msg='Specifies number of records to skip if using interval sammpling-method.')
 
+        self.add_all_csv_configs()
 
 
     def validate_custom_config(self,

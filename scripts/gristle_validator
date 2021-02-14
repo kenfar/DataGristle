@@ -159,7 +159,7 @@ def main() -> int:
                                       outfile_handler,
                                       outerr_handler,
                                       rec_validator,
-                                      nconfig.stats)
+                                      nconfig.verbosity)
 
     input_handler.close()
     outfile_handler.close()
@@ -178,7 +178,7 @@ def process_all_records(input_handler: 'InputHandler',
                         outfile_handler: 'OutputHandler',
                         outerr_handler: 'OutputHandler',
                         rec_validator: 'RecValidator',
-                        stats: bool) -> int:
+                        verbosity: int) -> int:
     """ Walks through input file, validating each record, and writing
         out results.
     """
@@ -213,21 +213,20 @@ def process_all_records(input_handler: 'InputHandler',
             rec.append(comm.coalesce(field_cnt_msg, schema_msg))
             outerr_handler.write_rec(rec)
 
-    write_stats(stats,
-                input_handler.rec_cnt,
-                valid_cnt,
-                invalid_cnt)
+    if verbosity in ('high', 'debug'):
+        write_stats(input_handler.rec_cnt,
+                    valid_cnt,
+                    invalid_cnt)
     return invalid_cnt
 
 
-def write_stats(stats: bool, input_cnt: int, valid_cnt: int, invalid_cnt: int) -> None:
+def write_stats(input_cnt: int, valid_cnt: int, invalid_cnt: int) -> None:
     """ Writes input, output, and validation counts to stdout.
     """
-    if stats:
-        print('')
-        print('input_cnt        | %d ' % input_cnt)
-        print('invalid_cnt      | %d ' % invalid_cnt)
-        print('valid_cnt        | %d ' % valid_cnt)
+    print('')
+    print('input_cnt        | %d ' % input_cnt)
+    print('invalid_cnt      | %d ' % invalid_cnt)
+    print('valid_cnt        | %d ' % valid_cnt)
 
 
 def load_schema(schema_file: str) -> Optional[Dict[Any, Any]]:
@@ -519,12 +518,7 @@ class ConfigManager(configulator.Config):
 
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
-        self.add_standard_metadata('stats')
-        self.add_standard_metadata('verbose')
-        self.add_standard_metadata('non_verbose')
-        self.add_all_csv_configs()
-
-
+ 
         self.add_custom_metadata(name='errfile',
                                  short_name='e',
                                  arg_type='option',
@@ -534,12 +528,13 @@ class ConfigManager(configulator.Config):
                                           'is stderr.  Note that if a filename is provided the program '
                                           'will override any file of that name.')
 
-        self.add_custom_metadata(name='fieldcnt',
-                                 short_name='f',
+        self.add_custom_metadata(name='errmsg',
                                  arg_type='option',
-                                 config_type=int,
-                                 help_msg='Specify the number of fields in the record.  If not provided'
-                                          ' it will default to number of fields on first record')
+                                 config_type=bool,
+                                 default=False,
+                                 action='store_const',
+                                 const=True,
+                                 help_msg='Causes pgm to append error msg at end of each invalid record.  Default is on.')
 
         self.add_custom_metadata(name='valid_schema',
                                  arg_type='option',
@@ -552,13 +547,16 @@ class ConfigManager(configulator.Config):
                                  default=1.0,
                                  help_msg='Causes pgm to write only a percentage of records out.')
 
-        self.add_custom_metadata(name='errmsg',
+        self.add_custom_metadata(name='fieldcnt',
+                                 short_name='f',
                                  arg_type='option',
-                                 config_type=bool,
-                                 default=False,
-                                 action='store_const',
-                                 const=True,
-                                 help_msg='Causes pgm to append error msg at end of each invalid record.  Default is on.')
+                                 config_type=int,
+                                 help_msg='Specify the number of fields in the record.  If not provided'
+                                          ' it will default to number of fields on first record')
+
+        self.add_standard_metadata('verbosity')
+        self.add_all_csv_configs()
+
 
 
     def validate_custom_config(self,
