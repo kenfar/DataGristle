@@ -7,44 +7,51 @@ within the file.  Once complete it then prints the results for the user.
 Usage: gristle_determinator [file] [misc options]
 
     Options:
-    -h, --help            show this help message and exit
-    --long-help           show more verbose help
-    -i INFILES, --infiles=INFILES
-                          One input file
-    -o OUTFILE, --outfile=OUTFILE
-                          Specify output file.  Default is stdout.
-    --outputformat        Choices include: readable, parsable, metadata with a
-                          default of readable.
-    -q, --quiet           provides less detail
-    -v, --verbose         provides more detail
-    -s, --silent          performs operation with no output
-    -b, --brief           skips field-level analysis
-    -c COLUMN_NUMBER, --column=COLUMN_NUMBER
-                          Restrict analysis to a single column (field number) -
-                          using a zero-offset
-    --read-limit=READ_LIMIT
 
-    --max-freq=MAX_FREQ
-                          Specify a maximum number of entries for freq
-                          dictionary. This is applied separately to each column.
-                          The default is set at approximately 1 million entries.
-    -d DELIMITER, --delimiter=DELIMITER
-                          Specify a quoted field delimiter.This is essential for
-                          multi-column delimiters.
-    --has-header          Indicates that there is a header in the file.
-    --has-no-header       Indicates that there is no header in the file. Useful
-                          for overriding automatic csv-guessing behavior.
-    -COLUMN_TYPES=COLUMN_TYPES
-                          Allows manual specification of field types: integer,
-                          float, string, timestamp. Use format: "colno:type,
-                          colno:type,  colno:type"
-    --metadata            Indicates whether or not to write results into
-                          metadata database
-    --schema_idid=SCHEMA_ID  Used with metadata outputformat to identify structure
-                          set being analyzed.
-    --collection_id=COLLECTION_ID
-                          Used with metadata outputformat to identify structure
-                          being analyzed.
+    -h, --help               show brief help message and exit
+    --long-help              show this verbose help and exit
+
+    Main Options:
+        -i, --infiles=INFILES One input file
+        -o, --outfile=OUTFILE Specify output file.  Default is stdout.
+        -c, --column=COLUMN_NUMBER
+                              Restrict analysis to a single column (field number) -
+                              using a zero-offset
+        --read-limit=READ_LIMIT
+
+        --max-freq=MAX_FREQ
+                              Specify a maximum number of entries for freq
+                              dictionary. This is applied separately to each column.
+                              The default is set at approximately 1 million entries.
+        -COLUMN_TYPES=COLUMN_TYPES
+                              Allows manual specification of field types: integer,
+                              float, string, timestamp. Use format: "colno:type,
+                              colno:type,  colno:type"
+
+    Output Format Options:
+        --outputformat        Choices include: readable, parsable, metadata with a
+                              default of readable.
+        -b, --brief           skips field-level analysis
+        --verbosity=VERBOSITY Controls stdout level of detail.  Valid values include:
+                              quiet, normal, high, debug.
+
+    Metadata Database Options:
+        --metadata            Indicates whether or not to write results into
+                              metadata database
+        --schema_id=SCHEMA_ID Used with metadata outputformat to identify structure
+                              set being analyzed.
+        --collection_id=COLLECTION_ID
+                              Used with metadata outputformat to identify structure
+                              being analyzed.
+
+    CSV Dialect Options:
+        -d, --delimiter=DELIMITER
+                              Specify a quoted field delimiter.This is essential for
+                              multi-column delimiters.
+        --has-header          Indicates that there is a header in the file.
+        --has-no-header       Indicates that there is no header in the file. Useful
+                              for overriding automatic csv-guessing behavior.
+
 
 Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the delimiter and quoting info - but will let it figure these out itself.  There's no header - so it doesn't know the names of the fields, but otherwise is getting everything correct.
 

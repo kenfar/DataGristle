@@ -5,21 +5,20 @@
 
     arguments & options:
     -h, --help            show this help message and exit
-    -i [INFILES [INFILES ...]], --infiles [INFILES [INFILES ...]]
+    -i, --infiles [INFILES [INFILES ...]]
                           input filenames or default to for stdin
-    -o OUTFILE, --outfile OUTFILE
+    -o, --outfile OUTFILE
                           output filename or '-' for stdout (the default)
-    -d DELIMITER, --delimiter DELIMITER
+    -d, --delimiter DELIMITER
                           csv delimiter
-    -q {quote_all,quote_minimal,quote_nonnumeric,quote_none},
-    --quoting {quote_all,quote_minimal,quote_nonnumeric,quote_none}
+    -q, --quoting {quote_all,quote_minimal,quote_nonnumeric,quote_none}
                           csv quoting
     --quotechar QUOTECHAR
                           csv quotechar
     --escapechar ESCAPECHAR
                           csv escapechar
     --has-header          csv dialect - indicates header exists
-    -r RECNUM, --recnum RECNUM
+    -r, --recnum RECNUM
                           Displays this record number based on 0 offset,
                           defaulting to 1
     -V, --version         show version number then exit

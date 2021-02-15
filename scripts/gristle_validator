@@ -32,19 +32,19 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit.
   --long-help           Print more verbose help.
-  -o OUTFILE, --outfile OUTFILE
+  -o, --outfile OUTFILE
                         Specifies the output file.  The default is stdout.
                         Note thatif a filename is provided the program will
                         override any file of that name.
-  -e OUTERR, --outerr OUTERR
+  -e, --outerr OUTERR
                         Specifies the output file for invalid records.  The
                         default is stderr.  Note that if a filename is provided
                         the program will override any file of that name.
-  -f FIELDCNT, --fieldcnt FIELD_CNT
+  -f, --fieldcnt FIELD_CNT
                         Specify the number of fields in the record.  If not
                         provided it will default to number of fields on first
                         record
-  -d DELIMITER, --delimiter DELIMITER
+  -d, --delimiter DELIMITER
                         Specify a quoted single-column field delimiter. This
                         may be determined automatically by the program.
   --quoting QUOTING     Specify field quoting - generally only used for stdin
@@ -59,10 +59,9 @@ optional arguments:
   --hasnoheader         Indicates that there is no header in the file.
                         Useful in overriding automatic csv-dialect guessing
                         behavior of program.
-  --validschema VALID_SCHEMA
+  --valid-schema VALID_SCHEMA
                         Name of validation schema file
-  -s, --stats           Causes pgm to print counts.  Default is False.
-  --non-verbose         Causes pgm to print no stats, no valid or invalid recs.
+  --verbosity VERBOSITY Controls level of stdout: quiet, normal, high, debug
                         Useful when you only want to use return code to check
                         for any invalid records.  Default is off.
   --randomout RANDOMOUT
@@ -421,9 +420,6 @@ class ValidateTheValidator(object):
                            'description', 'enum', 'pattern', 'required',
                            'blank',
                            'dg_type', 'dg_minimum', 'dg_maximum']
-        #pp('****************************')
-        #pp(self.schema)
-        #pp('****************************')
         self._validate_schema()
 
 
@@ -518,7 +514,7 @@ class ConfigManager(configulator.Config):
 
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
- 
+
         self.add_custom_metadata(name='errfile',
                                  short_name='e',
                                  arg_type='option',
@@ -554,8 +550,8 @@ class ConfigManager(configulator.Config):
                                  help_msg='Specify the number of fields in the record.  If not provided'
                                           ' it will default to number of fields on first record')
 
-        self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
+        self.add_standard_metadata('verbosity')
 
 
 

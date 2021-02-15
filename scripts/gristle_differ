@@ -71,12 +71,12 @@ Keyword arguments:
   -i [infiles]          Specifies the two input files.  The first argument is
                         also referred to as the 'old file', the second as the
                         'new file'.
-  -k [KEY_COLS [KEY_COLS ...]], --key-cols [KEY_COLS [KEY_COLS ...]]
+  -k, --key-cols [KEY_COLS [KEY_COLS ...]]
                         Specifes the columns that constitute a unique row with
                         a comma-delimited list of field positions using a
                         0-offset.  If col_names are provided then names can be
                         used as well as positions.  This is a required option.
-  -c [COMPARE_COLS [COMPARE_COLS ...]], --compare-cols [COMPARE_COLS [COMPARE_COLS ...]]
+  -c, --compare-cols [COMPARE_COLS [COMPARE_COLS ...]]
                         Columns to compare - described by their position using
                         a zero-offset.  If col_names are provided then names
                         can be used as well as positions.  This option is
@@ -106,8 +106,6 @@ Keyword arguments:
   --out-dir OUT_DIR     Where the output files will be written.  Defaults to
                         the directory of the second file.
   --dry-run             Performs most processing except for final changes.
-  --stats               Writes detailed processing stats
-  --nostats             Turns off stats
   --config-name CONFIG_NAME
                         Name of config within XDG dir.  On linux this dir would
                         be: $HOME/.confg/gristle_differ.  The config is a YAML
@@ -116,7 +114,7 @@ Keyword arguments:
   --config-fn CONFIG_FN
                         Name of config file.  This allows the user to use any
                         name and any directory.
-  -d DELIMITER, --delimiter DELIMITER
+  -d, --delimiter DELIMITER
                         Specify a quoted single-column field delimiter. This
                         will otherwise be determined automatically by the pgm.
                         Specifying it explicitely is useful when the pgm cannot
@@ -141,6 +139,8 @@ Keyword arguments:
                         a standard datagristle option - but not yet supported
                         within this pgm.
   -V, --version         Show program's version number and exits.
+  --verbosity VERBOSITY Controls stdout detail level.  Valid values include:
+                        quiet, normal, high, or debug.
 
 The config file is useful when the there are many arguments, especially when
 using post-delta transforms.  The program can be referred to a config file in
