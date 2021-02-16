@@ -573,9 +573,14 @@ class ConfigManager(configulator.Config):
 
     def get_config(self) -> Dict[str, Any]:
         self.define_user_config()
+        self.define_obsolete_config()
         self.process_configs()
         self.extend_config()
         return self.nconfig
+
+    def define_obsolete_config(self) -> None:
+        self.add_obsolete_metadata('schemaid', short_name=None, msg='--schemaid has been replaced by --schema-id')
+        self.add_obsolete_metadata('collectionid', short_name=None, msg='--collectionid has been replaced by --collection-id')
 
     def define_user_config(self) -> None:
         """ Defines the user config or metadata.   Does not get the user input.

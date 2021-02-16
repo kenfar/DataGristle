@@ -172,9 +172,19 @@ class Config(object):
         self.app_name = splitext(basename(app_name))[0]
         self.short_help = short_help
         self.long_help = long_help
+        self.obsolete_options = {}
         self._app_metadata: META_CONFIG_TYPE = {}
         self.config: Dict = {}
         self.nconfig: Optional[NamedTuple] = None
+
+
+    def add_obsolete_metadata(self,
+                              name,
+                              short_name,
+                              msg) -> None:
+        self.obsolete_options[f'--{name}'] = msg
+        self.obsolete_options[f'-{short_name}'] = msg
+
 
     def add_custom_metadata(self,
                             name: str,
@@ -234,7 +244,7 @@ class Config(object):
         env_args_manager = _EnvironmentalArgs(self.app_name, self._app_metadata)
         env_args = env_args_manager.env_gristle_app_args
 
-        cli_args_manager = _CommandLineArgs(self.short_help, self.long_help, self._app_metadata)
+        cli_args_manager = _CommandLineArgs(self.short_help, self.long_help, self._app_metadata, self.obsolete_options)
         cli_args_manager._get_args(test_cli_args)
         cli_args = cli_args_manager.cli_args
 
@@ -556,10 +566,12 @@ class _CommandLineArgs(object):
     def __init__(self,
                  short_help,
                  long_help,
-                 app_metadata: str) -> None:
+                 app_metadata: str,
+                 obsolete_args: Dict[str, str]={})-> None:
 
         self._app_metadata = app_metadata
         self.long_help = long_help
+        self.obsolete_args = obsolete_args
         self.cli_args = self._get_args(short_help)
 
 
@@ -618,16 +630,21 @@ class _CommandLineArgs(object):
                                  default=False,
                                  help='Print more verbose help')
 
-        allargs = self.parser.parse_args()
+        known_args, unknown_args = self.parser.parse_known_args()
+        for arg in unknown_args:
+            if arg in self.obsolete_args.keys():
+                summary = f'ERROR: obsolete option '
+                details = f'{self.obsolete_args[arg]}'
+                comm.abort(summary, details)
+            else:
+                comm.abort(f'Unknown option: {arg}')
 
-        if allargs.version:
+        if known_args.version:
             print(__version__)
             sys.exit(0)
-        if allargs.long_help:
+        if known_args.long_help:
             print(self.long_help)
             sys.exit(0)
 
-        return vars(allargs)
-
-
+        return vars(known_args)
 
