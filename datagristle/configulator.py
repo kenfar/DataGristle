@@ -469,6 +469,12 @@ class Config(object):
 
 
 
+    def print_config(self) -> None:
+        for key in self.config.keys():
+            print(f'{key}:  {self.config[key]}')
+
+
+
 
 class _EnvironmentalArgs(object):
     """ Manages all environmental configuration arguments related to the gristle app
@@ -585,7 +591,16 @@ class _CommandLineArgs(object):
         """ Gets config items from cli arguments.
         """
         #fixme: can only handle 1 positional argument: it doesn't actually have 'position' for positionals
-        self.parser = argparse.ArgumentParser(desc)
+        #This isn't a big problem since we're only using options - in order to also support envvars and 
+        #config files
+        self.parser = argparse.ArgumentParser(description=desc,
+                                              usage='%(prog)s --long-help for detailed usage and help')
+
+        self.parser.add_argument('--long-help',
+                                 action='store_true',
+                                 default=False,
+                                 help='Print more verbose help')
+
         for key in self._app_metadata:
             long_name = (f'--{key}' if self._app_metadata[key]['arg_type'] == 'option' else key).replace('_', '-')
             skey = self._convert_arg_name_delimiter(self._app_metadata[key].get('short_name', ''))
@@ -597,6 +612,9 @@ class _CommandLineArgs(object):
             if skey:
                 args.append(short_name)
             args.append(long_name)
+
+            # suppresses variable name in help, but screws up formatting:
+            #`kwargs['metavar'] = '\b'
 
             if 'nargs' in self._app_metadata[key]:
                 kwargs['nargs'] = self._app_metadata[key]['nargs']
@@ -624,11 +642,6 @@ class _CommandLineArgs(object):
                                  action='store_true',
                                  default=False,
                                  help='show version number then exit')
-
-        self.parser.add_argument('--long-help',
-                                 action='store_true',
-                                 default=False,
-                                 help='Print more verbose help')
 
         known_args, unknown_args = self.parser.parse_known_args()
         for arg in unknown_args:

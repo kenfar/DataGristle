@@ -115,6 +115,17 @@ def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
             print('=== ', end='')
             print('%-71.71s' % details[i*68:(i*68)+68], end='')
             print(' ===')
+
+
+    print('=== ', end='')
+    print(' ' * 71, end='')
+    print(' ===')
+
+    print('=== ', end='')
+    helpline = 'Provide option --help or --long-help for usage information'
+    print('%-71.71s' % helpline, end='')
+    print(' ===')
+
     print('=' * 79)
 
     try:

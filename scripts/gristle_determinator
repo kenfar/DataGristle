@@ -4,26 +4,28 @@ Gristle_determinator analyzes a file structure then analyzes contents of each co
 within the file.  Once complete it then prints the results for the user.
 
 
-Usage: gristle_determinator [file] [misc options]
+Usage: gristle_determinator [options]
 
-    Options:
+    Help Options:
 
-    -h, --help               show brief help message and exit
-    --long-help              show this verbose help and exit
+        -h, --help               show brief help message and exit
+        --long-help              show this verbose help and exit
+        -V, --version            display version
 
     Main Options:
         -i, --infiles=INFILES One input file
         -o, --outfile=OUTFILE Specify output file.  Default is stdout.
-        -c, --column=COLUMN_NUMBER
+        -c, --column-number=COLUMN_NUMBER
                               Restrict analysis to a single column (field number) -
                               using a zero-offset
         --read-limit=READ_LIMIT
+                              Limits the number of records read
 
         --max-freq=MAX_FREQ
                               Specify a maximum number of entries for freq
                               dictionary. This is applied separately to each column.
                               The default is set at approximately 1 million entries.
-        -COLUMN_TYPES=COLUMN_TYPES
+        --column-types=COLUMN_TYPES
                               Allows manual specification of field types: integer,
                               float, string, timestamp. Use format: "colno:type,
                               colno:type,  colno:type"
@@ -38,9 +40,9 @@ Usage: gristle_determinator [file] [misc options]
     Metadata Database Options:
         --metadata            Indicates whether or not to write results into
                               metadata database
-        --schema_id=SCHEMA_ID Used with metadata outputformat to identify structure
+        --schema-id=SCHEMA_ID Used with metadata outputformat to identify structure
                               set being analyzed.
-        --collection_id=COLLECTION_ID
+        --collection-id=COLLECTION_ID
                               Used with metadata outputformat to identify structure
                               being analyzed.
 
@@ -48,6 +50,10 @@ Usage: gristle_determinator [file] [misc options]
         -d, --delimiter=DELIMITER
                               Specify a quoted field delimiter.This is essential for
                               multi-column delimiters.
+        -q, --quoting=QUOTING Specifies the quoting style.  Valid values include:
+                              quote_none, quote_minimal, quote_nonnumeric, quote_all
+        --quotechar=QUOTECHAR
+        --escapechar=ESCAPECHAR
         --has-header          Indicates that there is a header in the file.
         --has-no-header       Indicates that there is no header in the file. Useful
                               for overriding automatic csv-guessing behavior.
@@ -158,7 +164,7 @@ Fields Analysis Results:
 
 Example #2 - same as the first, but this time writing the output to the "parsable" output format.
 
-$ ./gristle_determinator /etc/passwd  --outputformat parsable
+$ ./gristle_determinator --infiles /etc/passwd  --outputformat parsable
 
 "file_analysis_results"|"main"|"main"|"format_type"|"csv"
 "file_analysis_results"|"main"|"main"|"field_count"|"7"
@@ -199,6 +205,12 @@ $ ./gristle_determinator /etc/passwd  --outputformat parsable
 
 < remaining 5 fields of output truncated for brevity >
 
+
+Example #3 - Provide csv dialect and column number and type
+
+./gristle_determinator -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
+
+
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
 http://opensource.org/licenses/BSD-3-Clause
@@ -206,7 +218,6 @@ Copyright 2011-2021 Ken Farmer
 """
 import csv
 import errno
-import os
 import sys
 from os.path import basename
 from pprint import pprint as pp
@@ -220,14 +231,13 @@ import datagristle.configulator as configulator
 from datagristle.common import abort
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
-signal(SIGPIPE,SIG_DFL)
+signal(SIGPIPE, SIG_DFL)
 
 NAME = basename(__file__)
 SHORT_HELP = 'Analyze and profile csv files'
 
 # pylint is confused on some inheritance issues
-# pylint: disable=E1101 
-
+# pylint: disable=E1101
 
 
 
@@ -241,6 +251,8 @@ def main() -> int:
         nconfig = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) #61: empty file
+    if nconfig.verbosity == 'debug':
+        config_manager.print_config()
 
     if nconfig.metadata:
         md_man = MetadataManager(nconfig.schemaid, nconfig.collectionid)
@@ -280,21 +292,26 @@ def main() -> int:
         assert max(nconfig.column_type_overrides) < my_file.field_cnt,   \
            "ERROR: column_type_override references non-existing column_number"
 
-    my_fields.analyze_fields(nconfig.column_types,
+    my_fields.analyze_fields(nconfig.column_number,
                              nconfig.column_type_overrides,
                              nconfig.max_freq,
                              nconfig.read_limit)
 
-    out_writer.write_field_results(my_fields, nconfig.column_types)
+    out_writer.write_field_results(my_fields, nconfig.column_number)
     if nconfig.metadata:
-        md_man.write_field_results(my_fields, nconfig.column_types)
+        md_man.write_field_results(my_fields, nconfig.column_number)
 
     out_writer.terminate()
     return 0
 
 
+
 class MetadataManager(object):
-    def __init__(self, schema_id, collection_id):
+
+    def __init__(self,
+                 schema_id,
+                 collection_id):
+
         self.schema_id = schema_id
         self.collection_id = collection_id
         self.instance_id = None
@@ -321,7 +338,8 @@ class MetadataManager(object):
                                                          analysis_tool='gristle_determinator')
 
 
-    def write_file_results(self, filetype: file_type.FileTyper) -> None:
+    def write_file_results(self,
+                           filetype: file_type.FileTyper) -> None:
 
         self.ca_id = self.md.collection_analysis_tools.setter(analysis_id=self.analysis_id,
                                                               collection_id=self.collection_id,
@@ -334,7 +352,10 @@ class MetadataManager(object):
                                                               ca_quoting=file_type.get_quote_name(filetype.dialect.quoting).lower(),
                                                               ca_quote_char=filetype.dialect.quotechar)
 
-    def write_field_results(self, field_analysis: field_determinator.FieldDeterminator, col_number: int) -> None:
+
+    def write_field_results(self,
+                            field_analysis: field_determinator.FieldDeterminator,
+                            col_number: int) -> None:
 
         for sub in range(field_analysis.field_cnt):
             if col_number is not None and sub != col_number:
@@ -427,7 +448,8 @@ class OutputWriter(object):
             self.outfile.close()
 
 
-    def write_file_results(self, my_file: file_type.FileTyper) -> None:
+    def write_file_results(self,
+                           my_file: file_type.FileTyper) -> None:
         self.write_header()
         self.write_header('File Analysis Results:')
         self.division = 'File Analysis Results'
@@ -457,7 +479,9 @@ class OutputWriter(object):
         self.write_header()
 
 
-    def write_field_results(self, my_fields: field_determinator.FieldDeterminator, column_number: int) -> None:
+    def write_field_results(self,
+                            my_fields: field_determinator.FieldDeterminator,
+                            column_number: int) -> None:
         self.write_header()
         self.write_header('Field Analysis Results')
         self.division = 'Field Analysis Results'
@@ -579,8 +603,14 @@ class ConfigManager(configulator.Config):
         return self.nconfig
 
     def define_obsolete_config(self) -> None:
-        self.add_obsolete_metadata('schemaid', short_name=None, msg='--schemaid has been replaced by --schema-id')
-        self.add_obsolete_metadata('collectionid', short_name=None, msg='--collectionid has been replaced by --collection-id')
+        self.add_obsolete_metadata('schemaid', short_name=None, msg='--schemaid has been renamed --schema-id')
+        self.add_obsolete_metadata('collectionid', short_name=None, msg='--collectionid has been renamed --collection-id')
+        self.add_obsolete_metadata('types', short_name='T', msg='-T and --types have been renamed --column-types')
+        self.add_obsolete_metadata('column', short_name='', msg='--column has been renamed --column-number')
+        self.add_obsolete_metadata('', short_name='v', msg='-v (verbose) has been replaced by --verbosity high')
+        self.add_obsolete_metadata('output', short_name='', msg='--output has been renamed --outfile')
+        self.add_obsolete_metadata('number', short_name='', msg='--number has been renamed --max-freq')
+        # the arguments for infiles have also been replaced with -i - but this function doesn't support this 
 
     def define_user_config(self) -> None:
         """ Defines the user config or metadata.   Does not get the user input.
@@ -676,7 +706,7 @@ class ConfigManager(configulator.Config):
 
         # set up column_type_overrides
         self.config['column_type_overrides'] = {}
-        if self.nconfig.column_types:
+        if self.config['column_types']:
             for col_type_pair in self.nconfig.column_types.split(','):
                 try:
                     (col_no, col_type) = col_type_pair.split(':')
