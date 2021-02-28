@@ -650,7 +650,7 @@ class _CommandLineArgs(object):
                 details = f'{self.obsolete_args[arg]}'
                 comm.abort(summary, details)
             else:
-                comm.abort(f'Unknown option: {arg}')
+                comm.abort(f'ERROR: Unknown option: {arg}')
 
         if known_args.version:
             print(__version__)

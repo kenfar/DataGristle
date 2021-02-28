@@ -233,7 +233,7 @@ class FileTyper(object):
             try:
                 has_header = csv.Sniffer().has_header(sample)
             except:
-                raise IOError('Could not complete header analysis.  It may help to provide explicit header info')
+                raise IOError('Could not complete header analysis.  Try providing explicit header info')
         return has_header
 
 

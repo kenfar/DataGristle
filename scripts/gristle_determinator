@@ -10,53 +10,59 @@ Usage: gristle_determinator [options]
 
         -h, --help               show brief help message and exit
         --long-help              show this verbose help and exit
-        -V, --version            display version
+        -V, --version            show version info and exit
 
     Main Options:
         -i, --infiles=INFILES One input file
         -o, --outfile=OUTFILE Specify output file.  Default is stdout.
         -c, --column-number=COLUMN_NUMBER
-                              Restrict analysis to a single column (field number) -
-                              using a zero-offset
+                              Restrict analysis to a single column (field
+                              number) - using a zero-offset
         --read-limit=READ_LIMIT
                               Limits the number of records read
 
         --max-freq=MAX_FREQ
                               Specify a maximum number of entries for freq
-                              dictionary. This is applied separately to each column.
-                              The default is set at approximately 1 million entries.
+                              dictionary. This is applied separately to each
+                              column. The default is set at approximately 1
+                              million entries.
         --column-types=COLUMN_TYPES
-                              Allows manual specification of field types: integer,
-                              float, string, timestamp. Use format: "colno:type,
-                              colno:type,  colno:type"
+                              Allows manual specification of field types:
+                              integer, float, string, timestamp. Use format:
+                              "colno:type, colno:type,  colno:type"
 
     Output Format Options:
-        --outputformat        Choices include: readable, parsable, metadata with a
-                              default of readable.
+        --outputformat        Choices include: readable, parsable, metadata
+                              with a default of readable.
         -b, --brief           skips field-level analysis
-        --verbosity=VERBOSITY Controls stdout level of detail.  Valid values include:
-                              quiet, normal, high, debug.
+        --verbosity=VERBOSITY Controls stdout level of detail.  Valid values
+                              include: quiet, normal, high, debug.
 
     Metadata Database Options:
         --metadata            Indicates whether or not to write results into
                               metadata database
-        --schema-id=SCHEMA_ID Used with metadata outputformat to identify structure
-                              set being analyzed.
+        --schema-id=SCHEMA_ID Used with metadata outputformat to identify
+                              structure set being analyzed.
         --collection-id=COLLECTION_ID
-                              Used with metadata outputformat to identify structure
-                              being analyzed.
+                              Used with metadata outputformat to identify
+                              structure being analyzed.
 
     CSV Dialect Options:
         -d, --delimiter=DELIMITER
-                              Specify a quoted field delimiter.This is essential for
-                              multi-column delimiters.
+                              Specify a quoted single-character field delimiter.
+                              Useful if automatic csv dialect detection fails to
+                              correctly interpret file.  Also required for STDIN
+                              input.  If provided then quoting should also be
+                              provided.
         -q, --quoting=QUOTING Specifies the quoting style.  Valid values include:
-                              quote_none, quote_minimal, quote_nonnumeric, quote_all
+                              quote_none, quote_minimal, quote_nonnumeric,
+                              quote_all
         --quotechar=QUOTECHAR
         --escapechar=ESCAPECHAR
         --has-header          Indicates that there is a header in the file.
-        --has-no-header       Indicates that there is no header in the file. Useful
-                              for overriding automatic csv-guessing behavior.
+        --has-no-header       Indicates that there is no header in the file.
+                              Useful for overriding automatic csv-guessing
+                              behavior.
 
 
 Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the delimiter and quoting info - but will let it figure these out itself.  There's no header - so it doesn't know the names of the fields, but otherwise is getting everything correct.
@@ -251,8 +257,6 @@ def main() -> int:
         nconfig = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) #61: empty file
-    if nconfig.verbosity == 'debug':
-        config_manager.print_config()
 
     if nconfig.metadata:
         md_man = MetadataManager(nconfig.schemaid, nconfig.collectionid)
@@ -600,6 +604,10 @@ class ConfigManager(configulator.Config):
         self.define_obsolete_config()
         self.process_configs()
         self.extend_config()
+
+        if self.nconfig.verbosity == 'debug':
+            self.print_config()
+
         return self.nconfig
 
     def define_obsolete_config(self) -> None:
@@ -676,23 +684,23 @@ class ConfigManager(configulator.Config):
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
 
-        if not config['delimiter'] and config['infiles'] == '-':
-            abort('Provide delimiter and quoting when piping data into pgm via stdin')
+        if config['infiles'] == '-':
+            abort('ERROR: provide filename',  'gristle_determinator does not support piping data through stdin')
 
         if len(config['infiles']) > 1:
-            abort("multiple files not yet supported")
+            abort("ERROR: multiple files not supported")
 
         if config['brief'] and config['column_number']:
-            abort('must not specify both brevity and column number')
+            abort('ERROR: must not specify both brevity and column number')
 
         if config['max_freq'] is not None and config['max_freq'] < 10:
-            abort('please specify a max-freq between 10 and 1000000000')
+            abort('ERROR: please specify a max-freq between 10 and 1000000000')
 
         if (config['schema_id'] or config['collection_id']) and not config['metadata']:
-            abort('schema_id and collection_id are only for metadata')
+            abort('ERROR: schema_id and collection_id are only for metadata')
 
         if (config['schema_id'] is None or config['collection_id'] is None) and config['metadata']:
-            abort('metadata requires schema_id and collection_id')
+            abort('ERROR: metadata requires schema_id and collection_id')
 
 
     def extend_config(self) -> None:
