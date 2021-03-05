@@ -46,6 +46,8 @@ Usage: gristle_slicer [options]
                              processing data via stdin.  Valid values include:
                              quote_none, quote_minimal, quote_nonnumeric,
                              quote_all
+      --doublequote          Quotes within quoted strings are escaped with
+                             double quotes.
       --quotechar=QUOTECHAR
       --escapechar=ESCAPECHAR
       --has-header           Indicates there is a header in the file.

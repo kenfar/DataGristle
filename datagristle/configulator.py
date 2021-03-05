@@ -470,8 +470,15 @@ class Config(object):
 
 
     def print_config(self) -> None:
+        print('Config contents: ')
         for key in self.config.keys():
-            print(f'{key}:  {self.config[key]}')
+            if key == 'dialect':
+                print('    dialect:')
+                for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
+                    print(f'        {item}:  {getattr(self.config[key], item)}')
+            else:
+                print(f'    {key}:  {self.config[key]}')
+        print(' ')
 
 
 

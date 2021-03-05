@@ -152,7 +152,6 @@ class FieldDeterminator(object):
                                                                     f_no,
                                                                     max_items,
                                                                     read_limit)
-
             field_freqs = list(self.field_freqs[f_no].items())
 
             self.field_types[f_no] = typer.get_field_type(self.field_freqs[f_no])

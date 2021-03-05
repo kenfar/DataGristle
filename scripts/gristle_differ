@@ -221,8 +221,14 @@ def main():
             and os.path.getsize(nconfig.infiles[1]) == 0):
         return 1
 
-    dialect = gftype.get_dialect(nconfig.infiles, nconfig.delimiter, nconfig.quoting, nconfig.quotechar,
-                                 recdelimiter=None, has_header=nconfig.has_header)
+    dialect = gftype.get_dialect(nconfig.infiles,
+                                 nconfig.delimiter,
+                                 nconfig.quoting,
+                                 nconfig.quotechar,
+                                 recdelimiter=None,
+                                 has_header=nconfig.has_header,
+                                 doublequote=nconfig.doublequote,
+                                 escapechar=nconfig.escapechar)
 
     config_manager.update_config('col_names', comm.get_best_col_names(config, dialect))
     config = config_manager.config
@@ -490,7 +496,7 @@ class ConfigManager(configulator.Config):
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
 
-        pp(config)
+        #pp(config)
         if not config['delimiter'] and config['infiles'] == '-':
             abort('Provide delimiter and quoting when piping data into program via stdin')
 

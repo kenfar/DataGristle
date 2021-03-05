@@ -270,7 +270,9 @@ def main() -> int:
                                   None,
                                   nconfig.has_header,
                                   quoting=file_type.get_quote_name(csv.QUOTE_MINIMAL),
-                                  read_limit=nconfig.read_limit)
+                                  read_limit=nconfig.read_limit,
+                                  doublequote=nconfig.doublequote,
+                                  escapechar=nconfig.escapechar)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:

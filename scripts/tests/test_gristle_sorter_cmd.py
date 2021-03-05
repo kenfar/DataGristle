@@ -194,6 +194,7 @@ class TestFileContents(object):
         self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_delimiter.csv.sorted')
 
         self.make_command()
+        print(self.cmd)
         executor(self.cmd, expect_success=True)
 
         self.load_files()
@@ -329,10 +330,12 @@ class TestFileContents(object):
         print('\n actual: ')
         self.out_recs = get_file_contents(self.out_fqfn, self.dialect)
         pp(self.out_recs)
+        os.system(f'cat {self.out_fqfn}')
 
         print('\n expected: ')
         self.expected_recs = get_file_contents(self.expected_fqfn, self.dialect)
         pp(self.expected_recs)
+        os.system(f'cat {self.expected_fqfn}')
 
 
 

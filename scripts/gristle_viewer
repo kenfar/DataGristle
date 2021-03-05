@@ -74,12 +74,13 @@ def main():
 
     field_names = None
 
+    recnum = nconfig.recnum
     while True:
         input_handler = file_io.InputHandler(nconfig.infiles,
                                              nconfig.dialect)
         if not field_names:
             field_names = get_field_names(nconfig.infiles, input_handler.dialect)
-        rec = get_rec(input_handler, nconfig.recnum)
+        rec = get_rec(input_handler, recnum)
         input_handler.close()
         if rec is None:
             print('No record found')
@@ -92,17 +93,17 @@ def main():
         if nconfig.outfile != '-':
             break
 
-        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % nconfig.recnum).lower()
+        response = input('Rec: %d     Q[uit] P[rev] N[ext] T[op], or a specific record number: ' % recnum).lower()
         if response == 'q':
             break
         elif response == 'p':
-            nconfig.recnum -= 1
+            recnum -= 1
         elif response == 'n':
-            nconfig.recnum += 1
+            recnum += 1
         elif response == 't':
-            nconfig.recnum = 0
+            recnum = 0
         elif field_type._get_type(response) == 'integer':
-            nconfig.recnum = int(response)
+            recnum = int(response)
         else:
             print('Invalid response, please enter q, p, n, t, or a specific record number')
     return 0
