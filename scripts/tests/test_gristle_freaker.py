@@ -129,31 +129,38 @@ class TestBuildFreq(object):
 
 class TestGetArgs(object):
 
+    def setup_method(self, method):
+        self.tempdir = tempfile.mkdtemp(prefix='test_gristle_freaker_')
+        self.temp_fqfn = pjoin(self.tempdir, 'census.csv')
+        with open(self.temp_fqfn, 'w') as buf:
+            buf.write('a,b,c')
+
+    def teardown_method(self, method):
+        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'FreakerTest'))
+
     def test_happy_path(self):
-        sys.argv = ['../gristle_freaker', '-i', 'census.csv', '-c', '1']
+        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '1']
 
         config_manager = mod.ConfigManager()
-        config_manager.get_user_config()
-        config_manager.validate_user_config()
-        config = config_manager.config
+        nconfig = config_manager.get_config()
 
-        assert config['columns'] == [1]
-        assert config['outfile'] == '-'
-        assert config['write_limit'] == 0
-        assert config['delimiter'] is None
-        assert config['quoting'] == None
-        assert config['has_header'] is None
-        assert config['sampling_method'] == 'non'
-        assert config['sampling_rate'] is None
-        assert config['sort_col'] == 1
-        assert config['sort_order'] == 'reverse'
+        assert nconfig.columns == [1]
+        assert nconfig.outfile == '-'
+        assert nconfig.write_limit == 0
+        assert nconfig.delimiter is None
+        assert nconfig.quoting == None
+        assert nconfig.has_header is None
+        assert nconfig.sampling_method == 'non'
+        assert nconfig.sampling_rate is None
+        assert nconfig.sort_col == 1
+        assert nconfig.sort_order == 'reverse'
 
     def test_check_invalid_columns(self):
-        sys.argv = ['../gristle_freaker', '-i', 'census.csv', '-c', 'd']
+
+        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', 'd']
         try:
             config_manager = mod.ConfigManager()
-            config_manager.get_user_config()
-            config_manager.validate_user_config()
+            nconfig = config_manager.get_config()
         except SystemExit:
             pass
         except Exception as e:
@@ -161,12 +168,11 @@ class TestGetArgs(object):
         else:
             pytest.fail('expected exception not thrown')
 
-    def test_check_invalid_maxkenlen(self):
-        sys.argv = ['../gristle_freaker', '-i', 'census.csv', '--max-key-len', 'blah']
+    def test_check_invalid_maxkeylen(self):
+        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '--max-key-len', 'blah']
         try:
             config_manager = mod.ConfigManager()
-            config_manager.get_user_config()
-            config_manager.validate_user_config()
+            nconfig = config_manager.get_config()
         except SystemExit:
             pass
         except Exception as e:
@@ -174,15 +180,13 @@ class TestGetArgs(object):
         else:
             pytest.fail('expected exception not thrown')
 
-    def test_check_valid_maxkenlen(self):
-        sys.argv = ['../gristle_freaker', '-i', 'census.csv', '-c', '0', '--max-key-len', '50']
+    def test_check_valid_maxkeylen(self):
+        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '0', '--max-key-len', '50']
 
         try:
             config_manager = mod.ConfigManager()
-            config_manager.get_user_config()
-            config_manager.validate_user_config()
-            config = config_manager.config
-            if config['max_key_len'] != 50:
+            nconfig = config_manager.get_config()
+            if nconfig.max_key_len != 50:
                 pytest.fail('max-key-len results did not match expected values: ')
         except SystemExit:
             pytest.fail('Unexpected exception thrown')

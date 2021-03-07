@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -15,6 +15,7 @@ import os
 
 from pprint import pprint as pp
 
+import datagristle.configulator as configulator
 import datagristle.field_determinator  as mod
 
 
@@ -64,8 +65,7 @@ class FileAndTestManager(object):
                                               self.field_cnt,
                                               self.dialect.has_header,
                                               self.dialect,
-                                              verbose = False)
-
+                                              verbosity=configulator.VERBOSITY_QUIET)
 
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)

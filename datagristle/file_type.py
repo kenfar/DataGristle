@@ -76,7 +76,9 @@ class FileTyper(object):
                  has_header: Optional[bool]=None,
                  quoting: str='quote_none',
                  quote_char: Optional[str]=None,
-                 read_limit: int=-1) -> None:
+                 read_limit: int=-1,
+                 doublequote: str=None,
+                 escapechar: str=None) -> None:
         """
              Arguments - most are optional because dialect is optional
                 - fqfn = fully qualified file name
@@ -94,6 +96,8 @@ class FileTyper(object):
         self.record_cnt_is_est: Optional[bool] = None
         self.dialect: Optional[csvhelper.Dialect] = None
         self.read_limit: int = read_limit
+        self.doublequote = doublequote
+        self.escapechar = escapechar
 
     def analyze_file(self) -> csv.Dialect:
         """ analyzes a file to determine the structure of the file in terms
@@ -109,8 +113,8 @@ class FileTyper(object):
                                              self._get_has_header(),
                                              self._quoting_num,
                                              self.quote_char,
-                                             None,
-                                             None,
+                                             self.doublequote,
+                                             self.escapechar,
                                              '\n',
                                              False)
         else:
@@ -233,7 +237,7 @@ class FileTyper(object):
             try:
                 has_header = csv.Sniffer().has_header(sample)
             except:
-                raise IOError('Could not complete header analysis.  It may help to provide explicit header info')
+                raise IOError('Could not complete header analysis.  Try providing explicit header info')
         return has_header
 
 
@@ -338,7 +342,9 @@ def get_dialect(files: List[str],
                 quotename: str,
                 quotechar: str,
                 recdelimiter: str,
-                has_header: bool) -> csv.Dialect:
+                has_header: bool,
+                doublequote: str,
+                escapechar: str) -> csv.Dialect:
     """ Gets a csv dialect for a csv file or set of attributes.
 
     If files are provided and are not '-' -then use files and run file_type.FileTyper
@@ -370,6 +376,8 @@ def get_dialect(files: List[str],
         dialect.quotechar = quotechar
         dialect.lineterminator = '\n'  # naive assumption
         dialect.has_header = has_header
+        dialect.doublequote = doublequote
+        dialect.escapechar = escapechar
     else:
         for fn in files:
             if not isfile(fn):
@@ -380,7 +388,9 @@ def get_dialect(files: List[str],
                                 has_header,
                                 quoting=quotename,
                                 quote_char=quotechar,
-                                read_limit=5000)
+                                read_limit=5000,
+                                doublequote=doublequote,
+                                escapechar=escapechar)
             try:
                 my_file.analyze_file()
                 dialect = my_file.dialect

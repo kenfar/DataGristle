@@ -15,17 +15,18 @@
       - change returned data format to be based on field
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 from operator import itemgetter
-from pprint import pprint
+from pprint import pprint as pp
 from typing import Optional, List, Tuple, Dict, Any
 
+import datagristle.common as common
+import datagristle.configulator as configulator
+import datagristle.csvhelper as csvhelper
 import datagristle.field_type as typer
 import datagristle.field_math as mather
 import datagristle.field_misc as miscer
-import datagristle.csvhelper as csvhelper
-import datagristle.common as common
 
 #------------------------------------------------------------------------------
 # override miscer.get_field_freq max dictionary size defaults:
@@ -61,13 +62,15 @@ class FieldDeterminator(object):
                  field_cnt: int,
                  has_header: bool,
                  dialect: csvhelper.Dialect,
-                 verbose: bool = False) -> None:
+                 verbosity: str='normal') -> None:
+                 #verbosity: int = configulator.VERBOSITY_NORMAL) -> None:
+
         self.filename = filename
         self.format_type = format_type
         self.field_cnt = field_cnt
         self.has_header = has_header
         self.dialect = dialect
-        self.verbose = verbose
+        self.verbosity = verbosity
         self.max_freq_number:   Optional[int] = None  # will be set in analyze_fields
 
         #--- public field dictionaries - organized by field_number --- #
@@ -94,7 +97,7 @@ class FieldDeterminator(object):
         #--- each dictionary has a collection within it:
         self.field_freqs:       Dict[int, Dict[Any, int]] = {}  # includes unknown values
 
-        assert has_header in [True, False]
+        #assert has_header in [True, False]
         assert 0 < field_cnt < 1000
 
 
@@ -117,9 +120,11 @@ class FieldDeterminator(object):
             Returns:
                - Nothing directly - populates instance variables.
         """
+        assert field_number is None or field_number > -1
         self.max_freq_number = max_freq_number
 
-        if self.verbose:
+        #if self.verbosity > configulator.VERBOSITY_NORMAL:
+        if self.verbosity in ('high', 'debug'):
             print('Field Analysis Progress: ')
 
         for f_no in range(self.field_cnt):
@@ -127,7 +132,7 @@ class FieldDeterminator(object):
                 if f_no != field_number:
                     continue
 
-            if self.verbose:
+            if self.verbosity in ('high', 'debug'):
                 print('   Analyzing field: %d' % f_no)
 
             self.field_names[f_no] = miscer.get_field_name(self.filename, self.dialect, f_no)
@@ -147,7 +152,6 @@ class FieldDeterminator(object):
                                                                     f_no,
                                                                     max_items,
                                                                     read_limit)
-
             field_freqs = list(self.field_freqs[f_no].items())
 
             self.field_types[f_no] = typer.get_field_type(self.field_freqs[f_no])
@@ -187,7 +191,6 @@ class FieldDeterminator(object):
         """ returns a frequency-distribution dictionary that is the
             self.field_freqs with unknown values removed.
         """
-
         return [val for val in self.field_freqs[fieldno]
                 if typer.is_unknown(val) is False]
 

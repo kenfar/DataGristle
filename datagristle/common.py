@@ -2,7 +2,7 @@
 """ Used to hold all common  general-purpose functions and classes
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2020 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 import sys
 import argparse
@@ -76,178 +76,6 @@ def ifprint(value: Any, string: str, *args: Any) -> None:
         print(string % args)
 
 
-class ArgProcessor(object):
-    """ Perform standard datagristle arg parsing as well as custom script parsing.
-
-    Objective is to establish consistency between args of all scripts.  User must
-    override add_custom_args(), adding to it any other arg groups desired (via
-    appropriate method calls).
-
-    Args:
-        short_desc: a single paragraph description of script.
-        long_desc: a 1-2 page description of script.
-    Raises:
-        sys.exit:  on most errors
-        NotImplementedError: if add_custom_args() is not overrridden
-    """
-    def __init__(self, short_desc: str, long_desc: str) -> None:
-        self.parser = argparse.ArgumentParser(short_desc,
-                                              formatter_class=argparse.RawTextHelpFormatter)
-        self.add_custom_args()
-        self.add_standard_args()
-        self.args = self.parser.parse_args()
-
-        if self.args.long_help:
-            print(long_desc)
-            sys.exit(0)
-
-        #if self.args.files[0] == '-':  # stdin
-        #    if not self.args.delimiter:
-        #        self.parser.error('Please provide delimiter when piping data into program via stdin')
-
-        self.custom_validation()
-
-
-    def add_standard_args(self) -> None:
-        """
-        """
-        self.parser.add_argument('--long-help',
-                                 default=False,
-                                 action='store_true',
-                                 help='Print more verbose help')
-
-        self.parser.add_argument('-V', '--version',
-                                 action='version',
-                                 version='version: %s' % __version__)
-
-    def add_option_csv_dialect(self) -> None:
-        """
-        """
-        self.parser.add_argument('-d', '--delimiter',
-                                 action=DelimiterAction,
-                                 help=('Specify a quoted single-column field delimiter. This may be'
-                                       ' determined automatically by the program.'))
-        self.parser.add_argument('--escapechar',
-                                 default='"',
-                                 help='Specify escaping character - generally only used for '
-                                      ' stdin data.  Default is "')
-        self.parser.add_argument('--quoting',
-                                 choices=('quote_all', 'quote_minimal', 'quote_nonnumeric', 'quote_none'),
-                                 default='quote_none',
-                                 help='Specify field quoting - generally only used for stdin data.'
-                                      '  The default: is quote_none.')
-        self.parser.add_argument('--quotechar',
-                                 default='"',
-                                 help='Specify field quoting character - generally only used for '
-                                      'stdin data.  Default is double-quote')
-        self.parser.add_argument('--recdelimiter',
-                                 help='Specify a quoted end-of-record delimiter. ')
-        self.parser.add_argument('--has-header',
-                                 dest='has_header',
-                                 default=None,
-                                 action='store_true',
-                                 help='Indicate that there is a header in the file.')
-        self.parser.add_argument('--has-no-header',
-                                 dest='has_header',
-                                 default=None,
-                                 action='store_false',
-                                 help=('Indicate that there is no header in the file.  '
-                                       'Occasionally helpful in overriding automatic '
-                                       'csv dialect guessing.'))
-        self.parser.add_argument('--doublequote',
-                                 dest='doublequote',
-                                 default=None,
-                                 action='store_true',
-                                 help='Turn on escaping of quotes with doublequotes.')
-        self.parser.add_argument('--no-doublequote',
-                                 dest='doublequote',
-                                 default=None,
-                                 action='store_false',
-                                 help='Turn off escaping of quotes with doublequotes.')
-
-
-    def add_option_dry_run(self, help_msg: str = None) -> None:
-        """
-        """
-        help_info = help_msg or 'Performs most processing except for final changes or output.'
-        self.parser.add_argument('--dry-run',
-                                 default=False,
-                                 action='store_true',
-                                 help=help_info)
-
-    def add_option_stats(self, help_msg: str = None, default: bool = True) -> None:
-        """
-        """
-        help_info = help_msg or 'Writes detailed processing stats'
-        self.parser.add_argument('--stats',
-                                 dest='stats',
-                                 action='store_true',
-                                 help=help_info)
-
-        help_info = help_msg or 'Turns off stats'
-        self.parser.add_argument('--nostats',
-                                 dest='stats',
-                                 action='store_false',
-                                 help=help_info)
-
-    def add_option_config_name(self) -> None:
-        """
-        """
-        help_info = 'Name of config within xdg dir (such as .confg/gristle_differ/* on linux)'
-        self.parser.add_argument('--config-name',
-                                 help=help_info)
-
-    def add_option_config_fn(self) -> None:
-        """
-        """
-        help_info = 'Name of config file.'
-        self.parser.add_argument('--config-fn',
-                                 help=help_info)
-
-    def add_option_logging(self, help_msg: str=None) -> None:
-        """
-        """
-        self.parser.add_argument('--log-level',
-                                 choices=['DEBUG','INFO','WARNING','ERROR', 'CRITICAL'],
-                                 help='Specify verbosity of logging')
-        self.parser.add_argument('--console-log',
-                                 action='store_true',
-                                 default=True,
-                                 dest='log_to_console',
-                                 help='Turns on printing of logs to the console')
-        self.parser.add_argument('--no-console-log',
-                                 action='store_false',
-                                 dest='log_to_console',
-                                 help='Turns off printing of logs to the console')
-
-    def add_positional_file_args(self, stdin: bool = True) -> None:
-        """
-        """
-        if stdin is True:
-            default = ['-']
-            helpmsg = ('Specifies the input file(s).  The default is stdin.  Multiple '
-                       'filenames can be provided.')
-        else:
-            default = None
-            helpmsg = 'Specifies the input file(s). '
-
-        self.parser.add_argument('files',
-                                 default=default,
-                                 nargs='*',
-                                 #type=argparse.FileType('r'),
-                                 help=helpmsg)
-
-    def add_custom_args(self) -> None:
-        """ Must be overriden by subclass with its argument additions.
-        """
-        raise NotImplementedError('Must be overriden by sub-classing script')
-
-    def custom_validation(self) -> None:
-        """ Intended to be overridden by subclass.
-        """
-        pass
-
-
 
 class DelimiterAction(argparse.Action):
     """ An argparse delimiter action to fix unprintable delimiter values.
@@ -287,6 +115,17 @@ def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
             print('=== ', end='')
             print('%-71.71s' % details[i*68:(i*68)+68], end='')
             print(' ===')
+
+
+    print('=== ', end='')
+    print(' ' * 71, end='')
+    print(' ===')
+
+    print('=== ', end='')
+    helpline = 'Provide option --help or --long-help for usage information'
+    print('%-71.71s' % helpline, end='')
+    print(' ===')
+
     print('=' * 79)
 
     try:
@@ -341,7 +180,7 @@ def get_best_col_names(config: Dict[str, Any],
         if len(config['col_names']):
             return config['col_names']
         else:
-            return get_col_names_from_header(config['files'][0], dialect)
+            return get_col_names_from_header(config['infiles'][0], dialect)
     else:
         return config['col_names']
 

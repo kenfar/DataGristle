@@ -2,7 +2,7 @@
 """ Used to help interact with the csv module.
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2020 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 
 import csv
@@ -10,6 +10,7 @@ import os.path
 from typing import Optional, List
 
 import datagristle.file_type as file_type
+import datagristle.common as comm
 
 
 
@@ -19,15 +20,13 @@ def get_quote_number(quote_name: str) -> int:
            - quote_name
         Outputs:
            - quote_number
-        Note that if a quote_number is accidently passed to this function, it
-        will simply pass it through.
     """
     return csv.__dict__[quote_name.upper()]
 
 
 
 def get_quote_name(quote_number: int) -> str:
-    """ used to help applications look up quote numbers typically provided by
+    """ used to help applications look up quote names based on the number
         users.
     """
     for key, value in csv.__dict__.items():
@@ -79,7 +78,6 @@ def get_dialect(infiles: List[str],
     """
 
     if infiles[0] == '-':
-        print('cvshelper - getting dialect from cmdline for -')
         dialect = override_dialect(Dialect,
                                    delimiter,
                                    quoting,
@@ -97,7 +95,6 @@ def get_dialect(infiles: List[str],
                                   doublequote=doublequote,
                                   escapechar=escapechar)
                 if os.path.getsize(infile) == 0:
-                    print('debug - it thinks file is empty')
                     raise EOFError
                 else:
                     break
@@ -105,7 +102,6 @@ def get_dialect(infiles: List[str],
                 my_file = file_type.FileTyper(infile)
                 try:
                     dialect = my_file.analyze_file()
-                    print('cvshelper - about to override dialect!')
                     dialect = override_dialect(dialect,
                                                delimiter,
                                                quoting,

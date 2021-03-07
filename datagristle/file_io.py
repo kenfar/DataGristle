@@ -4,19 +4,16 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2017-2020 Ken Farmer
 """
-import os
-import sys
 import csv
-import io
-import random
 import errno
-from os.path import isfile
-from pprint import pprint
-from typing import Union, Dict, List, Tuple, Any, Optional
+import io
+import os
 from pprint import pprint as pp
+import random
+import sys
+from typing import List
 
 import datagristle.csvhelper as csvhelper
-import datagristle.file_type as file_type
 
 
 
@@ -46,7 +43,6 @@ class InputHandler(object):
         if self.files[0] == '-' and self.files_read == 0:
 
             if os.isatty(0):  # checks if data was pipped into stdin
-                #raise ValueError, "No files or stdin provided"
                 sys.exit(errno.ENODATA)
 
             self.input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
@@ -62,20 +58,6 @@ class InputHandler(object):
             self.curr_file_rec_cnt = 1
         else:
             raise StopIteration
-
-
-
-# correct behavior?
-# if has_header - generally ignore header in processing:
-#   slicer
-#   freaker
-#   determinator
-#   differ
-# if has_header - then record counts generally start at 2nd record
-# if has_header - then ignore header in each file if multiple files
-# if has_header - then copy it on output when output is also a csv:
-#   slicer?  not unless we have an output-header column?
-#   differ?  not unless we have a output-header column?
 
 
     def __iter__(self):
@@ -120,7 +102,7 @@ class OutputHandler(object):
     def __init__(self,
                  output_filename: str,
                  dialect: csvhelper.Dialect,
-                 default_output = sys.stdout,
+                 default_output=sys.stdout,
                  dry_run: bool = False,
                  random_out: float = 1.0):
 

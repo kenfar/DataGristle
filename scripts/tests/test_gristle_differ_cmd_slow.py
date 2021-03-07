@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -63,7 +63,7 @@ class TestMillionRows(object):
         config.add_property({'key_cols':  ['pkid']})
         config.add_property({'ignore_cols': ['vid', 'from_epoch', 'to_epoch', 'hostname']})
         config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'files': [file1, file2]})
+        config.add_property({'infiles': [file1, file2]})
 
         #pylint: disable=bad-whitespace
         assignments = [
@@ -247,7 +247,6 @@ class CreateTestFiles(object):
                 self.old_rec_cnt += 1
         old_fp.close()
         new_fp.close()
-        #return (old_rec_cnt, new_rec_cnt, same_cnt, chg_cnt, delete_cnt, insert_cnt)
 
 
     def _make_rec(self, **kwargs):

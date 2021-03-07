@@ -10,19 +10,21 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import tempfile
-import shutil
 import csv
 from pprint  import pprint as pp
 import os
 from os.path import dirname
 from os.path import join as pjoin
+import shutil
+import tempfile
 
 import envoy
 
 import datagristle.csvhelper as csvhelper
 
 SCRIPT_DIR = dirname(dirname(os.path.realpath((__file__))))
+DATA_DIR = pjoin(dirname(SCRIPT_DIR), 'data')
+
 
 
 
@@ -50,7 +52,7 @@ class TestKeyOptions(object):
         assert recs[2][0] == '3'
         assert recs[3][0] == '4'
 
-    def broketest_two_keys(self):
+    def test_two_keys(self):
         in_fqfn = create_complex_test_file(self.temp_dir, header=False)
         dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=False, doublequote=False)
         out_fqfn = in_fqfn + '.sorted'
@@ -127,7 +129,6 @@ class TestFileContents(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_sorter_')
-        self.data_dir = '/home/kenfar/Envs/datagristle_37/DataGristle/data'
         self.out_fqfn = pjoin(self.temp_dir, 'testfile.csv.sorted')
         self.cmd = None
 
@@ -153,8 +154,8 @@ class TestFileContents(object):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=True, escapechar='\\')
 
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quotenone_escaped_quote.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quotenone_escaped_quote.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quotenone_escaped_quote.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quotenone_escaped_quote.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -171,8 +172,8 @@ class TestFileContents(object):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=True, escapechar='\\')
 
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quotenone_escaped_delimiter.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quotenone_escaped_delimiter.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quotenone_escaped_delimiter.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quotenone_escaped_delimiter.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -189,10 +190,11 @@ class TestFileContents(object):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_ALL, quotechar='"', has_header=True, doublequote=False, escapechar='\\')
 
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quoteall_escaped_delimiter.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quoteall_escaped_delimiter.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_delimiter.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_delimiter.csv.sorted')
 
         self.make_command()
+        print(self.cmd)
         executor(self.cmd, expect_success=True)
 
         self.load_files()
@@ -206,8 +208,8 @@ class TestFileContents(object):
     def test_quoteall_escaped_newline(self):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_ALL, quotechar='"', has_header=True, doublequote=False, escapechar='\\')
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quoteall_escaped_newline.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quoteall_escaped_newline.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_newline.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_newline.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -223,8 +225,8 @@ class TestFileContents(object):
     def test_quoteall_escaped_quote(self):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_ALL, quotechar='"', has_header=True, doublequote=False, escapechar='\\')
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quoteall_escaped_quote.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quoteall_escaped_quote.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_quote.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_escaped_quote.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -240,8 +242,8 @@ class TestFileContents(object):
     def test_quoteall_doublequote_quote(self):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_ALL, quotechar='"', has_header=True, doublequote=True)
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quoteall_doublequote_quote.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quoteall_doublequote_quote.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_doublequote_quote.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_doublequote_quote.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -257,8 +259,8 @@ class TestFileContents(object):
     def test_quoteall_doublequote_delimiter(self):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_ALL, quotechar='"', has_header=True, doublequote=True)
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quoteall_doublequote_delimiter.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quoteall_doublequote_delimiter.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_doublequote_delimiter.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_doublequote_delimiter.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -274,8 +276,8 @@ class TestFileContents(object):
     def test_quoteall_doublequote_newline(self):
 
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_ALL, quotechar='"', has_header=True, doublequote=True)
-        self.in_fqfn = pjoin(self.data_dir, 'dialect_quoteall_doublequote_newline.csv')
-        self.expected_fqfn = pjoin(self.data_dir, 'dialect_quoteall_doublequote_newline.csv.sorted')
+        self.in_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_doublequote_newline.csv')
+        self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quoteall_doublequote_newline.csv.sorted')
 
         self.make_command()
         executor(self.cmd, expect_success=True)
@@ -299,7 +301,7 @@ class TestFileContents(object):
                         -k 1sf
                         --quoting {csvhelper.get_quote_name(self.dialect.quoting).lower()}
                         --delimiter '{self.dialect.delimiter}'
-                        --hasheader
+                        --has-header
                     '''
         if self.dialect.escapechar:
             self.cmd += f"--escapechar '{self.dialect.escapechar}' "
@@ -328,10 +330,12 @@ class TestFileContents(object):
         print('\n actual: ')
         self.out_recs = get_file_contents(self.out_fqfn, self.dialect)
         pp(self.out_recs)
+        os.system(f'cat {self.out_fqfn}')
 
         print('\n expected: ')
         self.expected_recs = get_file_contents(self.expected_fqfn, self.dialect)
         pp(self.expected_recs)
+        os.system(f'cat {self.expected_fqfn}')
 
 
 

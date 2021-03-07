@@ -168,7 +168,7 @@ class TestCSVPythonSorter(object):
         assert data[2][0] == '2'
         assert data[3][0] == '1'
 
-    def test_sort_file_dedupe(self):
+    def test_sort_file_dedup(self):
         self.fqfn  = create_test_file(self.temp_dir, duplicate=True)
         out_fqfn = self.fqfn + '.sorted'
         sort_keys_config = mod.SortKeysConfig(['0ir'])

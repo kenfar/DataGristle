@@ -1,1 +1,5 @@
+02|10||site-04|192.168.0.1|snort|2.9.7|residential|
+04|05||site-08|192.168.0.1|sourcefire|2.8|commercial|
+05|07||site-09|192.168.0.1|sourcefire|2.9|commercial|
 07|16||site-01|192.168.0.1|intrushield|4.1|commercial|
+09|04||site-10|192.168.0.1|cisco|4.2|commercial|

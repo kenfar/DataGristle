@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -10,11 +10,11 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import tempfile
-import fileinput
 import errno
-import shutil
+import fileinput
 import os
+import shutil
+import tempfile
 from os.path import join as pjoin, dirname
 
 import envoy
@@ -198,15 +198,16 @@ class TestFieldCount(object):
 
     def test_good_field_cnt(self):
 
-        self.cmd = """%(pgm)s %(in_fqfn)s
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
                          -d ','
                          --quoting 'quote_none'
                          --fieldcnt 7
-                         --outgood %(outgood)s
-                         --outerr  %(outerr)s
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
                    """ % {'pgm': self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
         print('\n command: %s' % self.cmd)
 
@@ -225,14 +226,15 @@ class TestFieldCount(object):
         """ Test running without a field_cnt
         """
 
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
+                         --outfile %(outfile)s     \
+                         --errfile %(errfile)s     \
                    """ % {'pgm': self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
         print(self.cmd)
         runner = envoy.run(self.cmd)
@@ -247,15 +249,16 @@ class TestFieldCount(object):
 
     def test_bad_field_cnt(self):
 
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
                          --fieldcnt 70             \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
+                         --outfile %(outfile)s     \
+                         --errfile %(errfile)s      \
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
         print(self.cmd)
         runner = envoy.run(self.cmd)
@@ -275,35 +278,6 @@ class TestFieldCount(object):
         assert orig_recs == self.data_7x7
 
 
-    def test_silent_option(self):
-        """ The silent option will force all writes to be bypassed.
-        """
-
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
-                         -d ','                    \
-                         --fieldcnt 7              \
-                         --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         --silent                  \
-                   """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
-                          'in_fqfn': self.std_7x7_fqfn}
-        print(self.cmd)
-        runner = envoy.run(self.cmd)
-        self.get_outputs(runner)
-        print(self.std_out)
-        print(self.std_err)
-
-        assert self.status_code == 0
-        assert not self.err_output
-        assert not self.good_output
-        assert not self.std_out
-        # std_err should be 0, but coverage.py might write 46 bytes to it:
-        assert not self.std_err or (len(self.std_err) < 50 and 'Coverage.py' in self.std_err)
-
-
 
     def test_stats_option(self):
         """ The stats option will create a report to stdout
@@ -312,16 +286,17 @@ class TestFieldCount(object):
                 invalid_cnt      | 7
                 valid_cnt        | 0
         """
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
                          --fieldcnt 70             \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         --stats                   \
+                         --outfile %(outfile)s     \
+                         --errfile  %(errfile)s    \
+                         --verbosity high          \
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn}
         print(self.cmd)
         runner = envoy.run(self.cmd)
@@ -365,16 +340,17 @@ class TestFieldCount(object):
 
     def test_randomout_1(self):
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
                          --fieldcnt 6              \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
+                         --outfile %(outfile)s     \
+                         --errfile %(errfile)s     \
                          --randomout 1.0           \
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': in_fqfn}
         print(self.cmd)
         runner = envoy.run(self.cmd)
@@ -389,16 +365,17 @@ class TestFieldCount(object):
 
     def test_randomout_0(self):
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
                          --fieldcnt 6              \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
+                         --outfile %(outfile)s     \
+                         --errfile %(errfile)s      \
                          --randomout 0             \
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': in_fqfn}
         print(self.cmd)
         runner = envoy.run(self.cmd)
@@ -414,16 +391,17 @@ class TestFieldCount(object):
     def test_randomout_01(self):
 
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
                          --fieldcnt 6              \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
+                         --outfile %(outfile)s     \
+                         --errfile %(errfile)s     \
                          --randomout 0.1           \
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': in_fqfn}
         print(self.cmd)
         runner = envoy.run(self.cmd)
@@ -457,10 +435,14 @@ class TestEmptyFile(object):
     def test_empty_file(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = '%s %s --outgood %s --outerr %s -f 5' % (fq_pgm,
-                                                       self.empty_fqfn,
-                                                       self.outgood_fqfn,
-                                                       self.outerr_fqfn)
+        cmd = f'''{fq_pgm} \
+                  --infiles {self.empty_fqfn} \
+                  --outfile {self.outgood_fqfn} \
+                  --errfile {self.outerr_fqfn} \
+                  -f 5
+                  -d ','
+                  -q quote_none
+               '''
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -482,8 +464,13 @@ class TestEmptyFile(object):
     def test_empty_stdin(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = "cat %s | %s -d',' -f 5 --outgood %s --outerr %s" % \
-                (self.empty_fqfn, fq_pgm, self.outgood_fqfn, self.outerr_fqfn)
+        cmd = f"""cat {self.empty_fqfn} | {fq_pgm} -d',' -f 5
+                        --outfile {self.outgood_fqfn}
+                        --errfile {self.outerr_fqfn}
+                        -d ','
+                        -q quote_none
+                        --has-no-header
+               """
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -542,16 +529,17 @@ class TestSchemaValidation(object):
 
     def test_valid_schema_valid_data(self):
 
-        self.cmd = """%(pgm)s %(in_fqfn)s
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
                          -d ','
                          --fieldcnt 7
                          --quoting 'quote_none'
-                         --outgood %(outgood)s
-                         --outerr  %(outerr)s
-                         --validschema %(schema)s
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
+                         --valid-schema %(schema)s
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.std_7x7_fqfn,
                           'schema':  self.schema_fqfn}
         print(self.cmd)
@@ -581,16 +569,17 @@ class TestSchemaValidation(object):
         schema = _generate_foobarbatz_schema()
         schema_fqfn = _write_schema_file('foobarbatz', schema, dir_name=self.tmp_dir)
 
-        self.cmd = """%(pgm)s %(in_fqfn)s
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
                          -d ','
                          --fieldcnt 6
                          --quoting 'quote_all'
-                         --outgood %(outgood)s
-                         --outerr  %(outerr)s
-                         --validschema %(schema)s
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
+                         --valid-schema %(schema)s
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': input_fqfn,
                           'schema':  schema_fqfn}
         print(self.cmd)
@@ -626,16 +615,16 @@ class TestValidatingTheValidator(object):
         schema = _generate_foobarbatz_schema()
         self.schema_fqfn = _write_schema_file('foobarbatz', schema, dir_name=self.tmp_dir)
 
-        self.cmd = """%(pgm)s %(in_fqfn)s
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
                          -d ','
-                         --validschema %(schema)s
+                         --valid-schema %(schema)s
                          --quoting 'quote_none'
-                         --outgood %(outgood)s
-                         --outerr  %(outerr)s
-                         -s
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
         print(self.cmd)
@@ -655,16 +644,16 @@ class TestValidatingTheValidator(object):
                 del field['dg_type']
         self.schema_fqfn = _write_schema_file('foobarbatz', schema, dir_name=self.tmp_dir)
 
-        self.cmd = """%(pgm)s %(in_fqfn)s          \
+        self.cmd = """%(pgm)s                      \
+                         --infiles %(in_fqfn)s     \
                          -d ','                    \
-                         --validschema %(schema)s  \
+                         --valid-schema %(schema)s \
                          --quoting 'quote_none'    \
-                         --outgood %(outgood)s     \
-                         --outerr  %(outerr)s      \
-                         -s                        \
+                         --outfile %(outfile)s     \
+                         --errfile  %(errfile)s    \
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
         print(self.cmd)
@@ -688,16 +677,16 @@ class TestValidatingTheValidator(object):
                 field['dg_type'] = 'string'
         self.schema_fqfn = _write_schema_file('foobarbatz', schema, dir_name=self.tmp_dir)
 
-        self.cmd = """%(pgm)s %(in_fqfn)s
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
                          -d ','
-                         --validschema %(schema)s
+                         --valid-schema %(schema)s
                          --quoting 'quote_none'
-                         --outgood %(outgood)s
-                         --outerr  %(outerr)s
-                         -s
+                         --outfile %(outfile)s
+                         --errfile  %(errfile)s
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
         print(self.cmd)
@@ -777,16 +766,16 @@ class TestCSVDialects(object):
         schema = _generate_foobarbatz_schema()
         self.schema_fqfn = _write_schema_file('foobarbatz', schema, dir_name=self.tmp_dir)
 
-        self.cmd = """%(pgm)s %(in_fqfn)s
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
                          -d ','
-                         --validschema %(schema)s
+                         --valid-schema %(schema)s
                          --quoting quote_nonnumeric
-                         --outgood %(outgood)s
-                         --outerr  %(outerr)s
-                         -s
+                         --outfile %(outfile)s
+                         --errfile  %(errfile)s
                    """ % {'pgm':     self.pgm,
-                          'outgood': self.outgood_fqfn,
-                          'outerr':  self.outerr_fqfn,
+                          'outfile': self.outgood_fqfn,
+                          'errfile': self.outerr_fqfn,
                           'in_fqfn': self.in_fqfn,
                           'schema':  self.schema_fqfn}
         runner = envoy.run(self.cmd)

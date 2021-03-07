@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -232,7 +232,7 @@ class TestEmptyFile(object):
     def test_empty_file(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = '%s -i %s -o %s -r 15:20' % (fq_pgm, self.empty_fqfn, self.out_fqfn)
+        cmd = f"""{fq_pgm} -i {self.empty_fqfn} -o {self.out_fqfn} -r 15:20 """
         r = envoy.run(cmd)
         print(r.std_out)
         print(r.std_err)
@@ -246,7 +246,9 @@ class TestEmptyFile(object):
     def test_empty_stdin(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = "cat %s | %s -d ',' -o %s -r 15:20" % (self.empty_fqfn, fq_pgm, self.out_fqfn)
+        cmd = f"""cat {self.empty_fqfn} | {fq_pgm}
+                                          -d ',' -q quote_none --has-no-header
+                                          -o {self.out_fqfn} -r 15:20"""
         r = envoy.run(cmd)
         print(r.std_out)
         print(r.std_err)
