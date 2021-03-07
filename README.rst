@@ -83,6 +83,11 @@ Utilities Provided in This Release:
    -  Post delta transformations can include assign sequence numbers,
       copying field values, etc.
 
+-  gristle_file_converter
+
+   -  Converts an input file with one csv dialect into an output file
+      with another.
+
 -  gristle_validator
 
    -  Validates csv files by confirming that all records have the right
@@ -104,69 +109,6 @@ Utilities Provided in This Release:
    -  Shows one record from a file at a time - formatted based on
       metadata.
 
-gristle_validator
-=================
-
-::
-
-   Splits a csv file into two separate files based on how records pass or fail
-   validation checks:
-      - Field count - checks the number of fields in each record against the
-        number required.  The correct number of fields can be provided in an
-        argument or will default to using the number from the first record.
-      - Schema - uses csv file requirements defined in a json-schema file for
-        quality checking.  These requirements include the number of fields, 
-        and for each field - the type, min & max length, min & max value,
-        whether or not it can be blank, existance within a list of valid
-        values, and finally compliance with a regex pattern.
-
-   The output can just be the return code (0 for success, 1+ for errors), can
-   be some high level statistics, or can be the csv input records split between
-   good and erroneous files.  Output can also be limited to a random subset.
-
-   Examples:
-      $ gristle_validator  sample.csv -f 3
-            Prints all valid input rows to stdout, prints all records with 
-            other than 3 fields to stderr along with an extra final field that
-            describes the error.
-      $ gristle_validator  sample.csv 
-            Prints all valid input rows to stdout, prints all records with 
-            other than the same number of fields found on the first record to
-            stderr along with an extra final field that describes the error.
-      $ gristle_validator  sample.csv  -d '|' --hasheader
-            Same comparison as above, but in this case the file was too small
-            or complex for the pgm to automatically determine csv dialect, so
-            we had to explicitly give that info to program.
-      $ gristle_validator  sample.csv --outgood sample_good.csv --outerr sample_err.csv
-            Same comparison as above, but explicitly splits good and bad data
-            into separate files.
-      $ gristle_validator  sample.csv --randomout 1
-            Same comparison as above, but only writes a random 1% of data out.
-      $ gristle_validator  sample.csv --silent
-            Same comparison as above, but writes nothing out.  Exit code can be
-            used to determine if any bad records were found.
-      $ gristle_validator  sample.csv --validschema sample_schema.csv 
-            The above command checks both field count as well as validations
-            described in the sample_schema.csv file.  Here's an example of what 
-            that file might look like:
-               items:
-                   - title:            rowid
-                     blank:            False
-                     required:         True
-                     dg_type:          integer
-                     dg_minimum:       1
-                     dg_maximum:       60
-                   - title:            start_date
-                     blank:            False
-                     minLength:        8
-                     maxLength:        10
-                     pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
-                   - title:            location
-                     blank:            False
-                     minLength:        2
-                     maxLength:        2
-                     enum:             ['ny','tx','ca','fl','wa','ga','al','mo']
-
 gristle_slicer
 ==============
 
@@ -182,15 +124,15 @@ gristle_slicer
    or exclusion logic can be used - and even combined.
 
    Examples:
-      $ gristle_slicer sample.csv
+      $ gristle_slicer -i sample.csv
                    Prints all rows and columns
-      $ gristle_slicer sample.csv -c":5, 10:15" -C 13
+      $ gristle_slicer -i sample.csv -c":5, 10:15" -C 13
                    Prints columns 0-4 and 10,11,12,14 for all records
-      $ gristle_slicer sample.csv -C:-1
+      $ gristle_slicer -i sample.csv -C:-1
                    Prints all columns except for the last for all records
-      $ gristle_slicer sample.csv -c:5 -r-100
+      $ gristle_slicer -i sample.csv -c:5 -r-100
                    Prints columns 0-4 for the last 100 records
-      $ gristle_slicer sample.csv -c:5 -r-100 -d'|' --quoting=quote_all
+      $ gristle_slicer -i sample.csv -c:5 -r-100 -d'|' --quoting=quote_all
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)
       $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
@@ -207,58 +149,38 @@ gristle_freaker
    and prints it out in columns - the first being the unique key and the last 
    being the count of occurances.
 
-
    Examples:
-      $ gristle_freaker sample.csv -d '|'  -c 0
+      $ gristle_freaker -i sample.csv -c 0
                    Creates two columns from the input - the first with
                    unique keys from column 0, the second with a count of
-                   how many times each exists.
-      $ gristle_freaker sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
+                   how many times each exists. 
+      $ gristle_freaker -i sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
                    In addition to what was described in the first example, 
                    this example adds sorting of the output by count ascending 
                    and just prints the first 25 entries.
-      $ gristle_freaker sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
+      $ gristle_freaker -i sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
                    In addition to what was described in the first example,
                    this example adds a sampling in which it only references
                    every third record.
-      $ gristle_freaker sample.csv -d '|'  -c 0,1
+      $ gristle_freaker -i sample.csv -d '|'  -c 0,1
                    Creates three columns from the input - the first two
                    with unique key combinations from columns 0 & 1, the 
                    third with the number of times each combination exists.
-      $ gristle_freaker sample.csv -d '|'  -c -1
+      $ gristle_freaker -i sample.csv -d '|'  -c -1
                    Creates two columns from the input - the first with unique
                    keys from the last column of the file (negative numbers 
                    wrap), then a second with the number of times each exists.
-      $ gristle_freaker sample.csv -d '|'  --columntype all
+      $ gristle_freaker -i sample.csv -d '|'  --columntype all
                    Creates two columns from the input - all columns combined
                    into a key, then a second with the number of times each
                    combination exists.
-      $ gristle_freaker sample.csv -d '|'  --columntype each
+      $ gristle_freaker -i sample.csv -d '|'  --columntype each
                    Unlike the other examples, this one performs a separate
                    analysis for every single column of the file.  Each analysis
                    produces three columns from the input - the first is a 
                    column number, second is a unique value from the column, 
                    and the third is the number of times that value appeared.  
                    This output is repeated for each column.
-
-gristle_viewer
-==============
-
-::
-
-   Displays a single record of a file, one field per line, with field names 
-   displayed as labels to the left of the field values.  Also allows simple 
-   navigation between records.
-
-   Examples:
-      $ gristle_viewer sample.csv -r 3 
-                   Presents the third record in the file with one field per line
-                   and field names from the header record as labels in the left
-                   column.
-      $ gristle_viewer sample.csv -r 3  -d '|' -q quote_none
-                   In addition to what was described in the first example this
-                   adds explicit csv dialect overrides.
-                          
 
 gristle_determinator
 ====================
@@ -271,7 +193,7 @@ gristle_determinator
    useful in both understanding the format and data and quickly spotting issues.
 
    Examples:
-      $ gristle_determinator japan_station_radiation.csv
+      $ gristle_determinator --infiles japan_station_radiation.csv
                    This command will analyze a file with radiation measurements
                    from various Japanese radiation stations.
 
@@ -362,6 +284,102 @@ gristle_determinator
                -888                                     x 62 occurrences
                0                                        x 37 occurrences
 
+gristle_file_converter
+======================
+
+::
+
+   Converts a file from one csv dialect to another
+
+   Examples:
+      $ gristle_file_converter -i foo.csv -o bar.csv \
+        --delimiter=',' --has-header --quoting=quote-all doublequote \
+        --out-delimiter='|'  --out-has-no-header --out-quoting quote_none --out-escapechar='\'
+            Copies input file to output while completely changing every aspect
+            of the csv dialect.
+
+gristle_validator
+=================
+
+::
+
+   Splits a csv file into two separate files based on how records pass or fail
+   validation checks:
+      - Field count - checks the number of fields in each record against the
+        number required.  The correct number of fields can be provided in an
+        argument or will default to using the number from the first record.
+      - Schema - uses csv file requirements defined in a json-schema file for
+        quality checking.  These requirements include the number of fields, 
+        and for each field - the type, min & max length, min & max value,
+        whether or not it can be blank, existance within a list of valid
+        values, and finally compliance with a regex pattern.
+
+   The output can just be the return code (0 for success, 1+ for errors), can
+   be some high level statistics, or can be the csv input records split between
+   good and erroneous files.  Output can also be limited to a random subset.
+
+   Examples:
+      $ gristle_validator  -i sample.csv -f 3
+            Prints all valid input rows to stdout, prints all records with 
+            other than 3 fields to stderr along with an extra final field that
+            describes the error.
+      $ gristle_validator  -i sample.csv 
+            Prints all valid input rows to stdout, prints all records with 
+            other than the same number of fields found on the first record to
+            stderr along with an extra final field that describes the error.
+      $ gristle_validator  -i sample.csv  -d '|' --has-header
+            Same comparison as above, but in this case the file was too small
+            or complex for the pgm to automatically determine csv dialect, so
+            we had to explicitly give that info to program.
+      $ gristle_validator  -i sample.csv -o sample_good.csv --outerr sample_err.csv
+            Same comparison as above, but explicitly splits good and bad data
+            into separate files.
+      $ gristle_validator  -i sample.csv --randomout 1
+            Same comparison as above, but only writes a random 1% of data out.
+      $ gristle_validator  -i sample.csv --silent
+            Same comparison as above, but writes nothing out.  Exit code can be
+            used to determine if any bad records were found.
+      $ gristle_validator  -i sample.csv --validschema sample_schema.csv 
+            The above command checks both field count as well as validations
+            described in the sample_schema.csv file.  Here's an example of what 
+            that file might look like:
+               items:
+                   - title:            rowid
+                     blank:            False
+                     required:         True
+                     dg_type:          integer
+                     dg_minimum:       1
+                     dg_maximum:       60
+                   - title:            start_date
+                     blank:            False
+                     minLength:        8
+                     maxLength:        10
+                     pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
+                   - title:            location
+                     blank:            False
+                     minLength:        2
+                     maxLength:        2
+                     enum:             ['ny','tx','ca','fl','wa','ga','al','mo']
+
+gristle_viewer
+==============
+
+::
+
+   Displays a single record of a file, one field per line, with field names 
+   displayed as labels to the left of the field values.  Also allows simple 
+   navigation between records.
+
+   Examples:
+      $ gristle_viewer -i sample.csv -r 3 
+                   Presents the third record in the file with one field per line
+                   and field names from the header record as labels in the left
+                   column.
+      $ gristle_viewer -i sample.csv -r 3  -d '|' -q quote_none
+                   In addition to what was described in the first example this
+                   adds explicit csv dialect overrides.
+                          
+
 gristle_differ
 ==============
 
@@ -377,7 +395,7 @@ gristle_differ
 
    Examples:
 
-      $ gristle_differ file0.dat file1.dat --key-cols 0 2 --ignore_cols  19 22 33 
+      $ gristle_differ --infiles file0.dat file1.dat --key-cols 0 2 --ignore_cols  19 22 33 
 
            - Sorts both files on columns 0 & 2
            - Dedupes both files on column 0
@@ -390,7 +408,7 @@ gristle_differ
               - file1.dat.chgnew
               - file1.dat.chgold
 
-      $ gristle_differ file0.dat file1.dat --key-cols 0 --compare-cols 1 2 3 4 5 6 7  -d '|'
+      $ gristle_differ --infiles file0.dat file1.dat --key-cols 0 --compare-cols 1 2 3 4 5 6 7  -d '|'
 
            - Sorts both files on columns 0 
            - Dedupes both files on column 0
@@ -399,7 +417,7 @@ gristle_differ
            - Produces the same output file names as example 1.
 
 
-      $ gristle_differ file0.dat file1.dat --config-fn ./foo.yml  \
+      $ gristle_differ --infiles file0.dat file1.dat --config-fn ./foo.yml  \
                   --variables batchid:919 --variables pkid:82304
 
            - Produces the same output file names as example 1.
@@ -493,4 +511,4 @@ Licensing
 Copyright
 =========
 
--  Copyright 2011-2020 Ken Farmer
+-  Copyright 2011-2021 Ken Farmer
