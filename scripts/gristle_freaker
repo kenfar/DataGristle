@@ -522,15 +522,12 @@ class ConfigManager(configulator.Config):
         if config['max_freq'] < 1000:
             abort('ERROR: Please provided a value between 1001 and 1000000000 for max-freq')
 
+        #todo: confirm we can get rid of this - should no longer be necessary
         # Handle required delimiter:
-        if config['infiles'] != '-':
-            if len(config['infiles']) > 1 and not config['delimiter']:
-                abort('ERROR: Please provide delimiter',
-                      'delimiter is required when reading multiple input files')
-        else:   # stdin
-            if not config['delimiter']:
-                abort('ERROR: Please provide delimiter',
-                      'delimiter is required when piping input files')
+        #if config['infiles'] != '-':
+        #    if len(config['infiles']) > 1 and not config['delimiter']:
+        #        abort('ERROR: Please provide delimiter',
+        #              'delimiter is required when reading multiple input files')
 
         if config['sort_col'] not in (0, 1):
             abort('ERROR: Please provide a sortcol value of 0 or 1')

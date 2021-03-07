@@ -254,7 +254,7 @@ class FileDelta(object):
             if last_rec is None: # first read priming
                 last_rec = self.new_rec
             if len(last_rec) != len(self.new_rec):
-                abort('new file has inconsistent number of fields')
+                abort('new file has inconsistent number of fields', f'new_rec = {self.new_rec}')
             for key in self.join_fields:
                 if self.new_rec[key] > last_rec[key]:
                     self.new_read_cnt += 1
@@ -280,7 +280,7 @@ class FileDelta(object):
             if last_rec is None: # first read priming
                 last_rec = self.old_rec
             if len(last_rec) != len(self.old_rec):
-                abort('old file has inconsistent number of fields')
+                abort('old file has inconsistent number of fields', f'old_rec = {self.new_rec}')
             for key in self.join_fields:
                 if self.old_rec[key] > last_rec[key]:
                     self.old_read_cnt += 1

@@ -97,7 +97,7 @@ class FieldDeterminator(object):
         #--- each dictionary has a collection within it:
         self.field_freqs:       Dict[int, Dict[Any, int]] = {}  # includes unknown values
 
-        assert has_header in [True, False]
+        #assert has_header in [True, False]
         assert 0 < field_cnt < 1000
 
 

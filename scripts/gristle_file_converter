@@ -1,13 +1,59 @@
 #!/usr/bin/env python
-""" Converts a file's csv dialect - field delimiter, quoting, etc.
+"""
+Copies input files into a single output file while converting the csv dialect.
+
+Usage: gristle_file_converter [options]
+
+    Help Options:
+        -h, --help        Show this help message and exit
+        --long-help       Print more verbose help
+        -V, --version     Show version number then exit
+        --verbosity=VERBOSITY
+                          Controls level of logging.  Valid values include:
+                          quiet, normal, high, debug.
+    Main Options:
+        -i, --infiles [INFILES [INFILES ...]]
+                          Input filenames or default to for stdin
+        -o, --outfile OUTFILE
+                          Output filename or '-' for stdout (the default)
+
+    Input Format Options:
+        -d, --delimiter=DELIMITER
+                          Single-character csv delimiter
+        -q, --quoting=QUOTING
+                          Specify quoting behavior.  Useful when automatic csv
+                          dialect detection fails or when processing data via
+                          stdin.  Valid values are quote_all, quote_minimal,
+                          quote_nonnumeric, quote_none.
+        --quotechar=QUOTECHAR
+                          CSV quotechar - defaults to "
+        --doublequote     Quotes within quoted strings are escaped with double
+                          quotes.
+        --escapechar=ESCAPECHAR
+                          Quotes are escaped with the provided escapechar
+        --has-header      Indictes there is a header in the file
+
+    Output Formatting Options:
+        -D, --out-delimiter=DELIMITER
+                          Output csv delimiter, defaults to input delimiter
+        -Q, --out-quoting=QUOTING
+                          Output csv quoting, defaults to input quoting
+        --out-quotechar=QUOTECHAR
+                          Output csv quoting character, defaults to input
+                          quotechar
+        --out-doublequote
+                          Output csv escaping through doublequotes, defaults
+                          to input doublequote
+        --out-escapechar=ESCAPECHAR
+                          Output csv escape character, defaults to input
+                          escapechar
+        --out-has-header  Output header - indicates header exists, defaults
+                          to input has-header
 
     Example Usage:
-    $ cat ../data/*crime* | ./gristle_file_converter.py --infiles colors.csv -d ',' -D '|' -o /tmp/colors.out
-
-    To do:
-    1.  dialect validation in get_dialect()
-    2.  improve msg if no args provided, tell user about -h
-    3.  support multiple input files
+        $ gristle_file_converter.py --infiles colors.csv  -o /tmp/colors.out \
+             --delimiter ','  --quoting quote_none  \
+             --out-delimiter '|' --out-quoting quote_all --out_escapechar '\'
 
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
@@ -15,18 +61,17 @@
     Copyright 2011-2021 Ken Farmer
 """
 
-import csv
 import errno
-import sys
-from os.path import basename
 from pprint import pprint as pp
+from os.path import basename
 from signal import signal, SIGPIPE, SIG_DFL
+import sys
 from typing import Dict, List, Any, Optional, Union
 
 import datagristle.common              as comm
 import datagristle.configulator        as configulator
 import datagristle.csvhelper           as csvhelper
-import datagristle.file_type           as file_type
+import datagristle.file_io             as file_io
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -48,198 +93,26 @@ def main():
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
-    in_file = InFileHandler(nconfig.infiles, nconfig.dialect, nconfig.stripfields)
-    out_file = OutFileHandler(nconfig.outfile, nconfig.out_dialect)
+    input_handler = file_io.InputHandler(nconfig.infiles,
+                                         nconfig.dialect)
 
-    fields = in_file.readline()
-    while fields:
+    output_handler = file_io.OutputHandler(nconfig.outfile,
+                                           nconfig.out_dialect)
 
-        if (in_file.read_cnt == 1
-                and nconfig.dialect.has_header
-                and not nconfig.out_dialect.has_header):
-            pass
-        else:
-            out_file.writeline(fields)
+    for rec in input_handler:
+        if input_handler.curr_file_rec_cnt == 1:
+            if (nconfig.dialect.has_header and not nconfig.out_dialect.has_header):
+                continue  # skip input header if output has-no-header
+            elif input_handler.files_read > 1:
+                continue  # skip input header on any files besides the first
 
-        fields = in_file.readline()
+        output_handler.write_rec(rec)
 
-    out_file.terminate()
+    input_handler.close()
+    output_handler.close()
 
     return 0
 
-
-
-class InFileHandler(object):
-    """ Handles the opening, closing and writing to a single input file.
-        The file must be a csv, but it can be either a single-column delimiter
-        or a multi-column delimiter.
-    """
-    def  __init__(self, file_names, dialect, stripfields):
-        self.file = file_names[0]
-        self.dialect = dialect
-        self.stripfields = stripfields
-        self.read_cnt = 0
-        self.bad_cnt = 0
-        self.in_file = open(self.file, 'r')
-        self.eof = False
-        self.reader = csv.reader(self.in_file,
-                                 delimiter=self.dialect.delimiter,
-                                 quoting=self.dialect.quoting)
-
-    def readline(self):
-        """ Public method that handles reading.
-            It will return None if EOF is hit, otherwise will return a good
-            record consisting of a list of fields - even if this means that
-            it will have to skip multiple bad or partial records.
-            Note that it will use the CSV module if possible, otherwise will
-            manually remove quotes, line terminators, etc.
-        """
-        while True:
-            rec = self._readrec()
-            if rec:
-                return rec
-            elif self.eof:
-                return None
-            else:
-                pass    # received bad rec, get another
-
-    def _readrec(self):
-        """ Private method responsible for getting the next record, setting the
-            eof flag, closing the input file at eof, and parsing the record.
-            Parsing the record and splitting it into a list of fields is handled
-            automatically by the CSV module, or manually if necessary.
-        """
-        assert self.eof is False
-        try:
-            in_rec = self.reader.__next__()
-        except StopIteration:
-            in_rec = None
-
-        if in_rec:
-            self.read_cnt += 1
-        else:
-            self.eof = True
-            self.in_file.close()
-            return None
-
-        fields = in_rec
-        if self.stripfields:
-            strip_fields = []
-            for field in fields:
-                strip_fields.append(field.strip())
-            return strip_fields
-        else:
-            return fields
-
-    def _strip_lineterminator(self, rec):
-        """ Removes the dialect-defined lineterminator from the end of the
-            record if it exists.
-            Returns the results.
-        """
-        if rec.endswith(self.dialect.lineterminator):
-            return rec[:-len(self.dialect.lineterminator)]
-        else:
-            return rec
-
-    def _strip_recdelimiter(self, rec):
-        """ For input files with a dialect that defines a record delimiter it
-            will ensure that only one delimiter exists, then return all data prior
-            to it.
-            For input files without a dialect-defined record delimiter it
-            simply returns the record.
-        """
-        if self.dialect.recdelimiter:
-            if rec.count(self.dialect.recdelimiter) != 1:
-                print('bad rec found with len of %s and looks like %s' % (len(rec), rec))
-                self.bad_cnt += 1
-                return None
-            else:
-                pre_recdelimiter = rec.split(self.dialect.recdelimiter)[0]
-                return pre_recdelimiter
-        else:
-            return rec
-
-
-
-class OutFileHandler(object):
-    """ Handles the transformation as well as writing of data to a single output
-        file.
-        The file must be a csv, but it can be either a single-column delimiter
-        or a multi-column delimiter.
-        Opening & closing is also handled.
-    """
-
-    def __init__(self, output, dialect):
-        """ Sets up environment to write files.  Will write to stdout if a file
-            name was not provided.  Will use csv module if the delimiter is
-            just a single character.
-        """
-        self.dialect = dialect
-        self.write_cnt = 0
-        self.csv_writer = None # only used by single-char files with csv module
-        if output and output != '-':
-            #pp(f'writing to file: {output}')
-            self.out_file = open(output, 'w')
-        else:
-            #pp(f'writing to stdout')
-            self.out_file = sys.stdout
-        if len(self.dialect.delimiter) == 1:
-            self.csv_writer = csv.writer(self.out_file,
-                                         delimiter=self.dialect.delimiter,
-                                         quoting=self.dialect.quoting)
-
-    def writeline(self, fields):
-        """ writes a single record (a list of fields) to the output.
-            This is handled either through the csv module writer or manually.
-        """
-        if self.csv_writer:
-            self.csv_writer.writerow(fields)
-        else:
-            fields2 = self._add_quotes(fields)
-            rec = self.dialect.delimiter.join(fields2)
-            rec2 = self._add_recdelimiter(rec)
-            rec3 = self._add_lineterminator(rec2)
-            self.out_file.write(rec3)
-
-    def _add_recdelimiter(self, rec):
-        """ Add a record delimiter - if it was defined within the dialect.
-            Note that this only applies to manually-written files, not writes 
-            handled by csv module.
-        """
-        if self.dialect.recdelimiter:
-            return '%s%s' % (rec, self.dialect.recdelimiter)
-        else:
-            return rec
-
-    def _add_lineterminator(self, rec):
-        """ Add a lineterminator if it was defined within the dialect.
-            Note that this only applies to manually-written files, not writes 
-            handled by csv module.
-        """
-        return '%s%s' % (rec, self.dialect.lineterminator)
-
-    def _add_quotes(self, fields):
-        """ Add quotes around each field if the dialect indicates the fields 
-            are quoted.  It will use the quotechar also defined in the dialect.
-            NOTE: that this only applies to manually-written files, not writes 
-            handled by csv module.
-            NOTE: it quotes every single field - not just strings! """
-        # pylint: disable=W0612
-        if self.dialect.quoting:
-            quotechar = self.dialect.quotechar
-            new_fields = []
-            for field in fields:
-                new_fields.append('%(quotechar)s%(field)s%(quotechar)s' % locals())
-            return new_fields
-        else:
-            return fields
-        # pylint: enable=W0612
-
-    def terminate(self):
-        """ Handles final housekeeping for the object.  Specifically, that
-            includes closing the output file.
-        """
-        self.out_file.close()
 
 
 
@@ -254,7 +127,12 @@ class ConfigManager(configulator.Config):
         self.define_user_config()
         self.process_configs()
         self.extend_config()
+
+        if self.nconfig.verbosity == 'debug':
+            self.print_config()
+
         return self.nconfig
+
 
     def define_user_config(self) -> None:
         """ Defines the user config or metadata.
@@ -264,28 +142,23 @@ class ConfigManager(configulator.Config):
         self.add_standard_metadata('infiles')
         self.add_standard_metadata('outfile')
 
+        self.add_all_csv_configs()
+
         self.add_custom_metadata(name='out_delimiter',
                                  short_name='D',
                                  arg_type='option',
                                  config_type=str,
                                  help_msg='Specifies the output file delimiter')
-        self.add_custom_metadata(name='out_recdelimiter',
-                                 short_name='R',
-                                 arg_type='option',
-                                 config_type=str,
-                                 help_msg='Specifies the output record delimiter')
         self.add_custom_metadata(name='out_quoting',
                                  short_name='Q',
                                  arg_type='option',
-                                 config_type=bool,
-                                 action='store_const',
-                                 const=True,
-                                 help_msg='Specify for quote_all otherwise will be quote_none.')
+                                 config_type=str,
+                                 choices=['quote_none', 'quote_all', 'quote_minimal', 'quote_nonnumeric'],
+                                 help_msg='Specify quoting for output, valid values are: quote_none, quote_all, quote_minimal, quote_nonnumeric')
         self.add_custom_metadata(name='out_quotechar',
                                  arg_type='option',
                                  config_type=str,
-                                 default='"',
-                                 help_msg='Specifies the output quoting character.  Defaults to "')
+                                 help_msg='Specifies the output quoting character.')
         self.add_custom_metadata(name='out_has_header',
                                  short_name='H',
                                  arg_type='option',
@@ -293,32 +166,19 @@ class ConfigManager(configulator.Config):
                                  action='store_const',
                                  const=True,
                                  help_msg='Specifies there is a header in output file.')
-        self.add_custom_metadata(name='stripfields',
+        self.add_custom_metadata(name='out_escapechar',
+                                 short_name='E',
+                                 arg_type='option',
+                                 config_type=str,
+                                 help_msg='Causes quoting to be escaped with an escapechar')
+        self.add_custom_metadata(name='out_doublequote',
                                  arg_type='option',
                                  config_type=bool,
                                  action='store_const',
                                  const=True,
-                                 default=False,
-                                 help_msg='Strips ledaing and trailing spaces from each field.')
+                                 help_msg='Causes quoting to be escaped with doublequotes')
 
         self.add_standard_metadata('verbosity')
-
-        self.add_all_csv_configs()
-
-
-    def validate_custom_config(self,
-                               custom_config: configulator.CONFIG_TYPE) -> None:
-        """ Validate the application's config and modify as necessary
-        """
-
-        if custom_config['infiles'] == '-':  # stdin
-            if not custom_config['delimiter']:
-                comm.abort('Please provide delimiter when piping data into program via stdin')
-            if not custom_config['quoting']:
-                custom_config['quoting'] = 'quote_minimal'
-
-        if len(custom_config['infiles']) > 1:
-            comm.abort('Too many file names provided')
 
 
 
@@ -327,24 +187,16 @@ class ConfigManager(configulator.Config):
         """
         self.generate_csv_dialect_config()
 
-        if self.config['out_quoting']:
-            quoting = 'quote_all'
-        else:
-            quoting = 'quote_none'
         out_dialect = csvhelper.get_dialect('-',
-                                            self.config['out_delimiter'],
-                                            quoting,
-                                            self.config['quotechar'],
-                                            self.config['has_header'],
-                                            self.config['doublequote'],
-                                            self.config['escapechar'])
+                                            self.config['out_delimiter']   or self.nconfig.dialect.delimiter,
+                                            self.config['out_quoting']
+                                                or csvhelper.get_quote_name(self.nconfig.dialect.quoting),
+                                            self.config['out_quotechar']   or self.nconfig.dialect.quotechar,
+                                            self.config['out_has_header']  or self.nconfig.dialect.has_header,
+                                            self.config['out_doublequote'] or self.nconfig.dialect.doublequote,
+                                            self.config['out_escapechar']  or self.nconfig.dialect.escapechar)
 
         self.update_config('out_dialect', out_dialect)
-
-
-
-
-
 
 
 

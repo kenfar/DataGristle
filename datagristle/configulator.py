@@ -16,12 +16,12 @@ import collections
 import copy
 import json
 import os
-import sys
-import yaml
-
 from os.path import isfile, splitext, basename
 from pprint import pprint as pp
-from typing import List, Dict, Tuple, Any, Union, Callable, Optional, NamedTuple
+import sys
+from typing import List, Dict, Any, Callable, Optional, NamedTuple
+import yaml
+
 
 from datagristle._version import __version__
 import datagristle.common as comm
@@ -68,6 +68,7 @@ STANDARD_CONFIGS['outfile'] = {'short_name': 'o',
                                'help': "output filename or '-' for stdout (the default)",
                                'type': str,
                                'arg_type': 'option'}
+
 STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'default': None,
                                  'required': True,
@@ -231,9 +232,9 @@ class Config(object):
         self.add_standard_metadata('quoting')
         self.add_standard_metadata('quotechar')
         self.add_standard_metadata('doublequote')
-        self.add_standard_metadata('no_doublequote')
         self.add_standard_metadata('escapechar')
         self.add_standard_metadata('has_header')
+        self.add_standard_metadata('no_doublequote')
         self.add_standard_metadata('has_no_header')
 
 
@@ -447,16 +448,26 @@ class Config(object):
                 continue
             if val is not None:
                 if not isinstance(val, self._app_metadata[key]['type']):
-                    raise TypeError('key: "{}" with value: "{}" is not type: {}'
+                    comm.abort('key: "{}" with value: "{}" is not type: {}'
                                     .format(key, val, self._app_metadata[key]['type']))
                 if 'min_length' in self._app_metadata[key]:
                     if len(val) < self._app_metadata[key]['min_length']:
-                        raise ValueError('key "{}" with value "{}" is shorter than min_length of {}'
+                        comm.abort('key "{}" with value "{}" is shorter than min_length of {}'
                                          .format(key, val, self._app_metadata[key]['min_length']))
                 if 'max_length' in self._app_metadata[key]:
                     if len(val) > self._app_metadata[key]['max_length']:
-                        raise ValueError('key "{}" with value "{}" is longer than max_length of {}'
+                        comm.abort('key "{}" with value "{}" is longer than max_length of {}'
                                          .format(key, val, self._app_metadata[key]['max_length']))
+
+        self._validate_dialect_with_stdin(config)
+
+
+    def _validate_dialect_with_stdin(self, config) -> None:
+        if (config['infiles'] == '-'
+            and (config['delimiter'] is None
+                 or config['quoting'] is None
+                 or config['has_header'] is None)):
+                comm.abort('Please provide input dialect fields when piping data into program via stdin')
 
 
 
@@ -465,7 +476,7 @@ class Config(object):
 
         This is intended to be overriden by the user.
         """
-        raise NotImplementedError('should be overridden')
+        pass
 
 
 
@@ -474,6 +485,10 @@ class Config(object):
         for key in self.config.keys():
             if key == 'dialect':
                 print('    dialect:')
+                for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
+                    print(f'        {item}:  {getattr(self.config[key], item)}')
+            elif key == 'out_dialect':
+                print('    out_dialect:')
                 for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
                     print(f'        {item}:  {getattr(self.config[key], item)}')
             else:

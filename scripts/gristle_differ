@@ -496,10 +496,6 @@ class ConfigManager(configulator.Config):
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
 
-        #pp(config)
-        if not config['delimiter'] and config['infiles'] == '-':
-            abort('Provide delimiter and quoting when piping data into program via stdin')
-
         config_schema = {'type': 'object',
                          'properties': {
                             'infiles':         {"type":     "array"},

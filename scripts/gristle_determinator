@@ -686,9 +686,6 @@ class ConfigManager(configulator.Config):
     def validate_custom_config(self,
                                config: configulator.CONFIG_TYPE):
 
-        if config['infiles'] == '-':
-            abort('ERROR: provide filename',  'gristle_determinator does not support piping data through stdin')
-
         if len(config['infiles']) > 1:
             abort("ERROR: multiple files not supported")
 

@@ -15,7 +15,9 @@ Usage: gristle_slicer [options]
         -h, --help          show brief help message and exit
         --long-help         show this verbose help and exit
         -V, --version       show version info and exit
-
+        --verbosity=<verbosity>
+                            Controls stdout level of detail.  Valid values
+                            include: quiet, normal, high, debug.
     Main Options:
       -i, --infiles=<infiles>
                              One or more input files. Alternatively, could be
@@ -30,20 +32,15 @@ Usage: gristle_slicer [options]
       -R, --exrecords=<spec> Provide the record exclusion specification.
                              Default is None which excludes nothing.
 
-    Output Format Options:
-      --verbosity=<verbosity>
-                            Controls stdout level of detail.  Valid values
-                            include: quiet, normal, high, debug.
-
     CSV Dialect Options:
       -d, --delimiter=<del>  Provide a quoted single-character field delimiter.
                              Useful if automatic csv dialect detection fails to
                              correctly interpret file. Also required for STDIN
                              input.  If provided then quoting should also be
                              provided.
-      -q, --quoting=<qt>     Specify quoting behavior.  Useful used when
-                             automatic csv dialect detection fails or when
-                             processing data via stdin.  Valid values include:
+      -q, --quoting=<qt>     Specify quoting behavior.  Useful when automatic
+                             csv dialect detection fails or when processing
+                             data via stdin.  Valid values include:
                              quote_none, quote_minimal, quote_nonnumeric,
                              quote_all
       --doublequote          Quotes within quoted strings are escaped with
@@ -55,8 +52,8 @@ Usage: gristle_slicer [options]
                              for overriding automatic csv-guessing behavior.
 
 
-Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
-    'NumberN, StartOffset:StopOffset' - The specification is a comma-
+    Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
+        'NumberN, StartOffset:StopOffset' - The specification is a comma-
                             delimited list of individual offsets or ranges.
 
                             Offsets are based on zero, and if negative are
@@ -67,7 +64,6 @@ Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
                             Ranges are a pair of offsets separated by a colon.
                             The first number indicates the starting offset,
                             and the second number indicates the stop offset +1.
-
 
 Examples:
     $ gristle_slicer -i sample.csv
@@ -340,11 +336,6 @@ class ConfigManager(configulator.Config):
 
         self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
-
-
-    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
-        if not config['delimiter'] and config['infiles'] == '-':
-            comm.abort('ERROR: Provide delimiter and quoting when piping data via stdin')
 
 
     def extend_config(self) -> None:

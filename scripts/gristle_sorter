@@ -51,15 +51,11 @@ Examples:
 
 	$ gristle_sorter -i foo.csv -o foo_sorted.csv -k '3sf,1ir,2ir' -d '|' --quotechar
 
-    $ gristle_sorter -i dialect_quoteall_escaped_delimiter.csv -k 0sf -d ',' --quoting quote_all --escapechar '\' --has-header
-    "num","alpha","alphanumeric"
-    "1","bbb","a23,bar"
-    "2","ccc","b23,baz"
-    "3","aaa","b23,foo"
-    "4","ddd","a23,meh"
+    $ gristle_sorter -i dialect_quoteall_escaped_delimiter.csv -k 0sf \
+                     -d ',' --quoting quote_all --escapechar '\' --has-header
+      This example sorts a file with escaped delimiters within a quoted string
 
 """
-import argparse
 import errno
 from os.path import basename
 from pprint import pprint as pp
@@ -150,18 +146,6 @@ class ConfigManager(configulator.Config):
                                           'as numeric. '
                                           'However, case differences will not be ignored.')
         self.add_all_csv_configs()
-
-
-    def validate_custom_config(self,
-                               custom_config: configulator.CONFIG_TYPE) -> None:
-        """ Validate the application's config and modify as necessary
-        """
-
-        if custom_config['infiles'][0] == '-':  # stdin
-            if not custom_config['delimiter']:
-                comm.abort('Please provide delimiter when piping data into program via stdin')
-            if not custom_config['quoting']:
-                custom_config['quoting'] = 'quote_minimal'
 
 
     def extend_config(self) -> None:

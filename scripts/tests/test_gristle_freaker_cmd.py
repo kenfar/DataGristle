@@ -122,25 +122,19 @@ class TestCommandLine(object):
 
 
     def test_empty_stdin_file(self):
-        cmd = "cat %s | %s -d '|' -o %s -c 0" \
-              % (self.empty_fqfn, os.path.join(script_dir, 'gristle_freaker'), self.out_fqfn)
-        runner = subprocess.Popen(cmd,
-                                  stdin=subprocess.PIPE,
-                                  stdout=subprocess.PIPE,
-                                  close_fds=True,
-                                  shell=True)
-        _ = runner.communicate()[0]
-        # We've got different messages here that mean essentially the same
-        # thing, which you get depends on platform.
-        print(os.strerror(runner.returncode).lower())
-        assert os.strerror(runner.returncode).lower() in ['no data available',
-                                                          'no message available on stream']
+
+        cmd = f"""cat {self.empty_fqfn} | {os.path.join(script_dir, 'gristle_freaker')}
+                                           -d ',' -q quote_none --has-no-header
+                                           -o {self.out_fqfn} -c 2"""
+        r = envoy.run(cmd)
+        print(r.std_out)
+        print(r.std_err)
+        assert r.status_code == 61
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
         fileinput.close()
         assert not out_recs
-        runner.stdin.close()
 
 
     def test_empty_multiple_files(self):

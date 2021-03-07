@@ -440,6 +440,8 @@ class TestEmptyFile(object):
                   --outfile {self.outgood_fqfn} \
                   --errfile {self.outerr_fqfn} \
                   -f 5
+                  -d ','
+                  -q quote_none
                '''
         runner = envoy.run(cmd)
         print(runner.std_out)
@@ -462,10 +464,13 @@ class TestEmptyFile(object):
     def test_empty_stdin(self):
         """ Should show proper handling of an empty file.
         """
-        cmd = "cat %s | %s -d',' -f 5 \
-                        --outfile %s \
-                        --errfile %s" % \
-                (self.empty_fqfn, fq_pgm, self.outgood_fqfn, self.outerr_fqfn)
+        cmd = f"""cat {self.empty_fqfn} | {fq_pgm} -d',' -f 5
+                        --outfile {self.outgood_fqfn}
+                        --errfile {self.outerr_fqfn}
+                        -d ','
+                        -q quote_none
+                        --has-no-header
+               """
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
