@@ -546,7 +546,7 @@ class OutputWriter(object):
         self.write_string('Top Values', indent=4)
         for i, (key, val) in enumerate(sorted_list):
             if self.output_format == 'readable':
-                self.write_string(key, 'x %d occurances' % val, indent=8, key_width=30)
+                self.write_string(key, 'x %d occurrences' % val, indent=8, key_width=30)
             else:
                 self.write_string(key, '%d' % val, indent=8, key_width=30)
 
