@@ -2,7 +2,7 @@
 """ Contains standard io reading & writing code
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2017-2020 Ken Farmer
+    Copyright 2017-2021 Ken Farmer
 """
 import csv
 import errno
@@ -32,17 +32,18 @@ class InputHandler(object):
         self.input_stream = None
         self._open_next_input_file()
 
-    def seek(self, offset):
-        return self.input_stream.seek(offset)
-
-    def tell(self):
-        return self.input_stream.tell()
+#    No longer used - probably because seeking around a csv doesn't work well - because
+#    of newlines
+#    def seek(self, offset):
+#        return self.input_stream.seek(offset)
+#    def tell(self):
+#        return self.input_stream.tell()
 
     def _open_next_input_file(self):
 
         if self.files[0] == '-' and self.files_read == 0:
 
-            if os.isatty(0):  # checks if data was pipped into stdin
+            if os.isatty(0):  # checks if data was piped into stdin
                 sys.exit(errno.ENODATA)
 
             self.input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
@@ -70,9 +71,10 @@ class InputHandler(object):
         """
         while True:
             try:
-                rec = self._read_next_rec()
-                return rec
+                return self._read_next_rec()
             except StopIteration:   # end of file, loop around and get another
+                if self.files[0] == '-' and self.files_read == 1 and self.curr_file_rec_cnt == 1:
+                    sys.exit(errno.ENODATA)
                 self.infile.close()
                 self._open_next_input_file()  # will raise StopIteration if out of files
 

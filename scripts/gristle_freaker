@@ -147,7 +147,6 @@ def main() -> int:
         config_manager = ConfigManager()
         nconfig = config_manager.get_config()
     except EOFError:
-        print('Warning: empty file')
         sys.exit(errno.ENODATA) # 61: empty file
 
     # Run once for each col_set.  Only col_type of 'each' will have > 1 col_set,

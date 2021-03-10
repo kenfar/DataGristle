@@ -88,12 +88,13 @@ Examples:
        http://opensource.org/licenses/BSD-3-Clause
     Copyright 2011-2021 Ken Farmer
 """
-import sys
 import csv
+import errno
 import fileinput
 from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
+import sys
 from typing import List, Tuple, Dict, Any, Optional, IO
 
 import datagristle.common as comm
@@ -116,8 +117,7 @@ def main() -> int:
         config_manager = ConfigManager()
         nconfig = config_manager.get_config()
     except EOFError:
-        print('Warning: empty file')
-        return 0
+        return errno.ENODATA
 
     input_handler = file_io.InputHandler(nconfig.infiles,
                                          nconfig.dialect)
