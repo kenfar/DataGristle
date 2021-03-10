@@ -159,6 +159,7 @@ Copyright 2011-2021 Ken Farmer
 """
 import copy
 import csv
+import errno
 import logging
 import os
 from  os.path import exists, dirname, basename
@@ -212,8 +213,7 @@ def main():
         config_manager = ConfigManager()
         nconfig, config = config_manager.get_config()
     except EOFError:
-        print('Warning: empty file')
-        return 0
+        sys.exit(errno.ENODATA) #61: empty file
 
     # either file may be empty - but at least one must have data in it.
     assert len(nconfig.infiles) == 2
