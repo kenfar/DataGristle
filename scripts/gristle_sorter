@@ -145,6 +145,8 @@ class ConfigManager(configulator.Config):
                                           'Note that this will treat 0 and 0.0 the same if the keys are specified '
                                           'as numeric. '
                                           'However, case differences will not be ignored.')
+
+        self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
 
 

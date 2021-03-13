@@ -170,12 +170,14 @@ class TestFileContents(object):
 
     def test_quotenone_escaped_delimiter(self):
 
-        self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=True, escapechar='\\')
+        self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=True,
+                                         escapechar='\\', doublequote=False)
 
         self.in_fqfn = pjoin(DATA_DIR, 'dialect_quotenone_escaped_delimiter.csv')
         self.expected_fqfn = pjoin(DATA_DIR, 'dialect_quotenone_escaped_delimiter.csv.sorted')
 
         self.make_command()
+        pp(self.cmd)
         executor(self.cmd, expect_success=True)
 
         self.load_files()
@@ -302,6 +304,7 @@ class TestFileContents(object):
                         --quoting {csvhelper.get_quote_name(self.dialect.quoting).lower()}
                         --delimiter '{self.dialect.delimiter}'
                         --has-header
+                        --verbosity debug
                     '''
         if self.dialect.escapechar:
             self.cmd += f"--escapechar '{self.dialect.escapechar}' "

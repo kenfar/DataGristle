@@ -6,6 +6,7 @@
 """
 
 import csv
+import _csv
 import os.path
 from typing import Optional, List
 
@@ -48,7 +49,7 @@ class Dialect(csv.Dialect):
                  lineterminator: Optional[str] = None,
                  skipinitialspace: Optional[bool] = None) -> None:
 
-        assert quoting in [csv.QUOTE_NONE, csv.QUOTE_MINIMAL, csv.QUOTE_ALL, csv.QUOTE_NONNUMERIC]
+        assert quoting in [None, csv.QUOTE_NONE, csv.QUOTE_MINIMAL, csv.QUOTE_ALL, csv.QUOTE_NONNUMERIC]
 
         skipinitialspace = False if skipinitialspace is None else skipinitialspace
         lineterminator = lineterminator or '\n'
@@ -78,44 +79,47 @@ def get_dialect(infiles: List[str],
     """
 
     if infiles[0] == '-':
-        dialect = override_dialect(Dialect,
-                                   delimiter,
-                                   quoting,
-                                   quotechar,
-                                   has_header,
-                                   doublequote,
-                                   escapechar)
+        final_dialect = Dialect(delimiter=delimiter,
+                                quoting=file_type.get_quote_number(quoting),
+                                quotechar=quotechar,
+                                has_header=has_header,
+                                doublequote=doublequote,
+                                escapechar=escapechar)
     else:
-        for infile in infiles:
-            if delimiter and quoting:
-                dialect = Dialect(delimiter=delimiter,
-                                  has_header=has_header,
-                                  quoting=get_quote_number(quoting),   #todo: do we need this function on each of these?
-                                  quotechar=quotechar,
-                                  doublequote=doublequote,
-                                  escapechar=escapechar)
-                if os.path.getsize(infile) == 0:
-                    raise EOFError
-                else:
+        detected_dialect = None
+        try:
+           for infile in infiles:
+                if os.path.getsize(infile) > 0:
+                    my_file = file_type.FileTyper(infile)
+                    detected_dialect = my_file.analyze_file()
                     break
-            else:
-                my_file = file_type.FileTyper(infile)
-                try:
-                    dialect = my_file.analyze_file()
-                    dialect = override_dialect(dialect,
-                                               delimiter,
-                                               quoting,
-                                               quotechar,
-                                               has_header,
-                                               doublequote,
-                                               escapechar)
-                    break
-                except file_type.IOErrorEmptyFile:
-                    continue
+        except _csv.Error:
+            detected_dialect = get_empty_dialect()
         else:
-            raise EOFError
+            if not detected_dialect:
+                raise EOFError
 
-    return dialect
+        final_dialect = override_dialect(detected_dialect,
+                                         delimiter=delimiter,
+                                         quoting=quoting,
+                                         quotechar=quotechar,
+                                         has_header=has_header,
+                                         doublequote=doublequote,
+                                         escapechar=escapechar)
+
+    if not is_valid_dialect(final_dialect):
+       raise ValueError('Error: invalid csv dialect')
+    return final_dialect
+
+
+
+def get_empty_dialect():
+    return Dialect(delimiter=None,
+                   quoting=None,
+                   quotechar=None,
+                   has_header=None,
+                   escapechar=None,
+                   doublequote=None)
 
 
 
@@ -146,7 +150,7 @@ def override_dialect(dialect: Dialect,
     dialect.quotechar  = quotechar or dialect.quotechar
 
     try:
-        dialect.has_header = has_header if has_header is not None else dialect.has_header
+        dialect.has_header = coalesce_not_none(has_header, dialect.has_header, False)
     except AttributeError:
         dialect.has_header = False
 
@@ -155,4 +159,38 @@ def override_dialect(dialect: Dialect,
     dialect.lineterminator = '\n'
 
     return dialect
+
+
+def coalesce_not_none(*vals):
+    for val in vals:
+        if val is not None:
+            return val
+    else:
+        return None
+
+
+def is_valid_dialect(dialect) -> bool:
+    # note that we're not checking escapechar for None - since that's valid.
+    if (dialect.delimiter is None
+        or dialect.quoting is None
+        or dialect.quotechar is None
+        or dialect.has_header is None
+        or dialect.doublequote is None):
+        return False
+    return True
+
+
+def print_dialect(dialect) -> None:
+    print(f'Dialect: ')
+    print(f'    delimiter:              {dialect.delimiter}')
+    print(f'    quoting:                {dialect.quoting}')
+    print(f'    quoting (translated):   {get_quote_name(dialect.quoting) if dialect.quoting else None}')
+    print(f'    has_header:             {dialect.has_header}')
+    print(f'    doublequote:            {dialect.doublequote}')
+    print(f'    escapechar:             {dialect.escapechar}')
+
+
+
+
+
 

@@ -237,7 +237,7 @@ class TestEmptyFile(object):
         r = envoy.run(cmd)
         print(r.std_out)
         print(r.std_err)
-        assert r.status_code == 0
+        assert r.status_code == errno.ENODATA
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)

@@ -8,6 +8,7 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2020 Ken Farmer
 """
+import _csv
 import os
 import os.path
 import sys
@@ -146,8 +147,9 @@ class FileTyper(object):
         with open(self.fqfn, 'rt') as csvfile:
             try:
                 dialect = csv.Sniffer().sniff(csvfile.read(50000))
-            except:
-                raise IOError('could not analyse file - you may want to provide explicit csv delimiter, quoting, etc')
+            except _csv.Error:
+                raise
+                #comm.abort('Error: unable to automatically detect csv dialect', 'Try providing explicit csv delimiter, quoting, etc')
 
         # See if we can improve quoting accuracy:
         dialect.quoting = self._get_dialect_quoting(dialect)
