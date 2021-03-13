@@ -109,6 +109,7 @@ def get_dialect(infiles: List[str],
                                          escapechar=escapechar)
 
     if not is_valid_dialect(final_dialect):
+       print_dialect(final_dialect)
        raise ValueError('Error: invalid csv dialect')
     return final_dialect
 
@@ -141,9 +142,9 @@ def override_dialect(dialect: Dialect,
 
     dialect.delimiter = delimiter or dialect.delimiter
 
-    if quoting is None:
-        dialect.quoting = file_type.get_quote_number(quoting) if quoting else dialect.quoting
-    elif dialect.quoting is None:
+    if quoting is not None:
+        dialect.quoting = file_type.get_quote_number(quoting)
+    elif dialect.quoting is not None:
         pass
     else:
         dialect.quoting = file_type.get_quote_number('quote_none')
