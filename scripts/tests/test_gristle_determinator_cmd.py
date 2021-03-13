@@ -404,7 +404,7 @@ class TestMaxFreq(object):
         shutil.rmtree(self.tmp_dir)
 
     def test_limits(self):
-        assert self.file_struct['record_count']      == '19'
+        assert self.file_struct['record_count'] == '19'
 
     def test_field_info(self):
         assert self.field_struct['field_0']['main']['known_values'] == '10'
