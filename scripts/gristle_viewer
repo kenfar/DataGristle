@@ -118,14 +118,9 @@ def main():
 
 def get_field_names(input_files, dialect):
 
-    my_file = file_type.FileTyper(input_files[0],
-                                  delimiter=dialect.delimiter,
-                                  quoting=csvhelper.get_quote_name(dialect.quoting))
-    my_file.analyze_file()
+    field_cnt = file_type.get_field_cnt(dialect, input_files[0])
     my_fields = field_determinator.FieldDeterminator(input_files[0],
-                                                     my_file.format_type,
-                                                     my_file.field_cnt,
-                                                     dialect.has_header,
+                                                     field_cnt,
                                                      dialect)
     my_fields.analyze_fields()
     return my_fields.field_names

@@ -28,8 +28,8 @@ from pprint import pprint as pp
 import envoy
 import pytest
 
+import datagristle.csvhelper as csvhelper
 import datagristle.test_tools as test_tools
-import datagristle.file_type as file_type
 
 script_path = dirname(dirname(os.path.realpath((__file__))))
 
@@ -60,7 +60,7 @@ def get_value(parsable_out, division, section, subsection, key):
     """
     mydialect = csv.Dialect
     mydialect.delimiter = '|'
-    mydialect.quoting = file_type.get_quote_number('QUOTE_ALL')
+    mydialect.quoting = csvhelper.get_quote_number('QUOTE_ALL')
     mydialect.quotechar = '"'
     mydialect.lineterminator = '\n'
 
@@ -158,7 +158,7 @@ class TestOutputFormattingAndContents(object):
 
         mydialect = csv.Dialect
         mydialect.delimiter = '|'
-        mydialect.quoting = file_type.get_quote_number('QUOTE_ALL')
+        mydialect.quoting = csvhelper.get_quote_number('QUOTE_ALL')
         mydialect.quotechar = '"'
         mydialect.lineterminator = '\n'
 
@@ -201,7 +201,6 @@ class TestOutputFormattingAndContents(object):
         assert self.file_struct['has_header'] == 'False'
         assert self.file_struct['escapechar'] == 'None'
         assert self.file_struct['doublequote'] == 'False'
-        assert self.file_struct['format_type'] == 'csv'
 
     def test_field_info(self):
         assert self.field_struct['field_0']['main']['field_number'] == '0'
@@ -278,7 +277,7 @@ class TestReadLimit(object):
 
         mydialect = csv.Dialect
         mydialect.delimiter = '|'
-        mydialect.quoting = file_type.get_quote_number('QUOTE_ALL')
+        mydialect.quoting = csvhelper.get_quote_number('QUOTE_ALL')
         mydialect.quotechar = '"'
         mydialect.lineterminator = '\n'
 
@@ -366,7 +365,7 @@ class TestMaxFreq(object):
 
         mydialect = csv.Dialect
         mydialect.delimiter = '|'
-        mydialect.quoting = file_type.get_quote_number('QUOTE_ALL')
+        mydialect.quoting = csvhelper.get_quote_number('QUOTE_ALL')
         mydialect.quotechar = '"'
         mydialect.lineterminator = '\n'
 
