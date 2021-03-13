@@ -485,7 +485,11 @@ class Config(object):
             if key == 'dialect':
                 print('    dialect:')
                 for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
-                    print(f'        {item}:  {getattr(self.config[key], item)}')
+                    if item == 'quoting':
+                        print(f'        {item}:  {getattr(self.config[key], item)}')
+                        print(f'        {item}(translated):  {csvhelper.get_quote_name(getattr(self.config[key], item)) if self.config[key].quoting is not None else None}')
+                    else:
+                        print(f'        {item}:  {getattr(self.config[key], item)}')
             elif key == 'out_dialect':
                 print('    out_dialect:')
                 for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
