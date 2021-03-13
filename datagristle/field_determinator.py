@@ -58,17 +58,12 @@ class FieldDeterminator(object):
 
     def __init__(self,
                  filename: str,
-                 format_type: str,
                  field_cnt: int,
-                 has_header: bool,
                  dialect: csvhelper.Dialect,
                  verbosity: str='normal') -> None:
-                 #verbosity: int = configulator.VERBOSITY_NORMAL) -> None:
 
         self.filename = filename
-        self.format_type = format_type
         self.field_cnt = field_cnt
-        self.has_header = has_header
         self.dialect = dialect
         self.verbosity = verbosity
         self.max_freq_number:   Optional[int] = None  # will be set in analyze_fields
@@ -97,7 +92,6 @@ class FieldDeterminator(object):
         #--- each dictionary has a collection within it:
         self.field_freqs:       Dict[int, Dict[Any, int]] = {}  # includes unknown values
 
-        #assert has_header in [True, False]
         assert 0 < field_cnt < 1000
 
 
@@ -123,7 +117,6 @@ class FieldDeterminator(object):
         assert field_number is None or field_number > -1
         self.max_freq_number = max_freq_number
 
-        #if self.verbosity > configulator.VERBOSITY_NORMAL:
         if self.verbosity in ('high', 'debug'):
             print('Field Analysis Progress: ')
 

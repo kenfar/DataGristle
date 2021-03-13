@@ -44,6 +44,7 @@ class TestKeyOptions(object):
                     -i {in_fqfn}
                     -o {out_fqfn}
                     -k 0sf
+                    -q quote_none -d ',' --has-no-header --no-doublequote
               '''
         executor(cmd, expect_success=True)
         recs = get_file_contents(out_fqfn, dialect)
@@ -60,6 +61,7 @@ class TestKeyOptions(object):
                     -i {in_fqfn}
                     -o {out_fqfn}
                     -k 0ir 1sf
+                    -q quote_none -d ',' --has-no-header --no-doublequote
               '''
         executor(cmd, expect_success=True)
         actual_recs = get_file_contents(out_fqfn, dialect)
@@ -297,6 +299,8 @@ class TestFileContents(object):
 
     def make_command(self):
         assert not (self.dialect.doublequote and self.dialect.escapechar)
+        doublequote_str = '--doublequote' if self.dialect.doublequote else '--no-doublequote'
+        escapechar_str  = f"--escapechar '{self.dialect.escapechar}'" if self.dialect.escapechar else ''
         self.cmd = f''' {pjoin(SCRIPT_DIR, 'gristle_sorter')}   \
                         -i {self.in_fqfn}
                         -o {self.out_fqfn}
@@ -305,12 +309,10 @@ class TestFileContents(object):
                         --delimiter '{self.dialect.delimiter}'
                         --has-header
                         --verbosity debug
+                        {doublequote_str}
+                        {escapechar_str}
                     '''
-        if self.dialect.escapechar:
-            self.cmd += f"--escapechar '{self.dialect.escapechar}' "
-        if self.dialect.doublequote:
-            self.cmd += '--doublequote'
-
+        pp(self.cmd)
 
 
     def load_files(self):

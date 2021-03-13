@@ -110,7 +110,6 @@ import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
-import datagristle.file_type as file_type
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)

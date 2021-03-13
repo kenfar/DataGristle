@@ -184,7 +184,7 @@ from typing import List, Union, Dict, Any, Tuple
 import datagristle.common       as comm
 from   datagristle.common  import abort
 import datagristle.configulator as configulator
-import datagristle.file_type    as gftype
+import datagristle.csvhelper    as csvhelper
 import datagristle.file_delta   as gdelta
 import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
@@ -234,14 +234,13 @@ def main():
             and os.path.getsize(nconfig.infiles[1]) == 0):
         return 1
 
-    dialect = gftype.get_dialect(nconfig.infiles,
-                                 nconfig.delimiter,
-                                 nconfig.quoting,
-                                 nconfig.quotechar,
-                                 recdelimiter=None,
-                                 has_header=nconfig.has_header,
-                                 doublequote=nconfig.doublequote,
-                                 escapechar=nconfig.escapechar)
+    dialect = csvhelper.get_dialect(infiles=nconfig.infiles,
+                                    delimiter=nconfig.delimiter,
+                                    quoting=nconfig.quoting,
+                                    quotechar=nconfig.quotechar,
+                                    has_header=nconfig.has_header,
+                                    doublequote=nconfig.doublequote,
+                                    escapechar=nconfig.escapechar)
 
     config_manager.update_config('col_names', comm.get_best_col_names(config, dialect))
     config = config_manager.config

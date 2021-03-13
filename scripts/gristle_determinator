@@ -230,11 +230,12 @@ from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Tuple, Dict, Any, Optional
 
-import datagristle.file_type as file_type
-import datagristle.field_determinator as field_determinator
-import datagristle.metadata as metadata
-import datagristle.configulator as configulator
 from datagristle.common import abort
+import datagristle.configulator as configulator
+import datagristle.csvhelper as csvhelper
+import datagristle.field_determinator as field_determinator
+import datagristle.file_type as file_type
+import datagristle.metadata as metadata
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -265,22 +266,17 @@ def main() -> int:
                               output_format=nconfig.outputformat)
 
     # Get Analysis on File:
-    my_file = file_type.FileTyper(nconfig.infiles[0],
-                                  nconfig.delimiter,
-                                  None,
-                                  nconfig.has_header,
-                                  quoting=file_type.get_quote_name(csv.QUOTE_MINIMAL),
-                                  read_limit=nconfig.read_limit,
-                                  doublequote=nconfig.doublequote,
-                                  escapechar=nconfig.escapechar)
+    my_file = file_type.FileTyper(nconfig.dialect,
+                                  nconfig.infiles[0],
+                                  read_limit=nconfig.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
         return errno.ENODATA
 
-    out_writer.write_file_results(my_file)
+    out_writer.write_file_results(my_file, nconfig.dialect)
     if nconfig.metadata:
-        md_man.write_file_results(my_file)
+        md_man.write_file_results(my_file, nconfig.dialect)
 
     if nconfig.brief:
         return 0
@@ -288,9 +284,7 @@ def main() -> int:
 
     # Get Analysis on ALL Fields:
     my_fields = field_determinator.FieldDeterminator(nconfig.infiles[0],
-                                                     my_file.format_type,
                                                      my_file.field_cnt,
-                                                     my_file.dialect.has_header,
                                                      my_file.dialect,
                                                      nconfig.verbosity)
 
@@ -345,7 +339,8 @@ class MetadataManager(object):
 
 
     def write_file_results(self,
-                           filetype: file_type.FileTyper) -> None:
+                           filetype: file_type.FileTyper,
+                           dialect: csvhelper.Dialect) -> None:
 
         self.ca_id = self.md.collection_analysis_tools.setter(analysis_id=self.analysis_id,
                                                               collection_id=self.collection_id,
@@ -353,10 +348,10 @@ class MetadataManager(object):
                                                               ca_location=filetype.fqfn,
                                                               ca_row_cnt=filetype.record_cnt,
                                                               ca_field_cnt=filetype.field_cnt,
-                                                              ca_delimiter=filetype.dialect.delimiter,
-                                                              ca_has_header=filetype.dialect.has_header,
-                                                              ca_quoting=file_type.get_quote_name(filetype.dialect.quoting).lower(),
-                                                              ca_quote_char=filetype.dialect.quotechar)
+                                                              ca_delimiter=dialect.delimiter,
+                                                              ca_has_header=dialect.has_header,
+                                                              ca_quoting=csvhelper.get_quote_name(dialect.quoting).lower(),
+                                                              ca_quote_char=dialect.quotechar)
 
 
     def write_field_results(self,
@@ -455,14 +450,14 @@ class OutputWriter(object):
 
 
     def write_file_results(self,
-                           my_file: file_type.FileTyper) -> None:
+                           my_file: file_type.FileTyper,
+                           dialect: csvhelper.Dialect) -> None:
         self.write_header()
         self.write_header('File Analysis Results:')
         self.division = 'File Analysis Results'
         self.section = 'main'
         self.subsection = 'main'
 
-        self.write_string('format type', my_file.format_type)
         self.write_string('field count', my_file.field_cnt)
         if my_file.record_cnt_is_est:
             self.write_string('record count', '%d (est)' % my_file.record_cnt)
@@ -471,17 +466,17 @@ class OutputWriter(object):
         self.write_string('has_header', my_file.dialect.has_header)
         if my_file.dialect.delimiter.strip() == '':
             self.write_string('delimiter', '[space]')
-        elif my_file.dialect.delimiter.strip() == '|':
+        elif dialect.delimiter.strip() == '|':
             self.write_string('delimiter', "'|'")
         else:
-            self.write_string('delimiter', my_file.dialect.delimiter)
-        self.write_string('skipinitialspace', my_file.dialect.skipinitialspace)
-        self.write_string('quoting', file_type.get_quote_name(my_file.dialect.quoting))
-        self.write_string('doublequote', my_file.dialect.doublequote)
+            self.write_string('delimiter', dialect.delimiter)
+        self.write_string('skipinitialspace', dialect.skipinitialspace)
+        self.write_string('quoting', csvhelper.get_quote_name(dialect.quoting))
+        self.write_string('doublequote', dialect.doublequote)
         if self.output_format == 'readable':
-            self.write_string('quotechar', my_file.dialect.quotechar)
-            self.write_string('lineterminator', my_file.dialect.lineterminator, use_repr=True)
-        self.write_string('escapechar', my_file.dialect.escapechar)
+            self.write_string('quotechar', dialect.quotechar)
+            self.write_string('lineterminator', dialect.lineterminator, use_repr=True)
+        self.write_string('escapechar', dialect.escapechar)
         self.write_header()
 
 

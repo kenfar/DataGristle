@@ -7,11 +7,11 @@
 
 import csv
 import _csv
+import fileinput
 import os.path
 from pprint import pprint as pp
 from typing import Optional, List
 
-import datagristle.file_type as file_type
 import datagristle.common as comm
 
 
@@ -81,7 +81,7 @@ def get_dialect(infiles: List[str],
 
     if infiles[0] == '-':
         final_dialect = Dialect(delimiter=delimiter,
-                                quoting=file_type.get_quote_number(quoting),
+                                quoting=get_quote_number(quoting),
                                 quotechar=quotechar,
                                 has_header=has_header,
                                 doublequote=doublequote,
@@ -91,8 +91,7 @@ def get_dialect(infiles: List[str],
         try:
            for infile in infiles:
                 if os.path.getsize(infile) > 0:
-                    my_file = file_type.FileTyper(infile)
-                    detected_dialect = my_file.analyze_file()
+                    detected_dialect = autodetect_dialect(infile, read_limit=5000)
                     break
         except _csv.Error:
             detected_dialect = get_empty_dialect()
@@ -110,7 +109,7 @@ def get_dialect(infiles: List[str],
 
     if not is_valid_dialect(final_dialect):
        print_dialect(final_dialect)
-       raise ValueError('Error: invalid csv dialect')
+       comm.abort('Error: invalid csv dialect', 'Unable to auto-detect all csv dialect attributes - please explicitly provide them')
     return final_dialect
 
 
@@ -143,11 +142,11 @@ def override_dialect(dialect: Dialect,
     dialect.delimiter = delimiter or dialect.delimiter
 
     if quoting is not None:
-        dialect.quoting = file_type.get_quote_number(quoting)
+        dialect.quoting = get_quote_number(quoting)
     elif dialect.quoting is not None:
         pass
     else:
-        dialect.quoting = file_type.get_quote_number('quote_none')
+        dialect.quoting = get_quote_number('quote_none')
 
     dialect.quotechar  = quotechar or dialect.quotechar
 
@@ -193,6 +192,111 @@ def print_dialect(dialect) -> None:
 
 
 
+def autodetect_dialect(fqfn: str,
+                       read_limit: int = 5000) -> csv.Dialect:
+    """ gets the dialect for a file
+        Uses the csv.Sniffer class
+        Then performs additional processing to try to improve accuracy of quoting.
+    """
+    # Verify we have an actual file - not an input stream:
+    assert os.path.isfile(fqfn)
+
+    with open(fqfn, 'rt') as csvfile:
+        try:
+            dialect = csv.Sniffer().sniff(csvfile.read(read_limit))
+            dialect.lineterminator = '\n'
+        except _csv.Error:
+            #This shouldn't raise error here - since it may get overridden later
+            dialect = get_empty_dialect()
+
+    # See if we can improve quoting accuracy:
+    dialect.quoting = _get_dialect_quoting(dialect, fqfn)
+
+    # Populate the has_header attribute:
+    dialect.has_header = _get_has_header(fqfn, read_limit)
+
+    return dialect
+
+
+
+def _get_dialect_quoting(dialect: csv.Dialect,
+                         fqfn: str) -> int:
+    """ Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
+        get a more accurate guess.  In the event that there's an extremely
+        consistent set of data that is either all quoted or not quoted at
+        all we will return that appropriate value.
+    """
+
+    # total_field_cnt has a key for each number of fields found in a
+    # record, and a value that indicates how often this total was found
+    #total_field_cnt  = collections.defaultdict(int)
+    total_field_cnt: Dict[int, int] = {}
+
+    # quoted_field_cnt has a key for each number of quoted fields found
+    # in a record, and a value that indicates how often this total was
+    # found.
+    #quoted_field_cnt = collections.defaultdict(int)
+    quoted_field_cnt: Dict[int, int] = {}
+
+    for rec in fileinput.input(fqfn):
+        fields = rec[:-1].split(dialect.delimiter)
+        try:
+            total_field_cnt[len(fields)] += 1
+        except KeyError:
+            total_field_cnt[len(fields)] = 1
+
+        quoted_cnt = 0
+        for field in fields:
+            if len(field) >= 2:
+                if field[0] == '"' and field[-1] == '"':
+                    quoted_cnt += 1
+        try:
+            quoted_field_cnt[quoted_cnt] += 1
+        except KeyError:
+            quoted_field_cnt[quoted_cnt] = 1
+
+        if fileinput.lineno() > 1000:
+            break
+    fileinput.close()
+
+    # "Exact" scenario: simplest and most clear in which we have no confusing
+    # data, every record has the same number of fields and either all are quoted
+    # or none are.  This is handled specially since it's often screwed up 
+    # by the Sniffer, and it's a common situation.
+    if len(total_field_cnt) == 1 and len(quoted_field_cnt) == 1:
+        if list(total_field_cnt.keys())[0] == list(quoted_field_cnt.keys())[0]:
+            return csv.QUOTE_ALL
+        elif list(quoted_field_cnt.values())[0] == 0:
+            return csv.QUOTE_NONE
+
+    # "Almost Exact" scenario: almost the same as with the exact scenario
+    # above, but in this case it allows for a few malformed records.
+    # The numbers must be nearly identical - with both the most common field
+    # count and most common quoted field count occuring 95% of the time.
+    common_field_cnt, common_field_pct = comm.get_common_key(total_field_cnt)
+    common_quoted_field_cnt, common_quoted_field_pct = comm.get_common_key(quoted_field_cnt)
+
+    if common_field_pct > .95 and common_quoted_field_pct > .95:
+        if common_field_cnt == common_quoted_field_cnt:
+            return csv.QUOTE_ALL
+        elif common_quoted_field_cnt == 0:
+            return csv.QUOTE_NONE
+
+    # Final scenario - we can't make much of an improvement, it's probably
+    # either QUOTED_MINIMAL or QUOTED_NONNUMERIC.  Sniffer probably labeled
+    # it QUOTED_MINIMAL.
+    return dialect.quoting
+
+
+
+
+def _get_has_header(fqfn: str,
+                   read_limit: int=50000) -> bool:
+    """ Figure out whether or not there's a header based on the first 50,000 bytes
+    """
+    sample = open(fqfn, 'r').read(read_limit)
+    #todo: following line can throw an except - we should catch it
+    return csv.Sniffer().has_header(sample)
 
 
 

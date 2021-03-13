@@ -47,7 +47,6 @@ class FileAndTestManager(object):
         self.dialect.delimiter = '|'
         self.dialect.skipinitialspace = False
         self.dialect.lineterminator = '\n'
-        self.format_type = 'csv'
         self.field_cnt = 7
         self.test1_fqfn = generate_test_file(self.dialect.delimiter,
                                              self.record_cnt)
@@ -61,9 +60,7 @@ class FileAndTestManager(object):
 
         # run FileTyper without csv dialect info:
         self.MyFields = mod.FieldDeterminator(self.test1_fqfn,
-                                              self.format_type,
                                               self.field_cnt,
-                                              self.dialect.has_header,
                                               self.dialect,
                                               verbosity=configulator.VERBOSITY_QUIET)
 
