@@ -230,10 +230,10 @@ class Config(object):
         self.add_standard_metadata('delimiter')
         self.add_standard_metadata('quoting')
         self.add_standard_metadata('quotechar')
-        self.add_standard_metadata('doublequote')
         self.add_standard_metadata('escapechar')
-        self.add_standard_metadata('has_header')
+        self.add_standard_metadata('doublequote')
         self.add_standard_metadata('no_doublequote')
+        self.add_standard_metadata('has_header')
         self.add_standard_metadata('has_no_header')
 
 

@@ -8,6 +8,7 @@
 import csv
 import _csv
 import os.path
+from pprint import pprint as pp
 from typing import Optional, List
 
 import datagristle.file_type as file_type
@@ -140,9 +141,9 @@ def override_dialect(dialect: Dialect,
 
     dialect.delimiter = delimiter or dialect.delimiter
 
-    if quoting:
+    if quoting is None:
         dialect.quoting = file_type.get_quote_number(quoting) if quoting else dialect.quoting
-    elif dialect.quoting:
+    elif dialect.quoting is None:
         pass
     else:
         dialect.quoting = file_type.get_quote_number('quote_none')
