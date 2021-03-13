@@ -501,6 +501,8 @@ class ConfigManager(configulator.Config):
         self.define_user_config()
         self.process_configs()
         self.extend_config()
+        if self.nconfig.verbosity == 'debug':
+            self.print_config()
         return self.nconfig
 
     def define_user_config(self) -> None:
