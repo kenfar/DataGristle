@@ -315,13 +315,17 @@ def delta_runner(nconfig,
 
     #--- sort & dedupe the two source files -----
     f0_sorted_uniq_fn, _ = prep_file(nconfig.infiles[0],
-                                     dialect, keys_off0,
-                                     adj_temp_dir, adj_out_dir,
+                                     dialect,
+                                     keys_off0,
+                                     adj_temp_dir,
+                                     adj_out_dir,
                                      nconfig.already_sorted,
                                      nconfig.already_uniq)
     f1_sorted_uniq_fn, _ = prep_file(nconfig.infiles[1],
-                                     dialect, keys_off0,
-                                     adj_temp_dir, adj_out_dir,
+                                     dialect,
+                                     keys_off0,
+                                     adj_temp_dir,
+                                     adj_out_dir,
                                      nconfig.already_sorted,
                                      nconfig.already_uniq)
 
@@ -386,15 +390,30 @@ def prep_file(filename: str,
         - deduped_fn - ends in .uniq
         - final_name - ends in .uniq or .csv (if already-sorted)
     """
+    dups_removed = 0
+
+    # Sort the file if necessary
     if already_sorted:
         sorted_fn = filename
-    else:
+    elif dialect.quoting == csv.QUOTE_NONE:
         sorter = gsorter.CSVSorter(dialect, key_cols, temp_dir, out_dir)
         sorted_fn = sorter.sort_file(filename)
+    else:
+        sorted_fn = filename + '.sorted'
+        sort_key_config = convert_key_offsets_to_sort_key_config(key_cols)
+        sorter = gsorter.CSVPythonSorter(in_fqfn=filename,
+                                         out_fqfn=sorted_fn,
+                                         sort_keys_config=sort_key_config,
+                                         dialect=dialect,
+                                         dedupe=(not already_uniq))
+        sorter.sort_file()
+        sorter.close()
+        dups_removed = sorter.stats['recs_deduped']
+        already_uniq = True
 
+    # Dedupe the file if necessary
     if already_uniq:
         final_name = sorted_fn
-        dups_removed = 0
     else:
         deduper = gdeduper.CSVDeDuper(dialect, key_cols, out_dir)
         final_name, read_cnt, write_cnt = deduper.dedup_file(sorted_fn)
@@ -403,6 +422,13 @@ def prep_file(filename: str,
             os.remove(sorted_fn)
 
     return final_name, dups_removed
+
+
+
+def convert_key_offsets_to_sort_key_config(key_offsets):
+    keys = [f'{x}sf' for x in key_offsets]
+    sort_key_config = gsorter.SortKeysConfig(keys)
+    return sort_key_config
 
 
 

@@ -114,6 +114,8 @@ class FileDelta(object):
 
         """
         self.dry_run = dry_run
+        self.new_fqfn = new_fqfn
+        self.old_fqfn = old_fqfn
         # validate inputs
         assert isfile(old_fqfn)
         assert isfile(new_fqfn)
@@ -260,8 +262,8 @@ class FileDelta(object):
                     self.new_read_cnt += 1
                     break # good
                 if self.new_rec[key] < last_rec[key]:
-                    print(self.new_rec)
-                    abort('new file is not sorted correctly')
+                    abort('ERROR: new file is not sorted correctly',
+                          f'This refers to file {self.new_fqfn}, and key: {key}, and record: {self.new_rec} and last rec: {last_rec}')
         except StopIteration:
             self.new_rec = None
 
@@ -286,8 +288,8 @@ class FileDelta(object):
                     self.old_read_cnt += 1
                     break # good
                 if self.old_rec[key] < last_rec[key]:
-                    print(self.old_rec)
-                    abort('old file is not sorted correctly')
+                    abort('ERROR: old file is not sorted correctly',
+                          f'This refers to file {self.old_fqfn}, and key: {key}, and record: {self.old_rec} and last rec: {last_rec}')
         except StopIteration:
             self.old_rec = None
 

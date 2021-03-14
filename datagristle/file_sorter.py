@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import csv
 from dataclasses import dataclass
 import errno
 from operator import itemgetter
@@ -124,20 +123,10 @@ class CSVPythonSorter(object):
         #    raise ValueError('Invalid sort output directory: %s' % out_fqfn)
 
         self.input_handler = file_io.InputHandler([in_fqfn], dialect)
-        #print('------------------------------------------------')
-        #pp(repr(self.input_handler.dialect))
-        #pp(repr(self.input_handler.dialect.__dict__))
-        #pp(repr(dialect.__dict__))
-        #print('------------------------------------------------')
-
 
         self.output_handler = file_io.OutputHandler(out_fqfn,
                                                     self.input_handler.dialect,
                                                     sys.stdout)
-        #print('================================================')
-        #pp(repr(self.output_handler.dialect))
-        #pp(repr(self.output_handler.dialect.__dict__))
-        #print('================================================')
 
     def sort_file(self) -> Dict[str, int]:
         """ Sort input file giving output file
@@ -166,8 +155,6 @@ class CSVPythonSorter(object):
             return 0
 
 
-
-
     def _load_file_and_prepare_data(self) -> None:
         #print('\n ------------------ Read Phase: -------------------------')
         start_time = time.time()
@@ -180,7 +167,6 @@ class CSVPythonSorter(object):
             has_header_adjustment = 0
 
         for rec in self.input_handler:
-            #pp(rec)
             if self.input_handler.dialect.has_header and self.input_handler.rec_cnt == 1:
                 self.header_rec = rec
             else:
@@ -188,7 +174,6 @@ class CSVPythonSorter(object):
                 sort_values = self._get_sort_values(self.sort_key_config.key_fields, rec, primary_order)
                 keys.append((*sort_values, self.input_handler.rec_cnt - 1 - has_header_adjustment))
         #print(f'    duration = {(time.time() - start_time):.4f}')
-
 
 
     def _get_sort_values(self,
@@ -199,9 +184,9 @@ class CSVPythonSorter(object):
         return [transform(rec[key_field.position], key_field, primary_order) for key_field in key_fields]
 
 
-
     def _singlepass_sort(self) -> None:
-
+        """ Sorts the keys in a single direction
+        """
         #print('\n ------------------ Sort Phase: -------------------------')
         start_time = time.time()
         sort_fields = self.sort_key_config.get_sort_fields()
@@ -214,7 +199,8 @@ class CSVPythonSorter(object):
 
 
     def _multipass_sort(self) -> None:
-
+        """ Sorts keys in multiple directions
+        """
         #print('\n ------------------ Multi-Pass Sort Phase: -------------------------')
         start_time = time.time()
 
@@ -282,7 +268,6 @@ def transform(field_value: str,
                 return transformed_field_value * -1
     else:
         return transformed_field_value
-
 
 
 
@@ -388,8 +373,6 @@ class CSVSorter(object):
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
-            print('Invalid sort return code: %s' % proc.returncode)
-            print('delimiter: %s' % self.dialect.delimiter)
             raise IOError('invalid sort return code: %s, %s, %s' % (proc.returncode, stdout, stderr))
 
         return out_fqfn
