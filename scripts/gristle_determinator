@@ -624,53 +624,53 @@ class ConfigManager(configulator.Config):
         self.add_custom_metadata(name='outputformat',
                                  arg_type='option',
                                  default='readable',
-                                 config_type=str,
-                                 help_msg="describe output format, provide one of: 'readable', 'parsable', or 'none' " )
+                                 type=str,
+                                 help="describe output format, provide one of: 'readable', 'parsable', or 'none' " )
         self.add_custom_metadata(name='brief',
                                  short_name='b',
                                  arg_type='option',
                                  default=False,
-                                 config_type=bool,
+                                 type=bool,
                                  action='store_const',
                                  const=True,
-                                 help_msg="skips field-level analysis")
+                                 help="skips field-level analysis")
         self.add_custom_metadata(name='read_limit',
                                  arg_type='option',
                                  default=-1,
-                                 config_type=int,
-                                 help_msg="Specify a maximum number of records to read from input file")
+                                 type=int,
+                                 help="Specify a maximum number of records to read from input file")
         self.add_custom_metadata(name='column_number',
                                  short_name='c',
                                  arg_type='option',
                                  default=None,
-                                 config_type=int,
-                                 help_msg='Restrict analysis to a single column (field number) - using a zero-offset')
+                                 type=int,
+                                 help='Restrict analysis to a single column (field number) - using a zero-offset')
         self.add_custom_metadata(name='max_freq',
                                  arg_type='option',
-                                 config_type=int,
-                                 help_msg='Specify a maximum number of entries for freq dictionary. '
-                                          'This is applied separately to each column.  The default is'
-                                          ' set at approximately 1 million entries. ')
+                                 type=int,
+                                 help='Specify a maximum number of entries for freq dictionary. '
+                                      'This is applied separately to each column.  The default is'
+                                      ' set at approximately 1 million entries. ')
         self.add_custom_metadata(name='column_types',
                                  arg_type='option',
-                                 config_type=str,
-                                 help_msg='Allows manual specification of field types: integer, float, '
-                                          'string, timestamp. Use format: "colno:type, colno:type, '
-                                          ' colno:type" ')
+                                 type=str,
+                                 help='Allows manual specification of field types: integer, float, '
+                                      'string, timestamp. Use format: "colno:type, colno:type, '
+                                      ' colno:type" ')
         self.add_custom_metadata(name='metadata',
                                  arg_type='option',
-                                 config_type=bool,
+                                 type=bool,
                                  action='store_const',
                                  const=True,
-                                 help_msg='Indicates whether or not to write results into metadata database')
+                                 help='Indicates whether or not to write results into metadata database')
         self.add_custom_metadata(name='schema_id',
                                  arg_type='option',
-                                 config_type=int,
-                                 help_msg='Used with metadata outputformat to identify structure set being analyzed.')
+                                 type=int,
+                                 help='Used with metadata outputformat to identify structure set being analyzed.')
         self.add_custom_metadata(name='collection_id',
                                  arg_type='option',
-                                 config_type=int,
-                                 help_msg='Used with metadata outputformat to identify structure set being analyzed.')
+                                 type=int,
+                                 help='Used with metadata outputformat to identify structure set being analyzed.')
 
         self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
@@ -685,9 +685,6 @@ class ConfigManager(configulator.Config):
         if config['brief'] and config['column_number']:
             abort('ERROR: must not specify both brevity and column number')
 
-        if config['max_freq'] is not None and config['max_freq'] < 10:
-            abort('ERROR: please specify a max-freq between 10 and 1000000000')
-
         if (config['schema_id'] or config['collection_id']) and not config['metadata']:
             abort('ERROR: schema_id and collection_id are only for metadata')
 
@@ -701,7 +698,7 @@ class ConfigManager(configulator.Config):
         # turn off verbose if parsable output is going to stdout
         if self.nconfig.outputformat == 'parsable' \
         and (not self.nconfig.outfile or self.nconfig.outfile == '-'):
-            self.config['verbosty'] = configulator.VERBOSITY_QUIET  # don't mix data and info
+            self.config['verbosty'] = 'quiet' # don't mix data and info
             self.replace_configs(self.config)
 
         # set up column_type_overrides

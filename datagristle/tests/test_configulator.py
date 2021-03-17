@@ -26,15 +26,15 @@ class TestEnvironmentalArgs(object):
         # setup _app_metadata:
         config = mod.Config(PGM_NAME, SHORT_HELP, LONG_HELP)
         config.add_custom_metadata(name='delimiter',
-                                   config_type=str,
+                                   type=str,
                                    arg_type='option',
                                    default=None,
-                                   help_msg=SHORT_HELP)
+                                   help=SHORT_HELP)
         config.add_custom_metadata(name='counter',
-                                   config_type=int,
+                                   type=int,
                                    arg_type='option',
                                    default=None,
-                                   help_msg=SHORT_HELP)
+                                   help=SHORT_HELP)
         self._app_metadata = config._app_metadata
         pp(self._app_metadata)
 
@@ -91,15 +91,15 @@ class TestFileArgs(object):
         # setup app_config:
         config = mod.Config(PGM_NAME, SHORT_HELP, LONG_HELP)
         config.add_custom_metadata(name='delimiter',
-                                   config_type=str,
+                                   type=str,
                                    arg_type='option',
                                    default=None,
-                                   help_msg=SHORT_HELP)
+                                   help=SHORT_HELP)
         config.add_custom_metadata(name='counter',
-                                   config_type=int,
+                                   type=int,
                                    arg_type='option',
                                    default=None,
-                                   help_msg=SHORT_HELP)
+                                   help=SHORT_HELP)
         config.add_standard_metadata('config_fn')
         self._app_metadata = config._app_metadata
         pp(self._app_metadata)

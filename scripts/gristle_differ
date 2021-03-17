@@ -457,76 +457,77 @@ class ConfigManager(configulator.Config):
         self.add_custom_metadata(name='key_cols',
                                  short_name='k',
                                  arg_type='option',
+                                 required=True,
                                  default=[],
                                  nargs='*',
-                                 config_type=list,
-                                 help_msg='Specify the columns that constitute a unique row with a comma-'
-                                          'delimited list of numbers using a 0-offset.\n'
-                                          'This is a required option.')
+                                 type=list,
+                                 help='Specify the columns that constitute a unique row with a comma-'
+                                      'delimited list of numbers using a 0-offset.\n'
+                                      'This is a required option.')
         self.add_custom_metadata(name='compare_cols',
                                  short_name='c',
                                  arg_type='option',
                                  default=[],
                                  nargs='*',
-                                 config_type=list,
-                                 help_msg=('Columns to compare - described by their position using a zero-offset.\n'
-                                           'Mutually exclusive with ignore-cols and key-cols.\n'
-                                           'If no value is provided then all columns except for key-cols will be compared.\n'
-                                           'Indicate multiple columns with a space-delimited list of numbers.'))
+                                 type=list,
+                                 help=('Columns to compare - described by their position using a zero-offset.\n'
+                                       'Mutually exclusive with ignore-cols and key-cols.\n'
+                                       'If no value is provided then all columns except for key-cols will be compared.\n'
+                                       'Indicate multiple columns with a space-delimited list of numbers.'))
         self.add_custom_metadata(name='ignore_cols',
                                  arg_type='option',
                                  default=[],
                                  nargs='*',
-                                 config_type=list,
-                                 help_msg=('Columns to ignore - described by their position using a zero-offset.\n'
-                                           'Mutually exclusive with compare-cols.\n'
-                                           'If this option is provided then all columns will be compared except '
-                                           'for those specified here and key-cols.\n'
-                                           'Indicate multiple columns with a space-delimited list of numbers.'))
+                                 type=list,
+                                 help=('Columns to ignore - described by their position using a zero-offset.\n'
+                                       'Mutually exclusive with compare-cols.\n'
+                                       'If this option is provided then all columns will be compared except '
+                                       'for those specified here and key-cols.\n'
+                                       'Indicate multiple columns with a space-delimited list of numbers.'))
         self.add_custom_metadata(name='col_names',
                                  arg_type='option',
                                  default=[],
                                  nargs='*',
-                                 config_type=list,
-                                 help_msg=('Column names - allows other cols to use names rather than offsets.\n'
-                                           'This will default to the file headers if they exist.\n'
-                                           'Note that those file header values will be converted to lowercase and have spaces converted to underscores.'))
+                                 type=list,
+                                 help=('Column names - allows other cols to use names rather than offsets.\n'
+                                       'This will default to the file headers if they exist.\n'
+                                       'Note that those file header values will be converted to lowercase and have spaces converted to underscores.'))
         self.add_custom_metadata(name='variables',
                                  arg_type='option',
                                  default=[],
                                  nargs='*',
-                                 config_type=list,
-                                 help_msg=('Variables to reference with assignments.  Format is "<name>:<value>"'))
+                                 type=list,
+                                 help=('Variables to reference with assignments.  Format is "<name>:<value>"'))
         self.add_custom_metadata(name='already_sorted',
                                  arg_type='option',
                                  action='store_const',
                                  const=True,
                                  default=False,
-                                 config_type=bool,
-                                 help_msg='Causes program to bypass sorting step.')
+                                 type=bool,
+                                 help='Causes program to bypass sorting step.')
         self.add_custom_metadata(name='already_uniq',
                                  arg_type='option',
                                  action='store_const',
                                  const=True,
                                  default=False,
-                                 config_type=bool,
-                                 help_msg='Causes program to bypass deduping step.')
+                                 type=bool,
+                                 help='Causes program to bypass deduping step.')
         self.add_custom_metadata(name='temp_dir',
                                  arg_type='option',
                                  default=None,
-                                 config_type=str,
-                                 help_msg='used for keeping temporary files.')
+                                 type=str,
+                                 help='used for keeping temporary files.')
         self.add_custom_metadata(name='out_dir',
                                  arg_type='option',
                                  default=None,
-                                 config_type=str,
-                                 help_msg=('Where the output files will be written.  Defaults to the'
-                                           ' directory of the second file.'))
+                                 type=str,
+                                 help=('Where the output files will be written.  Defaults to the'
+                                       ' directory of the second file.'))
         self.add_custom_metadata(name='assignments',
                                  arg_type='option',
                                  default=[],
-                                 config_type=list,
-                                 help_msg=(''))
+                                 type=list,
+                                 help=(''))
 
         self.add_standard_metadata('config_fn')
         self.add_standard_metadata('verbosity')
@@ -563,18 +564,13 @@ class ConfigManager(configulator.Config):
                             'has_header':      {'type':     ["null", "boolean"]},
                             'recdelimiter':    {"type":     ["null", "string"]},
                             'quoting':         {'type':     ["null", "string"],
-                                                "enum":     [None, "QUOTE_NONE", "QUOTE_ALL",
-                                                            "QUOTE_MINIMAL", "QUOTE_NONNUMERIC"]},
+                                                "enum":     [None, "quote_none", "quote_all",
+                                                            "quote_minimal", "quote_nonnumeric"]},
                             'quotechar':       {"type":     ["null", "string"]},
                             'doublequote':     {"type":     ["null", "boolean"]},
                             'escapechar':      {"type":     ["null", "string"]},
-                            #'verbosity':       {'type':     ["null", "integer"],
                             'verbosity':       {'type':     ["null", "string"],
                                                 "enum":     [None, 'quiet', 'normal', 'high', 'debug']},
-                                                #"enum":     [None, configulator.VERBOSITY_QUIET,
-                                                #                   configulator.VERBOSITY_NORMAL,
-                                                #                   configulator.VERBOSITY_HIGH,
-                                                #                   configulator.VERBOSITY_DEBUG]},
                             'dry_run':         {"type":     "boolean"},
                             'long_help':       {"type":     "boolean"},
                             'help':            {"type":     "boolean"},
@@ -613,9 +609,6 @@ def config_bonus_validator(config: Dict[str, Any]) -> None:
         abort("Error: The first file does not exist: %s" % config['infiles'][0])
     elif not exists(config['infiles'][1]):
         abort("Error: The second file does not exist: %s" % config['infiles'][1])
-
-    if len(config['key_cols']) == 0:
-        abort("Error: at least one key_col must be provided")
 
     if config['compare_cols'] and config['ignore_cols']:
         abort("Error: Provide only one of compare_cols or ignore_cols, not both")
