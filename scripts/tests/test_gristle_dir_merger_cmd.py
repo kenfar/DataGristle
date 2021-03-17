@@ -102,12 +102,12 @@ class TestEmpties(TestFixture):
 
     def test_nonempty_subdir_to_empty(self):
         """      starting dirs & files:
-            \tmp\TestGristleDirMerger_source_?\mysubdir
-            \tmp\TestGristleDirMerger_source_?\mysubdir\foo.csv
-            \tmp\TestGristleDirMerger_dest_?
+            /tmp/TestGristleDirMerger_source_?/mysubdir
+            /tmp/TestGristleDirMerger_source_?/mysubdir/foo.csv
+            /tmp/TestGristleDirMerger_dest_?
                   should become:
-            \tmp\TestGristleDirMerger_source_?
-            \tmp\TestGristleDirMerger_dest_?\mysubdir\foo.csv
+            /tmp/TestGristleDirMerger_source_?
+            /tmp/TestGristleDirMerger_dest_?/mysubdir/foo.csv
         """
         _ = os.path.join(self.source_dir, 'mysubdir')
 
@@ -169,11 +169,11 @@ class TestMatchOnNameOnly(object):
 
     def test_unique_files_and_onmatch_is_useboth(self):
         """      starting dirs & files:
-            src_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\bar.csv
+            src_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/bar.csv
                   should become:
-            dst_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\bar.csv
+            dst_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/bar.csv
         """
         create_test_file(self.dest_subdir, 'bar.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -183,11 +183,11 @@ class TestMatchOnNameOnly(object):
 
     def test_dup_files_and_onmatch_is_useboth(self):
         """      starting dirs & files:
-            src_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\foo.csv
+            src_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/foo.csv
                   should become:
-            dst_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\foo.1.csv
+            dst_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/foo.1.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -202,10 +202,10 @@ class TestMatchOnNameOnly(object):
 
     def test_dup_files_and_onmatch_is_usesource(self):
         """      starting dirs & files:
-            src_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\foo.csv
+            src_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/foo.csv
                   should become:
-            dst_dir\mysubdir\foo.csv
+            dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', final_contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -216,10 +216,10 @@ class TestMatchOnNameOnly(object):
 
     def test_dup_files_and_onmatch_is_usedest(self):
         """      starting dirs & files:
-            src_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\foo.csv
+            src_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/foo.csv
                   should become:
-            dst_dir\mysubdir\foo.csv
+            dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -230,10 +230,10 @@ class TestMatchOnNameOnly(object):
 
     def test_dup_files_and_onmatch_is_usebiggest(self):
         """      starting dirs & files:
-            src_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\foo.csv
+            src_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/foo.csv
                   should become:
-            dst_dir\mysubdir\foo.csv
+            dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -244,10 +244,10 @@ class TestMatchOnNameOnly(object):
 
     def test_dup_files_and_onmatch_is_usenewest(self):
         """      starting dirs & files:
-            src_dir\mysubdir\foo.csv
-            dst_dir\mysubdir\foo.csv
+            src_dir/mysubdir/foo.csv
+            dst_dir/mysubdir/foo.csv
                   should become:
-            dst_dir\mysubdir\foo.csv
+            dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different', year=2014)
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -287,11 +287,11 @@ class TestMatchOnAndMD5(object):
 
     def test_unique_files_and_onmatch_is_useboth(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\bar.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/bar.csv
             should become:
-                dst_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\bar.csv
+                dst_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/bar.csv
         """
         create_test_file(self.dest_subdir, 'bar.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -301,11 +301,11 @@ class TestMatchOnAndMD5(object):
 
     def test_dup_files_and_onmatch_is_useboth_with_fullmatch(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.csv
             should become:
-                dst_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.1.csv
+                dst_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.1.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', '')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -315,11 +315,11 @@ class TestMatchOnAndMD5(object):
 
     def test_dup_files_and_onmatch_is_useboth_with_partialmatch(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.csv
             should become:
-                dst_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.1.csv
+                dst_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.1.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', 'im-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -329,10 +329,10 @@ class TestMatchOnAndMD5(object):
 
     def test_dup_files_and_onmatch_is_usesource_with_partialmatch(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.csv
             should become:
-                dst_dir\mysubdir\foo.csv
+                dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', final_contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -343,10 +343,10 @@ class TestMatchOnAndMD5(object):
 
     def test_dup_files_and_onmatch_is_usedest_with_partialmatch(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.csv
             should become:
-                dst_dir\mysubdir\foo.csv
+                dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -357,10 +357,10 @@ class TestMatchOnAndMD5(object):
 
     def test_dup_files_and_onmatch_is_usebiggest_with_partialmatch(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.csv
             should become:
-                dst_dir\mysubdir\foo.csv
+                dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different')
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -371,10 +371,10 @@ class TestMatchOnAndMD5(object):
 
     def test_dup_files_and_onmatch_is_usenewest_with_partial_match(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.csv
             should become:
-                dst_dir\mysubdir\foo.csv
+                dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='is-different', year=2014)
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -421,10 +421,10 @@ class TestMatchOnNameAndMd5Extras(object):
 
     def test_basics_unique_names_in_a_new_subdir(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv
                 dst_dir
             should become:
-                dst_dir\mysubdir\foo.csv
+                dst_dir/mysubdir/foo.csv
         """
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
                            match_on='name_and_md5', on_match='keep_dest', on_partial_match='keep_newest')
@@ -434,10 +434,10 @@ class TestMatchOnNameAndMd5Extras(object):
 
     def test_files_with_same_md5sums(self):
         """starting dirs & files:
-              src_dir\mysubdir\foo.csv
-              dst_dir\mysubdir\foo.csv
+              src_dir/mysubdir/foo.csv
+              dst_dir/mysubdir/foo.csv
            should become:
-              dst_dir\mysubdir\foo.csv
+              dst_dir/mysubdir/foo.csv
         """
         create_test_file(self.dest_subdir, 'foo.csv', contents='', year=2014)
         self.cmd = get_cmd(self.source_dir, self.dest_dir,
@@ -447,11 +447,11 @@ class TestMatchOnNameAndMd5Extras(object):
 
     def test_big_files_with_same_size_but_diff_md5_and_useboth(self):
         """ starting dirs & files:
-                src_dir\mysubdir\foo.csv        # file moved
-                dst_dir\mysubdir\foo.csv
+                src_dir/mysubdir/foo.csv        # file moved
+                dst_dir/mysubdir/foo.csv
              should become:
-                dst_dir\mysubdir\foo.csv
-                dst_dir\mysubdir\foo.1.csv      # (action=keep_both)
+                dst_dir/mysubdir/foo.csv
+                dst_dir/mysubdir/foo.1.csv      # (action=keep_both)
         """
         shutil.rmtree(self.source_dir)
         self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
@@ -469,15 +469,15 @@ class TestMatchOnNameAndMd5Extras(object):
 class TestActionUseBoth(object):
     """ Tests gristle_dir_merger with action of keep_newest.
         starting dirs & files:
-            \tmp\*_source_?\mysubdir
-            \tmp\*_source_?\mysubdir\foo.csv
-            \tmp\*_dest_???\mysubdir
-            \tmp\*_dest_???\mysubdir\foo.csv
+            /tmp/*_source_?/mysubdir
+            /tmp/*_source_?/mysubdir/foo.csv
+            /tmp/*_dest_???/mysubdir
+            /tmp/*_dest_???/mysubdir/foo.csv
         should become:
-            \tmp\*_source_?
-            \tmp\*_dest_???\mysubdir
-            \tmp\*_dest_???\mysubdir\foo.csv
-            \tmp\*_dest_???\mysubdir\foo.1.csv
+            /tmp/*_source_?
+            /tmp/*_dest_???/mysubdir
+            /tmp/*_dest_???/mysubdir/foo.csv
+            /tmp/*_dest_???/mysubdir/foo.1.csv
     """
 
     def setup_method(self, method):
@@ -549,15 +549,15 @@ class TestActionUseBoth(object):
 class TestOnSymLinks(object):
     """ Tests gristle_dir_merger with action of keep_newest.
         starting dirs & files:
-            \tmp\*_source_?\mysubdir
-            \tmp\*_source_?\mysubdir\foo.csv
-            \tmp\*_dest_???\mysubdir
-            \tmp\*_dest_???\mysubdir\foo.csv
+            /tmp/*_source_?/mysubdir
+            /tmp/*_source_?/mysubdir/foo.csv
+            /tmp/*_dest_???/mysubdir
+            /tmp/*_dest_???/mysubdir/foo.csv
         should become:
-            \tmp\*_source_?
-            \tmp\*_dest_???\mysubdir
-            \tmp\*_dest_???\mysubdir\foo.csv
-            \tmp\*_dest_???\mysubdir\foo.1.csv
+            /tmp/*_source_?
+            /tmp/*_dest_???/mysubdir
+            /tmp/*_dest_???/mysubdir/foo.csv
+            /tmp/*_dest_???/mysubdir/foo.1.csv
     """
 
     def setup_method(self, method):
@@ -641,13 +641,13 @@ class TestDryRun(TestFixture):
 
     def test_nonempty_subdir_to_nonempty_dir(self):
         """starting dirs & files:
-            \tmp\TestGristleDirMerger_source_?\mysubdir
-            \tmp\TestGristleDirMerger_source_?\mysubdir\foo.csv
-            \tmp\TestGristleDirMerger_dest_???\mysubdir\bar.csv
+            /tmp/TestGristleDirMerger_source_?/mysubdir
+            /tmp/TestGristleDirMerger_source_?/mysubdir/foo.csv
+            /tmp/TestGristleDirMerger_dest_???/mysubdir/bar.csv
            should become:
-            \tmp\TestGristleDirMerger_source_?
-            \tmp\TestGristleDirMerger_source_?\mysubdir\foo.csv
-            \tmp\TestGristleDirMerger_dest_???\mysubdir\bar.csv
+            /tmp/TestGristleDirMerger_source_?
+            /tmp/TestGristleDirMerger_source_?/mysubdir/foo.csv
+            /tmp/TestGristleDirMerger_dest_???/mysubdir/bar.csv
         """
         source_subdir = os.path.join(self.source_dir, 'mysubdir')
         os.mkdir(source_subdir)
@@ -680,27 +680,27 @@ class TestDeepDirectory(TestFixture):
 
     def test_basics(self):
         """ starting dirs & files:
-            \tmp\*_source_?\mysubdir
-            \tmp\*_source_?\mysubdir\foo
-            \tmp\*_source_?\mysubdir\foo\foo.csv
-            \tmp\*_source_?\mysubdir\foo\foo2
-            \tmp\*_source_?\mysubdir\foo\foo2\foo2.csv
-            \tmp\*_source_?\mysubdir\foo\foo2\foo3
-            \tmp\*_source_?\mysubdir\foo\foo2\foo3\foo3.csv
-            \tmp\*_dest_???\mysubdir\foo
-            \tmp\*_dest_???\mysubdir\foo\foo.csv
-            \tmp\*_dest_???\mysubdir\foo\foo2
-            \tmp\*_dest_???\mysubdir\foo\foo2\foo3
-            \tmp\*_dest_???\mysubdir\foo\foo2\foo3\foo3.csv
-                  should become:
-            \tmp\*_source_?
-            \tmp\*_dest_???\mysubdir
-            \tmp\*_dest_???\mysubdir\foo
-            \tmp\*_dest_???\mysubdir\foo\foo.csv
-            \tmp\*_dest_???\mysubdir\foo\foo2
-            \tmp\*_dest_???\mysubdir\foo\foo2\foo2.csv
-            \tmp\*_dest_???\mysubdir\foo\foo2\foo3
-            \tmp\*_dest_???\mysubdir\foo\foo2\foo3\foo3.csv
+            /tmp/*_source_?/mysubdir
+            /tmp/*_source_?/mysubdirjfoo
+            /tmp/*_source_?/mysubdir/foo/foo.csv
+            /tmp/*_source_?/mysubdir/foo/foo2
+            /tmp/*_source_?/mysubdir/foo/foo2/foo2.csv
+            /tmp/*_source_?/mysubdir/foo/foo2/foo3
+            /tmp/*_source_?/mysubdir/foo/foo2/foo3/foo3.csv
+            /tmp/*_dest_???/mysubdir/foo
+            /tmp/*_dest_???/mysubdir/foo/foo.csv
+            /tmp/*_dest_???/mysubdir/foo/foo2
+            /tmp/*_dest_???/mysubdir/foo/foo2/foo3
+            /tmp/*_dest_???/mysubdir/foo/foo2/foo3/foo3.csv
+            /     should become:
+            /tmp/*_source_?
+            /tmp/*_dest_???/mysubdir
+            /tmp/*_dest_???/mysubdir/foo
+            /tmp/*_dest_???/mysubdir/foo/foo.csv
+            /tmp/*_dest_???/mysubdir/foo/foo2
+            /tmp/*_dest_???/mysubdir/foo/foo2/foo2.csv
+            /tmp/*_dest_???/mysubdir/foo/foo2/foo3
+            /tmp/*_dest_???/mysubdir/foo/foo2/foo3/foo3.csv
         """
 
         source_subdir = os.path.join(self.source_dir, 'mysubdir')
