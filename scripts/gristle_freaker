@@ -453,55 +453,58 @@ class ConfigManager(configulator.Config):
                                  short_name='c',
                                  arg_type='option',
                                  default=None,
-                                 config_type=int,
+                                 type=int,
                                  nargs='*',
-                                 help_msg='Specify the columns to include via a comma-separated '
+                                 help='Specify the columns to include via a comma-separated '
                                           'list of columns.')
         self.add_custom_metadata(name='col_type',
                                  arg_type='option',
                                  default='specified',
                                  choices=['specified', 'all', 'each'],
-                                 config_type=str,
-                                 help_msg='Indicates how to process one or all columns')
+                                 type=str,
+                                 help='Indicates how to process one or all columns')
         self.add_custom_metadata(name='max_freq',
                                  arg_type='option',
                                  default=10_000_000,
-                                 config_type=int,
-                                 help_msg='Identifies the maximum number of items in frequency dictionary. ' \
-                                          'Default is 10m which would require approx 300 MB of mem to store ' \
-                                          '10 million 20 byte keys.')
+                                 type=int,
+                                 help='Identifies the maximum number of items in frequency dictionary. ' \
+                                      'Default is 10m which would require approx 300 MB of mem to store ' \
+                                      '10 million 20 byte keys.')
         self.add_custom_metadata(name='max_key_len',
                                  arg_type='option',
-                                 config_type=int,
+                                 type=int,
+                                 minimum=1,
+                                 maximum=500,
                                  default=50,
-                                 help_msg='Identifies max length of key written to output.  Default is 50.')
+                                 help='Identifies max length of key written to output.  Default is 50.')
         self.add_custom_metadata(name='write_limit',
                                  arg_type='option',
-                                 config_type=int,
+                                 type=int,
                                  default=0,
-                                 help_msg='Identifies max records to write.  Default of 0 indicates no limit.')
+                                 help='Identifies max records to write.  Default of 0 indicates no limit.')
         self.add_custom_metadata(name='sort_col',
                                  arg_type='option',
-                                 config_type=int,
+                                 type=int,
                                  default=1,
-                                 help_msg='Specifies col to sort by - either 1 (count) or 0 (key). Default is 1')
+                                 choices=[0, 1],
+                                 help='Specifies col to sort by - either 1 (count) or 0 (key). Default is 1')
         self.add_custom_metadata(name='sort_order',
                                  arg_type='option',
-                                 config_type=str,
+                                 type=str,
                                  choices=['forward', 'reverse'],
                                  default='reverse',
-                                 help_msg='Specifies sort order of forward or reverse.  Default is reverse.')
+                                 help='Specifies sort order of forward or reverse.  Default is reverse.')
         self.add_custom_metadata(name='sampling_method',
                                  arg_type='option',
-                                 config_type=str,
+                                 type=str,
                                  choices=['non', 'interval'],
                                  default='non',
-                                 help_msg='Specifies which sampling method to use.  Choices are non (no sampling) or interval.  Default is non.')
+                                 help='Specifies which sampling method to use.  Choices are non (no sampling) or interval.  Default is non.')
         self.add_custom_metadata(name='sampling_rate',
                                  arg_type='option',
-                                 config_type=int,
+                                 type=int,
                                  default=None,
-                                 help_msg='Specifies number of records to skip if using interval sammpling-method.')
+                                 help='Specifies number of records to skip if using interval sammpling-method.')
 
         self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
@@ -511,27 +514,12 @@ class ConfigManager(configulator.Config):
                                config) -> None:
 
         # Handle columns & col_type relationship
-        if config['columns'] is not None and config['col_type'] != 'specified':
-            abort('ERROR: Columns can only be specified for col_type != specified.')
-        elif config['columns'] is None and config['col_type'] == 'specified':
-            abort("ERROR: Columns must be provided for col_type of 'specified'.")
-
-        if config['max_freq'] < 1000:
-            abort('ERROR: Please provided a value between 1001 and 1000000000 for max-freq')
-
-        #todo: confirm we can get rid of this - should no longer be necessary
-        # Handle required delimiter:
-        #if config['infiles'] != '-':
-        #    if len(config['infiles']) > 1 and not config['delimiter']:
-        #        abort('ERROR: Please provide delimiter',
-        #              'delimiter is required when reading multiple input files')
-
-        if config['sort_col'] not in (0, 1):
-            abort('ERROR: Please provide a sortcol value of 0 or 1')
-
-        if 1 > config['max_key_len'] > 500:
-            abort('ERROR: Please provide a maxkeylen > 0 and < 500')
-
+        if config['columns'] is None:
+            if config['col_type'] == 'specified':
+                abort("ERROR: Columns must be provided for col_type of 'specified'.")
+        else:
+            if config['col_type'] != 'specified':
+                abort('ERROR: Columns can only be specified for col_type != specified.')
 
         # Validate the sampling fields
         if config['sampling_method'] == 'non':

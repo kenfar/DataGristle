@@ -38,21 +38,12 @@ def transform_delimiter(val):
     else:
         return comm.dialect_del_fixer(val)
 
-def transform_quoting(val):
+def transform_lower(val):
     if val is None:
-        return val
-    elif comm.isnumeric(val):
-        return csvhelper.get_quote_name(val)
+        return None
     else:
-        csvhelper.get_quote_number(val)
-        return val.upper()
+        return val.lower()
 
-
-
-VERBOSITY_QUIET = 0
-VERBOSITY_NORMAL = 1
-VERBOSITY_HIGH = 2
-VERBOSITY_DEBUG = 3
 
 STANDARD_CONFIGS: META_CONFIG_TYPE = {}
 STANDARD_CONFIGS['infiles'] = {'short_name': 'i',
@@ -71,7 +62,6 @@ STANDARD_CONFIGS['outfile'] = {'short_name': 'o',
 
 STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'default': None,
-                                 'required': True,
                                  'help': 'csv delimiter',
                                  'type': str,
                                  'arg_type': 'option',
@@ -80,27 +70,23 @@ STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'transformer': transform_delimiter}
 STANDARD_CONFIGS['quoting'] = {'short_name': 'q',
                                'default': None,
-                               'required': True,
                                'choices': ['quote_all', 'quote_minimal',
                                            'quote_nonnumeric', 'quote_none'],
                                'help': 'csv quoting',
                                'type': str,
                                'arg_type': 'option',
-                               'transformer': transform_quoting}
+                               'transformer': transform_lower}
 STANDARD_CONFIGS['quotechar'] = {'default': '"',
-                                 'required': True,
                                  'help': 'csv quotechar',
                                  'type': str,
                                  'arg_type': 'option',
                                  'min_length': 1,
                                  'max_length': 1}
 STANDARD_CONFIGS['escapechar'] = {'default': None,
-                                  'required': True,
                                   'help': 'csv escapechar',
                                   'type': str,
                                   'arg_type': 'option'}
 STANDARD_CONFIGS['doublequote'] = {'default': False,
-                                   'required': True,
                                    'help': 'csv dialect - quotes are escaped thru doublequoting',
                                    'type': bool,
                                    'arg_type': 'option',
@@ -114,14 +100,12 @@ STANDARD_CONFIGS['no_doublequote'] = {'required': True,
                                       'const': False,
                                       'dest': 'doublequote'}
 STANDARD_CONFIGS['has_header'] = {'default': None,
-                                  'required': True,
                                   'help': 'csv dialect - indicates header exists',
                                   'type': bool,
                                   'arg_type': 'option',
                                   'action': 'store_const',
                                   'const': True}
 STANDARD_CONFIGS['has_no_header'] = {'default': None,
-                                     'required': True,
                                      'help': 'csv dialect - indicates no header exists',
                                      'type': bool,
                                      'arg_type': 'option',
@@ -130,14 +114,12 @@ STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'dest': 'has_header'}
 
 STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
-                                 'required': False,
                                  'help': 'controls level of logging - with quiet, normal, high, debug levels',
                                  'type': str,
                                  'choices': ['quiet', 'normal', 'high', 'debug'],
                                  'arg_type': 'option'}
 
 STANDARD_CONFIGS['dry_run'] = {'default': False,
-                               'required': False,
                                'help': 'Performs most processing except for final changes or output',
                                'type': bool,
                                'arg_type': 'option',
@@ -145,12 +127,10 @@ STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'const': True}
 
 STANDARD_CONFIGS['config_name'] = {'default': None,
-                                   'required': False,
                                    'help': 'Name of config within xdg dir (such as .config/gristle_differ/* on linux)',
                                    'type': str,
                                    'arg_type': 'option'}
 STANDARD_CONFIGS['config_fn'] = {'default': None,
-                                 'required': False,
                                  'help': 'Name of config file',
                                  'type': str,
                                  'arg_type': 'option'}
@@ -186,36 +166,16 @@ class Config(object):
         self.obsolete_options[f'-{short_name}'] = msg
 
 
-    def add_custom_metadata(self,
-                            name: str,
-                            config_type: Callable,
-                            help_msg: str,
-                            arg_type: str,
-                            default: Any = None,
-                            required: bool = False,
-                            action: Optional[str] = None,
-                            const: Any = None,
-                            short_name: Optional[str] = None,
-                            nargs: Optional[str] = None,
-                            choices: List[str] = [],
-                            dest: Optional[str] = None):
-        assert arg_type in VALID_ARG_TYPES
-        self._app_metadata[name] = {'default': default,
-                                    'type': config_type,
-                                    'help': help_msg,
-                                    'arg_type': arg_type,
-                                    'required': required}
-        if short_name:
-            self._app_metadata[name]['short_name'] = short_name
-        if choices:
-            self._app_metadata[name]['choices'] = choices
-        if nargs:
-            self._app_metadata[name]['nargs'] = nargs
-        if action:
-            self._app_metadata[name]['action'] = action
-            self._app_metadata[name]['const'] = const
-        if arg_type is bool:
-            self._app_metadata[name]['dest'] = dest or name
+    def add_custom_metadata(self, name, **kwargs):
+        for (key, val) in kwargs.items():
+            if name not in self._app_metadata:
+                self._app_metadata[name] = {}
+            self._app_metadata[name][key] = val
+
+        assert self._app_metadata[name]['arg_type'] in VALID_ARG_TYPES
+        if self._app_metadata[name]['arg_type'] == 'bool':
+            if 'dest' not in self._app_metadata[name]:
+                self._app_metadata[name]['dest'] = name
 
 
     def add_standard_metadata(self, name):
@@ -356,6 +316,7 @@ class Config(object):
                 elif property_name == 'nargs':
                     if property_value not in ('*', '?', '+'):
                         raise ValueError(f"{arg}.narg's value is invalid: {property_value}")
+
                 elif property_name == 'choices':
                     if not isinstance(property_value, list):
                         raise ValueError(f"{arg}.choice type is not a list")
@@ -365,6 +326,13 @@ class Config(object):
                 elif property_name == 'max_length':
                     if not int(property_value):
                         raise ValueError(f"{arg}.max_length is not an int")
+                elif property_name == 'minimum':
+                    if not int(property_value):
+                        raise ValueError(f"{arg}.minimum is not an int")
+                elif property_name == 'maximum':
+                    if not int(property_value):
+                        raise ValueError(f"{arg}.maximum is not an int")
+
                 elif property_name == 'action':
                     if arg_parameters['type'] is not bool:
                         raise ValueError(f"{arg}.action is only valid for type of bool")
@@ -438,25 +406,50 @@ class Config(object):
         """ Validates standard config items.
         """
         for key, val in config.items():
+            #pp(f'option: {key}:{val}')
             if key in ARG_ONLY_CONFIGS:
-                continue
-            if 'nargs' in self._app_metadata[key]:
+                #pp('    key in ARG_ONLY_CONFIGS - will skip')
+                #pp(val)
                 continue
             if key == 'col_names':
                 # otherwise has issues with checks below.  Should make this exclusion more generic.
                 continue
-            if val is not None:
-                if not isinstance(val, self._app_metadata[key]['type']):
-                    comm.abort('key: "{}" with value: "{}" is not type: {}'
-                                    .format(key, val, self._app_metadata[key]['type']))
-                if 'min_length' in self._app_metadata[key]:
-                    if len(val) < self._app_metadata[key]['min_length']:
-                        comm.abort('key "{}" with value "{}" is shorter than min_length of {}'
-                                         .format(key, val, self._app_metadata[key]['min_length']))
-                if 'max_length' in self._app_metadata[key]:
-                    if len(val) > self._app_metadata[key]['max_length']:
-                        comm.abort('key "{}" with value "{}" is longer than max_length of {}'
-                                         .format(key, val, self._app_metadata[key]['max_length']))
+            if val is None or val == []:
+                #pp('    val is None')
+                if self._app_metadata[key].get('required'):
+                    comm.abort(f"Error:  option '{key}' was not provided but is required")
+            else:
+                if 'nargs' in self._app_metadata[key]:
+                    #pp('    key is nargs - will skip')
+                    continue
+                else:
+                    if not isinstance(val, self._app_metadata[key]['type']):
+                        comm.abort('key: "{}" with value: "{}" is not type: {}'
+                                        .format(key, val, self._app_metadata[key]['type']))
+
+                    if 'min_length' in self._app_metadata[key]:
+                        if len(val) < self._app_metadata[key]['min_length']:
+                            comm.abort('key "{}" with value "{}" is shorter than min_length of {}'
+                                            .format(key, val, self._app_metadata[key]['min_length']))
+                    if 'max_length' in self._app_metadata[key]:
+                        if len(val) > self._app_metadata[key]['max_length']:
+                            comm.abort('key "{}" with value "{}" is longer than max_length of {}'
+                                            .format(key, val, self._app_metadata[key]['max_length']))
+                    if 'minimum' in self._app_metadata[key]:
+                        pp(f'    minimum found in key, val={val}')
+                        if val < self._app_metadata[key]['minimum']:
+                            comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
+                                       f"""Value must be >= {self._app_metadata[key]['minimum']}""")
+                    if 'maximum' in self._app_metadata[key]:
+                        pp(f'    maximum found in key, val={val}')
+                        if val > self._app_metadata[key]['maximum']:
+                            comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
+                                       f"""Value must be <= {self._app_metadata[key]['maximum']}""")
+
+                    if 'choices' in self._app_metadata[key]:
+                        if val not in self._app_metadata[key]['choices']:
+                            comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
+                                       f"""Valid values include: '{self._app_metadata[key]["choices"]}' """)
 
         self._validate_dialect_with_stdin(config)
 
@@ -645,8 +638,11 @@ class _CommandLineArgs(object):
                 kwargs['nargs'] = self._app_metadata[key]['nargs']
 
             kwargs['help'] = self._app_metadata[key]['help']
-            if 'choices' in self._app_metadata[key]:
-                kwargs['choices'] = self._app_metadata[key]['choices']
+
+            # Choices are redundant with standard validations:
+            #if 'choices' in self._app_metadata[key]:
+            #    kwargs['choices'] = self._app_metadata[key]['choices']
+
             if self._app_metadata[key]['type'] is bool:
                 if 'action' in self._app_metadata[key]:
                     kwargs['action'] = self._app_metadata[key]['action']

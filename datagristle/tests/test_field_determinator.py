@@ -62,7 +62,7 @@ class FileAndTestManager(object):
         self.MyFields = mod.FieldDeterminator(self.test1_fqfn,
                                               self.field_cnt,
                                               self.dialect,
-                                              verbosity=configulator.VERBOSITY_QUIET)
+                                              verbosity='quiet')
 
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)

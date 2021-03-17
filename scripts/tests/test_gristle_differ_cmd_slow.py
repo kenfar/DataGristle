@@ -11,21 +11,22 @@
 #pylint: disable=empty-docstring
 #pylint: disable=empty-docstring
 
-import tempfile
-import random
-import time
-import shutil
 import csv
+import fileinput
 import os
 from os.path import dirname
 from os.path import join as pjoin
-import fileinput
+import random
+import shutil
+import tempfile
+import time
 
-import pytest
-import yaml as yaml
 import envoy
+import pytest
+import yaml
 
 import datagristle.csvhelper as csvhelper
+
 
 script_dir = dirname(dirname(os.path.realpath((__file__))))
 FIELDS = {'pkid':0, 'vid':1, 'from_epoch':2, 'to_epoch':3, 'foo':4, 'bar':5, 'del_flag':6,
@@ -58,7 +59,7 @@ class TestMillionRows(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':','})
         config.add_property({'has_header':False})
-        config.add_property({'quoting':csv.QUOTE_NONE})
+        config.add_property({'quoting':'quote_none'})
         config.add_property({'col_names': sorted(FIELDS, key=FIELDS.get)})
         config.add_property({'key_cols':  ['pkid']})
         config.add_property({'ignore_cols': ['vid', 'from_epoch', 'to_epoch', 'hostname']})

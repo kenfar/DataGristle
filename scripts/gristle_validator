@@ -517,36 +517,36 @@ class ConfigManager(configulator.Config):
                                  short_name='e',
                                  arg_type='option',
                                  default='-',
-                                 config_type=str,
-                                 help_msg='Specifies the output file for invalid records.  The default '
-                                          'is stderr.  Note that if a filename is provided the program '
-                                          'will override any file of that name.')
+                                 type=str,
+                                 help='Specifies the output file for invalid records.  The default '
+                                      'is stderr.  Note that if a filename is provided the program '
+                                      'will override any file of that name.')
 
         self.add_custom_metadata(name='errmsg',
                                  arg_type='option',
-                                 config_type=bool,
+                                 type=bool,
                                  default=False,
                                  action='store_const',
                                  const=True,
-                                 help_msg='Causes pgm to append error msg at end of each invalid record.  Default is on.')
+                                 help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
 
         self.add_custom_metadata(name='valid_schema',
                                  arg_type='option',
-                                 config_type=str,
-                                 help_msg='Name of validation schema file')
+                                 type=str,
+                                 help='Name of validation schema file')
 
         self.add_custom_metadata(name='randomout',
                                  arg_type='option',
-                                 config_type=float,
+                                 type=float,
                                  default=1.0,
-                                 help_msg='Causes pgm to write only a percentage of records out.')
+                                 help='Causes pgm to write only a percentage of records out.')
 
         self.add_custom_metadata(name='fieldcnt',
                                  short_name='f',
                                  arg_type='option',
-                                 config_type=int,
-                                 help_msg='Specify the number of fields in the record.  If not provided'
-                                          ' it will default to number of fields on first record')
+                                 type=int,
+                                 help='Specify the number of fields in the record.  If not provided'
+                                      ' it will default to number of fields on first record')
 
         self.add_all_csv_configs()
         self.add_standard_metadata('verbosity')
