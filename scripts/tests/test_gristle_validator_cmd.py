@@ -18,7 +18,7 @@ import tempfile
 from os.path import join as pjoin, dirname
 
 import envoy
-import yaml
+import ruamel.yaml as yaml
 
 import datagristle.test_tools as test_tools
 

@@ -4,14 +4,16 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2021 Ken Farmer
 """
-import sys
 import argparse
-import logging
-import math
 import errno
+import logging
 import csv
+import inspect
+import math
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
+from pprint import pprint as pp
+import sys
 from typing import List, Dict, Any, Optional, Tuple, Union
 
 from datagristle._version import __version__
@@ -100,33 +102,39 @@ def dialect_del_fixer(values: str) -> str:
     return val
 
 
-def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
+def abort(summary: str,
+          details: Optional[str] = None,
+          rc: int = 1,
+          diagnostic: bool = False) -> None:
     """ Creates formatted error message within a box of = characters
         then exits.
     """
-    print('=' * 79)
+    def print_solid_line():
+        print('=' * 79)
 
-    print('=== ', end='')
-    print('%-71.71s' % summary, end='')
-    print(' ===')
+    def print_empty_line():
+        print('=== ', end='')
+        print(' ' * 71, end='')
+        print(' ===')
 
-    if details:
-        for i in range(int(math.ceil(len(details)/68))):
-            print('=== ', end='')
-            print('%-71.71s' % details[i*68:(i*68)+68], end='')
-            print(' ===')
+    def print_text_line(text):
+        text = repr(text)
+        if text:
+            for i in range(int(math.ceil(len(text)/68))):
+                print('=== ', end='')
+                print('%-71.71s' % text[i*68:(i*68)+68], end='')
+                print(' ===')
 
-
-    print('=== ', end='')
-    print(' ' * 71, end='')
-    print(' ===')
-
-    print('=== ', end='')
-    helpline = 'Provide option --help or --long-help for usage information'
-    print('%-71.71s' % helpline, end='')
-    print(' ===')
-
-    print('=' * 79)
+    print_solid_line()
+    print_text_line(summary)
+    print_empty_line()
+    print_text_line(details)
+    print_empty_line()
+    print_text_line('Provide option --help or --long-help for usage information')
+    print_empty_line()
+    print_text_line(f'Trace: {get_tracepath()}')
+    print_empty_line()
+    print_solid_line()
 
     try:
         logger.critical(summary)
@@ -136,6 +144,19 @@ def abort(summary: str, details: Optional[str] = None, rc: int = 1) -> None:
         pass
 
     sys.exit(rc)
+
+
+def get_tracepath():
+    try:
+        curframe = inspect.currentframe()
+        curframe = inspect.getouterframes(curframe, 2)
+        funcs = [x.function for x in reversed(curframe)
+                 if x.function not in ('<module>', 'get_tracepath')]
+        tracepath = '-->'.join(funcs)
+    except:
+        tracepath = '' # could fail if run on pypy, jython, etc
+    return tracepath
+
 
 
 def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[int]:

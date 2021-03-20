@@ -16,11 +16,11 @@ import collections
 import copy
 import json
 import os
-from os.path import isfile, splitext, basename
+from os.path import isfile, splitext, basename, isabs, dirname, abspath, join as pjoin, exists
 from pprint import pprint as pp
 import sys
 from typing import List, Dict, Any, Callable, Optional, NamedTuple
-import yaml
+import ruamel.yaml as yaml
 
 
 from datagristle._version import __version__
@@ -134,10 +134,15 @@ STANDARD_CONFIGS['config_fn'] = {'default': None,
                                  'help': 'Name of config file',
                                  'type': str,
                                  'arg_type': 'option'}
+STANDARD_CONFIGS['gen_config_fn'] = {'default': None,
+                                     'help': 'Generates a config file',
+                                     'type': str,
+                                     'arg_type': 'option',
+                                     'arg_type': 'option'}
 
 
 
-ARG_ONLY_CONFIGS = ['version', 'long_help', 'configfn', 'config_name', 'long-help']
+ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'config_name', 'long-help']
 VALID_ARG_TYPES = ('argument', 'option')
 
 
@@ -197,10 +202,22 @@ class Config(object):
         self.add_standard_metadata('has_no_header')
 
 
+    def add_all_config_configs(self):
+        """ Adds the standard set of config items.
+
+        The standard set of config file options
+        """
+        self.add_standard_metadata('config_fn')
+        self.add_standard_metadata('gen_config_fn')
+
+
+
     def process_configs(self,
                         test_cli_args: List = None):
+
         self._validate_metadata()
 
+        # Get inputs from all three interfaces:
         env_args_manager = _EnvironmentalArgs(self.app_name, self._app_metadata)
         env_args = env_args_manager.env_gristle_app_args
 
@@ -215,18 +232,36 @@ class Config(object):
         else:
             file_config = {}
 
+        # Consolidate inputs:
         consolidated_config = self._consolidate_configs(file_config, env_args, cli_args)
 
+        # Apply Defaults:
         defaulted_config = self._apply_std_defaults(consolidated_config)
         defaulted_config = self.apply_custom_defaults(defaulted_config)
 
+        # Apply Transforms:
         transformed_config = self.transform_config(defaulted_config)
 
+        # Validate:
         self._validate_std_config(transformed_config)
         self.validate_custom_config(transformed_config)
 
+        # Update and rebuild object configs:
         self.replace_configs(transformed_config)
 
+        # Generate config file
+        if self.config.get('gen_config_fn'):
+            self.generate_config_file()
+
+
+    def generate_config_file(self):
+        with open(self.nconfig.gen_config_fn, 'w') as outbuf:
+            if self.nconfig.gen_config_fn.endswith('.yml'):
+                filtered_config = {k:v for k,v in self.config.items() if k not in ARG_ONLY_CONFIGS}
+                filtered_config = {k:v for k,v in filtered_config.items() if k != 'gen_config_fn'}
+                yaml.dump(filtered_config, outbuf, indent=4)
+            elif self.nconfig.gen_config_fn.endswith('.json'):
+                json.dump(self.config, outbuf)
 
 
     def transform_config(self, config):
@@ -243,7 +278,7 @@ class Config(object):
                     print(f'ERROR with input {key}')
                     raise
 
-        # fix incorrect types coming in from files
+        # fix incorrect types coming in from config files
         for key, val in config.items():
             if key in ARG_ONLY_CONFIGS:
                 continue
@@ -371,7 +406,7 @@ class Config(object):
                 actual_key = self._app_metadata[key].get('dest', key)
                 consolidated_args[actual_key] = val
         except KeyError as e:
-            raise ValueError(f'INTERNAL ERROR: Unregistered arg: {key}') from e
+            comm.abort(f'ERROR: Unregistered arg: {key}')
 
         for key, val in env_args.items():
             actual_key = self._app_metadata[key].get('dest', key)
@@ -406,42 +441,35 @@ class Config(object):
         """ Validates standard config items.
         """
         for key, val in config.items():
-            #pp(f'option: {key}:{val}')
             if key in ARG_ONLY_CONFIGS:
-                #pp('    key in ARG_ONLY_CONFIGS - will skip')
-                #pp(val)
                 continue
             if key == 'col_names':
                 # otherwise has issues with checks below.  Should make this exclusion more generic.
                 continue
             if val is None or val == []:
-                #pp('    val is None')
                 if self._app_metadata[key].get('required'):
                     comm.abort(f"Error:  option '{key}' was not provided but is required")
             else:
                 if 'nargs' in self._app_metadata[key]:
-                    #pp('    key is nargs - will skip')
                     continue
                 else:
                     if not isinstance(val, self._app_metadata[key]['type']):
-                        comm.abort('key: "{}" with value: "{}" is not type: {}'
-                                        .format(key, val, self._app_metadata[key]['type']))
+                        comm.abort('Error: config value has the wrong type',
+                                   f"Config item: '{key}' with value: '{val}' is not type: {self._app_metadata[key]['type']}")
 
                     if 'min_length' in self._app_metadata[key]:
                         if len(val) < self._app_metadata[key]['min_length']:
-                            comm.abort('key "{}" with value "{}" is shorter than min_length of {}'
+                            comm.abort('Error: key "{}" with value "{}" is shorter than min_length of {}'
                                             .format(key, val, self._app_metadata[key]['min_length']))
                     if 'max_length' in self._app_metadata[key]:
                         if len(val) > self._app_metadata[key]['max_length']:
-                            comm.abort('key "{}" with value "{}" is longer than max_length of {}'
+                            comm.abort('Error: key "{}" with value "{}" is longer than max_length of {}'
                                             .format(key, val, self._app_metadata[key]['max_length']))
                     if 'minimum' in self._app_metadata[key]:
-                        pp(f'    minimum found in key, val={val}')
                         if val < self._app_metadata[key]['minimum']:
                             comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
                                        f"""Value must be >= {self._app_metadata[key]['minimum']}""")
                     if 'maximum' in self._app_metadata[key]:
-                        pp(f'    maximum found in key, val={val}')
                         if val > self._app_metadata[key]['maximum']:
                             comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
                                        f"""Value must be <= {self._app_metadata[key]['maximum']}""")
@@ -459,7 +487,7 @@ class Config(object):
             and (config['delimiter'] is None
                  or config['quoting'] is None
                  or config['has_header'] is None)):
-                comm.abort('Please provide input dialect fields when piping data into program via stdin')
+                comm.abort('Error: Please provide dialect when piping data into program via stdin')
 
 
 
@@ -555,33 +583,110 @@ class _FileArgs(object):
         format them,
         then provide them via class attributes:
            self.file_gristle_app_args
+
+        Notes on processing:
+            1. Any dashes in keys within the config file are converted to underscores.
+               This is consistent with how _CommandLineArgs() works - but inconsistent
+               with how _EnvironmentalArgs() works (envvars can't have dashes). 
+            2. Any relative paths will be in relationship to the directory that the
+               config file is within.  This applies to the following path keys:
+                   a.  infiles
+                   b.  outfile
+                   c.  outfiles
+                   d.  outdir
+                   e.  tmpdir
     """
 
     def __init__(self,
                  config_fn: str) -> None:
 
-        assert isfile(config_fn)
-        self.file_gristle_app_args = self._get_args(config_fn)
+        if not isfile(config_fn):
+            comm.abort(f'Error: config file not found!',
+                       f'for config-fn: {config_fn}')
+        self.config_fn = config_fn
+        self.file_gristle_app_args = self._get_args()
 
 
-    def _get_args(self,
-                  config_fn: str) -> CONFIG_TYPE:
+    def _get_args(self) -> CONFIG_TYPE:
         """ Returns a dictionary of config keys & vals associated with the calling program.
         """
         file_args = {}
 
-        if not config_fn:
+        if not self.config_fn:
             return file_args
 
-        _, file_ext = os.path.splitext(config_fn)
+        _, file_ext = os.path.splitext(self.config_fn)
         if file_ext in ('.yaml', '.yml'):
-            with open(config_fn) as buf:
-                file_args = yaml.load(buf)
+            with open(self.config_fn) as buf:
+                file_args = yaml.safe_load(buf)
         elif file_ext in ('.json'):
-            with open(config_fn) as buf:
+            with open(self.config_fn) as buf:
                 file_args = json.load(buf)
 
+        self._convert_arg_name_delimiter(file_args)
+        self._convert_file_path('infiles', file_args)
+        self._convert_file_path('outfile', file_args)
+        self._convert_file_path('outfiles', file_args)
+        self._convert_file_path('outdir', file_args)
+        self._convert_file_path('tmpdir', file_args)
         return file_args
+
+
+    def _convert_file_path(self, path_key, args):
+        """ Turn relative paths in config files into absolute paths
+
+        The purpose of this is to support relative file paths - in particular
+        for datagristle script cmdline testing.  In this case we need to have
+        configs hold file names, but their absolute location would depend on
+        where one clones the repo.
+
+        The way this works is that any non-absolute file name in the config
+        will be joined to the absolute directory of the config file itself.
+
+        For users that want to take advantage of this they just need to be
+        aware that the filename in the config is relative in comparison
+        to the config directory itself.
+        """
+        if path_key not in args:
+            return
+
+        if type(args[path_key]) == type(['foo']):
+            if args[path_key] == ['-']:
+                return
+            old_files = args[path_key]
+            new_files = []
+            config_dir = dirname(abspath(self.config_fn))
+            for file in old_files:
+                if isabs(file):
+                    new_files.append(file)
+                else:
+                    new_file = pjoin(config_dir, file)
+                    new_files.append(new_file)
+            args[path_key] = new_files
+        else:
+            if args[path_key] == '-':
+                return
+            old_file = args[path_key]
+            new_file = ''
+            config_dir = dirname(abspath(self.config_fn))
+            if isabs(old_file):
+                new_file = old_file
+            else:
+                new_file = pjoin(config_dir, old_file)
+            args[path_key] = new_file
+
+
+    def _convert_arg_name_delimiter(self, args):
+        """Replaces dashes in keys with underscores
+
+        This is performed in order to change from the external standard of
+        snake case (ex: foo-bar) to the internal standard of flattened snake case (ex: foo_bar).
+        """
+        for old_key in list(args.keys()):
+            if '-' in old_key:
+                new_key = old_key.replace('-', '_')
+                args[new_key] = args[old_key]
+                args.pop(old_key)
 
 
 
@@ -599,15 +704,20 @@ class _CommandLineArgs(object):
         self.cli_args = self._get_args(short_help)
 
 
-    def _convert_arg_name_delimiter(self,
-                                    arg_name: str) -> None:
-        return arg_name.replace('_', '-')
-
-
     def _get_args(self,
                   desc: str) -> CONFIG_TYPE:
         """ Gets config items from cli arguments.
         """
+        self._build_parser(desc)
+        known_args, unknown_args = self.parser.parse_known_args()
+        self._process_unknown_args(unknown_args)
+        self._process_help_args(known_args)
+        return vars(known_args)
+
+
+    def _build_parser(self,
+                      desc) -> None:
+
         #fixme: can only handle 1 positional argument: it doesn't actually have 'position' for positionals
         #This isn't a big problem since we're only using options - in order to also support envvars and 
         #config files
@@ -620,51 +730,52 @@ class _CommandLineArgs(object):
                                  help='Print more verbose help')
 
         for key in self._app_metadata:
-            long_name = (f'--{key}' if self._app_metadata[key]['arg_type'] == 'option' else key).replace('_', '-')
-            skey = self._convert_arg_name_delimiter(self._app_metadata[key].get('short_name', ''))
-            short_name = f'-{skey}'
-
-            args = []
-            kwargs = {}
-
-            if skey:
-                args.append(short_name)
-            args.append(long_name)
-
-            # suppresses variable name in help, but screws up formatting:
-            #`kwargs['metavar'] = '\b'
-
-            if 'nargs' in self._app_metadata[key]:
-                kwargs['nargs'] = self._app_metadata[key]['nargs']
-
-            kwargs['help'] = self._app_metadata[key]['help']
-
-            # Choices are redundant with standard validations:
-            #if 'choices' in self._app_metadata[key]:
-            #    kwargs['choices'] = self._app_metadata[key]['choices']
-
-            if self._app_metadata[key]['type'] is bool:
-                if 'action' in self._app_metadata[key]:
-                    kwargs['action'] = self._app_metadata[key]['action']
-                    if self._app_metadata[key].get('const') is not None:
-                        kwargs['const'] = self._app_metadata[key]['const']
-                    if self._app_metadata[key]['action'] == 'store_true':
-                        kwargs['const'] = True
-                if 'dest' in self._app_metadata[key]:
-                    kwargs['dest'] = self._app_metadata[key]['dest']
-            elif self._app_metadata[key]['type'] is list: # list is redundant with nargs and causes nesting
-                pass
-            else:
-                kwargs['type'] = self._app_metadata[key]['type'] # don't include type for booleans
-
-            self.parser.add_argument(*args, **kwargs)
+            self._add_argument_from_metadata(key)
 
         self.parser.add_argument('-V', '--version',
                                  action='store_true',
                                  default=False,
                                  help='show version number then exit')
 
-        known_args, unknown_args = self.parser.parse_known_args()
+
+    def _add_argument_from_metadata(self, key):
+        args = []
+        kwargs = {}
+
+        long_name = (f'--{key}' if self._app_metadata[key]['arg_type'] == 'option' else key).replace('_', '-')
+        skey = self._convert_arg_name_delimiter(self._app_metadata[key].get('short_name', ''))
+        short_name = f'-{skey}'
+
+        if skey:
+            args.append(short_name)
+        args.append(long_name)
+
+        if 'nargs' in self._app_metadata[key]:
+            kwargs['nargs'] = self._app_metadata[key]['nargs']
+
+        kwargs['help'] = self._app_metadata[key]['help']
+
+        if self._app_metadata[key]['type'] is bool:
+            if 'action' in self._app_metadata[key]:
+                kwargs['action'] = self._app_metadata[key]['action']
+                if self._app_metadata[key].get('const') is not None:
+                    kwargs['const'] = self._app_metadata[key]['const']
+                if self._app_metadata[key]['action'] == 'store_true':
+                    kwargs['const'] = True
+            if 'dest' in self._app_metadata[key]:
+                kwargs['dest'] = self._app_metadata[key]['dest']
+        elif self._app_metadata[key]['type'] is list: # list is redundant with nargs and causes nesting
+            pass
+        else:
+            kwargs['type'] = self._app_metadata[key]['type'] # don't include type for booleans
+        self.parser.add_argument(*args, **kwargs)
+
+
+    def _convert_arg_name_delimiter(self, arg_name: str) -> None:
+        return arg_name.replace('_', '-')
+
+
+    def _process_unknown_args(self, unknown_args: list) -> None:
         for arg in unknown_args:
             if arg in self.obsolete_args.keys():
                 summary = f'ERROR: obsolete option '
@@ -673,6 +784,8 @@ class _CommandLineArgs(object):
             else:
                 comm.abort(f'ERROR: Unknown option: {arg}')
 
+
+    def _process_help_args(self, known_args: list) -> None:
         if known_args.version:
             print(__version__)
             sys.exit(0)
@@ -680,5 +793,4 @@ class _CommandLineArgs(object):
             print(self.long_help)
             sys.exit(0)
 
-        return vars(known_args)
 

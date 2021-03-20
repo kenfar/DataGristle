@@ -507,7 +507,9 @@ class ConfigManager(configulator.Config):
                                  help='Specifies number of records to skip if using interval sammpling-method.')
 
         self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
         self.add_all_csv_configs()
+
 
 
     def validate_custom_config(self,

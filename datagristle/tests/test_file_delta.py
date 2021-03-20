@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2015,2017 Ken Farmer
+    Copyright 2015-2011 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -9,14 +9,12 @@
 #pylint: disable=protected-access
 #pylint: disable=no-self-use
 
-
-
-import tempfile
-import shutil
-import fileinput
 import csv
+import fileinput
 import os
 from os.path import join as pjoin
+import shutil
+import tempfile
 
 import pytest
 

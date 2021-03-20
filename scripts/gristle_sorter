@@ -150,7 +150,9 @@ class ConfigManager(configulator.Config):
                                           'However, case differences will not be ignored.')
 
         self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
         self.add_all_csv_configs()
+
 
 
     def extend_config(self) -> None:
