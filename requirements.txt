@@ -1,6 +1,6 @@
 Flask       == 1.0.2
 Jinja2      == 2.11
-PyYAML      == 5.3
+ruamel.yaml == 0.16.13
 SQLAlchemy  == 1.2.18
 Werkzeug    == 1.0
 appdirs     == 1.4.3

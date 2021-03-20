@@ -76,14 +76,12 @@ Usage: gristle_differ [options]
                         Causes program to bypass deduping step.
         --temp-dir TEMP_DIR
                         Used for temporary files.
-        --config-name CONFIG_NAME
-                        Name of config within XDG dir.  On linux this dir would
-                        be: $HOME/.confg/gristle_differ.  The config is a YAML
-                        file that can contain any of these arguments plus
-                        others used for post-delta record transformations.
         --config-fn CONFIG_FN
                         Name of config file.  This allows the user to use any
                         name and any directory.
+        --gen-config-fn CONFIG_FN
+                        This will cause the generation of a config file based on
+                        options provided.
 
     Output Control Options:
 
@@ -529,9 +527,10 @@ class ConfigManager(configulator.Config):
                                  type=list,
                                  help=(''))
 
-        self.add_standard_metadata('config_fn')
         self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
         self.add_all_csv_configs()
+
 
 
     def validate_custom_config(self,
@@ -543,7 +542,7 @@ class ConfigManager(configulator.Config):
                             'temp_dir':        {},
                             'out_dir':         {"type":     ["null", "string"]},
                             'config_fn':       {},
-                            'config_name':     {},
+                            'gen_config_fn':   {},
                             'col_names':       {},
                             'key_cols':        {"type":     "array"},
                             'ignore_cols':     {"type":     "array"},

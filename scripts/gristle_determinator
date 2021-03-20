@@ -673,7 +673,9 @@ class ConfigManager(configulator.Config):
                                  help='Used with metadata outputformat to identify structure set being analyzed.')
 
         self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
         self.add_all_csv_configs()
+
 
 
     def validate_custom_config(self,

@@ -23,7 +23,7 @@ import time
 
 import envoy
 import pytest
-import yaml
+import ruamel.yaml as yaml
 
 import datagristle.csvhelper as csvhelper
 

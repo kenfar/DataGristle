@@ -177,6 +177,7 @@ class ConfigManager(configulator.Config):
                                  help='Causes quoting to be escaped with doublequotes')
 
         self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
 
 
 

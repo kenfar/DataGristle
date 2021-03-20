@@ -32,6 +32,11 @@ Usage: gristle_slicer [options]
       -R, --exrecords=<spec> Provide the record exclusion specification.
                              Default is None which excludes nothing.
 
+    Config File Options:
+      --config-fn=<CONFIG_FN>
+                             Specifies a configuration file
+      --gen-config           Generates a configuration file from options
+
     CSV Dialect Options:
       -d, --delimiter=<del>  Provide a quoted single-character field delimiter.
                              Useful if automatic csv dialect detection fails to
@@ -333,6 +338,7 @@ class ConfigManager(configulator.Config):
                                       'start & stop ranges.  Default is to exclude nothing.')
 
         self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
         self.add_all_csv_configs()
 
 

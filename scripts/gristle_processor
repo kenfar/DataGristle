@@ -15,26 +15,25 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2014-2020 Ken Farmer
+Copyright 2014-2021 Ken Farmer
 """
-import sys
 import argparse
-import os
-import time
-import re
-import math
-import operator
-import shutil
 import errno
+import re
+import operator
+import os
+import shutil
 from signal import signal, SIGPIPE, SIG_DFL
+import sys
+import time
 
 #from pprint import pprint as pp
-import validictory as valid
 import appdirs
-import yaml
 import cletus.cletus_log as log
 import cletus.cletus_supp as supp
 import cletus.cletus_job as job
+import ruamel.yaml as yaml
+import validictory as valid
 
 import datagristle.common as comm
 

@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import tempfile
 
-import yaml
+import ruamel.yaml as yaml
 import envoy
 
 import datagristle.csvhelper as csvhelper

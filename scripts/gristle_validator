@@ -104,7 +104,7 @@ import sys
 from typing import Dict, List, Any, Optional, Union
 
 import validictory as valid
-import yaml
+import ruamel.yaml as yaml
 
 import datagristle.common as comm
 import datagristle.configulator as configulator
@@ -548,9 +548,9 @@ class ConfigManager(configulator.Config):
                                  help='Specify the number of fields in the record.  If not provided'
                                       ' it will default to number of fields on first record')
 
-        self.add_all_csv_configs()
         self.add_standard_metadata('verbosity')
-
+        self.add_all_config_configs()
+        self.add_all_csv_configs()
 
 
     def validate_custom_config(self,
