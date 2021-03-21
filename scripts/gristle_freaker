@@ -120,8 +120,8 @@ def main() -> int:
     return_code = 0 # success
 
     try:
-        config_manager = ConfigManager()
-        nconfig = config_manager.get_config()
+        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        nconfig, _ = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
@@ -395,23 +395,6 @@ class ColumnLengthTracker(object):
 
 
 class ConfigManager(configulator.Config):
-
-    def __init__(self):
-        self.config = None
-        super().__init__(NAME, SHORT_HELP, LONG_HELP)
-
-
-    def get_config(self) -> Dict[str, Any]:
-        """ Raises:
-            - EOFError - if input file is empty when checking for dialect
-        """
-        self.define_user_config()
-        self.define_obsolete_config()
-        self.process_configs()
-        self.extend_config()
-        if self.nconfig.verbosity == 'debug':
-            self.print_config()
-        return self.nconfig
 
 
     def define_obsolete_config(self) -> None:

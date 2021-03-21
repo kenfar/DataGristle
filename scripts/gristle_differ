@@ -153,22 +153,8 @@ def main():
             - compares files
             - writes counts
     """
-    # collect any config file items then override them with args and assemble the
-    # consolidated info in the 'config' var:
-    desc = ("gristle_differ is used to compare two files and writes the differences to "
-            "five output files named after the inputs with the suffixes: "
-            ".insert, .delete, .same, .chgold, .chgnew.  The program sorts the "
-            "two files based on unique key columns, can ignore certain columns "
-            "for the comparison, and then can perform some simple transformations."
-            "The input files are referred to as old & new, file0 & file1, or f0 & f1 "
-            "this inconsistency reflects the fact that the program may be used "
-            "to compare two historical snapshots of a file (old vs new) or two independent "
-            "files (file0 vs file1)."
-            "\n"
-            "   example:  gristle_differ file0rdat file1.dat --compare-cols '0, 1' --ignore_cols '19,22,33'"
-            "\n\n")
     try:
-        config_manager = ConfigManager()
+        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
         nconfig, config = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) #61: empty file
@@ -185,7 +171,8 @@ def main():
                                     quotechar=nconfig.quotechar,
                                     has_header=nconfig.has_header,
                                     doublequote=nconfig.doublequote,
-                                    escapechar=nconfig.escapechar)
+                                    escapechar=nconfig.escapechar,
+                                    verbosity=nconfig.verbosity)
 
     config_manager.update_config('col_names', comm.get_best_col_names(config, dialect))
     config = config_manager.config
@@ -378,18 +365,6 @@ def convert_key_offsets_to_sort_key_config(key_offsets):
 
 
 class ConfigManager(configulator.Config):
-
-    def __init__(self):
-        super().__init__(NAME, SHORT_HELP, LONG_HELP)
-
-
-    def get_config(self) -> Dict[str, Any]:
-        self.define_user_config()
-        self.process_configs()
-        self.extend_config()
-        if self.nconfig.verbosity == 'debug':
-            self.print_config()
-        return self.nconfig, self.config
 
 
     def define_user_config(self) -> None:

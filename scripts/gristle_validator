@@ -101,8 +101,8 @@ def main() -> int:
     """
 
     try:
-        config_manager = ConfigManager()
-        nconfig = config_manager.get_config()
+        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        nconfig, _ = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
@@ -463,17 +463,6 @@ class ValidateTheValidator(object):
 
 class ConfigManager(conf.Config):
 
-    def __init__(self):
-        self.config = None
-        super().__init__(NAME, SHORT_HELP, LONG_HELP)
-
-    def get_config(self):
-        self.define_user_config()
-        self.process_configs()
-        self.extend_config()
-        if self.nconfig.verbosity == 'debug':
-            self.print_config()
-        return self.nconfig
 
     def define_user_config(self) -> None:
         """ Defines the user config or metadata.

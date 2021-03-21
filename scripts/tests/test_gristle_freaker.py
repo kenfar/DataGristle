@@ -141,8 +141,8 @@ class TestGetArgs(object):
     def test_happy_path(self):
         sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '1']
 
-        config_manager = mod.ConfigManager()
-        nconfig = config_manager.get_config()
+        config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
+        nconfig, _ = config_manager.get_config()
 
         assert nconfig.columns == [1]
         assert nconfig.outfile == '-'
@@ -159,8 +159,8 @@ class TestGetArgs(object):
 
         sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', 'd']
         try:
-            config_manager = mod.ConfigManager()
-            nconfig = config_manager.get_config()
+            config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
+            nconfig, _ = config_manager.get_config()
         except SystemExit:
             pass
         except Exception as e:
@@ -171,8 +171,8 @@ class TestGetArgs(object):
     def test_check_invalid_maxkeylen(self):
         sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '--max-key-len', 'blah']
         try:
-            config_manager = mod.ConfigManager()
-            nconfig = config_manager.get_config()
+            config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
+            nconfig, _ = config_manager.get_config()
         except SystemExit:
             pass
         except Exception as e:
@@ -184,8 +184,8 @@ class TestGetArgs(object):
         sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '0', '--max-key-len', '50']
 
         try:
-            config_manager = mod.ConfigManager()
-            nconfig = config_manager.get_config()
+            config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
+            nconfig, _ = config_manager.get_config()
             if nconfig.max_key_len != 50:
                 pytest.fail('max-key-len results did not match expected values: ')
         except SystemExit:
