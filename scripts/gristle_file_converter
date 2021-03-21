@@ -76,8 +76,8 @@ def main():
 
     """
     try:
-        config_manager = ConfigManager()
-        nconfig = config_manager.get_config()
+        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        nconfig, _ = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
@@ -106,18 +106,6 @@ def main():
 
 
 class ConfigManager(conf.Config):
-
-    def __init__(self):
-        self.config = None
-        super().__init__(NAME, SHORT_HELP, LONG_HELP)
-
-    def get_config(self) -> Dict[str, Any]:
-        self.define_user_config()
-        self.process_configs()
-        self.extend_config()
-        if self.nconfig.verbosity == 'debug':
-            self.print_config()
-        return self.nconfig
 
 
     def define_user_config(self) -> None:
@@ -166,6 +154,7 @@ class ConfigManager(conf.Config):
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
+        self.add_all_help_configs()
 
 
 
@@ -181,7 +170,8 @@ class ConfigManager(conf.Config):
                                             self.config['out_quotechar']   or self.nconfig.dialect.quotechar,
                                             self.config['out_has_header']  or self.nconfig.dialect.has_header,
                                             self.config['out_doublequote'] or self.nconfig.dialect.doublequote,
-                                            self.config['out_escapechar']  or self.nconfig.dialect.escapechar)
+                                            self.config['out_escapechar']  or self.nconfig.dialect.escapechar,
+                                            verbosity='normal')
 
         self.update_config('out_dialect', out_dialect)
 

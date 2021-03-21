@@ -79,7 +79,8 @@ class TestGetDialect(object):
                                                   quotechar='!',
                                                   has_header=True,
                                                   doublequote=False,
-                                                  escapechar='\\')
+                                                  escapechar='\\',
+                                                  verbosity='normal')
 
         assert resulting_dialect.delimiter == ','
         assert resulting_dialect.quoting == csv.QUOTE_NONE
@@ -98,7 +99,8 @@ class TestGetDialect(object):
                                                   quotechar=None,
                                                   has_header=None,
                                                   doublequote=None,
-                                                  escapechar=None)
+                                                  escapechar=None,
+                                                  verbosity='normal')
         assert resulting_dialect.delimiter == '|'
         assert resulting_dialect.quoting == csv.QUOTE_ALL
         assert resulting_dialect.quotechar == '"'
@@ -117,7 +119,8 @@ class TestGetDialect(object):
                                                       quotechar=None,
                                                       has_header=None,
                                                       doublequote=None,
-                                                      escapechar=None)
+                                                      escapechar=None,
+                                                      verbosity='normal')
     def test_multiple_files(self):
 
         fqfn1 = generate_test_file('|', csv.QUOTE_ALL, 0)
@@ -129,7 +132,8 @@ class TestGetDialect(object):
                                                   quotechar=None,
                                                   has_header=None,
                                                   doublequote=None,
-                                                  escapechar=None)
+                                                  escapechar=None,
+                                                  verbosity='normal')
         assert resulting_dialect.delimiter == '|'
         assert resulting_dialect.quoting == csv.QUOTE_ALL
         assert resulting_dialect.quotechar == '"'

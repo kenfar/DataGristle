@@ -96,8 +96,8 @@ SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 def main() -> int:
 
     try:
-        config_manager = ConfigManager()
-        nconfig = config_manager.get_config()
+        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        nconfig, _ = config_manager.get_config()
     except EOFError:
         return errno.ENODATA
 
@@ -130,7 +130,6 @@ def main() -> int:
     output_handler.close()
 
     return 0
-
 
 
 
@@ -257,18 +256,6 @@ def process_rec(rec_number: int,
 
 
 class ConfigManager(conf.Config):
-
-    def __init__(self):
-        super().__init__(NAME, SHORT_HELP, LONG_HELP)
-
-
-    def get_config(self) -> Dict[str, Any]:
-        self.define_user_config()
-        self.process_configs()
-        self.extend_config()
-        if self.nconfig.verbosity == 'debug':
-            self.print_config()
-        return self.nconfig
 
 
     def define_user_config(self) -> None:

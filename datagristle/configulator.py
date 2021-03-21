@@ -168,6 +168,15 @@ class Config(object):
         self.nconfig: Optional[NamedTuple] = None
 
 
+    def get_config(self) -> Dict[str, Any]:
+        self.define_user_config()
+        self.process_configs()
+        self.extend_config()
+        if self.nconfig.verbosity == 'debug':
+            self.print_config()
+        return self.nconfig, self.config
+
+
     def add_obsolete_metadata(self,
                               name,
                               short_name,
