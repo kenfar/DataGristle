@@ -20,12 +20,13 @@ from os.path import isfile, splitext, basename, isabs, dirname, abspath, join as
 from pprint import pprint as pp
 import sys
 from typing import List, Dict, Any, Callable, Optional, NamedTuple
-import ruamel.yaml as yaml
 
+import ruamel.yaml as yaml
 
 from datagristle._version import __version__
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
+
 
 CONFIG_TYPE = Dict[str, Any]
 META_CONFIG_TYPE = Dict[str, Dict[str, Any]]
@@ -126,10 +127,6 @@ STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'action': 'store_const',
                                'const': True}
 
-STANDARD_CONFIGS['config_name'] = {'default': None,
-                                   'help': 'Name of config within xdg dir (such as .config/gristle_differ/* on linux)',
-                                   'type': str,
-                                   'arg_type': 'option'}
 STANDARD_CONFIGS['config_fn'] = {'default': None,
                                  'help': 'Name of config file',
                                  'type': str,
@@ -137,12 +134,20 @@ STANDARD_CONFIGS['config_fn'] = {'default': None,
 STANDARD_CONFIGS['gen_config_fn'] = {'default': None,
                                      'help': 'Generates a config file',
                                      'type': str,
-                                     'arg_type': 'option',
                                      'arg_type': 'option'}
 
+STANDARD_CONFIGS['help'] = {'short_name': 'h',
+                            'default': None,
+                            'help': 'Displays short help info and exits',
+                            'type': bool,
+                            'action': 'store_const',
+                            'const': True,
+                            'arg_type': 'option'}
 
 
-ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'config_name', 'long-help']
+
+
+ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'long-help']
 VALID_ARG_TYPES = ('argument', 'option')
 
 
@@ -189,8 +194,6 @@ class Config(object):
 
     def add_all_csv_configs(self):
         """ Adds the whole standard set of csv config items.
-
-        This is how all csv utilities should pick these up - rather than doing it individually.
         """
         self.add_standard_metadata('delimiter')
         self.add_standard_metadata('quoting')
@@ -204,11 +207,15 @@ class Config(object):
 
     def add_all_config_configs(self):
         """ Adds the standard set of config items.
-
-        The standard set of config file options
         """
         self.add_standard_metadata('config_fn')
         self.add_standard_metadata('gen_config_fn')
+
+
+    def add_all_help_configs(self):
+        """ Adds the standard set of help items.
+        """
+        self.add_standard_metadata('help')
 
 
 
@@ -699,6 +706,7 @@ class _CommandLineArgs(object):
                  obsolete_args: Dict[str, str]={})-> None:
 
         self._app_metadata = app_metadata
+        self.short_help = short_help
         self.long_help = long_help
         self.obsolete_args = obsolete_args
         self.cli_args = self._get_args(short_help)
@@ -722,7 +730,8 @@ class _CommandLineArgs(object):
         #This isn't a big problem since we're only using options - in order to also support envvars and 
         #config files
         self.parser = argparse.ArgumentParser(description=desc,
-                                              usage='%(prog)s --long-help for detailed usage and help')
+                                              usage='%(prog)s --long-help for detailed usage and help',
+                                              add_help=False)
 
         self.parser.add_argument('--long-help',
                                  action='store_true',
@@ -786,11 +795,16 @@ class _CommandLineArgs(object):
 
 
     def _process_help_args(self, known_args: list) -> None:
-        if known_args.version:
-            print(__version__)
+        if known_args.help:
+            print(self.short_help)
+            #for line in self.short_help:
+            #    print(line)
             sys.exit(0)
         if known_args.long_help:
             print(self.long_help)
+            sys.exit(0)
+        if known_args.version:
+            print(__version__)
             sys.exit(0)
 
 
