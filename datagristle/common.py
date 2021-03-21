@@ -14,6 +14,7 @@ from os.path import isdir, isfile, exists
 from os.path import join as pjoin
 from pprint import pprint as pp
 import sys
+import traceback
 from typing import List, Dict, Any, Optional, Tuple, Union
 
 from datagristle._version import __version__
@@ -105,7 +106,7 @@ def dialect_del_fixer(values: str) -> str:
 def abort(summary: str,
           details: Optional[str] = None,
           rc: int = 1,
-          diagnostic: bool = False) -> None:
+          verbosity: str = 'normal') -> None:
     """ Creates formatted error message within a box of = characters
         then exits.
     """
@@ -132,9 +133,11 @@ def abort(summary: str,
     print_empty_line()
     print_text_line('Provide option --help or --long-help for usage information')
     print_empty_line()
-    print_text_line(f'Trace: {get_tracepath()}')
-    print_empty_line()
     print_solid_line()
+
+    if verbosity == 'debug':
+        print(' ')
+        traceback.print_stack(file=sys.stdout)
 
     try:
         logger.critical(summary)
@@ -144,6 +147,7 @@ def abort(summary: str,
         pass
 
     sys.exit(rc)
+
 
 
 def get_tracepath():
