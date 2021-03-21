@@ -1,172 +1,117 @@
 #!/usr/bin/env python
 """
-This program (gristle_differ)  is used to compare two files and writes the
-differences to five output files named after the inputs with these suffixes:
-   .insert, .delete, .same, .chgold, .chgnew
-The input files are typically provided as arguments, and are sometimes referred
-to as 'the old file' and 'the new file' - a reflection of the fact that the
-most common usage is to compare two snapshots of the same file.  However, this
-occasional reference should not lead one to assume that the utility is limited
-to this scenario.
+Gristle_differ is used to compare two files and writes the differences to five output files named
+after the inputs with these suffixes: .insert, .delete, .same, .chgold, .chgnew.
 
-The program sorts the two input files based on unique key columns, then removes
-any duplicates based on this key (leaving 1 of any duplicate set behind).
+The program sorts the two input files based on unique key columns, then removes any duplicates
+based on this key (leaving 1 of any duplicate set behind).
 
 Comparisons of matching records can be limited to specific columns in two ways:
-    - using --compare-cols to assume no cols will be compared other than these
-      specifically identified.
-    - using --ignore-cols to assume all cols will be compared, and explicitly
-      idenitify those not to compare.
+    - using --compare-cols no cols will be compared other than these specifically identified.
+    - using --ignore-cols all cols will be compared, and explicitly idenitify those not to compare.
 
-After the comparison post-delta transformations can be performed in order to
-ready the file for subsequent processing.  Examples of these transformations
-include:
+After the comparison post-delta transformations can be performed in order to ready the file for
+subsequent processing.  Examples of these transformations include:
     - incrementing a key column in the .insert & .chgnew files
     - populating a delete flag in the .delete file
-    - populating a row version starting timestamp in the .insert and .chgnew
-      files
-    - populating a row version ending timestamp in the .delete and .chgold
-      files
+    - populating a row version starting timestamp in the .insert and .chgnew files
+    - populating a row version ending timestamp in the .delete and .chgold files
     - populating a batch_id in any or all files
 
 
 Usage: gristle_differ [options]
 
-    Help Options:
-        -h, --help      Show this help message and exit
-        --long-help     Print more verbose help.
-        -V, --version   Show program's version number and exits.
 
-    Main Options:
-        -i [infiles]    Specifies the two input files.  The first argument is
-                        also referred to as the 'old file', the second as the
+{see: helpdoc.HELP_SECTION}
+
+
+{see: helpdoc.CONFIG_SECTION}
+
+
+Main Options:
+    -i [infiles]        Specifies the two input files.
+                        The first argument is also referred to as the 'old file', the second as the
                         'new file'.
-        -k, --key-cols [KEY_COLS [KEY_COLS ...]]
-                        Specifes the columns that constitute a unique row with
-                        a comma-delimited list of field positions using a
-                        0-offset.  If col_names are provided then names can be
-                        used as well as positions.  This is a required option.
-        -c, --compare-cols [COMPARE_COLS [COMPARE_COLS ...]]
-                        Columns to compare - described by their position using
-                        a zero-offset.  If col_names are provided then names
-                        can be used as well as positions.  This option is
-                        mutually exclusive with ignore-cols and key-cols.
-                        If no value is provided then all non-key cols will be compared.
-        --ignore-cols [IGNORE_COLS [IGNORE_COLS ...]]
-                        Columns to ignore - described by their position using a
-                        zero-offset. If col_names are provided then names can be
-                        used as well as positions.  This option is mutually
-                        exclusive with compare-cols and key-cols.  If this column
-                        is provided then all cols except for these identified here and
+    -k, --key-cols [KEY_COLS [KEY_COLS ...]]
+                        Columns that constitute a unique row.
+                        The keys use a zero-offset or column names if also provided. This is a
+                        required option.
+    -c, --compare-cols [COMPARE_COLS [COMPARE_COLS ...]]
+                        Columns to compare.
+                        These are referenced either using a zero-offset integer or by the column
+                        name.  This option is mutually exclusive with ignore-cols and key-cols.  If no
+                        value is provided then all non-key cols will be compared.
+    --ignore-cols [IGNORE_COLS [IGNORE_COLS ...]]
+                        Columns to ignore.
+                        These are referenced either using a zero-offset integer or by the column
+                        name.  This option is mutually exclusive with compare-cols and key-cols.
+                        If this column is provided then all cols except for these identified here and
                         key-cols will be compared.
-        --col_names [COL_NAMES [COL_NAMES ...]]
-                        Column names - allows other args to reference col names
-                        as well as positions.  If nothing is provided but the files
-                        have headers they will automatically be added to col_names
-                        with a couple of changes: all values are turned to lowercase,
-                        and spaces are replaced with underscores.
-        --variables [VARIABLES [VARIABLES ...]]
+    --col_names [COL_NAMES [COL_NAMES ...]]
+                        Column names - allows other args to reference col names rather than positions.
+                        If nothing is provided but the files have headers they will automatically be
+                        added to col_names with a couple of changes: all values are turned to
+                        lowercase, and spaces are replaced with underscores.
+    --variables [VARIABLES [VARIABLES ...]]
                         Variables to reference with post-delta assignments.
-                        Typical examples are a batch_id, sequence starting num,
-                        or extract timestamp to insert into output recs.  The
-                        format is "<name>:<value>"
-        --already-sorted
+                        Typical examples are a batch_id, sequence starting num, or extract timestamp
+                        to insert into output recs.  The format is "<name>:<value>"
+    --already-sorted
                         Causes program to bypass sorting step.
-        --already-uniq
+    --already-uniq
                         Causes program to bypass deduping step.
-        --temp-dir TEMP_DIR
+    --temp-dir TEMP_DIR
                         Used for temporary files.
-        --config-fn CONFIG_FN
-                        Name of config file.  This allows the user to use any
-                        name and any directory.
-        --gen-config-fn CONFIG_FN
-                        This will cause the generation of a config file based on
-                        options provided.
 
-    Output Control Options:
 
-        --dry-run       Performs most processing except for final changes.
-        --out-dir OUT_DIR
+Output Control Options:
+
+    --dry-run           Performs most processing except for final changes.
+    --out-dir OUT_DIR
                         Where the output files will be written.  Defaults to
                         the directory of the second file.
-        --verbosity VERBOSITY Controls stdout detail level.  Valid values include:
+    --verbosity VERBOSITY Controls stdout detail level.  Valid values include:
                         quiet, normal, high, or debug.
 
-    CSV Dialect Options:
-        -d, --delimiter DELIMITER
-                        Specify a quoted single-column field delimiter. This
-                        will otherwise be determined automatically by the pgm.
-                        Specifying it explicitely is useful when the pgm cannot
-                        accurately determine the csv dialect, especially with
-                        very small files.
-        --escapechar ESCAPECHAR
-                        Specify escaping character. Otherwise, like delimiter,
-                        the program will automatically determine it.
-        --quoting {quote_all,quote_minimal,quite_nonnumeric,quote_none}
-                        Specify field quoting.  Otherwise, like delimiter, the
-                        pgm will automatically determine it.  Valid values are:
-                        quote_none, quote_minimal, quote_nonnumeric, quote_all.
-        --quotechar QUOTECHAR
-                        Specify field quoting character.  Otherwise, like
-                        delimiter the pgm will automatically determine it.
-        --recdelimiter RECDELIMITER
-                        Specify a quoted end-of-record delimiter.
-        --has-header    Indicate that there is a header in the file. This is a
-                        standard datagristle option - but not yet supported
-                        within this pgm.
-        --has-no-header Indicate that there is no header in the file.  This is
-                        a standard datagristle option - but not yet supported
-                        within this pgm.
 
-The config file is useful when the there are many arguments, especially when
-using post-delta transforms.  The program can be referred to a config file in
-either of two ways:
-   - config-fn argument: that references a specific file name
-   - config-name argument: that refers to a file name within the XDG standard
-     directory.
-        - On linux: $HOME/.config/gristle_differ/<name>.yml
-        - On MacOS: $HOME/
+{see: helpdoc.CSV_SECTION}
 
 
-
-Example 1: Simple Comparison
-    $ gristle_differ -i file0.dat file1.dat --key-cols 0 2 --ignore-cols 19 22 33
-
-    In this case the two files are each sorted and deduped on columns 0 & 2, and
-    then all columns except 19, 22, and 33 are used for the comparison.
-
-    Produces the following files:
-       - file1.dat.insert
-       - file1.dat.delete
-       - file1.dat.same
-       - file1.dat.chgnew
-       - file1.dat.chgold
-
-Example 2: Complex Operation
-    $ gristle_differ file0.dat file1.dat --config-fn ./foo.yml  \
-        --variables batchid:919 --variables pkid:82304
-
-    Produces the same output file names as example 1.
-
-    But in this case it gets the majority of its configuration items from
-    the config file ('foo.yml').  This could include key columns, comparison
-    columns, ignore columns, post-delta transformations, and other information.
-
-    The two variables options are used to pass in user-defined variables that
-    can be referenced by the post-delta transformations.  The batchid will get
-    copied into a batch_id column for every file, and the pkid is a sequence
-    that will get incremented and used for new rows in the insert, delete and
-    chgnew files.
-
-See gristle_differ on the wiki for the most thorough documentation here:
-    https://github.com/kenfar/DataGristle/wiki/gristle_differ
+{see: helpdoc.CONFIG_SECTION}
 
 
-This source code is protected by the BSD license.  See the file "LICENSE"
-in the source code root directory for the full language or refer to it here:
-    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011-2021 Ken Farmer
+Examples:
+    Example 1: Simple Comparison
+        $ gristle_differ -i file0.dat file1.dat --key-cols 0 2 --ignore-cols 19 22 33
+        In this case the two files are each sorted and deduped on columns 0 & 2, and
+        then all columns except 19, 22, and 33 are used for the comparison.
+        Produces the following files:
+        - file1.dat.insert
+        - file1.dat.delete
+        - file1.dat.same
+        - file1.dat.chgnew
+        - file1.dat.chgold
+    Example 2: Complex Operation
+        $ gristle_differ file0.dat file1.dat --config-fn ./foo.yml  \
+            --variables batchid:919 --variables pkid:82304
+        Produces the same output file names as example 1.
+        But in this case it gets the majority of its configuration items from the config
+        file ('foo.yml').  This could include key columns, comparison columns, ignore columns,
+        post-delta transformations, and other information.
+        The two variables options are used to pass in user-defined variables that can be
+        referenced by the post-delta transformations.
+        The batchid will get copied into a batch_id column for every file, and the pkid is a
+        sequence that will get incremented and used for new rows in the insert, delete and
+        chgnew files.
 
+
+Licensing and Further Info:
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+        http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011-2021 Ken Farmer
+    See gristle_differ on the wiki for the most thorough documentation here:
+        https://github.com/kenfar/DataGristle/wiki/gristle_differ
 """
 import copy
 import csv
@@ -186,6 +131,7 @@ import datagristle.csvhelper    as csvhelper
 import datagristle.file_delta   as gdelta
 import datagristle.file_sorter  as gsorter
 import datagristle.file_deduper as gdeduper
+import datagristle.helpdoc      as helpdoc
 
 import jsonschema
 
@@ -194,7 +140,8 @@ import jsonschema
 signal(SIGPIPE, SIG_DFL)
 
 NAME = basename(__file__)
-SHORT_HELP = 'Compares two csv files and produces separate files of inserts, deletes, changes, and identical records'
+LONG_HELP = helpdoc.expand_long_help(__doc__)
+SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 logging.basicConfig()
 
@@ -433,7 +380,7 @@ def convert_key_offsets_to_sort_key_config(key_offsets):
 class ConfigManager(configulator.Config):
 
     def __init__(self):
-        super().__init__(NAME, SHORT_HELP, __doc__)
+        super().__init__(NAME, SHORT_HELP, LONG_HELP)
 
 
     def get_config(self) -> Dict[str, Any]:
@@ -530,6 +477,7 @@ class ConfigManager(configulator.Config):
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
         self.add_all_csv_configs()
+        self.add_all_help_configs()
 
 
 
@@ -571,8 +519,8 @@ class ConfigManager(configulator.Config):
                             'verbosity':       {'type':     ["null", "string"],
                                                 "enum":     [None, 'quiet', 'normal', 'high', 'debug']},
                             'dry_run':         {"type":     "boolean"},
-                            'long_help':       {"type":     "boolean"},
-                            'help':            {"type":     "boolean"},
+                            'long_help':       {"type":     ["null", "boolean"]},
+                            'help':            {"type":     ["null", "boolean"]},
                             'version':         {"type":     "boolean"},
                             },
                         'additionalProperties': False,
