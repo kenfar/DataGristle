@@ -1,34 +1,25 @@
 #!/usr/bin/env python
 """
-Displays a single record of a file, pivoted with one field per line, with field names
-displayed as labels to the left of the field values.  Also allows simple navigation
-between records.
+Displays a single record of a file, pivoted with one field per line, with field names displayed
+as labels to the left of the field values.  Also allows simple navigation between records.
 
 Usage: gristle_viewer [options]
 
-    Help Options:
-        -h, --help        show this help message and exit
-        --long-help       Print more verbose help
-        -V, --version     show version number then exit
 
-    Main Options:
-        -i, --infiles [INFILES [INFILES ...]]
-                          input filenames or default to for stdin
-        -o, --outfile OUTFILE
-                          output filename or '-' for stdout (the default)
-        -r, --recnum RECNUM
-                          Displays this record number based on 0 offset,
-                          defaulting to 1
-    CSV Dialect Options:
-        -d, --delimiter DELIMITER
-                            csv delimiter
-        -q, --quoting {quote_all,quote_minimal,quote_nonnumeric,quote_none}
-                            csv quoting
-        --quotechar QUOTECHAR
-                            csv quotechar
-        --escapechar ESCAPECHAR
-                            csv escapechar
-        --has-header        csv dialect - indicates header exists
+Main Options:
+   -i, --infiles [INFILES [INFILES ...]]
+                        One or more input files or '-' (the default) for stdin.
+   -o, --outfile OUTFILE
+                        The output filename or '-' for stdout (the default).
+   -r, --recnum RECNUM
+                        Displays this record number based on 0 offset, defaulting to 1
+
+
+{see: helpdoc.CSV_SECTION}
+
+
+{see: helpdoc.CONFIG_SECTION}
+
 
 Examples:
     $ gristle_viewer sample.csv -r 3
@@ -39,10 +30,12 @@ Examples:
         In addition to what was described in the first example this
         adds explicit csv dialect overrides.
 
-This source code is protected by the BSD license.  See the file "LICENSE"
-in the source code root directory for the full language or refer to it here:
-    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011-2021 Ken Farmer
+
+Licensing and Further Info:
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+        http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011-2021 Ken Farmer
 """
 
 import errno
@@ -53,18 +46,20 @@ import sys
 from typing import Dict, List, Optional, Any, Tuple
 
 import datagristle.common as comm
-import datagristle.configulator as configulator
-import datagristle.csvhelper as csvhelper
+import datagristle.configulator as conf
 import datagristle.field_determinator  as field_determinator
 import datagristle.field_type as field_type
 import datagristle.file_io as file_io
 import datagristle.file_type as file_type
+import datagristle.helpdoc as helpdoc
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
 NAME = basename(__file__)
-SHORT_HELP = 'View one record at a time from a csv formatted with headers\n'
+LONG_HELP = helpdoc.expand_long_help(__doc__)
+SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
+
 
 
 def main():
@@ -174,11 +169,11 @@ def get_rec(input_handler, recnum: int) -> Optional[List[Any]]:
 
 
 
-class ConfigManager(configulator.Config):
+class ConfigManager(conf.Config):
 
     def __init__(self) -> None:
         self.config = None
-        super().__init__(NAME, SHORT_HELP, __doc__)
+        super().__init__(NAME, SHORT_HELP, LONG_HELP)
 
     def get_config(self) -> Dict[str, Any]:
         self.define_user_config()
@@ -201,8 +196,9 @@ class ConfigManager(configulator.Config):
                                  help='Displays this record number based on 0 offset, defaulting to 1')
 
         self.add_standard_metadata('verbosity')
-        self.add_all_config_configs()
         self.add_all_csv_configs()
+        self.add_all_config_configs()
+        self.add_all_help_configs()
 
 
     def extend_config(self) -> None:
@@ -210,7 +206,7 @@ class ConfigManager(configulator.Config):
 
 
     def validate_custom_config(self,
-                               config: configulator.CONFIG_TYPE):
+                               config: conf.CONFIG_TYPE):
         if config['infiles'] == '-':
             comm.abort('An input filename is required')
 
