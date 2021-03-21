@@ -1,74 +1,50 @@
 #!/usr/bin/env python
 """
-Gristle_slicer extracts subsets of input files based on user-specified columns
-and rows.  The input csv file can be piped into the program through stdin or
-identified via a command line option.  The output will default to stdout, or
-redirected to a filename via a command line option.
+Gristle_slicer extracts subsets of input files based on user-specified columns and rows.  The
+input csv file can be piped into the program through stdin or identified via a command line option.
+The output will default to stdout, or redirected to a filename via a command line option.
 
-The columns and rows are specified using python list slicing syntax - so
-individual columns or rows can be listed as can ranges.   Inclusion or
-exclusion logic can be used - and even combined.
+The columns and rows are specified using python list slicing syntax - so individual columns or
+rows can be listed as can ranges.   Inclusion or exclusion logic can be used - and even combined.
 
 Usage: gristle_slicer [options]
 
-    Help Options:
-        -h, --help          show brief help message and exit
-        --long-help         show this verbose help and exit
-        -V, --version       show version info and exit
-        --verbosity=<verbosity>
-                            Controls stdout level of detail.  Valid values
-                            include: quiet, normal, high, debug.
-    Main Options:
-      -i, --infiles=<infiles>
-                             One or more input files. Alternatively, could be
-                             piped in via stdin.
-      -o, --outfile=<infile> Specify the output file.  The default is stdout.
-      -c, --columns=<spec>   Provide the column inclusion specification,
-                             Default is ':' which includes all columns.
-      -C, --excolumns=<spec> Provide the column exclusion specification.
-                             Default is None which excludes nothing.
-      -r, --records=<spec>   Provide the record inclusion specification.
-                             Default is ':' which includes all records.
-      -R, --exrecords=<spec> Provide the record exclusion specification.
-                             Default is None which excludes nothing.
 
-    Config File Options:
-      --config-fn=<CONFIG_FN>
-                             Specifies a configuration file
-      --gen-config           Generates a configuration file from options
-
-    CSV Dialect Options:
-      -d, --delimiter=<del>  Provide a quoted single-character field delimiter.
-                             Useful if automatic csv dialect detection fails to
-                             correctly interpret file. Also required for STDIN
-                             input.  If provided then quoting should also be
-                             provided.
-      -q, --quoting=<qt>     Specify quoting behavior.  Useful when automatic
-                             csv dialect detection fails or when processing
-                             data via stdin.  Valid values include:
-                             quote_none, quote_minimal, quote_nonnumeric,
-                             quote_all
-      --doublequote          Quotes within quoted strings are escaped with
-                             double quotes.
-      --quotechar=QUOTECHAR
-      --escapechar=ESCAPECHAR
-      --has-header           Indicates there is a header in the file.
-      --has-no-header        Indicates there is no header in the file.  Useful
-                             for overriding automatic csv-guessing behavior.
+{see: helpdoc.HELP_SECTION}
 
 
+Main Options:
+    -i, --infiles INFILE
+                        One or more input files or '-' (the default) for stdin.
+    -o, --outfile OUTFILE
+                        The output file.  The default of '-' is stdout.
+    -c, --columns SPEC  The column inclusion specification.
+                        Default is ':' which includes all columns.
+    -C, --excolumns SPEC
+                        The column exclusion specification.
+                        Default is None which excludes nothing.
+    -r, --records SPEC  The record inclusion specification.
+                        Default is ':' which includes all records.
+    -R, --exrecords SPEC
+                        The record exclusion specification.
+                        Default is None which excludes nothing.
+
+
+Notes:
     Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
-        'NumberN, StartOffset:StopOffset' - The specification is a comma-
-                            delimited list of individual offsets or ranges.
+        'NumberN, StartOffset:StopOffset'
+    This specification is either a comma-delimited list of individual offsets or ranges.
+    Offsets are based on zero, and if negative are measured from the end of the record
+    or file with -1 being the final item.  There can be N number of individual offsets.
+    Ranges are a pair of offsets separated by a colon.  The first number indicates the
+    starting offset, and the second number indicates the stop offset +1.
 
-                            Offsets are based on zero, and if negative are
-                            measured from the end of the record or file with
-                            -1 being the final item.  There can be N number
-                            of individual offsets.
 
-                            Ranges are a pair of offsets separated by a colon.
-                            The first number indicates the starting offset,
-                            and the second number indicates the stop offset +1.
+{see: helpdoc.CSV_SECTION}
+
+
+{see: helpdoc.CONFIG_SECTION}
+
 
 Examples:
     $ gristle_slicer -i sample.csv
@@ -88,6 +64,7 @@ Examples:
                             dialect info (delimiter, quoting) provided manually)
 
 
+Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
@@ -102,17 +79,17 @@ from signal import signal, SIGPIPE, SIG_DFL
 import sys
 from typing import List, Tuple, Dict, Any, Optional, IO
 
-import datagristle.common as comm
-import datagristle.configulator as configulator
-import datagristle.csvhelper as csvhelper
+import datagristle.configulator as conf
 import datagristle.file_io as file_io
+import datagristle.helpdoc as helpdoc
 import datagristle.location_slicer as slicer
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
 NAME = basename(__file__)
-SHORT_HELP = 'Extract column and row subsets out of files using python string slicing notation\n'
+LONG_HELP = helpdoc.expand_long_help(__doc__)
+SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 
 
@@ -279,10 +256,10 @@ def process_rec(rec_number: int,
 
 
 
-class ConfigManager(configulator.Config):
+class ConfigManager(conf.Config):
 
     def __init__(self):
-        super().__init__(NAME, SHORT_HELP, __doc__)
+        super().__init__(NAME, SHORT_HELP, LONG_HELP)
 
 
     def get_config(self) -> Dict[str, Any]:
@@ -340,6 +317,7 @@ class ConfigManager(configulator.Config):
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
         self.add_all_csv_configs()
+        self.add_all_help_configs()
 
 
     def extend_config(self) -> None:

@@ -6,223 +6,177 @@ within the file.  Once complete it then prints the results for the user.
 
 Usage: gristle_determinator [options]
 
-    Help Options:
 
-        -h, --help               show brief help message and exit
-        --long-help              show this verbose help and exit
-        -V, --version            show version info and exit
-
-    Main Options:
-        -i, --infiles=INFILES One input file
-        -o, --outfile=OUTFILE Specify output file.  Default is stdout.
-        -c, --column-number=COLUMN_NUMBER
-                              Restrict analysis to a single column (field
-                              number) - using a zero-offset
-        --read-limit=READ_LIMIT
-                              Limits the number of records read
-
-        --max-freq=MAX_FREQ
-                              Specify a maximum number of entries for freq
-                              dictionary. This is applied separately to each
-                              column. The default is set at approximately 1
-                              million entries.
-        --column-types=COLUMN_TYPES
-                              Allows manual specification of field types:
-                              integer, float, string, timestamp. Use format:
-                              "colno:type, colno:type,  colno:type"
-
-    Output Format Options:
-        --outputformat        Choices include: readable, parsable, metadata
-                              with a default of readable.
-        -b, --brief           skips field-level analysis
-        --verbosity=VERBOSITY Controls stdout level of detail.  Valid values
-                              include: quiet, normal, high, debug.
-
-    Metadata Database Options:
-        --metadata            Indicates whether or not to write results into
-                              metadata database
-        --schema-id=SCHEMA_ID Used with metadata outputformat to identify
-                              structure set being analyzed.
-        --collection-id=COLLECTION_ID
-                              Used with metadata outputformat to identify
-                              structure being analyzed.
-
-    CSV Dialect Options:
-        -d, --delimiter=DELIMITER
-                              Specify a quoted single-character field delimiter.
-                              Useful if automatic csv dialect detection fails to
-                              correctly interpret file.  Also required for STDIN
-                              input.  If provided then quoting should also be
-                              provided.
-        -q, --quoting=QUOTING Specifies the quoting style.  Valid values include:
-                              quote_none, quote_minimal, quote_nonnumeric,
-                              quote_all
-        --quotechar=QUOTECHAR
-        --escapechar=ESCAPECHAR
-        --has-header          Indicates that there is a header in the file.
-        --has-no-header       Indicates that there is no header in the file.
-                              Useful for overriding automatic csv-guessing
-                              behavior.
+Main Options:
+    -i, --infiles INFILES
+                        One input file.
+    -o, --outfile OUTFILE
+                        The output file with a default of '-' for stdout.
+    -c, --column-number COLUMN_NUMBER
+                        Restrict analysis to a single column (field number) - using a zero-offset.
+    --read-limit READ_LIMIT
+                        Limit  the number of records read.
+    --max-freq MAX_FREQ The max entries for freq dictionary.
+                        This is applied separately to each column. The default is set at
+                        approximately 1 million entries.
+    --column-types COLUMN_TYPES
+                        Manual specification of field types: integer, float, string, timestamp.
+                        Use format: "colno:type, colno:type,  colno:type".
 
 
-Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the delimiter and quoting info - but will let it figure these out itself.  There's no header - so it doesn't know the names of the fields, but otherwise is getting everything correct.
-
-$ gristle_determinator --infiles /etc/passwd
-
-File Structure:
-  format type:       csv
-  field cnt:         7
-  record cnt:        42
-  has header:        False
-  delimiter:         :
-  csv quoting:       False
-  skipinitialspace:  False
-  quoting:           QUOTE_NONE
-  doublequote:       False
-  quotechar:         "
-  lineterminator:    '\n'
-  escapechar:        None
-
-Field Analysis Progress:
-   Analyzing field: 0
-   Analyzing field: 1
-   Analyzing field: 2
-   Analyzing field: 3
-   Analyzing field: 4
-   Analyzing field: 5
-   Analyzing field: 6
-
-Fields Analysis Results:
-
-      ------------------------------------------------------
-      Name:             field_0
-      Field Number:     0
-      Wrong Field Cnt:  0
-      Type:             string
-      Min:              avahi
-      Max:              www-data
-      Unique Values:    42
-      Known Values:     42
-      Case:             lower
-      Min Length:       2
-      Max Length:       17
-      Mean Length:      6.55
-      Top Values not shown - all values are unique
-
-      ------------------------------------------------------
-      Name:             field_1
-      Field Number:     1
-      Wrong Field Cnt:  0
-      Type:             string
-      Min:              x
-      Max:              x
-      Unique Values:    1
-      Known Values:     1
-      Case:             lower
-      Min Length:       1
-      Max Length:       1
-      Mean Length:      1.00
-      Top Values:
-         x                                        x 42 occurrences
-
-      ------------------------------------------------------
-      Name:             field_2
-      Field Number:     2
-      Wrong Field Cnt:  0
-      Type:             integer
-      Min:              0
-      Max:              65534
-      Unique Values:    42
-      Known Values:     42
-      Mean:             1777.23809524
-      Median:           103.5
-      Variance:         99268886.3719
-      Std Dev:          9963.37725733
-      Top Values not shown - all values are unique
-
-      ------------------------------------------------------
-      Name:             field_3
-      Field Number:     3
-      Wrong Field Cnt:  0
-      Type:             integer
-      Min:              0
-      Max:              65534
-      Unique Values:    38
-      Known Values:     38
-      Mean:             6450.35714286
-      Median:           104.0
-      Variance:         367584156.087
-      Std Dev:          19172.4843483
-      Top Values:
-         65534                                    x 4 occurrences
-         7                                        x 2 occurrences
-         1000                                     x 1 occurrences
-         1001                                     x 1 occurrences
-         1002                                     x 1 occurrences
-         1003                                     x 1 occurrences
-         1004                                     x 1 occurrences
-         1005                                     x 1 occurrences
-         1006                                     x 1 occurrences
-         123                                      x 1 occurrences
-
-      < remaining 3 fields of output truncated for brevity >
+Output Format Options:
+    --outputformat OUTPUTFORMAT
+                        Choices include: readable, parsable, metadata with a default of readable.
+    -b, --brief         Skip field-level analysis
+    --verbosity VERBOSITY
+                        Controls stdout level of detail.  Valid values include: quiet, normal,
+                        high, debug.
 
 
-Example #2 - same as the first, but this time writing the output to the "parsable" output format.
-
-$ ./gristle_determinator --infiles /etc/passwd  --outputformat parsable
-
-"file_analysis_results"|"main"|"main"|"format_type"|"csv"
-"file_analysis_results"|"main"|"main"|"field_count"|"7"
-"file_analysis_results"|"main"|"main"|"record_count"|"42"
-"file_analysis_results"|"main"|"main"|"has_header"|"False"
-"file_analysis_results"|"main"|"main"|"delimiter"|":"
-#"file_analysis_results"|"main"|"main"|"csv_quoting"|"False"
-"file_analysis_results"|"main"|"main"|"skipinitialspace"|"False"
-"file_analysis_results"|"main"|"main"|"quoting"|"QUOTE_NONE"
-"file_analysis_results"|"main"|"main"|"doublequote"|"False"
-"file_analysis_results"|"main"|"main"|"escapechar"|"None"
-"field_analysis_results"|"field_0"|"main"|"name"|"field_0"
-"field_analysis_results"|"field_0"|"main"|"field_number"|"0"
-"field_analysis_results"|"field_0"|"main"|"wrong_field_cnt"|"0"
-"field_analysis_results"|"field_0"|"main"|"type"|"string"
-"field_analysis_results"|"field_0"|"main"|"min"|"avahi"
-"field_analysis_results"|"field_0"|"main"|"max"|"www-data"
-"field_analysis_results"|"field_0"|"main"|"unique_values"|"42"
-"field_analysis_results"|"field_0"|"main"|"known_values"|"42"
-"field_analysis_results"|"field_0"|"main"|"case"|"lower"
-"field_analysis_results"|"field_0"|"main"|"min_length"|"2"
-"field_analysis_results"|"field_0"|"main"|"max_length"|"17"
-"field_analysis_results"|"field_0"|"main"|"mean_length"|"6.54761904762"
-"field_analysis_results"|"field_0"|"top_values"|"top_values_not_shown"|" "
-"field_analysis_results"|"field_1"|"main"|"name"|"field_1"
-"field_analysis_results"|"field_1"|"main"|"field_number"|"1"
-"field_analysis_results"|"field_1"|"main"|"wrong_field_cnt"|"0"
-"field_analysis_results"|"field_1"|"main"|"type"|"string"
-"field_analysis_results"|"field_1"|"main"|"min"|"x"
-"field_analysis_results"|"field_1"|"main"|"max"|"x"
-"field_analysis_results"|"field_1"|"main"|"unique_values"|"1"
-"field_analysis_results"|"field_1"|"main"|"known_values"|"1"
-"field_analysis_results"|"field_1"|"main"|"case"|"lower"
-"field_analysis_results"|"field_1"|"main"|"min_length"|"1"
-"field_analysis_results"|"field_1"|"main"|"max_length"|"1"
-"field_analysis_results"|"field_1"|"main"|"mean_length"|"1.0"
-"field_analysis_results"|"field_1"|"top_values"|"x"|"42"
-
-< remaining 5 fields of output truncated for brevity >
+Metadata Database Options:
+    --metadata          Indicates whether or not to write results into metadata database.
+    --schema-id SCHEMA_ID
+                        Used with metadata outputformat to identify structure set being analyzed.
+    --collection-id COLLECTION_ID
+                        Used with metadata outputformat to identify structure being analyzed.
 
 
-Example #3 - Provide csv dialect and column number and type
-
-./gristle_determinator -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
+{see: helpdoc.CSV_SECTION}
 
 
-This source code is protected by the BSD license.  See the file "LICENSE"
-in the source code root directory for the full language or refer to it here:
-http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011-2021 Ken Farmer
+{see: helpdoc.CONFIG_SECTION}
+
+
+Examples:
+    Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the
+    delimiter and quoting info - but will let it figure these out itself.  There's no header - so it
+    doesn't know the names of the fields, but otherwise is getting everything correct.
+        $ gristle_determinator --infiles /etc/passwd
+        File Structure:
+            format type:       csv
+            field cnt:         7
+            record cnt:        42
+            has header:        False
+            delimiter:         :
+            csv quoting:       False
+            skipinitialspace:  False
+            quoting:           QUOTE_NONE
+            doublequote:       False
+            quotechar:         "
+            lineterminator:    '\n'
+            escapechar:        None
+        Field Analysis Progress:
+            Analyzing field: 0
+            Analyzing field: 1
+            Analyzing field: 2
+            Analyzing field: 3
+            Analyzing field: 4
+            Analyzing field: 5
+            Analyzing field: 6
+        Fields Analysis Results:
+        ------------------------------------------------------
+        Name:             field_0
+        Field Number:     0
+        Wrong Field Cnt:  0
+        Type:             string
+        Min:              avahi
+        Max:              www-data
+        Unique Values:    42
+        Known Values:     42
+        Case:             lower
+        Min Length:       2
+        Max Length:       17
+        Mean Length:      6.55
+        Top Values not shown - all values are unique
+        ------------------------------------------------------
+        Name:             field_1
+        Field Number:     1
+        Wrong Field Cnt:  0
+        Type:             string
+        Min:              x
+        Max:              x
+        Unique Values:    1
+        Known Values:     1
+        Case:             lower
+        Min Length:       1
+        Max Length:       1
+        Mean Length:      1.00
+        Top Values:
+            x                                        x 42 occurrences
+        ------------------------------------------------------
+        Name:             field_3
+        Field Number:     3
+        Wrong Field Cnt:  0
+        Type:             integer
+        Min:              0
+        Max:              65534
+        Unique Values:    38
+        Known Values:     38
+        Mean:             6450.35714286
+        Median:           104.0
+        Variance:         367584156.087
+        Std Dev:          19172.4843483
+        Top Values:
+            65534                                    x 4 occurrences
+            7                                        x 2 occurrences
+            1000                                     x 1 occurrences
+            1001                                     x 1 occurrences
+            1002                                     x 1 occurrences
+            1003                                     x 1 occurrences
+            1004                                     x 1 occurrences
+            1005                                     x 1 occurrences
+            1006                                     x 1 occurrences
+            123                                      x 1 occurrences
+        < some output truncated for brevity >
+    Example #2 - same as the first, but this time writing the output to the "parsable" output format
+    $ ./gristle_determinator --infiles /etc/passwd  --outputformat parsable
+            "file_analysis_results"|"main"|"main"|"format_type"|"csv"
+            "file_analysis_results"|"main"|"main"|"field_count"|"7"
+            "file_analysis_results"|"main"|"main"|"record_count"|"42"
+            "file_analysis_results"|"main"|"main"|"has_header"|"False"
+            "file_analysis_results"|"main"|"main"|"delimiter"|":"
+            "file_analysis_results"|"main"|"main"|"csv_quoting"|"False"
+            "file_analysis_results"|"main"|"main"|"skipinitialspace"|"False"
+            "file_analysis_results"|"main"|"main"|"quoting"|"QUOTE_NONE"
+            "file_analysis_results"|"main"|"main"|"doublequote"|"False"
+            "file_analysis_results"|"main"|"main"|"escapechar"|"None"
+            "field_analysis_results"|"field_0"|"main"|"name"|"field_0"
+            "field_analysis_results"|"field_0"|"main"|"field_number"|"0"
+            "field_analysis_results"|"field_0"|"main"|"wrong_field_cnt"|"0"
+            "field_analysis_results"|"field_0"|"main"|"type"|"string"
+            "field_analysis_results"|"field_0"|"main"|"min"|"avahi"
+            "field_analysis_results"|"field_0"|"main"|"max"|"www-data"
+            "field_analysis_results"|"field_0"|"main"|"unique_values"|"42"
+            "field_analysis_results"|"field_0"|"main"|"known_values"|"42"
+            "field_analysis_results"|"field_0"|"main"|"case"|"lower"
+            "field_analysis_results"|"field_0"|"main"|"min_length"|"2"
+            "field_analysis_results"|"field_0"|"main"|"max_length"|"17"
+            "field_analysis_results"|"field_0"|"main"|"mean_length"|"6.54761904762"
+            "field_analysis_results"|"field_0"|"top_values"|"top_values_not_shown"|" "
+            "field_analysis_results"|"field_1"|"main"|"name"|"field_1"
+            "field_analysis_results"|"field_1"|"main"|"field_number"|"1"
+            "field_analysis_results"|"field_1"|"main"|"wrong_field_cnt"|"0"
+            "field_analysis_results"|"field_1"|"main"|"type"|"string"
+            "field_analysis_results"|"field_1"|"main"|"min"|"x"
+            "field_analysis_results"|"field_1"|"main"|"max"|"x"
+            "field_analysis_results"|"field_1"|"main"|"unique_values"|"1"
+            "field_analysis_results"|"field_1"|"main"|"known_values"|"1"
+            "field_analysis_results"|"field_1"|"main"|"case"|"lower"
+            "field_analysis_results"|"field_1"|"main"|"min_length"|"1"
+            "field_analysis_results"|"field_1"|"main"|"max_length"|"1"
+            "field_analysis_results"|"field_1"|"main"|"mean_length"|"1.0"
+            "field_analysis_results"|"field_1"|"top_values"|"x"|"42"
+            < remaining 5 fields of output truncated for brevity >
+        Example #3 - Provide csv dialect and column number and type
+            ./gristle_determinator -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
+
+
+Licensing and Further Info:
+    This source code is protected by the BSD license.  See the file "LICENSE"
+    in the source code root directory for the full language or refer to it here:
+    http://opensource.org/licenses/BSD-3-Clause
+    Copyright 2011-2021 Ken Farmer
 """
-import csv
 import errno
 import sys
 from os.path import basename
@@ -235,13 +189,15 @@ import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.field_determinator as field_determinator
 import datagristle.file_type as file_type
+import datagristle.helpdoc as helpdoc
 import datagristle.metadata as metadata
 
-#Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
+# Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
 NAME = basename(__file__)
-SHORT_HELP = 'Analyze and profile csv files'
+LONG_HELP = helpdoc.expand_long_help(__doc__)
+SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 # pylint is confused on some inheritance issues
 # pylint: disable=E1101
@@ -249,26 +205,24 @@ SHORT_HELP = 'Analyze and profile csv files'
 
 
 def main() -> int:
-    """ Allows users to directly call determinator from command line
-    """
+    """Allows users to directly call determinator from command line"""
     md_man = None
 
     try:
         config_manager = ConfigManager()
         nconfig = config_manager.get_config()
     except EOFError:
-        sys.exit(errno.ENODATA) #61: empty file
+        sys.exit(errno.ENODATA)  # 61: empty file
 
     if nconfig.metadata:
         md_man = MetadataManager(nconfig.schemaid, nconfig.collectionid)
 
-    out_writer = OutputWriter(output_filename=nconfig.outfile,
-                              output_format=nconfig.outputformat)
+    out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.outputformat)
 
     # Get Analysis on File:
-    my_file = file_type.FileTyper(nconfig.dialect,
-                                  nconfig.infiles[0],
-                                  read_limit=nconfig.read_limit)
+    my_file = file_type.FileTyper(
+        nconfig.dialect, nconfig.infiles[0], read_limit=nconfig.read_limit
+    )
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
@@ -281,21 +235,22 @@ def main() -> int:
     if nconfig.brief:
         return 0
 
-
     # Get Analysis on ALL Fields:
-    my_fields = field_determinator.FieldDeterminator(nconfig.infiles[0],
-                                                     my_file.field_cnt,
-                                                     my_file.dialect,
-                                                     nconfig.verbosity)
+    my_fields = field_determinator.FieldDeterminator(
+        nconfig.infiles[0], my_file.field_cnt, my_file.dialect, nconfig.verbosity
+    )
 
     if nconfig.column_type_overrides:
-        assert max(nconfig.column_type_overrides) < my_file.field_cnt,   \
-           "ERROR: column_type_override references non-existing column_number"
+        assert (
+            max(nconfig.column_type_overrides) < my_file.field_cnt
+        ), "ERROR: column_type_override references non-existing column_number"
 
-    my_fields.analyze_fields(nconfig.column_number,
-                             nconfig.column_type_overrides,
-                             nconfig.max_freq,
-                             nconfig.read_limit)
+    my_fields.analyze_fields(
+        nconfig.column_number,
+        nconfig.column_type_overrides,
+        nconfig.max_freq,
+        nconfig.read_limit,
+    )
 
     out_writer.write_field_results(my_fields, nconfig.column_number)
     if nconfig.metadata:
@@ -305,12 +260,8 @@ def main() -> int:
     return 0
 
 
-
 class MetadataManager(object):
-
-    def __init__(self,
-                 schema_id,
-                 collection_id):
+    def __init__(self, schema_id, collection_id):
 
         self.schema_id = schema_id
         self.collection_id = collection_id
@@ -319,62 +270,65 @@ class MetadataManager(object):
         self.md = metadata.GristleMetaData()
 
         if self.md.collection_tools.getter(collection_id=collection_id) is None:
-            print('ERROR: schema_id / collection_id (%d / %d) does not exist'
-                   % (schema_id, collection_id))
+            print(
+                "ERROR: schema_id / collection_id (%d / %d) does not exist"
+                % (schema_id, collection_id)
+            )
             sys.exit(1)
         else:
-            print(self.md.collection_tools.getter(schema_id=schema_id,
-                                                  collection_id=collection_id))
+            print(self.md.collection_tools.getter(schema_id=schema_id, collection_id=collection_id))
 
         self.instance_id = self.md.instance_tools.get_instance_id(self.schema_id)
         self.analysis_profile_id = self.md.analysis_profile_tools.get_analysis_profile_id(
-                                   self.instance_id, self.collection_id)
-
+            self.instance_id, self.collection_id
+        )
 
         # blow away prior analysis, collection analysis, etc
         # create new analysis record
-        self.analysis_id = self.md.analysis_tools.setter(instance_id=self.instance_id,
-                                                         analysis_profile_id=self.analysis_profile_id,
-                                                         analysis_tool='gristle_determinator')
+        self.analysis_id = self.md.analysis_tools.setter(
+            instance_id=self.instance_id,
+            analysis_profile_id=self.analysis_profile_id,
+            analysis_tool="gristle_determinator",
+        )
 
+    def write_file_results(self, filetype: file_type.FileTyper, dialect: csvhelper.Dialect) -> None:
 
-    def write_file_results(self,
-                           filetype: file_type.FileTyper,
-                           dialect: csvhelper.Dialect) -> None:
+        self.ca_id = self.md.collection_analysis_tools.setter(
+            analysis_id=self.analysis_id,
+            collection_id=self.collection_id,
+            ca_name="unknown",
+            ca_location=filetype.fqfn,
+            ca_row_cnt=filetype.record_cnt,
+            ca_field_cnt=filetype.field_cnt,
+            ca_delimiter=dialect.delimiter,
+            ca_has_header=dialect.has_header,
+            ca_quoting=csvhelper.get_quote_name(dialect.quoting).lower(),
+            ca_quote_char=dialect.quotechar,
+        )
 
-        self.ca_id = self.md.collection_analysis_tools.setter(analysis_id=self.analysis_id,
-                                                              collection_id=self.collection_id,
-                                                              ca_name='unknown',
-                                                              ca_location=filetype.fqfn,
-                                                              ca_row_cnt=filetype.record_cnt,
-                                                              ca_field_cnt=filetype.field_cnt,
-                                                              ca_delimiter=dialect.delimiter,
-                                                              ca_has_header=dialect.has_header,
-                                                              ca_quoting=csvhelper.get_quote_name(dialect.quoting).lower(),
-                                                              ca_quote_char=dialect.quotechar)
-
-
-    def write_field_results(self,
-                            field_analysis: field_determinator.FieldDeterminator,
-                            col_number: int) -> None:
+    def write_field_results(
+        self, field_analysis: field_determinator.FieldDeterminator, col_number: int
+    ) -> None:
 
         for sub in range(field_analysis.field_cnt):
             if col_number is not None and sub != col_number:
                 continue
-            if field_analysis.field_types[sub] == 'integer':
-                field_type = 'int'
+            if field_analysis.field_types[sub] == "integer":
+                field_type = "int"
             else:
                 field_type = field_analysis.field_types[sub]
-            if field_type == 'string':
+            if field_type == "string":
                 field_len = field_analysis.field_max_length[sub]
             else:
                 field_len = None
 
-            field_id = self.md.field_tools.get_field_id(self.collection_id,
-                                                        field_order=sub,
-                                                        field_type=field_type,
-                                                        field_len=field_len,
-                                                        field_name=field_analysis.field_names[sub])
+            field_id = self.md.field_tools.get_field_id(
+                self.collection_id,
+                field_order=sub,
+                field_type=field_type,
+                field_len=field_len,
+                field_name=field_analysis.field_names[sub],
+            )
 
             fa_case = None
             fa_min_len = None
@@ -384,60 +338,61 @@ class MetadataManager(object):
             fa_median = None
             fa_stddev = None
             fa_variance = None
-            if field_analysis.field_types[sub] in ('integer','float'):
+            if field_analysis.field_types[sub] in ("integer", "float"):
                 fa_mean = field_analysis.field_mean[sub]
                 fa_median = field_analysis.field_median[sub]
                 fa_stddev = field_analysis.stddev[sub]
                 fa_variance = field_analysis.variance[sub]
-            elif field_analysis.field_types[sub] == 'string':
+            elif field_analysis.field_types[sub] == "string":
                 fa_case = field_analysis.field_case[sub]
                 fa_min_len = field_analysis.field_min_length[sub]
                 fa_max_len = field_analysis.field_max_length[sub]
                 fa_mean_len = field_analysis.field_mean_length[sub]
 
-            fa_id = self.md.field_analysis_tools.setter(ca_id=self.ca_id,
-                                                        field_id=field_id,
-                                                        fa_type=field_analysis.field_types[sub],
-                                                        fa_unique_cnt=len(field_analysis.field_freqs[sub]),
-                                                        fa_known_cnt=len(field_analysis.get_known_values(sub)),
-                                                        fa_min=field_analysis.field_min[sub],
-                                                        fa_max=field_analysis.field_max[sub],
-                                                        fa_mean=fa_mean,
-                                                        fa_median=fa_median,
-                                                        fa_stddev=fa_stddev,
-                                                        fa_variance=fa_variance,
-                                                        fa_case=fa_case,
-                                                        fa_min_len=fa_min_len,
-                                                        fa_max_len=fa_max_len,
-                                                        fa_mean_len=fa_mean_len)
+            fa_id = self.md.field_analysis_tools.setter(
+                ca_id=self.ca_id,
+                field_id=field_id,
+                fa_type=field_analysis.field_types[sub],
+                fa_unique_cnt=len(field_analysis.field_freqs[sub]),
+                fa_known_cnt=len(field_analysis.get_known_values(sub)),
+                fa_min=field_analysis.field_min[sub],
+                fa_max=field_analysis.field_max[sub],
+                fa_mean=fa_mean,
+                fa_median=fa_median,
+                fa_stddev=fa_stddev,
+                fa_variance=fa_variance,
+                fa_case=fa_case,
+                fa_min_len=fa_min_len,
+                fa_max_len=fa_max_len,
+                fa_mean_len=fa_mean_len,
+            )
 
             if field_analysis.field_freqs[sub] is not None:
                 sorted_list = field_analysis.get_top_freq_values(sub, limit=100)
                 for value, count in sorted_list:
-                    fav_id = self.md.field_analysis_value_tools.setter(fa_id=fa_id,
-                                                                       fav_value=value,
-                                                                       fav_count=count)
-
+                    fav_id = self.md.field_analysis_value_tools.setter(
+                        fa_id=fa_id, fav_value=value, fav_count=count
+                    )
 
 
 class OutputWriter(object):
     """
-        Parsable Format:
-          [division]             | [section]    | [subsection] | [key]       | [value]
-          file_structure         | main         | main         | format_type | csv
-          file_structure         | main         | main         | field_count | 4
-          field_analysis_results | field_0      | main         | name        | station_id
-          field_analysis_results | field_0      | topvalues    | blue        | 57
+    Parsable Format:
+      [division]             | [section]    | [subsection] | [key]       | [value]
+      file_structure         | main         | main         | format_type | csv
+      file_structure         | main         | main         | field_count | 4
+      field_analysis_results | field_0      | main         | name        | station_id
+      field_analysis_results | field_0      | topvalues    | blue        | 57
     """
 
     def __init__(self, output_filename: str, output_format: str) -> None:
         self.division: str = None
         self.output_filename = output_filename
         self.output_format = output_format
-        assert self.output_format in ['readable', 'parsable', 'metadata']
+        assert self.output_format in ["readable", "parsable", "metadata"]
 
-        if self.output_filename not in ('-', None):
-            self.outfile = open(self.output_filename, 'w')
+        if self.output_filename not in ("-", None):
+            self.outfile = open(self.output_filename, "w")
         else:
             self.outfile = sys.stdout
 
@@ -448,279 +403,313 @@ class OutputWriter(object):
         if self.outfile:
             self.outfile.close()
 
-
-    def write_file_results(self,
-                           my_file: file_type.FileTyper,
-                           dialect: csvhelper.Dialect) -> None:
+    def write_file_results(self, my_file: file_type.FileTyper, dialect: csvhelper.Dialect) -> None:
         self.write_header()
-        self.write_header('File Analysis Results:')
-        self.division = 'File Analysis Results'
-        self.section = 'main'
-        self.subsection = 'main'
+        self.write_header("File Analysis Results:")
+        self.division = "File Analysis Results"
+        self.section = "main"
+        self.subsection = "main"
 
-        self.write_string('field count', my_file.field_cnt)
+        self.write_string("field count", my_file.field_cnt)
         if my_file.record_cnt_is_est:
-            self.write_string('record count', '%d (est)' % my_file.record_cnt)
+            self.write_string("record count", "%d (est)" % my_file.record_cnt)
         else:
-            self.write_string('record count', my_file.record_cnt)
-        self.write_string('has_header', my_file.dialect.has_header)
-        if my_file.dialect.delimiter.strip() == '':
-            self.write_string('delimiter', '[space]')
-        elif dialect.delimiter.strip() == '|':
-            self.write_string('delimiter', "'|'")
+            self.write_string("record count", my_file.record_cnt)
+        self.write_string("has_header", my_file.dialect.has_header)
+        if my_file.dialect.delimiter.strip() == "":
+            self.write_string("delimiter", "[space]")
+        elif dialect.delimiter.strip() == "|":
+            self.write_string("delimiter", "'|'")
         else:
-            self.write_string('delimiter', dialect.delimiter)
-        self.write_string('skipinitialspace', dialect.skipinitialspace)
-        self.write_string('quoting', csvhelper.get_quote_name(dialect.quoting))
-        self.write_string('doublequote', dialect.doublequote)
-        if self.output_format == 'readable':
-            self.write_string('quotechar', dialect.quotechar)
-            self.write_string('lineterminator', dialect.lineterminator, use_repr=True)
-        self.write_string('escapechar', dialect.escapechar)
+            self.write_string("delimiter", dialect.delimiter)
+        self.write_string("skipinitialspace", dialect.skipinitialspace)
+        self.write_string("quoting", csvhelper.get_quote_name(dialect.quoting))
+        self.write_string("doublequote", dialect.doublequote)
+        if self.output_format == "readable":
+            self.write_string("quotechar", dialect.quotechar)
+            self.write_string("lineterminator", dialect.lineterminator, use_repr=True)
+        self.write_string("escapechar", dialect.escapechar)
         self.write_header()
 
-
-    def write_field_results(self,
-                            my_fields: field_determinator.FieldDeterminator,
-                            column_number: int) -> None:
+    def write_field_results(
+        self, my_fields: field_determinator.FieldDeterminator, column_number: int
+    ) -> None:
         self.write_header()
-        self.write_header('Field Analysis Results')
-        self.division = 'Field Analysis Results'
+        self.write_header("Field Analysis Results")
+        self.division = "Field Analysis Results"
         for sub in range(my_fields.field_cnt):
-            self.section = 'field_%d' % sub
-            self.subsection = 'main'
+            self.section = "field_%d" % sub
+            self.subsection = "main"
             if column_number is not None and sub != column_number:
                 continue
             self.write_header()
-            self.write_header('------------------------------------------------------', indent=6)
-            self.write_string('Name', my_fields.field_names[sub], indent=4)
-            self.write_string('Field Number', sub, indent=4)
-            self.write_string('Wrong Field Cnt', my_fields.field_rows_invalid[sub], indent=4)
+            self.write_header("------------------------------------------------------", indent=6)
+            self.write_string("Name", my_fields.field_names[sub], indent=4)
+            self.write_string("Field Number", sub, indent=4)
+            self.write_string("Wrong Field Cnt", my_fields.field_rows_invalid[sub], indent=4)
             if my_fields.field_trunc[sub]:
-                self.write_string('Data Truncated: analysis will be partial', indent=4)
+                self.write_string("Data Truncated: analysis will be partial", indent=4)
 
-            self.write_string('Type', my_fields.field_types[sub], indent=4)
-            self.write_string('Min', my_fields.field_min[sub], indent=4)
-            self.write_string('Max', my_fields.field_max[sub], indent=4)
-            self.write_string('Unique Values', len(my_fields.field_freqs[sub]), indent=4)
-            self.write_string('Known Values', len(my_fields.get_known_values(sub)), indent=4)
+            self.write_string("Type", my_fields.field_types[sub], indent=4)
+            self.write_string("Min", my_fields.field_min[sub], indent=4)
+            self.write_string("Max", my_fields.field_max[sub], indent=4)
+            self.write_string("Unique Values", len(my_fields.field_freqs[sub]), indent=4)
+            self.write_string("Known Values", len(my_fields.get_known_values(sub)), indent=4)
 
-            if my_fields.field_types[sub] in ('integer', 'float'):
-                self.write_string('Mean', my_fields.field_mean[sub], indent=4)
-                self.write_string('Median', my_fields.field_median[sub], indent=4)
-                self.write_string('Variance', my_fields.variance[sub], indent=4)
-                self.write_string('Std Dev', my_fields.stddev[sub], indent=4)
-            elif my_fields.field_types[sub] == 'string':
-                self.write_string('Case', my_fields.field_case[sub], indent=4)
-                self.write_string('Min Length', my_fields.field_min_length[sub], indent=4)
-                self.write_string('Max Length', my_fields.field_max_length[sub], indent=4)
-                self.write_string('Mean Length', my_fields.field_mean_length[sub], indent=4)
+            if my_fields.field_types[sub] in ("integer", "float"):
+                self.write_string("Mean", my_fields.field_mean[sub], indent=4)
+                self.write_string("Median", my_fields.field_median[sub], indent=4)
+                self.write_string("Variance", my_fields.variance[sub], indent=4)
+                self.write_string("Std Dev", my_fields.stddev[sub], indent=4)
+            elif my_fields.field_types[sub] == "string":
+                self.write_string("Case", my_fields.field_case[sub], indent=4)
+                self.write_string("Min Length", my_fields.field_min_length[sub], indent=4)
+                self.write_string("Max Length", my_fields.field_max_length[sub], indent=4)
+                self.write_string("Mean Length", my_fields.field_mean_length[sub], indent=4)
 
             self.write_field_freq(my_fields, sub)
 
-
     def write_field_freq(self, my_fields: field_determinator.FieldDeterminator, col_no: int):
-        """ Writes out the top_values section for a single column.
-        """
-        self.subsection = 'top_values'
+        """Writes out the top_values section for a single column."""
+        self.subsection = "top_values"
 
         if my_fields.field_freqs[col_no] is None:
-            self.write_string('Top Values', 'no values found', indent=4)
+            self.write_string("Top Values", "no values found", indent=4)
             return
 
         sorted_list = my_fields.get_top_freq_values(col_no, limit=10)
 
         if not sorted_list:
-            self.write_string('Top Values', 'no value found', indent=4)
+            self.write_string("Top Values", "no value found", indent=4)
             return
 
         if sorted_list[0][1] == 1:
-            self.write_string('Top Values', 'not shown - all are unique', indent=4)
+            self.write_string("Top Values", "not shown - all are unique", indent=4)
             return
 
-        self.write_string('Top Values', indent=4)
+        self.write_string("Top Values", indent=4)
         for i, (key, val) in enumerate(sorted_list):
-            if self.output_format == 'readable':
-                self.write_string(key, 'x %d occurrences' % val, indent=8, key_width=30)
+            if self.output_format == "readable":
+                self.write_string(key, "x %d occurrences" % val, indent=8, key_width=30)
             else:
-                self.write_string(key, '%d' % val, indent=8, key_width=30)
+                self.write_string(key, "%d" % val, indent=8, key_width=30)
 
-
-
-    def write_header(self, val: str='', indent: int=0) -> None:
-        if self.output_format == 'readable':
-            self.outfile.write('{1:<{2}}{0}\n'.format(val, '', indent))
-        elif self.output_format == 'parsable':
+    def write_header(self, val: str = "", indent: int = 0) -> None:
+        if self.output_format == "readable":
+            self.outfile.write("{1:<{2}}{0}\n".format(val, "", indent))
+        elif self.output_format == "parsable":
             pass
 
+    def write_string(
+        self,
+        key: str,
+        value: Any = " ",
+        indent: int = 0,
+        key_width: int = 20,
+        use_repr: bool = False) -> None:
 
-    def write_string(self,
-                     key: str,
-                     value: Any = ' ',
-                     indent: int = 0,
-                     key_width: int = 20,
-                     use_repr: bool = False) -> None:
-
-        if self.output_format == 'parsable' and self._parsify(self.subsection) != 'top_values':
+        if self.output_format == "parsable" and self._parsify(self.subsection) != "top_values":
             trunc_key = self._parsify(key[:key_width])
             trunc_value = '"%s"' % str(value)[:30]
         else:
             trunc_key = key[:key_width]
             trunc_value = str(value)[:30]
 
-        if self.output_format == 'readable':
+        if self.output_format == "readable":
             if use_repr:
-                self.outfile.write('  {0:<{1}}{2:<{3}}{4!r}\n'.format('%s' % '', indent, trunc_key, key_width, trunc_value))
+                self.outfile.write(
+                    "  {0:<{1}}{2:<{3}}{4!r}\n".format(
+                        "%s" % "", indent, trunc_key, key_width, trunc_value
+                    )
+                )
             else:
-                self.outfile.write('  {0:<{1}}{2:<{3}}{4}\n'.format('%s' % '', indent, trunc_key, key_width, trunc_value))
-        elif self.output_format == 'parsable':
-            self.outfile.write('{0}|{1}|{2}|{3}|{4}\n'.format(self._parsify(self.division),
-                                                              self._parsify(self.section),
-                                                              self._parsify(self.subsection),
-                                                              trunc_key,
-                                                              trunc_value))
+                self.outfile.write(
+                    "  {0:<{1}}{2:<{3}}{4}\n".format(
+                        "%s" % "", indent, trunc_key, key_width, trunc_value
+                    )
+                )
+        elif self.output_format == "parsable":
+            self.outfile.write(
+                "{0}|{1}|{2}|{3}|{4}\n".format(
+                    self._parsify(self.division),
+                    self._parsify(self.section),
+                    self._parsify(self.subsection),
+                    trunc_key,
+                    trunc_value,
+                )
+            )
 
     def _parsify(self, val: str) -> str:
-        return '"%s"' % val.lower().replace(' ', '_')
+        return '"%s"' % val.lower().replace(" ", "_")
 
 
 
 class ConfigManager(configulator.Config):
-
     def __init__(self):
-        use = ("gristle_determinator determines file structure then analyzes contents of each "
-               "column.\n"
-               "Once complete it then prints the results for the user\n"
-               "\n"
-               "Usage: gristle_determinator --infiles [files] [misc options]"
-               "\n")
-        super().__init__(NAME, use, __doc__)
+        super().__init__(NAME, SHORT_HELP, LONG_HELP)
+
 
     def get_config(self) -> Dict[str, Any]:
         self.define_user_config()
         self.define_obsolete_config()
         self.process_configs()
         self.extend_config()
-        if self.nconfig.verbosity == 'debug':
+        if self.nconfig.verbosity == "debug":
             self.print_config()
         return self.nconfig
 
+
     def define_obsolete_config(self) -> None:
-        self.add_obsolete_metadata('schemaid', short_name=None, msg='--schemaid has been renamed --schema-id')
-        self.add_obsolete_metadata('collectionid', short_name=None, msg='--collectionid has been renamed --collection-id')
-        self.add_obsolete_metadata('types', short_name='T', msg='-T and --types have been renamed --column-types')
-        self.add_obsolete_metadata('column', short_name='', msg='--column has been renamed --column-number')
-        self.add_obsolete_metadata('', short_name='v', msg='-v (verbose) has been replaced by --verbosity high')
-        self.add_obsolete_metadata('output', short_name='', msg='--output has been renamed --outfile')
-        self.add_obsolete_metadata('number', short_name='', msg='--number has been renamed --max-freq')
-        # the arguments for infiles have also been replaced with -i - but this function doesn't support this 
+        self.add_obsolete_metadata(
+            "schemaid", short_name=None, msg="--schemaid has been renamed --schema-id"
+        )
+        self.add_obsolete_metadata(
+            "collectionid",
+            short_name=None,
+            msg="--collectionid has been renamed --collection-id",
+        )
+        self.add_obsolete_metadata(
+            "types",
+            short_name="T",
+            msg="-T and --types have been renamed --column-types",
+        )
+        self.add_obsolete_metadata(
+            "column", short_name="", msg="--column has been renamed --column-number"
+        )
+        self.add_obsolete_metadata(
+            "", short_name="v", msg="-v (verbose) has been replaced by --verbosity high"
+        )
+        self.add_obsolete_metadata(
+            "output", short_name="", msg="--output has been renamed --outfile"
+        )
+        self.add_obsolete_metadata(
+            "number", short_name="", msg="--number has been renamed --max-freq"
+        )
+        # the arguments for infiles have also been replaced with -i - but this function doesn't support this
+
 
     def define_user_config(self) -> None:
-        """ Defines the user config or metadata.   Does not get the user input.
-        """
-        self.add_standard_metadata('infiles')
-        self.add_standard_metadata('outfile')
+        """Defines the user config or metadata.   Does not get the user input."""
+        self.add_standard_metadata("infiles")
+        self.add_standard_metadata("outfile")
 
-        self.add_custom_metadata(name='outputformat',
-                                 arg_type='option',
-                                 default='readable',
-                                 type=str,
-                                 help="describe output format, provide one of: 'readable', 'parsable', or 'none' " )
-        self.add_custom_metadata(name='brief',
-                                 short_name='b',
-                                 arg_type='option',
-                                 default=False,
-                                 type=bool,
-                                 action='store_const',
-                                 const=True,
-                                 help="skips field-level analysis")
-        self.add_custom_metadata(name='read_limit',
-                                 arg_type='option',
-                                 default=-1,
-                                 type=int,
-                                 help="Specify a maximum number of records to read from input file")
-        self.add_custom_metadata(name='column_number',
-                                 short_name='c',
-                                 arg_type='option',
-                                 default=None,
-                                 type=int,
-                                 help='Restrict analysis to a single column (field number) - using a zero-offset')
-        self.add_custom_metadata(name='max_freq',
-                                 arg_type='option',
-                                 type=int,
-                                 help='Specify a maximum number of entries for freq dictionary. '
-                                      'This is applied separately to each column.  The default is'
-                                      ' set at approximately 1 million entries. ')
-        self.add_custom_metadata(name='column_types',
-                                 arg_type='option',
-                                 type=str,
-                                 help='Allows manual specification of field types: integer, float, '
-                                      'string, timestamp. Use format: "colno:type, colno:type, '
-                                      ' colno:type" ')
-        self.add_custom_metadata(name='metadata',
-                                 arg_type='option',
-                                 type=bool,
-                                 action='store_const',
-                                 const=True,
-                                 help='Indicates whether or not to write results into metadata database')
-        self.add_custom_metadata(name='schema_id',
-                                 arg_type='option',
-                                 type=int,
-                                 help='Used with metadata outputformat to identify structure set being analyzed.')
-        self.add_custom_metadata(name='collection_id',
-                                 arg_type='option',
-                                 type=int,
-                                 help='Used with metadata outputformat to identify structure set being analyzed.')
+        self.add_custom_metadata(
+            name="outputformat",
+            arg_type="option",
+            default="readable",
+            type=str,
+            help="describe output format, provide one of: 'readable', 'parsable', or 'none' ",
+        )
+        self.add_custom_metadata(
+            name="brief",
+            short_name="b",
+            arg_type="option",
+            default=False,
+            type=bool,
+            action="store_const",
+            const=True,
+            help="skips field-level analysis",
+        )
+        self.add_custom_metadata(
+            name="read_limit",
+            arg_type="option",
+            default=-1,
+            type=int,
+            help="Specify a maximum number of records to read from input file",
+        )
+        self.add_custom_metadata(
+            name="column_number",
+            short_name="c",
+            arg_type="option",
+            default=None,
+            type=int,
+            help="Restrict analysis to a single column (field number) - using a zero-offset",
+        )
+        self.add_custom_metadata(
+            name="max_freq",
+            arg_type="option",
+            type=int,
+            help="Specify a maximum number of entries for freq dictionary. "
+            "This is applied separately to each column.  The default is"
+            " set at approximately 1 million entries. ",
+        )
+        self.add_custom_metadata(
+            name="column_types",
+            arg_type="option",
+            type=str,
+            help="Allows manual specification of field types: integer, float, "
+            'string, timestamp. Use format: "colno:type, colno:type, '
+            ' colno:type" ',
+        )
+        self.add_custom_metadata(
+            name="metadata",
+            arg_type="option",
+            type=bool,
+            action="store_const",
+            const=True,
+            help="Indicates whether or not to write results into metadata database",
+        )
+        self.add_custom_metadata(
+            name="schema_id",
+            arg_type="option",
+            type=int,
+            help="Used with metadata outputformat to identify structure set being analyzed.",
+        )
+        self.add_custom_metadata(
+            name="collection_id",
+            arg_type="option",
+            type=int,
+            help="Used with metadata outputformat to identify structure set being analyzed.",
+        )
 
-        self.add_standard_metadata('verbosity')
+        self.add_standard_metadata("verbosity")
         self.add_all_config_configs()
         self.add_all_csv_configs()
+        self.add_all_help_configs()
 
 
+    def validate_custom_config(self, config: configulator.CONFIG_TYPE):
 
-    def validate_custom_config(self,
-                               config: configulator.CONFIG_TYPE):
-
-        if len(config['infiles']) > 1:
+        if len(config["infiles"]) > 1:
             abort("ERROR: multiple files not supported")
 
-        if config['brief'] and config['column_number']:
-            abort('ERROR: must not specify both brevity and column number')
+        if config["brief"] and config["column_number"]:
+            abort("ERROR: must not specify both brevity and column number")
 
-        if (config['schema_id'] or config['collection_id']) and not config['metadata']:
-            abort('ERROR: schema_id and collection_id are only for metadata')
+        if (config["schema_id"] or config["collection_id"]) and not config["metadata"]:
+            abort("ERROR: schema_id and collection_id are only for metadata")
 
-        if (config['schema_id'] is None or config['collection_id'] is None) and config['metadata']:
-            abort('ERROR: metadata requires schema_id and collection_id')
+        if (config["schema_id"] is None or config["collection_id"] is None) and config["metadata"]:
+            abort("ERROR: metadata requires schema_id and collection_id")
 
 
     def extend_config(self) -> None:
         self.generate_csv_dialect_config()
 
         # turn off verbose if parsable output is going to stdout
-        if self.nconfig.outputformat == 'parsable' \
-        and (not self.nconfig.outfile or self.nconfig.outfile == '-'):
-            self.config['verbosty'] = 'quiet' # don't mix data and info
+        if self.nconfig.outputformat == "parsable" and (
+            not self.nconfig.outfile or self.nconfig.outfile == "-"
+        ):
+            self.config["verbosty"] = "quiet"  # don't mix data and info
             self.replace_configs(self.config)
 
         # set up column_type_overrides
-        self.config['column_type_overrides'] = {}
-        if self.config['column_types']:
-            for col_type_pair in self.nconfig.column_types.split(','):
+        self.config["column_type_overrides"] = {}
+        if self.config["column_types"]:
+            for col_type_pair in self.nconfig.column_types.split(","):
                 try:
-                    (col_no, col_type) = col_type_pair.split(':')
+                    (col_no, col_type) = col_type_pair.split(":")
                     try:
                         int(col_no)
                     except ValueError:
-                        abort('invalid column number for types option')
-                    if col_type not in ['integer', 'float', 'string', 'timestamp']:
-                        abort('invalid type for types option')
+                        abort("invalid column number for types option")
+                    if col_type not in ["integer", "float", "string", "timestamp"]:
+                        abort("invalid type for types option")
                 except ValueError:
-                    abort('invalid format for types option')
-                self.config['column_type_overrides'][int(col_no)] = col_type
+                    abort("invalid format for types option")
+                self.config["column_type_overrides"][int(col_no)] = col_type
         self.replace_configs(self.config)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

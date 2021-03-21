@@ -4,36 +4,21 @@ Copies input files into a single output file while converting the csv dialect.
 
 Usage: gristle_file_converter [options]
 
-    Help Options:
-        -h, --help        Show this help message and exit
-        --long-help       Print more verbose help
-        -V, --version     Show version number then exit
-        --verbosity=VERBOSITY
-                          Controls level of logging.  Valid values include:
-                          quiet, normal, high, debug.
-    Main Options:
-        -i, --infiles [INFILES [INFILES ...]]
-                          Input filenames or default to for stdin
-        -o, --outfile OUTFILE
-                          Output filename or '-' for stdout (the default)
 
-    Input Format Options:
-        -d, --delimiter=DELIMITER
-                          Single-character csv delimiter
-        -q, --quoting=QUOTING
-                          Specify quoting behavior.  Useful when automatic csv
-                          dialect detection fails or when processing data via
-                          stdin.  Valid values are quote_all, quote_minimal,
-                          quote_nonnumeric, quote_none.
-        --quotechar=QUOTECHAR
-                          CSV quotechar - defaults to "
-        --doublequote     Quotes within quoted strings are escaped with double
-                          quotes.
-        --escapechar=ESCAPECHAR
-                          Quotes are escaped with the provided escapechar
-        --has-header      Indictes there is a header in the file
+{see: helpdoc.HELP_SECTION}
 
-    Output Formatting Options:
+
+Main Options:
+    -i, --infiles [INFILES [INFILES ...]]
+                        One or more input files or '-' (the default) for stdin.
+    -o, --outfile OUTFILE
+                        Output filename or '-' for stdout (the default).
+
+
+{see: helpdoc.CSV_SECTION}
+
+
+Output Formatting Options:
         -D, --out-delimiter=DELIMITER
                           Output csv delimiter, defaults to input delimiter
         -Q, --out-quoting=QUOTING
@@ -50,11 +35,13 @@ Usage: gristle_file_converter [options]
         --out-has-header  Output header - indicates header exists, defaults
                           to input has-header
 
-    Example Usage:
-        $ gristle_file_converter.py --infiles colors.csv  -o /tmp/colors.out \
+Examples:
+    $ gristle_file_converter.py --infiles colors.csv  -o /tmp/colors.out \
              --delimiter ','  --quoting quote_none  \
              --out-delimiter '|' --out-quoting quote_all --out_escapechar '\'
 
+
+Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
         http://opensource.org/licenses/BSD-3-Clause
@@ -68,16 +55,17 @@ from signal import signal, SIGPIPE, SIG_DFL
 import sys
 from typing import Dict, List, Any, Optional, Union
 
-import datagristle.common              as comm
-import datagristle.configulator        as configulator
-import datagristle.csvhelper           as csvhelper
-import datagristle.file_io             as file_io
+import datagristle.configulator as conf
+import datagristle.csvhelper as csvhelper
+import datagristle.file_io as file_io
+import datagristle.helpdoc as helpdoc
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
 NAME = basename(__file__)
-SHORT_HELP = '''Converts a file's csv dialect - field delimiter, quoting, etc.'''
+LONG_HELP = helpdoc.expand_long_help(__doc__)
+SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 
 
@@ -117,11 +105,11 @@ def main():
 
 
 
-class ConfigManager(configulator.Config):
+class ConfigManager(conf.Config):
 
     def __init__(self):
         self.config = None
-        super().__init__(NAME, SHORT_HELP, __doc__)
+        super().__init__(NAME, SHORT_HELP, LONG_HELP)
 
     def get_config(self) -> Dict[str, Any]:
         self.define_user_config()
