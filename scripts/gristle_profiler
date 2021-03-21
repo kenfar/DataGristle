@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-Gristle_determinator analyzes a file structure then analyzes contents of each column
+Gristle_profiler analyzes a file structure then analyzes contents of each column
 within the file.  Once complete it then prints the results for the user.
 
 
-Usage: gristle_determinator [options]
+Usage: gristle_profiler [options]
 
 
 Main Options:
@@ -51,7 +51,7 @@ Examples:
     Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the
     delimiter and quoting info - but will let it figure these out itself.  There's no header - so it
     doesn't know the names of the fields, but otherwise is getting everything correct.
-        $ gristle_determinator --infiles /etc/passwd
+        $ gristle_profiler --infiles /etc/passwd
         File Structure:
             format type:       csv
             field cnt:         7
@@ -129,7 +129,7 @@ Examples:
             123                                      x 1 occurrences
         < some output truncated for brevity >
     Example #2 - same as the first, but this time writing the output to the "parsable" output format
-    $ ./gristle_determinator --infiles /etc/passwd  --outputformat parsable
+    $ ./gristle_profiler --infiles /etc/passwd  --outputformat parsable
             "file_analysis_results"|"main"|"main"|"format_type"|"csv"
             "file_analysis_results"|"main"|"main"|"field_count"|"7"
             "file_analysis_results"|"main"|"main"|"record_count"|"42"
@@ -168,7 +168,7 @@ Examples:
             "field_analysis_results"|"field_1"|"top_values"|"x"|"42"
             < remaining 5 fields of output truncated for brevity >
         Example #3 - Provide csv dialect and column number and type
-            ./gristle_determinator -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
+            ./gristle_profiler -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
 
 
 Licensing and Further Info:
@@ -205,7 +205,7 @@ SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 
 def main() -> int:
-    """Allows users to directly call determinator from command line"""
+    """Allows users to directly call profiler from command line"""
     md_man = None
 
     try:
@@ -236,9 +236,10 @@ def main() -> int:
         return 0
 
     # Get Analysis on ALL Fields:
-    my_fields = field_determinator.FieldDeterminator(
-        nconfig.infiles[0], my_file.field_cnt, my_file.dialect, nconfig.verbosity
-    )
+    my_fields = field_determinator.FieldDeterminator(nconfig.infiles[0],
+                                                     my_file.field_cnt,
+                                                     my_file.dialect,
+                                                     nconfig.verbosity)
 
     if nconfig.column_type_overrides:
         assert (
@@ -431,9 +432,9 @@ class OutputWriter(object):
         self.write_string("escapechar", dialect.escapechar)
         self.write_header()
 
-    def write_field_results(
-        self, my_fields: field_determinator.FieldDeterminator, column_number: int
-    ) -> None:
+    def write_field_results(self,
+                            my_fields: field_determinator.FieldDeterminator,
+                            column_number: int) -> None:
         self.write_header()
         self.write_header("Field Analysis Results")
         self.division = "Field Analysis Results"

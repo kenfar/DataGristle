@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Tests gristle_determinator.py
+""" Tests gristle_profiler.py
 
     Contains a primary class: FileStructureFixtureManager
     Which is extended by six classes that override various methods or variables.
@@ -55,7 +55,7 @@ def generate_test_file(delim, rec_list, quoted=False, dir_name=None):
 
 
 def get_value(parsable_out, division, section, subsection, key):
-    """ Gets the value (right-most field) out of gristle_determinator
+    """ Gets the value (right-most field) out of gristle_profiler
         parsable output given the key values for the rest of the fields.
     """
     mydialect = csv.Dialect
@@ -103,7 +103,7 @@ class TestEmptyFile(object):
     def test_empty_file(self):
         fqfn = pjoin(self.tmp_dir, 'empty.csv')
         test_tools.touch(fqfn)
-        cmd = '%s --infiles %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable' % (pjoin(script_path, 'gristle_profiler'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -114,7 +114,7 @@ class TestEmptyFile(object):
     def test_empty_file_with_header(self):
         fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
         self.create_empty_file_with_header(fqfn)
-        cmd = '%s --infiles %s --outputformat=parsable' % (pjoin(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable' % (pjoin(script_path, 'gristle_profiler'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -125,7 +125,7 @@ class TestEmptyFile(object):
     def test_empty_file_with_header_and_hasheader_arg(self):
         fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
         self.create_empty_file_with_header(fqfn)
-        cmd = '%s --infiles %s --outputformat=parsable --has-header' % (pjoin(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable --has-header' % (pjoin(script_path, 'gristle_profiler'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -150,7 +150,7 @@ class TestOutputFormattingAndContents(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
-        cmd = '%s --infiles %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+        cmd = '%s --infiles %s --outputformat=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -269,7 +269,7 @@ class TestReadLimit(object):
         cmd = '%s \
                --infiles %s \
                --read-limit 4 \
-               --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+               --outputformat=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -357,7 +357,7 @@ class TestMaxFreq(object):
         cmd = '%s \
                --infiles %s \
                --max-freq 10  \
-               --outputformat=parsable' % (os.path.join(script_path, 'gristle_determinator'), fqfn)
+               --outputformat=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
