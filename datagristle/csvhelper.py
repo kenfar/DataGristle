@@ -73,7 +73,8 @@ def get_dialect(infiles: List[str],
                 quotechar: Optional[str],
                 has_header: Optional[bool],
                 doublequote: Optional[bool],
-                escapechar: Optional[str]) -> Dialect:
+                escapechar: Optional[str],
+                verbosity: Optional[str]) -> Dialect:
     """ Get the csv dialect from an inspection of the file and user input
         Raises:
             - EOFError if manual inspection of the file determines that it is empty.
@@ -109,7 +110,9 @@ def get_dialect(infiles: List[str],
 
     if not is_valid_dialect(final_dialect):
        print_dialect(final_dialect)
-       comm.abort('Error: invalid csv dialect', 'Unable to auto-detect all csv dialect attributes - please explicitly provide them')
+       comm.abort('Error: invalid csv dialect',
+                  'Unable to auto-detect all csv dialect attributes - please explicitly provide them',
+                  verbosity)
     return final_dialect
 
 

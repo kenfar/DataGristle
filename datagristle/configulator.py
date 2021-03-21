@@ -7,8 +7,8 @@
 
     Challenges:
     1. config files are hierarchical, args & envs are flat
-    2. args have dashes, variables have underscores
-    3. some input is intended to be interactive-only - such as --version --help --long-help
+    2. cli args and config keys have dashes, envvars have underscores
+    3. some input is intended to be interactive-only - such as --version, --help, --long-help
 """
 
 import argparse
@@ -320,7 +320,8 @@ class Config(object):
                                                             self.nconfig.quotechar,
                                                             self.nconfig.has_header,
                                                             self.nconfig.doublequote,
-                                                            self.nconfig.escapechar))
+                                                            self.nconfig.escapechar,
+                                                            self.nconfig.verbosity))
 
     def _validate_metadata(self):
         """ Validates the program's configuration metadata (not the user's input).
@@ -460,31 +461,37 @@ class Config(object):
                 if 'nargs' in self._app_metadata[key]:
                     continue
                 else:
-                    if not isinstance(val, self._app_metadata[key]['type']):
+
+                    required = self._app_metadata[key]
+
+                    if not isinstance(val, required['type']):
                         comm.abort('Error: config value has the wrong type',
-                                   f"Config item: '{key}' with value: '{val}' is not type: {self._app_metadata[key]['type']}")
+                                   f"'{key}' with value: '{val}' is not {required['type']}")
 
-                    if 'min_length' in self._app_metadata[key]:
-                        if len(val) < self._app_metadata[key]['min_length']:
-                            comm.abort('Error: key "{}" with value "{}" is shorter than min_length of {}'
-                                            .format(key, val, self._app_metadata[key]['min_length']))
-                    if 'max_length' in self._app_metadata[key]:
-                        if len(val) > self._app_metadata[key]['max_length']:
-                            comm.abort('Error: key "{}" with value "{}" is longer than max_length of {}'
-                                            .format(key, val, self._app_metadata[key]['max_length']))
-                    if 'minimum' in self._app_metadata[key]:
-                        if val < self._app_metadata[key]['minimum']:
-                            comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
-                                       f"""Value must be >= {self._app_metadata[key]['minimum']}""")
-                    if 'maximum' in self._app_metadata[key]:
-                        if val > self._app_metadata[key]['maximum']:
-                            comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
-                                       f"""Value must be <= {self._app_metadata[key]['maximum']}""")
+                    if 'min_length' in required:
+                        if len(val) < required['min_length']:
+                            comm.abort('Error: config value is under min_length',
+                                       f"'{key}' with len of value '{val}' is < {required['min_length']}")
 
-                    if 'choices' in self._app_metadata[key]:
-                        if val not in self._app_metadata[key]['choices']:
-                            comm.abort(f"Error: option '{key}' has invalid value of '{val}' ",
-                                       f"""Valid values include: '{self._app_metadata[key]["choices"]}' """)
+                    if 'max_length' in required:
+                        if len(val) > required['max_length']:
+                            comm.abort("Error: config value is over max_length",
+                                       f"'{key}' with len of value '{val}' is > {required['max_length']}")
+
+                    if 'minimum' in required:
+                        if val < required['minimum']:
+                            comm.abort(f"Error: config value less than minimum",
+                                       f"'{key}' with value of '{val}' is < {required['minimum']}")
+
+                    if 'maximum' in required:
+                        if val > required['maximum']:
+                            comm.abort(f"Error: config value greater than maximum",
+                                       f"'{key}' with value of '{val}' is > {required['maximum']}")
+
+                    if 'choices' in required:
+                        if val not in required['choices']:
+                            comm.abort(f"Error: config value not in valid list of choices",
+                                       f"Valid values include: {required['choices']} ")
 
         self._validate_dialect_with_stdin(config)
 
@@ -494,7 +501,7 @@ class Config(object):
             and (config['delimiter'] is None
                  or config['quoting'] is None
                  or config['has_header'] is None)):
-                comm.abort('Error: Please provide dialect when piping data into program via stdin')
+                comm.abort('Error: csv dialect is required when piping data via stdin')
 
 
 
@@ -787,9 +794,7 @@ class _CommandLineArgs(object):
     def _process_unknown_args(self, unknown_args: list) -> None:
         for arg in unknown_args:
             if arg in self.obsolete_args.keys():
-                summary = f'ERROR: obsolete option '
-                details = f'{self.obsolete_args[arg]}'
-                comm.abort(summary, details)
+                comm.abort('Error: obsolete option', self.obsolete_args[arg])
             else:
                 comm.abort(f'ERROR: Unknown option: {arg}')
 
@@ -797,8 +802,6 @@ class _CommandLineArgs(object):
     def _process_help_args(self, known_args: list) -> None:
         if known_args.help:
             print(self.short_help)
-            #for line in self.short_help:
-            #    print(line)
             sys.exit(0)
         if known_args.long_help:
             print(self.long_help)
