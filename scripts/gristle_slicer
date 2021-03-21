@@ -259,7 +259,7 @@ def process_rec(rec_number: int,
 class ConfigManager(conf.Config):
 
     def __init__(self):
-        super().__init__(NAME, SHORT_HELP, __doc__)
+        super().__init__(NAME, SHORT_HELP, LONG_HELP)
 
 
     def get_config(self) -> Dict[str, Any]:
