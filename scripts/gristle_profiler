@@ -209,8 +209,8 @@ def main() -> int:
     md_man = None
 
     try:
-        config_manager = ConfigManager()
-        nconfig = config_manager.get_config()
+        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        nconfig, _ = config_manager.get_config()
     except EOFError:
         sys.exit(errno.ENODATA)  # 61: empty file
 
@@ -546,19 +546,6 @@ class OutputWriter(object):
 
 
 class ConfigManager(configulator.Config):
-    def __init__(self):
-        super().__init__(NAME, SHORT_HELP, LONG_HELP)
-
-
-    def get_config(self) -> Dict[str, Any]:
-        self.define_user_config()
-        self.define_obsolete_config()
-        self.process_configs()
-        self.extend_config()
-        if self.nconfig.verbosity == "debug":
-            self.print_config()
-        return self.nconfig
-
 
     def define_obsolete_config(self) -> None:
         self.add_obsolete_metadata(
