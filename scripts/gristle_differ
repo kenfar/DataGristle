@@ -18,7 +18,6 @@ subsequent processing.  Examples of these transformations include:
     - populating a row version ending timestamp in the .delete and .chgold files
     - populating a batch_id in any or all files
 
-
 Usage: gristle_differ [options]
 
 
@@ -165,21 +164,11 @@ def main():
             and os.path.getsize(nconfig.infiles[1]) == 0):
         return 1
 
-    dialect = csvhelper.get_dialect(infiles=nconfig.infiles,
-                                    delimiter=nconfig.delimiter,
-                                    quoting=nconfig.quoting,
-                                    quotechar=nconfig.quotechar,
-                                    has_header=nconfig.has_header,
-                                    doublequote=nconfig.doublequote,
-                                    escapechar=nconfig.escapechar,
-                                    skipinitialspace=nconfig.skipinitialspace,
-                                    verbosity=nconfig.verbosity)
-
-    config_manager.update_config('col_names', comm.get_best_col_names(config, dialect))
+    config_manager.update_config('col_names', comm.get_best_col_names(config, nconfig.dialect))
     config = config_manager.config
     nconfig = config_manager.nconfig
 
-    file_delta = delta_runner(nconfig, dialect)
+    file_delta = delta_runner(nconfig, nconfig.dialect)
 
     if nconfig.verbosity in ('high', 'debug'):
         print('')
