@@ -172,6 +172,7 @@ def main():
                                     has_header=nconfig.has_header,
                                     doublequote=nconfig.doublequote,
                                     escapechar=nconfig.escapechar,
+                                    skipinitialspace=nconfig.skipinitialspace,
                                     verbosity=nconfig.verbosity)
 
     config_manager.update_config('col_names', comm.get_best_col_names(config, dialect))
@@ -491,6 +492,7 @@ class ConfigManager(configulator.Config):
                             'quotechar':       {"type":     ["null", "string"]},
                             'doublequote':     {"type":     ["null", "boolean"]},
                             'escapechar':      {"type":     ["null", "string"]},
+                            'skipinitialspace': {"type":    ["null", "boolean"]},
                             'verbosity':       {'type':     ["null", "string"],
                                                 "enum":     [None, 'quiet', 'normal', 'high', 'debug']},
                             'dry_run':         {"type":     "boolean"},

@@ -74,6 +74,7 @@ def get_dialect(infiles: List[str],
                 has_header: Optional[bool],
                 doublequote: Optional[bool],
                 escapechar: Optional[str],
+				skipinitialspace: Optional[bool],
                 verbosity: Optional[str]) -> Dialect:
     """ Get the csv dialect from an inspection of the file and user input
         Raises:
@@ -86,7 +87,8 @@ def get_dialect(infiles: List[str],
                                 quotechar=quotechar,
                                 has_header=has_header,
                                 doublequote=doublequote,
-                                escapechar=escapechar)
+                                escapechar=escapechar,
+                                skipinitialspace=skipinitialspace)
     else:
         detected_dialect = None
         try:
@@ -106,7 +108,8 @@ def get_dialect(infiles: List[str],
                                          quotechar=quotechar,
                                          has_header=has_header,
                                          doublequote=doublequote,
-                                         escapechar=escapechar)
+                                         escapechar=escapechar,
+                                         skipinitialspace=skipinitialspace)
 
     if not is_valid_dialect(final_dialect):
        print_dialect(final_dialect)
@@ -123,7 +126,8 @@ def get_empty_dialect():
                    quotechar=None,
                    has_header=None,
                    escapechar=None,
-                   doublequote=None)
+                   doublequote=None,
+                   skipinitialspace=None)
 
 
 
@@ -133,7 +137,8 @@ def override_dialect(dialect: Dialect,
                      quotechar: Optional[str],
                      has_header: Optional[bool],
                      doublequote: Optional[bool],
-                     escapechar: Optional[str]) -> Dialect:
+                     escapechar: Optional[str],
+                     skipinitialspace: Optional[bool]) -> Dialect:
     """ Consolidates individual dialect fields with a csv Dialect structure.
 
         Most commonly used by entry points / scripts to combine explicit csv dialect fields
@@ -160,6 +165,7 @@ def override_dialect(dialect: Dialect,
 
     dialect.doublequote = doublequote if doublequote is not None else dialect.doublequote
     dialect.escapechar = escapechar or dialect.escapechar
+    dialect.skipinitialspace = skipinitialspace if skipinitialspace is not None else dialect.skipinitialspace
     dialect.lineterminator = '\n'
 
     return dialect

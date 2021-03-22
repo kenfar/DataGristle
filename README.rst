@@ -66,7 +66,7 @@ Utilities Provided in This Release:
    -  Produces a frequency distribution of multiple columns from input
       file.
 
--  gristle_determinator
+-  gristle_profiler (was: gristle_determinator)
 
    -  Identifies file formats, generates metadata, prints file analysis
       report
@@ -182,8 +182,8 @@ gristle_freaker
                    and the third is the number of times that value appeared.  
                    This output is repeated for each column.
 
-gristle_determinator
-====================
+gristle_profiler
+================
 
 ::
 
@@ -193,7 +193,7 @@ gristle_determinator
    useful in both understanding the format and data and quickly spotting issues.
 
    Examples:
-      $ gristle_determinator --infiles japan_station_radiation.csv
+      $ gristle_profiler --infiles japan_station_radiation.csv
                    This command will analyze a file with radiation measurements
                    from various Japanese radiation stations.
 

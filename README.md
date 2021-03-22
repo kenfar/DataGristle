@@ -57,7 +57,7 @@ More info is on the DataGristle wiki here:
        - Used to extract a subset of columns and rows out of an input file.
    * gristle_freaker
        - Produces a frequency distribution of multiple columns from input file.
-   * gristle_determinator
+   * gristle_profiler (was: gristle_determinator)
        - Identifies file formats, generates metadata, prints file analysis report
        - This is the most mature - and also used by the other utilities so that 
          you generally do not need to enter file structure info.
@@ -149,14 +149,14 @@ More info is on the DataGristle wiki here:
                     This output is repeated for each column.
 
 
-# gristle_determinator
+# gristle_profiler
     Analyzes the structures and contents of csv files in the end producing a 
     report of its findings.  It is intended to speed analysis of csv files by
     automating the most common and frequently-performed analysis tasks.  It's
     useful in both understanding the format and data and quickly spotting issues.
 
     Examples:
-       $ gristle_determinator --infiles japan_station_radiation.csv
+       $ gristle_profiler --infiles japan_station_radiation.csv
                     This command will analyze a file with radiation measurements
                     from various Japanese radiation stations.
 
