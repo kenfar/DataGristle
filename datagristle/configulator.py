@@ -113,6 +113,19 @@ STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'action': 'store_const',
                                      'const': False,
                                      'dest': 'has_header'}
+STANDARD_CONFIGS['skipinitialspace'] = {'default': None,
+                                        'help': 'csv dialect - skips initial space after delimiter',
+                                        'type': bool,
+                                        'arg_type': 'option',
+                                        'action': 'store_const',
+                                        'const': True}
+STANDARD_CONFIGS['no-skipinitialspace'] = {'help': 'csv dialect - turns off skipinitialspace',
+                                           'type': bool,
+                                           'arg_type': 'option',
+                                           'dest': 'skipinitialspace',
+                                           'action': 'store_const',
+                                           'const': False}
+
 
 STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
                                  'help': 'controls level of logging - with quiet, normal, high, debug levels',
@@ -212,6 +225,8 @@ class Config(object):
         self.add_standard_metadata('no_doublequote')
         self.add_standard_metadata('has_header')
         self.add_standard_metadata('has_no_header')
+        self.add_standard_metadata('skipinitialspace')
+        self.add_standard_metadata('no-skipinitialspace')
 
 
     def add_all_config_configs(self):
@@ -330,6 +345,7 @@ class Config(object):
                                                             self.nconfig.has_header,
                                                             self.nconfig.doublequote,
                                                             self.nconfig.escapechar,
+                                                            self.nconfig.skipinitialspace,
                                                             self.nconfig.verbosity))
 
     def _validate_metadata(self):
@@ -778,7 +794,10 @@ class _CommandLineArgs(object):
         if 'nargs' in self._app_metadata[key]:
             kwargs['nargs'] = self._app_metadata[key]['nargs']
 
-        kwargs['help'] = self._app_metadata[key]['help']
+        # Since we're driving help out of helpdoc we can bypass adding help thru argparse.
+        # Going to comment this out now since I've started to add some options without help
+        # and it's otherwise crashing.  But we should systematically remove this.
+        # kwargs['help'] = self._app_metadata[key]['help']
 
         if self._app_metadata[key]['type'] is bool:
             if 'action' in self._app_metadata[key]:

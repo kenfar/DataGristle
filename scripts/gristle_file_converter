@@ -2,6 +2,13 @@
 """
 Copies input files into a single output file while converting the csv dialect.
 
+Input file csv dialect is determined by first auto-detecting the dialect from the file, and then
+overriding that with any options provided by the user.
+
+Output file csv dilect is determined by defaulting to the input file dialect and then overriding
+with any options provided by the user.
+
+
 Usage: gristle_file_converter [options]
 
 
@@ -18,22 +25,25 @@ Main Options:
 {see: helpdoc.CSV_SECTION}
 
 
-Output Formatting Options:
-        -D, --out-delimiter=DELIMITER
-                          Output csv delimiter, defaults to input delimiter
-        -Q, --out-quoting=QUOTING
-                          Output csv quoting, defaults to input quoting
-        --out-quotechar=QUOTECHAR
-                          Output csv quoting character, defaults to input
-                          quotechar
-        --out-doublequote
-                          Output csv escaping through doublequotes, defaults
-                          to input doublequote
-        --out-escapechar=ESCAPECHAR
-                          Output csv escape character, defaults to input
-                          escapechar
-        --out-has-header  Output header - indicates header exists, defaults
-                          to input has-header
+Output Formatting Options: All of these options will default to the final input csv dialect.
+    -D, --out-delimiter DELIMITER
+                        CSV delimiter.
+    -Q, --out-quoting QUOTING
+                        CSV quoting.
+    --out-quotechar QUOTECHAR
+                        CSV quoting character.
+    --out-doublequote   Quotes are escaped through double-quoting.
+    --out-no-doublequote
+                        Quotes not not escaped through double-quoting.
+    --out-escapechar ESCAPECHAR
+                        Uses the provided escapechar.
+    --out-has-header    Header exists, defaults to input.
+    --out-has-no-header Header does not exist.
+    --out-skipinitialspace
+                        Has a space after the delimiter and before the value.
+    --out-no-skipinitialspace
+                        has no space between delimiter and value.
+
 
 Examples:
     $ gristle_file_converter.py --infiles colors.csv  -o /tmp/colors.out \
@@ -139,18 +149,32 @@ class ConfigManager(conf.Config):
                                  type=bool,
                                  action='store_const',
                                  const=True,
-                                 help='Specifies there is a header in output file.')
+                                 help='There is a header in output file.')
+        self.add_custom_metadata(name='out_has_no_header',
+                                 arg_type='option',
+                                 type=bool,
+                                 action='store_const',
+                                 const=False)
         self.add_custom_metadata(name='out_escapechar',
                                  short_name='E',
                                  arg_type='option',
-                                 type=str,
-                                 help='Causes quoting to be escaped with an escapechar')
+                                 type=str)
         self.add_custom_metadata(name='out_doublequote',
                                  arg_type='option',
                                  type=bool,
                                  action='store_const',
-                                 const=True,
-                                 help='Causes quoting to be escaped with doublequotes')
+                                 const=True)
+        self.add_custom_metadata(name='out_skipinitialspace',
+                                 arg_type='option',
+                                 type=bool,
+                                 action='store_const',
+                                 const=True)
+        self.add_custom_metadata(name='out_no_skipinitialspace',
+                                 arg_type='option',
+                                 type=bool,
+                                 action='store_const',
+                                 dest='out_skipinitialspace',
+                                 const=False)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
@@ -171,6 +195,7 @@ class ConfigManager(conf.Config):
                                             self.config['out_has_header']  or self.nconfig.dialect.has_header,
                                             self.config['out_doublequote'] or self.nconfig.dialect.doublequote,
                                             self.config['out_escapechar']  or self.nconfig.dialect.escapechar,
+                                            self.config['out_skipinitialspace']  or self.nconfig.dialect.skipinitialspace,
                                             verbosity='normal')
 
         self.update_config('out_dialect', out_dialect)

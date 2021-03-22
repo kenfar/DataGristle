@@ -37,6 +37,7 @@ class TestOverrideDialect(object):
                                                       quotechar='"',
                                                       has_header=False,
                                                       doublequote=False,
+                                                      skipinitialspace=False,
                                                       escapechar='\\')
         assert override_dialect.delimiter == ','
         assert override_dialect.quoting == csv.QUOTE_ALL
@@ -58,6 +59,7 @@ class TestOverrideDialect(object):
                                                       quotechar=None,
                                                       has_header=None,
                                                       doublequote=None,
+                                                      skipinitialspace=False,
                                                       escapechar=None)
         assert override_dialect.delimiter == '|'
         assert override_dialect.quoting == csv.QUOTE_NONE
@@ -80,6 +82,7 @@ class TestGetDialect(object):
                                                   has_header=True,
                                                   doublequote=False,
                                                   escapechar='\\',
+                                                  skipinitialspace=False,
                                                   verbosity='normal')
 
         assert resulting_dialect.delimiter == ','
@@ -100,6 +103,7 @@ class TestGetDialect(object):
                                                   has_header=None,
                                                   doublequote=None,
                                                   escapechar=None,
+                                                  skipinitialspace=False,
                                                   verbosity='normal')
         assert resulting_dialect.delimiter == '|'
         assert resulting_dialect.quoting == csv.QUOTE_ALL
@@ -120,6 +124,7 @@ class TestGetDialect(object):
                                                       has_header=None,
                                                       doublequote=None,
                                                       escapechar=None,
+                                                      skipinitialspace=False,
                                                       verbosity='normal')
     def test_multiple_files(self):
 
@@ -133,6 +138,7 @@ class TestGetDialect(object):
                                                   has_header=None,
                                                   doublequote=None,
                                                   escapechar=None,
+                                                  skipinitialspace=False,
                                                   verbosity='normal')
         assert resulting_dialect.delimiter == '|'
         assert resulting_dialect.quoting == csv.QUOTE_ALL

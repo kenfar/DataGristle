@@ -26,13 +26,16 @@ CSV_SECTION = """CSV Dialect Options:    These options are useful in explicitely
                         This can be any single-character value, but defaults to '"'.
    --doublequote        Causes an adjacent preceding quote to escape the following quote.
                         Provides a way of ignoring quotes within quoted strings.
+   --no-doublequote     Turns off doublequoting.
    --escapechar CHAR    Causes the following character to be escaped.
                         Provides a way of ignoring quotes within quoted strings, or delimiters
                         within unquoted strings.
    --has-header         Indicates there is a header in the file.
    --has-no-header      Indicates there is no header in the file.
                         Useful for overriding dialect auto-detect behavior.
-   --skipinitialspace   Ignore a space after a delimiter and before a quoted string. """
+   --skipinitialspace   Ignore space after a delimiter and before a quoted string.
+   --no-skipinitialspace
+                        Ignore space after a delimiter and before a quoted string. """
 
 
 CONFIG_SECTION = """Config File Options:
