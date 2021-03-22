@@ -268,33 +268,19 @@ class ConfigManager(conf.Config):
         self.add_custom_metadata(name='columns',
                                  short_name='c',
                                  default=':',
-                                 type=str,
-                                 help='Specify the columns to include via a comma-separated '
-                                      'list of columns and colon-separated pairs of column '
-                                      'start & stop ranges. Default is to include all '
-                                      'columns (":"). ')
+                                 type=str)
         self.add_custom_metadata(name='excolumns',
                                  short_name='C',
                                  default='',
-                                 type=str,
-                                 help='Specify the columns to exclude via a comma-separated '
-                                      'list of columns and colon-separated pairs of column '
-                                      'start & stop ranges.  Default is to exclude nothing.')
+                                 type=str)
         self.add_custom_metadata(name='records',
                                  short_name='r',
                                  default=':',
-                                 type=str,
-                                 help='Specify the records to include via a comma-separated '
-                                      'list of record numbers and colon-separated pairs of '
-                                      'record start & stop ranges.  Default is to include all '
-                                      'records (":").')
+                                 type=str)
         self.add_custom_metadata(name='exrecords',
                                  short_name='R',
                                  default='',
-                                 type=str,
-                                 help='Specify the records to exclude via a comma-separated list '
-                                      'of record numbers and colon-separated pairs of record '
-                                      'start & stop ranges.  Default is to exclude nothing.')
+                                 type=str)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()

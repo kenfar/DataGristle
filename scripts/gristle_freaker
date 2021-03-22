@@ -412,49 +412,37 @@ class ConfigManager(configulator.Config):
                                  short_name='c',
                                  default=None,
                                  type=int,
-                                 nargs='*',
-                                 help='Specify the columns to include via a comma-separated '
-                                          'list of columns.')
+                                 nargs='*')
         self.add_custom_metadata(name='col_type',
                                  default='specified',
                                  choices=['specified', 'all', 'each'],
-                                 type=str,
-                                 help='Indicates how to process one or all columns')
+                                 type=str)
         self.add_custom_metadata(name='max_freq',
                                  default=10_000_000,
-                                 type=int,
-                                 help='Identifies the maximum number of items in frequency dictionary. ' \
-                                      'Default is 10m which would require approx 300 MB of mem to store ' \
-                                      '10 million 20 byte keys.')
+                                 type=int)
         self.add_custom_metadata(name='max_key_len',
                                  type=int,
                                  minimum=1,
                                  maximum=500,
-                                 default=50,
-                                 help='Identifies max length of key written to output.  Default is 50.')
+                                 default=50)
         self.add_custom_metadata(name='write_limit',
                                  type=int,
-                                 default=0,
-                                 help='Identifies max records to write.  Default of 0 indicates no limit.')
+                                 default=0)
         self.add_custom_metadata(name='sort_col',
                                  type=int,
                                  default=1,
-                                 choices=[0, 1],
-                                 help='Specifies col to sort by - either 1 (count) or 0 (key). Default is 1')
+                                 choices=[0, 1])
         self.add_custom_metadata(name='sort_order',
                                  type=str,
                                  choices=['forward', 'reverse'],
-                                 default='reverse',
-                                 help='Specifies sort order of forward or reverse.  Default is reverse.')
+                                 default='reverse')
         self.add_custom_metadata(name='sampling_method',
                                  type=str,
                                  choices=['non', 'interval'],
-                                 default='non',
-                                 help='Specifies which sampling method to use.  Choices are non (no sampling) or interval.  Default is non.')
+                                 default='non')
         self.add_custom_metadata(name='sampling_rate',
                                  type=int,
-                                 default=None,
-                                 help='Specifies number of records to skip if using interval sammpling-method.')
+                                 default=None)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()

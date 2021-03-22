@@ -369,65 +369,43 @@ class ConfigManager(configulator.Config):
                                  required=True,
                                  default=[],
                                  nargs='*',
-                                 type=list,
-                                 help='Specify the columns that constitute a unique row with a comma-'
-                                      'delimited list of numbers using a 0-offset.\n'
-                                      'This is a required option.')
+                                 type=list)
         self.add_custom_metadata(name='compare_cols',
                                  short_name='c',
                                  default=[],
                                  nargs='*',
-                                 type=list,
-                                 help=('Columns to compare - described by their position using a zero-offset.\n'
-                                       'Mutually exclusive with ignore-cols and key-cols.\n'
-                                       'If no value is provided then all columns except for key-cols will be compared.\n'
-                                       'Indicate multiple columns with a space-delimited list of numbers.'))
+                                 type=list)
         self.add_custom_metadata(name='ignore_cols',
                                  default=[],
                                  nargs='*',
-                                 type=list,
-                                 help=('Columns to ignore - described by their position using a zero-offset.\n'
-                                       'Mutually exclusive with compare-cols.\n'
-                                       'If this option is provided then all columns will be compared except '
-                                       'for those specified here and key-cols.\n'
-                                       'Indicate multiple columns with a space-delimited list of numbers.'))
+                                 type=list)
         self.add_custom_metadata(name='col_names',
                                  default=[],
                                  nargs='*',
-                                 type=list,
-                                 help=('Column names - allows other cols to use names rather than offsets.\n'
-                                       'This will default to the file headers if they exist.\n'
-                                       'Note that those file header values will be converted to lowercase and have spaces converted to underscores.'))
+                                 type=list)
         self.add_custom_metadata(name='variables',
                                  default=[],
                                  nargs='*',
-                                 type=list,
-                                 help=('Variables to reference with assignments.  Format is "<name>:<value>"'))
+                                 type=list)
         self.add_custom_metadata(name='already_sorted',
                                  action='store_const',
                                  const=True,
                                  default=False,
-                                 type=bool,
-                                 help='Causes program to bypass sorting step.')
+                                 type=bool)
         self.add_custom_metadata(name='already_uniq',
                                  action='store_const',
                                  const=True,
                                  default=False,
-                                 type=bool,
-                                 help='Causes program to bypass deduping step.')
+                                 type=bool)
         self.add_custom_metadata(name='temp_dir',
                                  default=None,
-                                 type=str,
-                                 help='used for keeping temporary files.')
+                                 type=str)
         self.add_custom_metadata(name='out_dir',
                                  default=None,
-                                 type=str,
-                                 help=('Where the output files will be written.  Defaults to the'
-                                       ' directory of the second file.'))
+                                 type=str)
         self.add_custom_metadata(name='assignments',
                                  default=[],
-                                 type=list,
-                                 help=(''))
+                                 type=list)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()

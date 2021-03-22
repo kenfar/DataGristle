@@ -111,25 +111,14 @@ class ConfigManager(conf.Config):
                                  short_name='k',
                                  type=str,
                                  required=True,
-                                 nargs='+',
-                                 help='Specifies the key configuration. Each key specified consists of three values: '
-                                          '1) position (0-offset), 2) type (s=string, i=integer, f=float), '
-                                          '3) order (f=forward, r=reverse). '
-                                          'All 3 values are required for each key.  Multiple keys can be specified by '
-                                          'separating groups of 3 with a comma or including all within quotes and '
-                                          'separating the groups with a space.  '
-                                          'Ex: --keys 0sf 1fr')
+                                 nargs='+')
 
         self.add_custom_metadata(name='dedupe',
                                  short_name='D',
                                  action='store_const',
                                  const=True,
                                  default=False,
-                                 type=bool,
-                                 help='Directs program to remove duplicates - based on the key provided. '
-                                          'Note that this will treat 0 and 0.0 the same if the keys are specified '
-                                          'as numeric. '
-                                          'However, case differences will not be ignored.')
+                                 type=bool)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()

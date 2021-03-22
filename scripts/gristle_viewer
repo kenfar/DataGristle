@@ -179,8 +179,7 @@ class ConfigManager(conf.Config):
         self.add_custom_metadata(name='recnum',
                                  short_name='r',
                                  default=0,
-                                 type=int,
-                                 help='Displays this record number based on 0 offset, defaulting to 1')
+                                 type=int)
 
         self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
