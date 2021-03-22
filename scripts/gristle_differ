@@ -366,7 +366,6 @@ class ConfigManager(configulator.Config):
 
         self.add_custom_metadata(name='key_cols',
                                  short_name='k',
-                                 arg_type='option',
                                  required=True,
                                  default=[],
                                  nargs='*',
@@ -376,7 +375,6 @@ class ConfigManager(configulator.Config):
                                       'This is a required option.')
         self.add_custom_metadata(name='compare_cols',
                                  short_name='c',
-                                 arg_type='option',
                                  default=[],
                                  nargs='*',
                                  type=list,
@@ -385,7 +383,6 @@ class ConfigManager(configulator.Config):
                                        'If no value is provided then all columns except for key-cols will be compared.\n'
                                        'Indicate multiple columns with a space-delimited list of numbers.'))
         self.add_custom_metadata(name='ignore_cols',
-                                 arg_type='option',
                                  default=[],
                                  nargs='*',
                                  type=list,
@@ -395,7 +392,6 @@ class ConfigManager(configulator.Config):
                                        'for those specified here and key-cols.\n'
                                        'Indicate multiple columns with a space-delimited list of numbers.'))
         self.add_custom_metadata(name='col_names',
-                                 arg_type='option',
                                  default=[],
                                  nargs='*',
                                  type=list,
@@ -403,38 +399,32 @@ class ConfigManager(configulator.Config):
                                        'This will default to the file headers if they exist.\n'
                                        'Note that those file header values will be converted to lowercase and have spaces converted to underscores.'))
         self.add_custom_metadata(name='variables',
-                                 arg_type='option',
                                  default=[],
                                  nargs='*',
                                  type=list,
                                  help=('Variables to reference with assignments.  Format is "<name>:<value>"'))
         self.add_custom_metadata(name='already_sorted',
-                                 arg_type='option',
                                  action='store_const',
                                  const=True,
                                  default=False,
                                  type=bool,
                                  help='Causes program to bypass sorting step.')
         self.add_custom_metadata(name='already_uniq',
-                                 arg_type='option',
                                  action='store_const',
                                  const=True,
                                  default=False,
                                  type=bool,
                                  help='Causes program to bypass deduping step.')
         self.add_custom_metadata(name='temp_dir',
-                                 arg_type='option',
                                  default=None,
                                  type=str,
                                  help='used for keeping temporary files.')
         self.add_custom_metadata(name='out_dir',
-                                 arg_type='option',
                                  default=None,
                                  type=str,
                                  help=('Where the output files will be written.  Defaults to the'
                                        ' directory of the second file.'))
         self.add_custom_metadata(name='assignments',
-                                 arg_type='option',
                                  default=[],
                                  type=list,
                                  help=(''))

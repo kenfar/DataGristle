@@ -178,7 +178,6 @@ class ConfigManager(conf.Config):
 
         self.add_custom_metadata(name='recnum',
                                  short_name='r',
-                                 arg_type='option',
                                  default=0,
                                  type=int,
                                  help='Displays this record number based on 0 offset, defaulting to 1')

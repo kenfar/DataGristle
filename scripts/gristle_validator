@@ -475,7 +475,6 @@ class ConfigManager(conf.Config):
 
         self.add_custom_metadata(name='errfile',
                                  short_name='e',
-                                 arg_type='option',
                                  default='-',
                                  type=str,
                                  help='Specifies the output file for invalid records.  The default '
@@ -483,7 +482,6 @@ class ConfigManager(conf.Config):
                                       'will override any file of that name.')
 
         self.add_custom_metadata(name='errmsg',
-                                 arg_type='option',
                                  type=bool,
                                  default=False,
                                  action='store_const',
@@ -491,19 +489,16 @@ class ConfigManager(conf.Config):
                                  help='Causes pgm to append error msg at end of each invalid record.  Default is on.')
 
         self.add_custom_metadata(name='valid_schema',
-                                 arg_type='option',
                                  type=str,
                                  help='Name of validation schema file')
 
         self.add_custom_metadata(name='randomout',
-                                 arg_type='option',
                                  type=float,
                                  default=1.0,
                                  help='Causes pgm to write only a percentage of records out.')
 
         self.add_custom_metadata(name='fieldcnt',
                                  short_name='f',
-                                 arg_type='option',
                                  type=int,
                                  help='Specify the number of fields in the record.  If not provided'
                                       ' it will default to number of fields on first record')

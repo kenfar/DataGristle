@@ -29,7 +29,6 @@ Main Options:
                         The record exclusion specification.
                         Default is None which excludes nothing.
 
-
 Notes:
     Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
         'NumberN, StartOffset:StopOffset'
@@ -268,7 +267,6 @@ class ConfigManager(conf.Config):
 
         self.add_custom_metadata(name='columns',
                                  short_name='c',
-                                 arg_type='option',
                                  default=':',
                                  type=str,
                                  help='Specify the columns to include via a comma-separated '
@@ -277,7 +275,6 @@ class ConfigManager(conf.Config):
                                       'columns (":"). ')
         self.add_custom_metadata(name='excolumns',
                                  short_name='C',
-                                 arg_type='option',
                                  default='',
                                  type=str,
                                  help='Specify the columns to exclude via a comma-separated '
@@ -285,7 +282,6 @@ class ConfigManager(conf.Config):
                                       'start & stop ranges.  Default is to exclude nothing.')
         self.add_custom_metadata(name='records',
                                  short_name='r',
-                                 arg_type='option',
                                  default=':',
                                  type=str,
                                  help='Specify the records to include via a comma-separated '
@@ -294,7 +290,6 @@ class ConfigManager(conf.Config):
                                       'records (":").')
         self.add_custom_metadata(name='exrecords',
                                  short_name='R',
-                                 arg_type='option',
                                  default='',
                                  type=str,
                                  help='Specify the records to exclude via a comma-separated list '

@@ -109,7 +109,6 @@ class ConfigManager(conf.Config):
 
         self.add_custom_metadata(name='keys',
                                  short_name='k',
-                                 arg_type='option',
                                  type=str,
                                  required=True,
                                  nargs='+',
@@ -123,7 +122,6 @@ class ConfigManager(conf.Config):
 
         self.add_custom_metadata(name='dedupe',
                                  short_name='D',
-                                 arg_type='option',
                                  action='store_const',
                                  const=True,
                                  default=False,

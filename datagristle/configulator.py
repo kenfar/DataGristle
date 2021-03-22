@@ -52,20 +52,17 @@ STANDARD_CONFIGS['infiles'] = {'short_name': 'i',
                                'required': True,
                                'help': "input filenames or default to for stdin",
                                'type': str,
-                               'nargs': '*',
-                               'arg_type': 'option'}
+                               'nargs': '*'}
 STANDARD_CONFIGS['outfile'] = {'short_name': 'o',
                                'default': '-',
                                'required': True,
                                'help': "output filename or '-' for stdout (the default)",
-                               'type': str,
-                               'arg_type': 'option'}
+                               'type': str}
 
 STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
                                  'default': None,
                                  'help': 'csv delimiter',
                                  'type': str,
-                                 'arg_type': 'option',
                                  'min_length': 1,
                                  'max_length': 1,
                                  'transformer': transform_delimiter}
@@ -75,53 +72,44 @@ STANDARD_CONFIGS['quoting'] = {'short_name': 'q',
                                            'quote_nonnumeric', 'quote_none'],
                                'help': 'csv quoting',
                                'type': str,
-                               'arg_type': 'option',
                                'transformer': transform_lower}
 STANDARD_CONFIGS['quotechar'] = {'default': '"',
                                  'help': 'csv quotechar',
                                  'type': str,
-                                 'arg_type': 'option',
                                  'min_length': 1,
                                  'max_length': 1}
 STANDARD_CONFIGS['escapechar'] = {'default': None,
                                   'help': 'csv escapechar',
-                                  'type': str,
-                                  'arg_type': 'option'}
+                                  'type': str}
 STANDARD_CONFIGS['doublequote'] = {'default': False,
                                    'help': 'csv dialect - quotes are escaped thru doublequoting',
                                    'type': bool,
-                                   'arg_type': 'option',
                                    'action': 'store_const',
                                    'const': True}
 STANDARD_CONFIGS['no_doublequote'] = {'required': True,
                                       'help': 'csv dialect - quotes are not escaped thru doublequoting',
                                       'type': bool,
-                                      'arg_type': 'option',
                                       'action': 'store_const',
                                       'const': False,
                                       'dest': 'doublequote'}
 STANDARD_CONFIGS['has_header'] = {'default': None,
                                   'help': 'csv dialect - indicates header exists',
                                   'type': bool,
-                                  'arg_type': 'option',
                                   'action': 'store_const',
                                   'const': True}
 STANDARD_CONFIGS['has_no_header'] = {'default': None,
                                      'help': 'csv dialect - indicates no header exists',
                                      'type': bool,
-                                     'arg_type': 'option',
                                      'action': 'store_const',
                                      'const': False,
                                      'dest': 'has_header'}
 STANDARD_CONFIGS['skipinitialspace'] = {'default': None,
                                         'help': 'csv dialect - skips initial space after delimiter',
                                         'type': bool,
-                                        'arg_type': 'option',
                                         'action': 'store_const',
                                         'const': True}
 STANDARD_CONFIGS['no-skipinitialspace'] = {'help': 'csv dialect - turns off skipinitialspace',
                                            'type': bool,
-                                           'arg_type': 'option',
                                            'dest': 'skipinitialspace',
                                            'action': 'store_const',
                                            'const': False}
@@ -130,38 +118,30 @@ STANDARD_CONFIGS['no-skipinitialspace'] = {'help': 'csv dialect - turns off skip
 STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
                                  'help': 'controls level of logging - with quiet, normal, high, debug levels',
                                  'type': str,
-                                 'choices': ['quiet', 'normal', 'high', 'debug'],
-                                 'arg_type': 'option'}
+                                 'choices': ['quiet', 'normal', 'high', 'debug'] }
 
 STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'help': 'Performs most processing except for final changes or output',
                                'type': bool,
-                               'arg_type': 'option',
                                'action': 'store_const',
                                'const': True}
 
 STANDARD_CONFIGS['config_fn'] = {'default': None,
                                  'help': 'Name of config file',
-                                 'type': str,
-                                 'arg_type': 'option'}
+                                 'type': str}
 STANDARD_CONFIGS['gen_config_fn'] = {'default': None,
                                      'help': 'Generates a config file',
-                                     'type': str,
-                                     'arg_type': 'option'}
+                                     'type': str}
 
 STANDARD_CONFIGS['help'] = {'short_name': 'h',
                             'default': None,
                             'help': 'Displays short help info and exits',
                             'type': bool,
                             'action': 'store_const',
-                            'const': True,
-                            'arg_type': 'option'}
-
-
+                            'const': True}
 
 
 ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'long-help']
-VALID_ARG_TYPES = ('argument', 'option')
 
 
 
@@ -204,8 +184,7 @@ class Config(object):
                 self._app_metadata[name] = {}
             self._app_metadata[name][key] = val
 
-        assert self._app_metadata[name]['arg_type'] in VALID_ARG_TYPES
-        if self._app_metadata[name]['arg_type'] == 'bool':
+        if self._app_metadata[name]['type'] == 'bool':
             if 'dest' not in self._app_metadata[name]:
                 self._app_metadata[name]['dest'] = name
 
@@ -378,9 +357,6 @@ class Config(object):
                                 raise ValueError(f"{arg}.type's type within the union is invalid: {property_value}")
                     elif not isinstance(property_value, type):
                         raise ValueError(f"{arg}.type's type is invalid: {property_value}")
-                elif property_name == 'arg_type':
-                    if property_value not in ('option', 'argument'):
-                        raise ValueError(f"{arg}.arg_type's value is invalid: {property_value}")
                 elif property_name == 'nargs':
                     if property_value not in ('*', '?', '+'):
                         raise ValueError(f"{arg}.narg's value is invalid: {property_value}")
@@ -783,7 +759,7 @@ class _CommandLineArgs(object):
         args = []
         kwargs = {}
 
-        long_name = (f'--{key}' if self._app_metadata[key]['arg_type'] == 'option' else key).replace('_', '-')
+        long_name = f'--{key}'.replace('_', '-')
         skey = self._convert_arg_name_delimiter(self._app_metadata[key].get('short_name', ''))
         short_name = f'-{skey}'
 
