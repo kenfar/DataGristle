@@ -503,8 +503,9 @@ def config_bonus_validator(config: Dict[str, Any]) -> None:
         print("Warning: some key-cols removed from compare-cols")
         print("Revised config['compare_cols']: %s" % config.get('compare_cols', None))
 
-    if config['has_header']:
-        abort("Error: has_header is not supported yet.")
+    #todo: can eliminate this in steps
+    #if config['has_header']:
+    #    abort("Error: has_header is not supported yet.")
 
     for kv_pair in config['variables']:
         if ':' not in kv_pair:

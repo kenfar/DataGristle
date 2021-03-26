@@ -55,9 +55,10 @@ class TestCSVDialect(object):
 
     def test_header_file_with_no_header_args(self):
         in_fqfn = os.path.join(data_dir, '3x3_header.csv')
-        cmd = "%s -i %s -d ',' -o %s -c 0 " \
+        cmd = "%s -i %s -d ',' -o %s -c 0 --verbosity debug " \
             % (os.path.join(script_dir, 'gristle_freaker'), in_fqfn, self.out_fqfn)
         self.executor(cmd)
+        pp(self.out_recs)
         assert len(self.out_recs) == 3
 
     def test_header_file_with_hasheader_arg(self):

@@ -819,8 +819,10 @@ class TestCommandLine(object):
         assert isfile(fqfn1)
         assert isfile(fqfn2)
 
-        cmd = ''' %s \
-                  --infiles %s %s \
+        cmd = ''' %s
+                  --infiles %s %s
+                  --verbosity debug
+                  --has-header 
                   -k rowkey -c col2 --temp-dir %s  ''' % (pjoin(script_dir, 'gristle_differ'),
                                                           fqfn1, fqfn2, self.temp_dir)
         executor(cmd)

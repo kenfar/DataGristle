@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """ Manages user config - arguments and environmental variables.
 
     See the file "LICENSE" for the full license governing this code.
@@ -46,99 +45,106 @@ def transform_lower(val):
         return val.lower()
 
 
+# These describe the valid types of the properties of configs
+VALID_CONFIG_PROP_TYPES = {}
+VALID_CONFIG_PROP_TYPES['short_name'] = str
+VALID_CONFIG_PROP_TYPES['required'] = bool
+VALID_CONFIG_PROP_TYPES['required'] = bool
+VALID_CONFIG_PROP_TYPES['nargs'] = str
+VALID_CONFIG_PROP_TYPES['action'] = str
+VALID_CONFIG_PROP_TYPES['const'] = bool
+VALID_CONFIG_PROP_TYPES['choices'] = list
+VALID_CONFIG_PROP_TYPES['min_length'] = int
+VALID_CONFIG_PROP_TYPES['max_length'] = int
+VALID_CONFIG_PROP_TYPES['minimum'] = int
+VALID_CONFIG_PROP_TYPES['maximum'] = int
+VALID_CONFIG_PROP_TYPES['dest'] = str
+#NOT CHECKED BECAUSE they support multiple types or callbacks:
+#VALID_METADATA_TYPEs['default'] = [str, int, float]
+#VALID_METADATA_TYPEs['type'] = [str, int, float]
+#VALID_METADATA_TYPEs['extended_default'] = [str, int, float]
+#VALID_METADATA_TYPEs['transformer'] = None
+
+VALID_CONFIG_PROP_VALUES = {}
+VALID_CONFIG_PROP_VALUES['nargs'] = ['*', '?', '+']
+VALID_CONFIG_PROP_VALUES['action'] = ['store_const', 'store_true', 'store_false']
+
+
 STANDARD_CONFIGS: META_CONFIG_TYPE = {}
+# IO Config Items:
 STANDARD_CONFIGS['infiles'] = {'short_name': 'i',
                                'default': '-',
                                'required': True,
-                               'help': "input filenames or default to for stdin",
                                'type': str,
                                'nargs': '*'}
 STANDARD_CONFIGS['outfile'] = {'short_name': 'o',
                                'default': '-',
                                'required': True,
-                               'help': "output filename or '-' for stdout (the default)",
                                'type': str}
 
+# CSV Config Items:
 STANDARD_CONFIGS['delimiter'] = {'short_name': 'd',
-                                 'default': None,
-                                 'help': 'csv delimiter',
+                                 'extended_default': ',',
                                  'type': str,
                                  'min_length': 1,
                                  'max_length': 1,
                                  'transformer': transform_delimiter}
 STANDARD_CONFIGS['quoting'] = {'short_name': 'q',
-                               'default': None,
+                               'extended_default': 'quote_none',
                                'choices': ['quote_all', 'quote_minimal',
                                            'quote_nonnumeric', 'quote_none'],
-                               'help': 'csv quoting',
                                'type': str,
                                'transformer': transform_lower}
-STANDARD_CONFIGS['quotechar'] = {'default': '"',
-                                 'help': 'csv quotechar',
+STANDARD_CONFIGS['quotechar'] = {'extended_default': '"',
                                  'type': str,
                                  'min_length': 1,
                                  'max_length': 1}
-STANDARD_CONFIGS['escapechar'] = {'default': None,
-                                  'help': 'csv escapechar',
-                                  'type': str}
-STANDARD_CONFIGS['doublequote'] = {'default': False,
-                                   'help': 'csv dialect - quotes are escaped thru doublequoting',
-                                   'type': bool,
+STANDARD_CONFIGS['escapechar'] = {'type': str,
+                                  'extended_default': None}
+STANDARD_CONFIGS['doublequote'] = {'type': bool,
                                    'action': 'store_const',
-                                   'const': True}
-STANDARD_CONFIGS['no_doublequote'] = {'required': True,
-                                      'help': 'csv dialect - quotes are not escaped thru doublequoting',
-                                      'type': bool,
+                                   'const': True,
+                                   'extended_default': False}
+STANDARD_CONFIGS['no_doublequote'] = {'type': bool,
                                       'action': 'store_const',
                                       'const': False,
                                       'dest': 'doublequote'}
-STANDARD_CONFIGS['has_header'] = {'default': None,
-                                  'help': 'csv dialect - indicates header exists',
-                                  'type': bool,
+STANDARD_CONFIGS['has_header'] = {'type': bool,
                                   'action': 'store_const',
-                                  'const': True}
-STANDARD_CONFIGS['has_no_header'] = {'default': None,
-                                     'help': 'csv dialect - indicates no header exists',
-                                     'type': bool,
+                                  'const': True,
+                                  'extended_default': False}
+STANDARD_CONFIGS['has_no_header'] = {'type': bool,
                                      'action': 'store_const',
                                      'const': False,
                                      'dest': 'has_header'}
-STANDARD_CONFIGS['skipinitialspace'] = {'default': None,
-                                        'help': 'csv dialect - skips initial space after delimiter',
-                                        'type': bool,
+STANDARD_CONFIGS['skipinitialspace'] = {'type': bool,
                                         'action': 'store_const',
-                                        'const': True}
-STANDARD_CONFIGS['no-skipinitialspace'] = {'help': 'csv dialect - turns off skipinitialspace',
-                                           'type': bool,
+                                        'const': True,
+                                        'extended_default': False}
+STANDARD_CONFIGS['no-skipinitialspace'] = {'type': bool,
                                            'dest': 'skipinitialspace',
                                            'action': 'store_const',
                                            'const': False}
 
 
+# Misc Config Items:
 STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
-                                 'help': 'controls level of logging - with quiet, normal, high, debug levels',
                                  'type': str,
                                  'choices': ['quiet', 'normal', 'high', 'debug'] }
 
 STANDARD_CONFIGS['dry_run'] = {'default': False,
-                               'help': 'Performs most processing except for final changes or output',
                                'type': bool,
-                               'action': 'store_const',
-                               'const': True}
+                               'action': 'store_true'}
 
 STANDARD_CONFIGS['config_fn'] = {'default': None,
-                                 'help': 'Name of config file',
                                  'type': str}
 STANDARD_CONFIGS['gen_config_fn'] = {'default': None,
-                                     'help': 'Generates a config file',
                                      'type': str}
 
 STANDARD_CONFIGS['help'] = {'short_name': 'h',
                             'default': None,
-                            'help': 'Displays short help info and exits',
                             'type': bool,
-                            'action': 'store_const',
-                            'const': True}
+                            'action': 'store_true'}
 
 
 ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'long-help']
@@ -164,9 +170,12 @@ class Config(object):
     def get_config(self) -> Dict[str, Any]:
         self.define_user_config()
         self.process_configs()
+
         self.extend_config()
+
         if self.nconfig.verbosity == 'debug':
-            self.print_config()
+            self.print_config(key='dialect')
+
         return self.nconfig, self.config
 
 
@@ -225,7 +234,7 @@ class Config(object):
     def process_configs(self,
                         test_cli_args: List = None):
 
-        self._validate_metadata()
+        self._validate_config_metadata()
 
         # Get inputs from all three interfaces:
         env_args_manager = _EnvironmentalArgs(self.app_name, self._app_metadata)
@@ -317,81 +326,60 @@ class Config(object):
     def generate_csv_dialect_config(self):
         """ Replaces the dictionary and named-tuple versions of the config
         """
-        self.update_config('dialect', csvhelper.get_dialect(self.nconfig.infiles,
-                                                            self.nconfig.delimiter,
-                                                            self.nconfig.quoting,
-                                                            self.nconfig.quotechar,
-                                                            self.nconfig.has_header,
-                                                            self.nconfig.doublequote,
-                                                            self.nconfig.escapechar,
-                                                            self.nconfig.skipinitialspace,
-                                                            self.nconfig.verbosity))
+        md = self._app_metadata
+        autodetected = csvhelper.get_dialect(infiles=self.nconfig.infiles,
+                                             verbosity=self.nconfig.verbosity)
 
-    def _validate_metadata(self):
+        overridden = csvhelper.override_dialect(autodetected,
+                                                delimiter=self.nconfig.delimiter,
+                                                quoting=csvhelper.get_quote_number(
+                                                   self.nconfig.quoting),
+                                                quotechar=self.nconfig.quotechar,
+                                                has_header=self.nconfig.has_header,
+                                                doublequote=self.nconfig.doublequote,
+                                                escapechar=self.nconfig.escapechar,
+                                                skipinitialspace=self.nconfig.skipinitialspace)
+
+        defaulted = csvhelper.default_dialect(overridden,
+                                              delimiter=md['delimiter']['extended_default'],
+                                              quoting=csvhelper.get_quote_number(
+                                                  md['quoting']['extended_default']),
+                                              has_header=md['has_header']['extended_default'],
+                                              quotechar=md['quotechar']['extended_default'],
+                                              escapechar=md['escapechar']['extended_default'],
+                                              doublequote=md['doublequote']['extended_default'],
+                                              skipinitialspace=md['skipinitialspace']['extended_default'])
+
+        assert csvhelper.is_valid_dialect(defaulted)
+
+        self.update_config('dialect', defaulted)
+
+
+
+    def _validate_config_metadata(self):
         """ Validates the program's configuration metadata (not the user's input).
-
         """
-        # additional checks we could make:
-        #     assert that we don't have combo: positional long name + short_name
-        #     assert that we don't have > 1 positional arguments
-        #     assert that we don't have combo: choices + type boolean
         for arg, arg_parameters in self._app_metadata.items():
             for property_name, property_value in arg_parameters.items():
+
+                # Check the types of each parameter:
+                if property_name in VALID_CONFIG_PROP_TYPES:
+                    if type(property_value) is not VALID_CONFIG_PROP_TYPES[property_name]:
+                        raise ValueError(f'{arg}.{property_name} type is invalid: {property_value}')
+
+                # Check valid values:
+                if property_name in VALID_METADATA_VALUES:
+                    if property_value not in valid_metadata_values[property_name]:
+                        raise ValueError(f'{arg}.{property_name} value not one of valid choices')
+
+                # Custom Validations:
                 if property_name == 'short_name':
                     if len(property_value) != 1:
                         raise ValueError(f'{arg}.short_name length is invalid')
-                elif property_name == 'default':
-                    if property_value is not None:
-                        if type(property_value) is not self._app_metadata[arg]['type']:
-                            raise ValueError(f'{arg}.default type is invalid: {property_value}')
-                elif property_name == 'required':
-                    if type(property_value) is not type(True):
-                        raise ValueError(f'{arg}.required type is invalid: {property_value}')
-                elif property_name == 'help':
-                    if not isinstance(property_value, str):
-                        raise ValueError(f'{arg}.help type is invalid: {property_value}')
-                elif property_name == 'type':
-                    if type(property_value) == type([]):
-                        for item in property_value:
-                            if not isinstance(item, type):
-                                raise ValueError(f"{arg}.type's type within the union is invalid: {property_value}")
-                    elif not isinstance(property_value, type):
-                        raise ValueError(f"{arg}.type's type is invalid: {property_value}")
-                elif property_name == 'nargs':
-                    if property_value not in ('*', '?', '+'):
-                        raise ValueError(f"{arg}.narg's value is invalid: {property_value}")
+                if property_name == 'dest':
+                    if property_value not in self._app_metadata:
+                        raise ValueError(f'{arg}.dest refers to non-existing option')
 
-                elif property_name == 'choices':
-                    if not isinstance(property_value, list):
-                        raise ValueError(f"{arg}.choice type is not a list")
-                elif property_name == 'min_length':
-                    if not int(property_value):
-                        raise ValueError(f"{arg}.min_length is not an int")
-                elif property_name == 'max_length':
-                    if not int(property_value):
-                        raise ValueError(f"{arg}.max_length is not an int")
-                elif property_name == 'minimum':
-                    if not int(property_value):
-                        raise ValueError(f"{arg}.minimum is not an int")
-                elif property_name == 'maximum':
-                    if not int(property_value):
-                        raise ValueError(f"{arg}.maximum is not an int")
-
-                elif property_name == 'action':
-                    if arg_parameters['type'] is not bool:
-                        raise ValueError(f"{arg}.action is only valid for type of bool")
-                    if property_value not in ('store_const', 'store_true'):
-                        raise ValueError(f"{arg}.action is not 'store_const'")
-                elif property_name == 'dest':
-                    if arg_parameters['type'] is not bool:
-                        raise ValueError(f"{arg}.dest is only valid for type of bool")
-                elif property_name == 'const':
-                    if arg_parameters['type'] is not bool:
-                        raise ValueError(f"{arg}.const is only valid for type of bool")
-                elif property_name == 'transformer':
-                    pass
-                else:
-                    raise ValueError(f'unknown meta_config property: {arg}.{property_name}')
 
 
     def _consolidate_configs(self,
@@ -422,7 +410,7 @@ class Config(object):
             consolidated_args[actual_key] = val
 
         for key, val in cli_args.items():
-            if val is not None:
+            if val is not None and val != []:
                 consolidated_args[key] = val
 
         return consolidated_args
@@ -462,37 +450,36 @@ class Config(object):
                 if 'nargs' in self._app_metadata[key]:
                     continue
                 else:
+                    checks = self._app_metadata[key]
 
-                    required = self._app_metadata[key]
-
-                    if not isinstance(val, required['type']):
+                    if not isinstance(val, checks['type']):
                         comm.abort('Error: config value has the wrong type',
-                                   f"'{key}' with value: '{val}' is not {required['type']}")
+                                   f"'{key}' with value: '{val}' is not {checks['type']}")
 
-                    if 'min_length' in required:
-                        if len(val) < required['min_length']:
+                    if 'min_length' in checks:
+                        if len(val) < checks['min_length']:
                             comm.abort('Error: config value is under min_length',
-                                       f"'{key}' with len of value '{val}' is < {required['min_length']}")
+                                       f"'{key}' with len of value '{val}' is < {checks['min_length']}")
 
-                    if 'max_length' in required:
-                        if len(val) > required['max_length']:
+                    if 'max_length' in checks:
+                        if len(val) > checks['max_length']:
                             comm.abort("Error: config value is over max_length",
-                                       f"'{key}' with len of value '{val}' is > {required['max_length']}")
+                                       f"'{key}' with len of value '{val}' is > {checks['max_length']}")
 
-                    if 'minimum' in required:
-                        if val < required['minimum']:
+                    if 'minimum' in checks:
+                        if val < checks['minimum']:
                             comm.abort(f"Error: config value less than minimum",
-                                       f"'{key}' with value of '{val}' is < {required['minimum']}")
+                                       f"'{key}' with value of '{val}' is < {checks['minimum']}")
 
-                    if 'maximum' in required:
-                        if val > required['maximum']:
+                    if 'maximum' in checks:
+                        if val > checks['maximum']:
                             comm.abort(f"Error: config value greater than maximum",
-                                       f"'{key}' with value of '{val}' is > {required['maximum']}")
+                                       f"'{key}' with value of '{val}' is > {checks['maximum']}")
 
-                    if 'choices' in required:
-                        if val not in required['choices']:
+                    if 'choices' in checks:
+                        if val not in checks['choices']:
                             comm.abort(f"Error: config value not in valid list of choices",
-                                       f"Valid values include: {required['choices']} ")
+                                       f"Valid values include: {checks['choices']} ")
 
         self._validate_dialect_with_stdin(config)
 
@@ -515,24 +502,60 @@ class Config(object):
 
 
 
-    def print_config(self) -> None:
+    def print_config(self,
+                     cli_args=None,
+                     file_args=None,
+                     env_args=None,
+                     consolidated_args=None,
+                     key=None) -> None:
+
         print('Config contents: ')
-        for key in self.config.keys():
-            if key == 'dialect':
+        for a_key in self.config.keys():
+            if key and key != a_key:
+                continue
+            if a_key == 'dialect':
                 print('    dialect:')
-                for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
+                for item in [x for x in vars(self.config[a_key]) if not x.startswith('_')]:
                     if item == 'quoting':
-                        print(f'        {item}:  {getattr(self.config[key], item)}')
-                        print(f'        {item}(translated):  {csvhelper.get_quote_name(getattr(self.config[key], item)) if self.config[key].quoting is not None else None}')
+                        print(f'        {item}:  {getattr(self.config[a_key], item)}')
+                        if self.config[a_key].quoting is None:
+                            quoting = None
+                        else:
+                            quoting = csvhelper.get_quote_name(getattr(self.config[a_key], item))
+                        print(f'        {item}(translated):  {quoting}')
                     else:
-                        print(f'        {item}:  {getattr(self.config[key], item)}')
-            elif key == 'out_dialect':
+                        print(f'        {item}:  {getattr(self.config[a_key], item)}')
+            elif a_key == 'out_dialect':
                 print('    out_dialect:')
-                for item in [x for x in vars(self.config[key]) if not x.startswith('_')]:
-                    print(f'        {item}:  {getattr(self.config[key], item)}')
+                for item in [x for x in vars(self.config[a_key]) if not x.startswith('_')]:
+                    print(f'        {item}:  {getattr(self.config[a_key], item)}')
             else:
-                print(f'    {key}:  {self.config[key]}')
-        print(' ')
+                print(f'    {a_key}:  {self.config[a_key]}')
+
+        if cli_args:
+            print(' ')
+            print('----------------------------------------------------')
+            print('cli config: ')
+            print('----------------------------------------------------')
+            pp(cli_args)
+        if file_args:
+            print(' ')
+            print('----------------------------------------------------')
+            print('file config: ')
+            print('----------------------------------------------------')
+            pp(file_args)
+        if env_args:
+            print(' ')
+            print('----------------------------------------------------')
+            print('env config: ')
+            print('----------------------------------------------------')
+            pp(env_args)
+        if consolidated_args:
+            print(' ')
+            print('----------------------------------------------------')
+            print('consolidated config: ')
+            print('----------------------------------------------------')
+            pp(consolidated_args)
 
 
 
@@ -602,7 +625,7 @@ class _FileArgs(object):
         Notes on processing:
             1. Any dashes in keys within the config file are converted to underscores.
                This is consistent with how _CommandLineArgs() works - but inconsistent
-               with how _EnvironmentalArgs() works (envvars can't have dashes). 
+               with how _EnvironmentalArgs() works (envvars can't have dashes).
             2. Any relative paths will be in relationship to the directory that the
                config file is within.  This applies to the following path keys:
                    a.  infiles
@@ -711,7 +734,7 @@ class _CommandLineArgs(object):
                  short_help,
                  long_help,
                  app_metadata: str,
-                 obsolete_args: Dict[str, str]={})-> None:
+                 obsolete_args: Dict[str, str] = {})-> None:
 
         self._app_metadata = app_metadata
         self.short_help = short_help
@@ -724,7 +747,7 @@ class _CommandLineArgs(object):
                   desc: str) -> CONFIG_TYPE:
         """ Gets config items from cli arguments.
         """
-        self._build_parser(desc)
+        self._build_parser(desc='')
         known_args, unknown_args = self.parser.parse_known_args()
         self._process_unknown_args(unknown_args)
         self._process_help_args(known_args)
@@ -737,8 +760,7 @@ class _CommandLineArgs(object):
         #fixme: can only handle 1 positional argument: it doesn't actually have 'position' for positionals
         #This isn't a big problem since we're only using options - in order to also support envvars and 
         #config files
-        self.parser = argparse.ArgumentParser(description=desc,
-                                              usage='%(prog)s --long-help for detailed usage and help',
+        self.parser = argparse.ArgumentParser(usage = '%(prog)s --long-help for detailed usage and help',
                                               add_help=False)
 
         self.parser.add_argument('--long-help',
@@ -770,18 +792,11 @@ class _CommandLineArgs(object):
         if 'nargs' in self._app_metadata[key]:
             kwargs['nargs'] = self._app_metadata[key]['nargs']
 
-        # Since we're driving help out of helpdoc we can bypass adding help thru argparse.
-        # Going to comment this out now since I've started to add some options without help
-        # and it's otherwise crashing.  But we should systematically remove this.
-        # kwargs['help'] = self._app_metadata[key]['help']
-
         if self._app_metadata[key]['type'] is bool:
             if 'action' in self._app_metadata[key]:
                 kwargs['action'] = self._app_metadata[key]['action']
                 if self._app_metadata[key].get('const') is not None:
                     kwargs['const'] = self._app_metadata[key]['const']
-                if self._app_metadata[key]['action'] == 'store_true':
-                    kwargs['const'] = True
             if 'dest' in self._app_metadata[key]:
                 kwargs['dest'] = self._app_metadata[key]['dest']
         elif self._app_metadata[key]['type'] is list: # list is redundant with nargs and causes nesting
