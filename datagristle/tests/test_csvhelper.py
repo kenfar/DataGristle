@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2020 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -9,12 +9,12 @@
 #pylint: disable=protected-access
 #pylint: disable=no-self-use
 
-import sys
-import tempfile
-import random
 import csv
 import os
 from os.path import dirname
+import random
+import sys
+import tempfile
 
 import pytest
 
@@ -33,7 +33,7 @@ class TestOverrideDialect(object):
                                     escapechar=None)
         override_dialect = csvhelper.override_dialect(dialect,
                                                       delimiter=',',
-                                                      quoting='QUOTE_ALL',
+                                                      quoting=csvhelper.get_quote_number('QUOTE_ALL'),
                                                       quotechar='"',
                                                       has_header=False,
                                                       doublequote=False,
@@ -77,7 +77,7 @@ class TestGetDialect(object):
 
         resulting_dialect = csvhelper.get_dialect([fqfn],
                                                   delimiter=',',
-                                                  quoting='quote_none',
+                                                  quoting=csvhelper.get_quote_number('quote_none'),
                                                   quotechar='!',
                                                   has_header=True,
                                                   doublequote=False,
@@ -166,7 +166,6 @@ def generate_test_file(delim, quoting, record_cnt):
         if quoting == csv.QUOTE_ALL:
             num = '"' + str(i) + '"'
         record = f'''{num}{delim}{proj}{delim}{role}{delim}{name}\n'''
-        #print(record)
         fp.write(record)
 
     fp.close()

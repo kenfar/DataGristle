@@ -139,7 +139,7 @@ class TestGetArgs(object):
         test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'FreakerTest'))
 
     def test_happy_path(self):
-        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '1']
+        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '1', '--verbosity', 'debug']
 
         config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
         nconfig, _ = config_manager.get_config()
@@ -147,9 +147,9 @@ class TestGetArgs(object):
         assert nconfig.columns == [1]
         assert nconfig.outfile == '-'
         assert nconfig.write_limit == 0
-        assert nconfig.delimiter is None
-        assert nconfig.quoting == None
-        assert nconfig.has_header is None
+        assert nconfig.dialect.delimiter == ','
+        assert nconfig.dialect.quoting == csvhelper.get_quote_number('quote_none')
+        assert nconfig.dialect.has_header is True
         assert nconfig.sampling_method == 'non'
         assert nconfig.sampling_rate is None
         assert nconfig.sort_col == 1

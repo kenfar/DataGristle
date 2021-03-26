@@ -45,6 +45,7 @@ class TestKeyOptions(object):
                     -o {out_fqfn}
                     -k 0sf
                     -q quote_none -d ',' --has-no-header --no-doublequote
+                    --verbosity debug
               '''
         executor(cmd, expect_success=True)
         recs = get_file_contents(out_fqfn, dialect)

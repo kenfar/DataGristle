@@ -583,72 +583,41 @@ class ConfigManager(configulator.Config):
 
         self.add_custom_metadata(
             name="outputformat",
-            arg_type="option",
             default="readable",
-            type=str,
-            help="describe output format, provide one of: 'readable', 'parsable', or 'none' ",
-        )
+            type=str)
         self.add_custom_metadata(
             name="brief",
             short_name="b",
-            arg_type="option",
             default=False,
             type=bool,
             action="store_const",
-            const=True,
-            help="skips field-level analysis",
-        )
+            const=True)
         self.add_custom_metadata(
             name="read_limit",
-            arg_type="option",
             default=-1,
-            type=int,
-            help="Specify a maximum number of records to read from input file",
-        )
+            type=int)
         self.add_custom_metadata(
             name="column_number",
             short_name="c",
-            arg_type="option",
             default=None,
-            type=int,
-            help="Restrict analysis to a single column (field number) - using a zero-offset",
-        )
+            type=int)
         self.add_custom_metadata(
             name="max_freq",
-            arg_type="option",
-            type=int,
-            help="Specify a maximum number of entries for freq dictionary. "
-            "This is applied separately to each column.  The default is"
-            " set at approximately 1 million entries. ",
-        )
+            type=int)
         self.add_custom_metadata(
             name="column_types",
-            arg_type="option",
-            type=str,
-            help="Allows manual specification of field types: integer, float, "
-            'string, timestamp. Use format: "colno:type, colno:type, '
-            ' colno:type" ',
-        )
+            type=str)
         self.add_custom_metadata(
             name="metadata",
-            arg_type="option",
             type=bool,
             action="store_const",
-            const=True,
-            help="Indicates whether or not to write results into metadata database",
-        )
+            const=True)
         self.add_custom_metadata(
             name="schema_id",
-            arg_type="option",
-            type=int,
-            help="Used with metadata outputformat to identify structure set being analyzed.",
-        )
+            type=int)
         self.add_custom_metadata(
             name="collection_id",
-            arg_type="option",
-            type=int,
-            help="Used with metadata outputformat to identify structure set being analyzed.",
-        )
+            type=int)
 
         self.add_standard_metadata("verbosity")
         self.add_all_config_configs()
