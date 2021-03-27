@@ -7,39 +7,40 @@ Currently some of this functionality is redundant with the gristle
 determinator:
    - determinator:  populates metadata and reports on current analysis job
    - md_reporter:   reports on metadata database, is intended for steady
-                    enhancemnts - eventually adding PDF outputs.
+                    enhancements - eventually adding PDF outputs.
 
-usage: gristle_md_reporter [-h] [--long-help] [--report {dd,datadictionary}]
-                           [--schema_id SCHEMA_ID] [--schema_name SCHEMA_NAME]
-                           [--collection_id COLLECTION_ID]
-                           [--collection_name COLLECTION_NAME]
-                           [--field_id FIELD_ID] [--field_name FIELD_NAME]
+usage: gristle_md_reporter [-h] [--long-help]
+                           [--report {dd,datadictionary}]
+                           [--schema-id SCHEMA_ID]
+                           [--schema-name SCHEMA_NAME]
+                           [--collection-id COLLECTION_ID]
+                           [--collection-name COLLECTION_NAME]
+                           [--field-id FIELD_ID]
+                           [--field-name FIELD_NAME]
 
-required arguments:
+Options:
   --report, -r {dd,datadictionary} - Report to be produced:
                 - dd and datadictionary are synonyms
                 - required options:  collection_id
                 - output: a data dictionary for the collection_id
-
-optional arguments (some may be required, depending on report):
   -h, --help            show this help message and exit
   --long-help           Print verbose help and exit.
-  --schema_id SCHEMA_ID, --si SCHEMA_ID
+  --schema-id SCHEMA_ID, --si SCHEMA_ID
                         id of schema
-  --schema_name SCHEMA_NAME, --sn SCHEMA_NAME
-  --collection_id COLLECTION_ID, --ci COLLECTION_ID
-  --collection_name COLLECTION_NAME, --cn COLLECTION_NAME
-  --field_id FIELD_ID, --fi FIELD_ID
-  --field_name FIELD_NAME, --fn FIELD_NAME
+  --schema-name SCHEMA_NAME, --sn SCHEMA_NAME
+  --collection-id COLLECTION_ID, --ci COLLECTION_ID
+  --collection-name COLLECTION_NAME, --cn COLLECTION_NAME
+  --field-id FIELD_ID, --fi FIELD_ID
+  --field-name FIELD_NAME, --fn FIELD_NAME
 
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011,2012,2013,2014,2017 Ken Farmer
+Copyright 2011-2021 Ken Farmer
 """
-import sys
 import argparse
 from signal import signal, SIGPIPE, SIG_DFL
+import sys
 
 from sqlalchemy import (text)
 
@@ -48,6 +49,7 @@ import datagristle.metadata as metadata
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
+
 
 
 def main():
@@ -64,7 +66,7 @@ def main():
 
     # eliminate any Nones so they don't confuse _create_where
     # alternatively change _create_where so that it checks for None pk/uks
-    for key in dargs.keys():
+    for key in list(dargs.keys()):
         if dargs[key] is None:
             dargs.pop(key)
     dargs['md'] = my_md
@@ -142,38 +144,7 @@ def rpt_field_analysis(**kwargs):
     """Prints field-level information.
     """
 
-    #-----  format and run query ------------------
-    sql1 = """ SELECT v.field_id, \
-                      v.field_name, \
-                      v.field_type, \
-                      v.field_order, \
-                      v.field_len, \
-                      v.fa_type, \
-                      v.fa_unique_cnt, \
-                      v.fa_known_cnt, \
-                      v.fa_unknown_cnt, \
-                      v.fa_min, \
-                      v.fa_max, \
-                      v.fa_mean, \
-                      v.fa_median, \
-                      v.fa_stddev, \
-                      v.fa_variance, \
-                      v.fa_min_len, \
-                      v.fa_max_len, \
-                      v.fa_mean_len, \
-                      v.fa_case, \
-                      f.field_desc                            \
-               FROM rpt_field_analysis_v v                    \
-                  INNER JOIN field f                          \
-                     ON v.collection_id = f.collection_id     \
-                    AND v.field_id      = f.field_id          \
-               WHERE v.collection_id  = :collection_id        \
-                 AND v.analysis_id    = :analysis_id          \
-               ORDER BY v.field_order                         \
-          """
-
-
-    sql2 = """SELECT c.collection_id,      \
+    sql  = """SELECT c.collection_id,      \
                      ca.analysis_id,       \
                      ca.ca_id,             \
                      f.field_id,           \
@@ -210,21 +181,21 @@ def rpt_field_analysis(**kwargs):
 
 
     if 'field_id' in kwargs:
-        sql2 += " AND field_id = :field_id "
-        select_sql = text(sql2)
+        sql += " AND field_id = :field_id "
+        select_sql = text(sql)
         result = kwargs['md'].engine.execute(select_sql,
                                              collection_id=kwargs['collection_id'],
                                              analysis_id=kwargs['analysis_id'],
                                              field_id=kwargs['field_id'])
     elif 'field_name' in kwargs:
-        sql2 += " AND field_name = :field_name "
-        select_sql = text(sql2)
+        sql += " AND field_name = :field_name "
+        select_sql = text(sql)
         result = kwargs['md'].engine.execute(select_sql,
                                              collection_id=kwargs['collection_id'],
                                              analysis_id=kwargs['analysis_id'],
                                              field_name=kwargs['field_name'])
     else:
-        select_sql = text(sql2)
+        select_sql = text(sql)
         result = kwargs['md'].engine.execute(select_sql,
                                              collection_id=kwargs['collection_id'],
                                              analysis_id=kwargs['analysis_id'])
@@ -321,7 +292,6 @@ def get_analysis_id(md, collection_id):
         with analysis time or name or schema id or name or
         instance id or name.
     """
-
     sql = """ SELECT MAX(anal.analysis_id) as analysis_id  \
               FROM schema                 sch              \
                  INNER JOIN collection    coll             \
@@ -365,15 +335,15 @@ def get_args():
     parser.add_argument('--report', '-r',
                         choices=['dd', 'datadictionary'],
                         help='Report to be produced')
-    parser.add_argument('--schema_id', '--si',
+    parser.add_argument('--schema-id', '--si',
                         help='id of schema')
-    parser.add_argument('--schema_name', '--sn')
-    parser.add_argument('--collection_id', '--ci',
+    parser.add_argument('--schema-name', '--sn')
+    parser.add_argument('--collection-id', '--ci',
                         type=int)
-    parser.add_argument('--collection_name', '--cn')
-    parser.add_argument('--field_id', '--fi',
+    parser.add_argument('--collection-name', '--cn')
+    parser.add_argument('--field-id', '--fi',
                         type=int)
-    parser.add_argument('--field_name', '--fn')
+    parser.add_argument('--field-name', '--fn')
 
     args = parser.parse_args()
 
@@ -383,7 +353,7 @@ def get_args():
     elif not args.report:
         parser.error('Report must be provided')
     elif args.report == 'dd' and args.collection_id is None:
-        parser.error('collection_id must be provided for dd report')
+        parser.error('collection-id must be provided for dd report')
 
     return args
 

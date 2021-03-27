@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python
 
 import os, sys
 from pprint import pprint as pp
@@ -7,7 +7,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gristle.metadata as md
+import datagristle.metadata as md
 ###from sqlite3 import dbapi2 as sqlite3
 from sqlalchemy import (UniqueConstraint, ForeignKeyConstraint, CheckConstraint)
 
@@ -105,7 +105,7 @@ def schema_new():
             try:
                 (rowcnt, rowid) = meta.schema_tools.insert(schema_name=request.form['sn'],
                                                 schema_desc=request.form['sd'])
-            except ValueError, e:
+            except ValueError as e:
                 return render_template("schema_edit.html",
                                         action='new', msg=e,
                                         sn=request.form['sn'],
@@ -124,7 +124,7 @@ def schema_edit(schema_id):
                 (rowcnt, rowid) = meta.schema_tools.update(schema_name=request.form['sn'],
                                                            schema_desc=request.form['sd'],
                                                            schema_id=schema_id)
-           except ValueError, e:
+           except ValueError as e:
                 return render_template("schema_edit.html",
                                        action='edit', msg=e,
                                        sn=request.form['sn'],
@@ -185,7 +185,7 @@ def collection_new(schema_id):
                 rc = meta.collection_tools.setter(schema_id=schema_id,
                                                 collection_name=request.form['cn'],
                                                 collection_desc=request.form['cd'])
-            except ValueError, e:
+            except ValueError as e:
                 return render_template("collection_edit.html", action='new', msg=e,
                                        sid=schema_id, cn=request.form['cn'],
                                        cd=request.form['cd'], cid='')
@@ -205,7 +205,7 @@ def collection_edit(schema_id, coll_id):
                                           collection_id=coll_id,
                                           collection_name=request.form['cn'],
                                           collection_desc=request.form['cd'])
-           except ValueError, e:
+           except ValueError as e:
                return render_template("collection_edit.html", action='edit', msg=e,
                                       cn=request.form['cn'], cd=request.form['cd'],
                                       sid=schema_id, cid=coll_id)
@@ -268,7 +268,7 @@ def field_new(schema_id, coll_id):
                                                   field_type=request.form['ft'],
                                                   field_len=temp_fl,
                                                   element_name=request.form['en'])
-            except ValueError, e:
+            except ValueError as e:
                 return render_template("field_edit.html", sid=schema_id, cid=coll_id, action='new',
                         msg=e, fn=request.form['fn'],fd=request.form['fd'],fo=request.form['fd'],
                                ft=request.form['ft'],fl=request.form['fl'],en=request.form['en'])
@@ -302,7 +302,7 @@ def field_edit(schema_id, coll_id, field_id):
                                                   field_type=request.form['ft'],
                                                   field_len=request.form['fl'],
                                                   element_name=request.form['en'])
-            except ValueError, e:
+            except ValueError as e:
                 app.logger.error('Field experienced an IntegrityError!')
                 msg = 'IntegrityError - data violates rules: %s' % e
                 return render_template("field_edit.html", action='edit', sid=schema_id, cid=coll_id,
@@ -359,8 +359,8 @@ def fv_new(schema_id, coll_id, field_id):
                                                   fv_value=request.form['fv'],
                                                   fv_desc=request.form['fvd'],
                                                   fv_issues=request.form['fvi'])
-            except ValueError, e:
-                print 'fv_new - ValueError'
+            except ValueError as e:
+                print('fv_new - ValueError')
                 return render_template("fv_edit.html", sid=schema_id, cid=coll_id, fid=field_id,
                        action='new', msg=e,
                        fv=request.form['fv'],fvd=request.form['fvd'],fvi=request.form['fvi'])
@@ -384,7 +384,7 @@ def fv_edit(schema_id, coll_id, field_id, fv_value):
                                                   fv_value=fv_value,
                                                   fv_desc=temp_fvd,
                                                   fv_issues=temp_fvi)
-            except ValueError, e:
+            except ValueError as e:
                 app.logger.error('FieldValueexperienced an IntegrityError!')
                 msg = 'IntegrityError - data violates rules: %s' % e
                 return render_template("fv_edit.html", action='edit', sid=schema_id, cid=coll_id,
@@ -448,5 +448,5 @@ def data2form(val):
 
 
 if __name__ == "__main__":
-    #app.run(debug=True)
-    app.run()
+    app.run(debug=True)
+    #app.run()
