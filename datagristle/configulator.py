@@ -368,8 +368,8 @@ class Config(object):
                         raise ValueError(f'{arg}.{property_name} type is invalid: {property_value}')
 
                 # Check valid values:
-                if property_name in VALID_METADATA_VALUES:
-                    if property_value not in valid_metadata_values[property_name]:
+                if property_name in VALID_CONFIG_PROP_VALUES:
+                    if property_value not in VALID_CONFIG_PROP_VALUES[property_name]:
                         raise ValueError(f'{arg}.{property_name} value not one of valid choices')
 
                 # Custom Validations:
