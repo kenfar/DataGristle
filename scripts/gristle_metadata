@@ -65,7 +65,7 @@ def main():
 
     # eliminate any Nones so they don't confuse _create_where
     # alternatively change _create_where so that it checks for None pk/uks
-    for key in dargs.keys():
+    for key in list(dargs.keys()):
         if dargs[key] is None:
             dargs.pop(key)
 

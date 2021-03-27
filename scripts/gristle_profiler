@@ -215,7 +215,7 @@ def main() -> int:
         sys.exit(errno.ENODATA)  # 61: empty file
 
     if nconfig.metadata:
-        md_man = MetadataManager(nconfig.schemaid, nconfig.collectionid)
+        md_man = MetadataManager(nconfig.schema_id, nconfig.collection_id)
 
     out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.outputformat)
 

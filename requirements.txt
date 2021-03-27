@@ -1,11 +1,10 @@
-Flask       == 1.1.2
-Jinja2      == 2.11.3
-ruamel.yaml == 0.16.13
-SQLAlchemy  == 1.4.2
-Werkzeug    == 1.0
 appdirs     == 1.4.4
 cletus      == 1.0.15
 envoy       == 0.0.3
-pytest      == 6.2.2
-validictory == 1.1.2
+Flask       == 1.1.2
+Jinja2      == 2.11.3
 jsonschema  == 3.2.0
+pytest      == 6.2.2
+ruamel.yaml == 0.16.13
+SQLAlchemy  == 1.4.3
+validictory == 1.1.2

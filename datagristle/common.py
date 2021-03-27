@@ -129,7 +129,8 @@ def abort(summary: str,
     print_solid_line()
     print_text_line(summary)
     print_empty_line()
-    print_text_line(details)
+    if details is not None:
+        print_text_line(details)
     print_empty_line()
     print_text_line('Provide option --help or --long-help for usage information')
     print_empty_line()
