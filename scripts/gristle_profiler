@@ -220,9 +220,7 @@ def main() -> int:
     out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.outputformat)
 
     # Get Analysis on File:
-    my_file = file_type.FileTyper(
-        nconfig.dialect, nconfig.infiles[0], read_limit=nconfig.read_limit
-    )
+    my_file = file_type.FileTyper(nconfig.dialect, nconfig.infiles[0], read_limit=nconfig.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
@@ -242,16 +240,13 @@ def main() -> int:
                                                      nconfig.verbosity)
 
     if nconfig.column_type_overrides:
-        assert (
-            max(nconfig.column_type_overrides) < my_file.field_cnt
+        assert (max(nconfig.column_type_overrides) < my_file.field_cnt
         ), "ERROR: column_type_override references non-existing column_number"
 
-    my_fields.analyze_fields(
-        nconfig.column_number,
-        nconfig.column_type_overrides,
-        nconfig.max_freq,
-        nconfig.read_limit,
-    )
+    my_fields.analyze_fields(nconfig.column_number,
+                             nconfig.column_type_overrides,
+                             nconfig.max_freq,
+                             nconfig.read_limit)
 
     out_writer.write_field_results(my_fields, nconfig.column_number)
     if nconfig.metadata:
@@ -271,26 +266,22 @@ class MetadataManager(object):
         self.md = metadata.GristleMetaData()
 
         if self.md.collection_tools.getter(collection_id=collection_id) is None:
-            print(
-                "ERROR: schema_id / collection_id (%d / %d) does not exist"
-                % (schema_id, collection_id)
-            )
+            print("ERROR: schema_id / collection_id (%d / %d) does not exist"
+                   % (schema_id, collection_id))
             sys.exit(1)
         else:
             print(self.md.collection_tools.getter(schema_id=schema_id, collection_id=collection_id))
 
         self.instance_id = self.md.instance_tools.get_instance_id(self.schema_id)
         self.analysis_profile_id = self.md.analysis_profile_tools.get_analysis_profile_id(
-            self.instance_id, self.collection_id
-        )
+            self.instance_id, self.collection_id)
 
         # blow away prior analysis, collection analysis, etc
         # create new analysis record
         self.analysis_id = self.md.analysis_tools.setter(
             instance_id=self.instance_id,
             analysis_profile_id=self.analysis_profile_id,
-            analysis_tool="gristle_determinator",
-        )
+            analysis_tool="gristle_determinator")
 
     def write_file_results(self, filetype: file_type.FileTyper, dialect: csvhelper.Dialect) -> None:
 
@@ -304,12 +295,11 @@ class MetadataManager(object):
             ca_delimiter=dialect.delimiter,
             ca_has_header=dialect.has_header,
             ca_quoting=csvhelper.get_quote_name(dialect.quoting).lower(),
-            ca_quote_char=dialect.quotechar,
-        )
+            ca_quote_char=dialect.quotechar)
 
-    def write_field_results(
-        self, field_analysis: field_determinator.FieldDeterminator, col_number: int
-    ) -> None:
+    def write_field_results(self,
+                            field_analysis: field_determinator.FieldDeterminator,
+                            col_number: int) -> None:
 
         for sub in range(field_analysis.field_cnt):
             if col_number is not None and sub != col_number:
@@ -371,9 +361,9 @@ class MetadataManager(object):
             if field_analysis.field_freqs[sub] is not None:
                 sorted_list = field_analysis.get_top_freq_values(sub, limit=100)
                 for value, count in sorted_list:
-                    fav_id = self.md.field_analysis_value_tools.setter(
-                        fa_id=fa_id, fav_value=value, fav_count=count
-                    )
+                    fav_id = self.md.field_analysis_value_tools.setter(fa_id=fa_id,
+                                                                       fav_value=value,
+                                                                       fav_count=count)
 
 
 class OutputWriter(object):
@@ -386,7 +376,9 @@ class OutputWriter(object):
       field_analysis_results | field_0      | topvalues    | blue        | 57
     """
 
-    def __init__(self, output_filename: str, output_format: str) -> None:
+    def __init__(self,
+                 output_filename: str,
+                 output_format: str) -> None:
         self.division: str = None
         self.output_filename = output_filename
         self.output_format = output_format
@@ -404,7 +396,10 @@ class OutputWriter(object):
         if self.outfile:
             self.outfile.close()
 
-    def write_file_results(self, my_file: file_type.FileTyper, dialect: csvhelper.Dialect) -> None:
+
+    def write_file_results(self,
+                           my_file: file_type.FileTyper,
+                           dialect: csvhelper.Dialect) -> None:
         self.write_header()
         self.write_header("File Analysis Results:")
         self.division = "File Analysis Results"
@@ -431,6 +426,7 @@ class OutputWriter(object):
             self.write_string("lineterminator", dialect.lineterminator, use_repr=True)
         self.write_string("escapechar", dialect.escapechar)
         self.write_header()
+
 
     def write_field_results(self,
                             my_fields: field_determinator.FieldDeterminator,
@@ -470,7 +466,10 @@ class OutputWriter(object):
 
             self.write_field_freq(my_fields, sub)
 
-    def write_field_freq(self, my_fields: field_determinator.FieldDeterminator, col_no: int):
+
+    def write_field_freq(self,
+                         my_fields: field_determinator.FieldDeterminator,
+                         col_no: int):
         """Writes out the top_values section for a single column."""
         self.subsection = "top_values"
 
@@ -495,19 +494,22 @@ class OutputWriter(object):
             else:
                 self.write_string(key, "%d" % val, indent=8, key_width=30)
 
-    def write_header(self, val: str = "", indent: int = 0) -> None:
+
+    def write_header(self,
+                     val: str = "",
+                     indent: int = 0) -> None:
         if self.output_format == "readable":
             self.outfile.write("{1:<{2}}{0}\n".format(val, "", indent))
         elif self.output_format == "parsable":
             pass
 
-    def write_string(
-        self,
-        key: str,
-        value: Any = " ",
-        indent: int = 0,
-        key_width: int = 20,
-        use_repr: bool = False) -> None:
+
+    def write_string(self,
+                     key: str,
+                     value: Any = " ",
+                     indent: int = 0,
+                     key_width: int = 20,
+                     use_repr: bool = False) -> None:
 
         if self.output_format == "parsable" and self._parsify(self.subsection) != "top_values":
             trunc_key = self._parsify(key[:key_width])
@@ -518,27 +520,17 @@ class OutputWriter(object):
 
         if self.output_format == "readable":
             if use_repr:
-                self.outfile.write(
-                    "  {0:<{1}}{2:<{3}}{4!r}\n".format(
-                        "%s" % "", indent, trunc_key, key_width, trunc_value
-                    )
-                )
+                self.outfile.write("  {0:<{1}}{2:<{3}}{4!r}\n".format(
+                                   "%s" % "", indent, trunc_key, key_width, trunc_value))
             else:
-                self.outfile.write(
-                    "  {0:<{1}}{2:<{3}}{4}\n".format(
-                        "%s" % "", indent, trunc_key, key_width, trunc_value
-                    )
-                )
+                self.outfile.write("  {0:<{1}}{2:<{3}}{4}\n".format(
+                                   "%s" % "", indent, trunc_key, key_width, trunc_value))
         elif self.output_format == "parsable":
-            self.outfile.write(
-                "{0}|{1}|{2}|{3}|{4}\n".format(
-                    self._parsify(self.division),
-                    self._parsify(self.section),
-                    self._parsify(self.subsection),
-                    trunc_key,
-                    trunc_value,
-                )
-            )
+            self.outfile.write("{0}|{1}|{2}|{3}|{4}\n".format(self._parsify(self.division),
+                                                              self._parsify(self.section),
+                                                              self._parsify(self.subsection),
+                                                              trunc_key,
+                                                              trunc_value))
 
     def _parsify(self, val: str) -> str:
         return '"%s"' % val.lower().replace(" ", "_")
@@ -548,31 +540,27 @@ class OutputWriter(object):
 class ConfigManager(configulator.Config):
 
     def define_obsolete_config(self) -> None:
-        self.add_obsolete_metadata(
-            "schemaid", short_name=None, msg="--schemaid has been renamed --schema-id"
-        )
-        self.add_obsolete_metadata(
-            "collectionid",
-            short_name=None,
-            msg="--collectionid has been renamed --collection-id",
-        )
-        self.add_obsolete_metadata(
-            "types",
-            short_name="T",
-            msg="-T and --types have been renamed --column-types",
-        )
-        self.add_obsolete_metadata(
-            "column", short_name="", msg="--column has been renamed --column-number"
-        )
-        self.add_obsolete_metadata(
-            "", short_name="v", msg="-v (verbose) has been replaced by --verbosity high"
-        )
-        self.add_obsolete_metadata(
-            "output", short_name="", msg="--output has been renamed --outfile"
-        )
-        self.add_obsolete_metadata(
-            "number", short_name="", msg="--number has been renamed --max-freq"
-        )
+        self.add_obsolete_metadata("schemaid",
+                                   short_name=None,
+                                   msg="--schemaid has been renamed --schema-id")
+        self.add_obsolete_metadata("collectionid",
+                                   short_name=None,
+                                   msg="--collectionid has been renamed --collection-id")
+        self.add_obsolete_metadata("types",
+                                   short_name="T",
+                                   msg="-T and --types have been renamed --column-types")
+        self.add_obsolete_metadata("column",
+                                   short_name="",
+                                   msg="--column has been renamed --column-number")
+        self.add_obsolete_metadata("",
+                                   short_name="v",
+                                   msg="-v (verbose) has been replaced by --verbosity high")
+        self.add_obsolete_metadata("output",
+                                   short_name="",
+                                   msg="--output has been renamed --outfile")
+        self.add_obsolete_metadata("number",
+                                   short_name="",
+                                   msg="--number has been renamed --max-freq")
         # the arguments for infiles have also been replaced with -i - but this function doesn't support this
 
 
@@ -581,43 +569,34 @@ class ConfigManager(configulator.Config):
         self.add_standard_metadata("infiles")
         self.add_standard_metadata("outfile")
 
-        self.add_custom_metadata(
-            name="outputformat",
-            default="readable",
-            type=str)
-        self.add_custom_metadata(
-            name="brief",
-            short_name="b",
-            default=False,
-            type=bool,
-            action="store_const",
-            const=True)
-        self.add_custom_metadata(
-            name="read_limit",
-            default=-1,
-            type=int)
-        self.add_custom_metadata(
-            name="column_number",
-            short_name="c",
-            default=None,
-            type=int)
-        self.add_custom_metadata(
-            name="max_freq",
-            type=int)
-        self.add_custom_metadata(
-            name="column_types",
-            type=str)
-        self.add_custom_metadata(
-            name="metadata",
-            type=bool,
-            action="store_const",
-            const=True)
-        self.add_custom_metadata(
-            name="schema_id",
-            type=int)
-        self.add_custom_metadata(
-            name="collection_id",
-            type=int)
+        self.add_custom_metadata(name="outputformat",
+                                 default="readable",
+                                 type=str)
+        self.add_custom_metadata(name="brief",
+                                 short_name="b",
+                                 default=False,
+                                 type=bool,
+                                 action="store_const",
+                                 const=True)
+        self.add_custom_metadata(name="read_limit",
+                                 default=-1,
+                                 type=int)
+        self.add_custom_metadata(name="column_number",
+                                 short_name="c",
+                                 default=None,
+                                 type=int)
+        self.add_custom_metadata(name="max_freq",
+                                 type=int)
+        self.add_custom_metadata(name="column_types",
+                                 type=str)
+        self.add_custom_metadata(name="metadata",
+                                 type=bool,
+                                 action="store_const",
+                                 const=True)
+        self.add_custom_metadata(name="schema_id",
+                                 type=int)
+        self.add_custom_metadata(name="collection_id",
+                                 type=int)
 
         self.add_standard_metadata("verbosity")
         self.add_all_config_configs()
