@@ -4,7 +4,7 @@
     or functions.
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2014, 2017 Ken Farmer
+    Copyright 2014-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -14,11 +14,11 @@
 #pylint: disable=no-self-use
 #pylint: disable=anomalous-backslash-in-string
 
-import tempfile
-import time
-import shutil
 import os
 from os.path import dirname, join as pjoin
+import shutil
+import tempfile
+import time
 
 import envoy
 
