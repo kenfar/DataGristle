@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2020 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -10,13 +10,13 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import sys
-import tempfile
-import random
 import csv
 import os
 from os.path import dirname, join as pjoin
 import pytest
+import random
+import sys
+import tempfile
 
 import datagristle.test_tools as test_tools
 import datagristle.file_io as file_io
@@ -127,79 +127,6 @@ class TestBuildFreq(object):
 
 
 
-class TestGetArgs(object):
-
-    def setup_method(self, method):
-        self.tempdir = tempfile.mkdtemp(prefix='test_gristle_freaker_')
-        self.temp_fqfn = pjoin(self.tempdir, 'census.csv')
-        with open(self.temp_fqfn, 'w') as buf:
-            buf.write('a,b,c')
-
-    def teardown_method(self, method):
-        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'FreakerTest'))
-
-    def test_happy_path(self):
-        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '1', '--verbosity', 'debug']
-
-        config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
-        nconfig, _ = config_manager.get_config()
-
-        assert nconfig.columns == [1]
-        assert nconfig.outfile == '-'
-        assert nconfig.write_limit == 0
-        assert nconfig.dialect.delimiter == ','
-        assert nconfig.dialect.quoting == csvhelper.get_quote_number('quote_none')
-        assert nconfig.dialect.has_header is True
-        assert nconfig.sampling_method == 'non'
-        assert nconfig.sampling_rate is None
-        assert nconfig.sort_col == 1
-        assert nconfig.sort_order == 'reverse'
-
-    def test_check_invalid_columns(self):
-
-        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', 'd']
-        try:
-            config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
-            nconfig, _ = config_manager.get_config()
-        except SystemExit:
-            pass
-        except Exception as e:
-            pytest.fail('unexpected exception thrown: ', e)
-        else:
-            pytest.fail('expected exception not thrown')
-
-    def test_check_invalid_maxkeylen(self):
-        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '--max-key-len', 'blah']
-        try:
-            config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
-            nconfig, _ = config_manager.get_config()
-        except SystemExit:
-            pass
-        except Exception as e:
-            pytest.fail('unexpected exception thrown: ', e)
-        else:
-            pytest.fail('expected exception not thrown')
-
-    def test_check_valid_maxkeylen(self):
-        sys.argv = ['../gristle_freaker', '-i', self.temp_fqfn, '-c', '0', '--max-key-len', '50']
-
-        try:
-            config_manager = mod.ConfigManager('gristle_freaker', 'short help', 'long help')
-            nconfig, _ = config_manager.get_config()
-            if nconfig.max_key_len != 50:
-                pytest.fail('max-key-len results did not match expected values: ')
-        except SystemExit:
-            pytest.fail('Unexpected exception thrown')
-        except:
-            e = sys.exc_info()[1]
-            pytest.fail('Unexpected exception thrown: %s' % e)
-            raise
-
-
-
-
-
-
 class TestCreateKey(object):
 
     def setup_method(self, method):
@@ -229,8 +156,6 @@ class TestCreateKey(object):
         columns = [0]
         key_tup = self.col_freak._create_key(fields, columns)
         assert key_tup == ('a',)
-
-
 
 
 
