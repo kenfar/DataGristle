@@ -1,0 +1,13 @@
+dedupe: false
+delimiter: ','
+doublequote: null
+escapechar: null
+has_header: true
+help: false
+infiles: [example-04_dialect-qnone-skipspace-header_input.csv]
+keys: [1sf]
+outfile: /tmp/example-04_actualout.csv
+quotechar: null
+quoting: quote_none
+skipinitialspace: true
+verbosity: normal

@@ -12,6 +12,7 @@ import sys
 import time
 from typing import List, Dict, Any, Union
 
+import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
 
@@ -181,7 +182,11 @@ class CSVPythonSorter(object):
                          rec: List[Union[str, int, float]],
                          primary_order: str) -> List[Any]:
 
-        return [transform(rec[key_field.position], key_field, primary_order) for key_field in key_fields]
+        try:
+            sort_values = [transform(rec[key_field.position], key_field, primary_order) for key_field in key_fields]
+        except IndexError:
+            comm.abort('Error: key references columns that does not exist in record', f'{rec=}')
+        return sort_values
 
 
     def _singlepass_sort(self) -> None:

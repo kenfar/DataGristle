@@ -160,18 +160,26 @@ def override_dialect(dialect: Dialect,
 
     if delimiter is not None:
         dialect.delimiter = delimiter
-    if quoting is not None:
-        dialect.quoting = quoting
-    if quotechar is not None:
-        dialect.quotechar = quotechar
-    if doublequote is not None:
-        dialect.doublequote = doublequote
-    if escapechar is not None:
-        dialect.escapechar = escapechar
     if has_header is not None:
         dialect.has_header = has_header
     if skipinitialspace is not None:
         dialect.skipinitialspace = skipinitialspace
+
+    # Cannot have a quotechar if there's no quoting
+    if quoting is not None:
+        dialect.quoting = quoting
+    if quotechar is not None:
+        dialect.quotechar = quotechar
+    if dialect.quoting is None:
+        dialect.quotechar = None
+
+    # We cannot have both doublequoting & escapechar at the same time:
+    if doublequote is not None:
+        dialect.doublequote = doublequote
+        dialect.escapechar = None
+    elif escapechar is not None:
+        dialect.escapechar = escapechar
+        dialect.doublequote = None
 
     dialect.lineterminator = '\n'
 
@@ -197,14 +205,18 @@ def default_dialect(dialect: Dialect,
         dialect.quoting = quoting
     if dialect.quotechar is None:
         dialect.quotechar = quotechar
-    if dialect.doublequote is None:
-        dialect.doublequote = doublequote
-    if dialect.escapechar is None:
-        dialect.escapechar = escapechar
     if dialect.has_header is None:
         dialect.has_header = has_header
     if dialect.skipinitialspace is None:
         dialect.skipinitialspace = skipinitialspace
+
+    # Make sure we only have either doublequoting or escapechar turned on
+    if dialect.doublequote is None:
+        dialect.doublequote = doublequote
+    if dialect.escapechar is None:
+        dialect.escapechar = escapechar
+    if dialect.doublequote and dialect.escapechar:
+        comm.abort('Error: cannot have both doublequoting and escapechar')
 
     dialect.lineterminator = '\n'
 
