@@ -52,26 +52,10 @@ Dependencies
 ============
 
 -  Python 3.8
--  or Python 3.7
+-  or Python 3.9
 
-Utilities Provided in This Release:
-===================================
-
--  gristle_slicer
-
-   -  Used to extract a subset of columns and rows out of an input file.
-
--  gristle_freaker
-
-   -  Produces a frequency distribution of multiple columns from input
-      file.
-
--  gristle_profiler (was: gristle_determinator)
-
-   -  Identifies file formats, generates metadata, prints file analysis
-      report
-   -  This is the most mature - and also used by the other utilities so
-      that you generally do not need to enter file structure info.
+CSV Utilities provided in this release:
+=======================================
 
 -  gristle_differ
 
@@ -88,11 +72,39 @@ Utilities Provided in This Release:
    -  Converts an input file with one csv dialect into an output file
       with another.
 
+-  gristle_freaker
+
+   -  Produces a frequency distribution of multiple columns from input
+      file.
+
+-  gristle_profiler (was: gristle_determinator)
+
+   -  Identifies file formats, generates metadata, prints file analysis
+      report
+   -  This is the most mature - and also used by the other utilities so
+      that you generally do not need to enter file structure info.
+
+-  gristle_slicer
+
+   -  Used to extract a subset of columns and rows out of an input file.
+
+-  gristle_sorter
+
+   -  CSV-aware sort utility that handles data that breaks unix sorts.
+
 -  gristle_validator
 
    -  Validates csv files by confirming that all records have the right
       number of fields, and by apply a json schema full of requirements
       to each record.
+
+-  gristle_viewer
+
+   -  Shows one record from a file at a time - formatted based on
+      metadata.
+
+File and Directory Utilities provided in this release:
+======================================================
 
 -  gristle_dir_merger
 
@@ -103,11 +115,6 @@ Utilities Provided in This Release:
 
    -  Used to apply actions, like delete, compress, etc, to files based
       on very flexible criteria.
-
--  gristle_viewer
-
-   -  Shows one record from a file at a time - formatted based on
-      metadata.
 
 gristle_slicer
 ==============
