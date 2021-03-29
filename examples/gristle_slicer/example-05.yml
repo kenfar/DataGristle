@@ -1,0 +1,10 @@
+# Ensure auto-detection works on a simple file
+delimiter: null
+doublequote: null
+escapechar: null
+has_header: null
+infiles: [example-05_dialect-qnone-header_input.csv]
+outfile: /tmp/example-05_actualout.csv
+quotechar: null
+quoting: null
+skipinitialspace: null
