@@ -202,22 +202,34 @@ def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[in
 
 def get_best_col_names(config: Dict[str, Any],
                        dialect: csv.Dialect) -> Dict[str, Any]:
-    if dialect.has_header:
-        if len(config['col_names']):
-            return config['col_names']
-        else:
-            return get_col_names_from_header(config['infiles'][0], dialect)
-    else:
+
+    if not dialect.has_header:
         return config['col_names']
+
+    if config.get('col_names'):
+        return config['col_names']
+
+    # lets now try to get them from the header:
+    col_names = None
+    infile = 0
+    for infile_number in range(len(config['infiles'])):
+        col_names = get_col_names_from_header(config['infiles'][infile_number], dialect)
+        if col_names:
+            return col_names
+    else:
+        return None
 
 
 def get_col_names_from_header(file1_fqfn: str,
                               dialect: csv.Dialect) -> List[str]:
-    with open(file1_fqfn, newline='') as f:
-        reader = csv.reader(f, dialect=dialect)
-        header = reader.__next__()
-    col_names = [x.lower().replace(' ', '_') for x in header]
-    return col_names
+    try:
+        with open(file1_fqfn, newline='') as f:
+            reader = csv.reader(f, dialect=dialect)
+            header = reader.__next__()
+        col_names = [x.lower().replace(' ', '_') for x in header]
+        return col_names
+    except StopIteration:
+        return None
 
 
 

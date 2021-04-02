@@ -317,7 +317,10 @@ def prep_file(filename: str,
     # Sort the file if necessary
     if already_sorted:
         sorted_fn = filename
-    elif dialect.quoting == csv.QUOTE_NONE:
+    elif (dialect.quoting == csv.QUOTE_NONE
+          and dialect.escapechar is None
+          and dialect.doublequote is None
+          and dialect.has_header is False):
         sorter = gsorter.CSVSorter(dialect, key_cols, temp_dir, out_dir)
         sorted_fn = sorter.sort_file(filename)
     else:
@@ -327,7 +330,8 @@ def prep_file(filename: str,
                                          out_fqfn=sorted_fn,
                                          sort_keys_config=sort_key_config,
                                          dialect=dialect,
-                                         dedupe=(not already_uniq))
+                                         dedupe=(not already_uniq),
+                                         keep_header=False)
         sorter.sort_file()
         sorter.close()
         dups_removed = sorter.stats['recs_deduped']
@@ -502,10 +506,6 @@ def config_bonus_validator(config: Dict[str, Any]) -> None:
         config['compare_cols'] = [x for x in config['compare_cols'] if x not in config['key_cols']]
         print("Warning: some key-cols removed from compare-cols")
         print("Revised config['compare_cols']: %s" % config.get('compare_cols', None))
-
-    #todo: can eliminate this in steps
-    #if config['has_header']:
-    #    abort("Error: has_header is not supported yet.")
 
     for kv_pair in config['variables']:
         if ':' not in kv_pair:

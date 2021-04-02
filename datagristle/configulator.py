@@ -666,6 +666,7 @@ class _FileArgs(object):
         self._convert_file_path('outfile', file_args)
         self._convert_file_path('outfiles', file_args)
         self._convert_file_path('outdir', file_args)
+        self._convert_file_path('out_dir', file_args)
         self._convert_file_path('tmpdir', file_args)
         return file_args
 
@@ -688,12 +689,12 @@ class _FileArgs(object):
         if path_key not in args:
             return
 
+        config_dir = dirname(abspath(self.config_fn))
         if type(args[path_key]) == type(['foo']):
             if args[path_key] == ['-']:
                 return
             old_files = args[path_key]
             new_files = []
-            config_dir = dirname(abspath(self.config_fn))
             for file in old_files:
                 if isabs(file):
                     new_files.append(file)
@@ -706,7 +707,6 @@ class _FileArgs(object):
                 return
             old_file = args[path_key]
             new_file = ''
-            config_dir = dirname(abspath(self.config_fn))
             if isabs(old_file):
                 new_file = old_file
             else:

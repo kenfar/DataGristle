@@ -106,14 +106,16 @@ class CSVPythonSorter(object):
                  out_fqfn: str,
                  sort_keys_config: SortKeysConfig,
                  dialect: csvhelper.Dialect,
-                 dedupe: bool) -> None:
+                 dedupe: bool,
+                 keep_header: bool = True) -> None:
 
         self.dedupe = dedupe
         self.sort_key_config = sort_keys_config
+        self.keep_header = keep_header
 
-        self.header_rec = None
         self.all_recs = []
         self.keys = []
+        self.header_rec = None
 
         self.stats = {}
         self.stats['recs_deduped'] = 0
@@ -128,6 +130,7 @@ class CSVPythonSorter(object):
         self.output_handler = file_io.OutputHandler(out_fqfn,
                                                     self.input_handler.dialect,
                                                     sys.stdout)
+
 
     def sort_file(self) -> Dict[str, int]:
         """ Sort input file giving output file
@@ -220,6 +223,7 @@ class CSVPythonSorter(object):
 
 
     def _write_file_and_dedupe(self) -> None:
+        #note: it is no longer writing the header record out
         #print('\n ------------------ Write Phase: -------------------------')
         keys = self.keys
         all_recs = self.all_recs
@@ -230,7 +234,7 @@ class CSVPythonSorter(object):
         # Run it once to initiate - especially for unit testing.
         isduplicate(None)
 
-        if self.header_rec:
+        if self.keep_header and self.header_rec:
             self.output_handler.write_rec(self.header_rec)
 
         for key in keys:
