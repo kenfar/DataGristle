@@ -1,0 +1,13 @@
+infiles: [example-10_dialect-qall-escdel-header_input1.csv,
+          example-10_dialect-qall-escdel-header_empty_input2.csv]
+out-dir: /tmp/example-10_actual_output_files
+key-cols: [2]
+
+quoting: quote_all
+delimiter: ','
+escapechar: \
+has_header: true
+
+quotechar: null
+doublequote: null
+skipinitialspace: null

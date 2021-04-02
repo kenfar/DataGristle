@@ -822,17 +822,23 @@ class TestCommandLine(object):
         cmd = ''' %s
                   --infiles %s %s
                   --verbosity debug
-                  --has-header 
+                  --has-header
                   -k rowkey -c col2 --temp-dir %s  ''' % (pjoin(script_dir, 'gristle_differ'),
                                                           fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
+
+        print('file1: ')
+        os.system(f'cat {fqfn1}')
+        print('\nfile2: ')
+        os.system(f'cat {fqfn2}')
+        print('')
 
         pp(os.listdir(self.temp_dir))
         assert self.file_cnt(fn2, '.insert') == 1
         assert self.file_cnt(fn2, '.delete') == 1
         assert self.file_cnt(fn2, '.chgold') == 1
         assert self.file_cnt(fn2, '.chgnew') == 1
-        assert self.file_cnt(fn2, '.same')   == 1
+        assert self.file_cnt(fn2, '.same')   == 0 # the header is the same, but it won't get counted
 
 
     def test_option_column_names_explicit(self):
@@ -859,12 +865,18 @@ class TestCommandLine(object):
 
         executor(cmd)
 
+        print('file1: ')
+        os.system(f'cat {fqfn1}')
+        print('\nfile2: ')
+        os.system(f'cat {fqfn2}')
+        print('')
+
         pp(os.listdir(self.temp_dir))
         assert self.file_cnt(fn2, '.insert') == 1
         assert self.file_cnt(fn2, '.delete') == 1
         assert self.file_cnt(fn2, '.chgold') == 1
         assert self.file_cnt(fn2, '.chgnew') == 1
-        assert self.file_cnt(fn2, '.same')   == 1
+        assert self.file_cnt(fn2, '.same')   == 0 # the header won't be counted
 
 
     def test_missing_key_cols(self):
