@@ -177,9 +177,10 @@ def override_dialect(dialect: Dialect,
     if doublequote is not None:
         dialect.doublequote = doublequote
         dialect.escapechar = None
-    elif escapechar is not None:
+
+    if escapechar is not None and dialect.doublequote in (False, None):
         dialect.escapechar = escapechar
-        dialect.doublequote = None
+        dialect.doublequote = False
 
     dialect.lineterminator = '\n'
 
