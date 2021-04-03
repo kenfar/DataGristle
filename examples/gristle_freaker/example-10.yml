@@ -1,0 +1,13 @@
+infiles: [example-10_dialect-qall-escdel-header_input.csv]
+outfile: /tmp/example-10_actualout.csv
+columns: [2]
+
+quoting: quote_all
+delimiter: ','
+escapechar: \
+has_header: true
+verbosity: normal
+
+doublequote: null
+quotechar: null
+skipinitialspace: null
