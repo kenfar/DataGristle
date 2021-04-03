@@ -1,0 +1,13 @@
+infiles: [example-07_dialect-qall-dqdel-header_input1.csv,
+          example-07_dialect-qall-dqdel-header_empty_input2.csv]
+out-dir:  /tmp/example-07_actual_output_files
+key-cols: [2]
+
+quoting: quote_all
+delimiter: ','
+doublequote: true
+has_header: true
+
+escapechar: null
+quotechar: null
+skipinitialspace: null

@@ -1,0 +1,13 @@
+infiles: [example-06_dialect-qall-dqquote-header_input.csv]
+outfile: /tmp/example-06_actualout.csv
+outputformat: parsable
+
+quoting: quote_all
+delimiter: ','
+doublequote: true
+has_header: true
+verbosity: normal
+
+quotechar: null
+escapechar: null
+skipinitialspace: null

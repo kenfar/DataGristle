@@ -1,0 +1,13 @@
+infiles: [example-01_dialect-qnone-escquote-header_input.csv]
+outfile: /tmp/example-01_actualout.csv
+outputformat: parsable 
+
+quoting: quote_none
+delimiter: ','
+escapechar: \
+verbosity: debug
+
+doublequote: null
+has_header: true
+quotechar: null
+skipinitialspace: null

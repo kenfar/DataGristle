@@ -1,0 +1,13 @@
+infiles: [example-01_dialect-qnone-escquote-header_empty_input2.csv,
+          example-01_dialect-qnone-escquote-header_input1.csv]
+out-dir: /tmp/example-01_actual_output_files
+key-cols: [2]
+
+delimiter: ','
+escapechar: \
+has_header: true
+quoting: quote_none
+
+quotechar: null
+doublequote: null
+skipinitialspace: null

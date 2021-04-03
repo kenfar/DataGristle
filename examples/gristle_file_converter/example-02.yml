@@ -1,0 +1,9 @@
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+infiles: [example-02_dialect-qnone-escdel-header_input.csv]
+outfile: /tmp/example-02_actualout.csv
+quotechar: null
+quoting: quote_none
+skipinitialspace: null

@@ -1,0 +1,9 @@
+delimiter: ','
+doublequote: true
+escapechar: null
+has_header: true
+infiles: [example-06_dialect-qall-dqquote-header_input.csv]
+outfile: /tmp/example-06_actualout.csv
+quotechar: null
+quoting: quote_all
+skipinitialspace: null

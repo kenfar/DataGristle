@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 """ Provides tools to assist in testing.
 """
+import fileinput
+import glob
 import imp
 import os
+from os.path import basename, join as pjoin
+from pprint import pprint as pp
+import shutil
 import sys
 import tempfile
-import glob
+
+from colorama import Fore, Style, Back
+import envoy
+import ruamel.yaml as yaml
 
 sys.dont_write_bytecode = True
 
@@ -79,3 +87,111 @@ def generate_7x7_test_file(prefix: str, hasheader: bool = False, delimiter: str 
 def touch(fname: str, times=None) -> None:
     with open(fname, 'a'):
         os.utime(fname, times)
+
+
+
+
+class TestExamples(object):
+    """ Test all configs and files in the example directory for this program
+    """
+
+    def setup_method(self, method):
+        self.pgm = None
+        self.script_dir = None
+        self.example_dir = ''
+        self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
+        self.cmd = None
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.temp_dir)
+
+    def test_all_example_configs(self):
+        test_count = 0
+        for test_count, test_config_fn in enumerate(sorted(glob.glob(pjoin(self.example_dir, '*example-*.yml')))):
+            print('\n')
+            print('=' * 100)
+            print(test_config_fn)
+            print('=' * 100)
+
+            example_number = basename(test_config_fn).split('.')[0]
+
+            self.load_config(example_number)
+            self.make_command(example_number)
+            print('\n**** Execution: ****')
+            executor(self.cmd, expect_success=True)
+
+            self.print_files()
+
+            print('\n**** os diff of files: ****')
+            assert os.system(f'diff {self.out_fqfn} {self.expected_fqfn}') == 0
+            print(Fore.GREEN + '    TEST PASSED: actual file matched expected file')
+            print(Fore.RESET)
+
+        print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++')
+        print(f'Tests run: {test_count}')
+        print('+++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+
+    def load_config(self,
+                    example_number):   # ex: 'example-1'
+
+        self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
+        with open(self.config_fn) as buf:
+            self.config = yaml.safe_load(buf)
+
+        self.docstrings = []
+        for rec in fileinput.input(self.config_fn):
+            if rec.startswith('#'):
+                self.docstrings.append(rec)
+        fileinput.close()
+
+        print(f'\n**** Config: ****')
+        pp(self.config)
+
+        print(f'\n**** Config docstring: ****')
+        pp(self.docstrings)
+
+
+    def make_command(self,
+                     example_number):   # ex: 'example-1'
+
+        self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
+        self.in_fqfn = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input.csv'))[0]
+        self.expected_fqfn = glob.glob(pjoin(self.example_dir, f'{example_number}_*_expectedout.csv'))[0]
+        self.out_fqfn = pjoin(self.temp_dir, f'{example_number}_actualout.csv')
+
+        self.cmd = f''' {pjoin(self.script_dir, self.pgm)}   \
+                        -o {self.out_fqfn}
+                        --verbosity debug
+                        --config-fn {self.config_fn}
+                    '''
+
+    def print_files(self):
+
+        print('\n**** command: ****')
+        pp(self.cmd)
+
+        print('\n**** input: ****')
+        os.system(f'cat {self.in_fqfn}')
+
+        print('\n**** actual: ****')
+        os.system(f'cat {self.out_fqfn}')
+
+        print('\n**** expected: ****')
+        os.system(f'cat {self.expected_fqfn}')
+
+
+
+def executor(cmd, expect_success=True):
+    runner = envoy.run(cmd)
+    status_code = runner.status_code
+    print(runner.std_out)
+    print(runner.std_err)
+    if expect_success:
+        assert status_code == 0
+    else:
+        assert status_code != 0
+    return status_code
+
+
+
