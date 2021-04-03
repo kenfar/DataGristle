@@ -12,8 +12,7 @@
 
 from pprint  import pprint as pp
 import os
-from os.path import dirname, basename, join as pjoin
-import sys
+from os.path import dirname, join as pjoin
 
 import datagristle.test_tools as test_tools
 
@@ -27,8 +26,7 @@ class TestExamples(test_tools.TestExamples):
     """
 
     def setup_method(self, method):
-        super().setup_method(method)
         self.pgm = 'gristle_profiler'
         self.example_dir = EXAMPLE_DIR
         self.script_dir = SCRIPT_DIR
-
+        super().setup_method(method)

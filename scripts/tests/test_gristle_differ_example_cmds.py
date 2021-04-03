@@ -10,60 +10,60 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import csv
-import fileinput
 import glob
 from pprint  import pprint as pp
 import os
 from os.path import dirname, basename, join as pjoin, isdir
 import shutil
-import sys
 import tempfile
 
-import envoy
-import ruamel.yaml as yaml
+from colorama import Fore, Style, Back
 
-import datagristle.csvhelper as csvhelper
+import datagristle.test_tools as test_tools
 
 EXAMPLE_DIR = pjoin(dirname(dirname(dirname(os.path.realpath(__file__)))), 'examples', 'gristle_differ')
 SCRIPT_DIR = dirname(dirname(os.path.realpath((__file__))))
 
 
 
-class TestSampleConfigs(object):
+class TestExamples(test_tools.TestExamples):
     """ Test all configs and files in the example directory for this program
     """
 
     def setup_method(self, method):
-        self.temp_dir = tempfile.mkdtemp(prefix='gristle_differ_')
-        self.cmd = None
+        super().setup_method(method)
+
+        self.pgm = 'gristle_differ'
+        self.example_dir = EXAMPLE_DIR
+        self.script_dir = SCRIPT_DIR
+        self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
+
         self.actual_dir = None
         self.expected_dir = None
         self.expected_files = []
         self.actual_files = []
 
-    def teardown_method(self, method):
-        shutil.rmtree(self.temp_dir)
-        pass
+
 
     def test_all_example_configs(self):
-        for test_count, test_config_fn in enumerate(sorted(glob.glob(pjoin(EXAMPLE_DIR, '*example-*.yml')))):
+        for test_count, test_config_fn in enumerate(sorted(glob.glob(pjoin(self.example_dir, '*example-*.yml')))):
             print('\n')
             print('=' * 100)
             print(test_config_fn)
             print('=' * 100)
 
             example_number = basename(test_config_fn).split('.')[0]
-            self.config_fn = pjoin(EXAMPLE_DIR, f'{example_number}.yml')
-            self.in_fqfn1 = glob.glob(pjoin(EXAMPLE_DIR, f'{example_number}_*_input1.csv'))[0]
-            self.in_fqfn2 = glob.glob(pjoin(EXAMPLE_DIR, f'{example_number}_*_input2.csv'))[0]
-            self.expected_files = glob.glob(pjoin(EXAMPLE_DIR, f'{example_number}_expected_output_files/*csv*'))
+            self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
+            self.in_fqfn1 = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input1.csv'))[0]
+            self.in_fqfn2 = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input2.csv'))[0]
+            self.expected_files = glob.glob(pjoin(self.example_dir, f'{example_number}_expected_output_files/*csv*'))
 
             self.load_config(example_number)
+            self.actual_dir = self.config['out-dir']
             self.create_output_dir(self.actual_dir)
             self.make_command(example_number)
             print('\n**** Execution: ****')
-            executor(self.cmd, expect_success=True)
+            test_tools.executor(self.cmd, expect_success=True)
 
             self.actual_files = glob.glob(pjoin(self.config['out-dir'], f'{example_number}_*csv*'))
             self.print_files()
@@ -77,9 +77,10 @@ class TestSampleConfigs(object):
             rc += self.diff_file_pair(self.expected_files, self.actual_files, '.chgnew')
 
             if rc == 0:
-                print('\ntest passed: actual files matched expected files')
+                print(Fore.GREEN + '\nTEST PASSED: actual files matched expected files')
             else:
-                print('\ntest FAILED: file differences were encountered!')
+                print(Fore.RED + '\nTEST FAILED: file differences were encountered!')
+            print(Fore.RESET)
 
         print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++')
         print(f'Tests run: {test_count}')
@@ -87,6 +88,8 @@ class TestSampleConfigs(object):
 
 
     def get_fqfn_of_filetype(self, fileset, filetype):
+        """ Get the fully-qualified filename for a given type from a list
+        """
         return [fqfn for fqfn in fileset if fqfn.endswith(filetype)][0]
 
 
@@ -107,47 +110,21 @@ class TestSampleConfigs(object):
         os.system(f'sort {actual_fqfn} > {sorted_actual_fqfn}')
         os.system(f'cat {sorted_actual_fqfn}')
 
-        rc = os.system(f'diff {sorted_expected_fqfn} {sorted_actual_fqfn}')
-        return rc
-
-
-    def load_config(self,
-                    example_number):   # ex: 'example-1'
-
-        self.config_fn = pjoin(EXAMPLE_DIR, f'{example_number}.yml')
-        with open(self.config_fn) as buf:
-            self.config = yaml.safe_load(buf)
-
-        self.actual_dir = self.config['out-dir']
-        self.docstrings = []
-        for rec in fileinput.input(self.config_fn):
-            if rec.startswith('#'):
-                self.docstrings.append(rec)
-        fileinput.close()
-
-        print(f'\n**** Config: ****')
-        pp(self.config)
-
-        print(f'\n**** Config docstring: ****')
-        pp(self.docstrings)
+        return os.system(f'diff {sorted_expected_fqfn} {sorted_actual_fqfn}')
 
 
     def create_output_dir(self,
                           out_dir):
         if not out_dir.startswith('/tmp/'):
             raise ValueError('Error: Output directory must be in /tmp')
-
         if isdir(out_dir):
             shutil.rmtree(out_dir)
-
         os.mkdir(out_dir)
-
 
 
     def make_command(self,
                      example_number):   # ex: 'example-1'
-
-        self.cmd = f''' {pjoin(SCRIPT_DIR, 'gristle_differ')}
+        self.cmd = f''' {pjoin(self.script_dir, self.pgm)}
                         --verbosity debug
                         --config-fn {self.config_fn}
                     '''
@@ -166,7 +143,6 @@ class TestSampleConfigs(object):
 
         print('\n**** actual: ****')
         for fn in self.actual_files:
-            #print(f'{get_file_type(fn)}: ', end='')
             os.system(f'cat {fn}')
 
         print('\n**** expected: ****')
@@ -176,18 +152,5 @@ class TestSampleConfigs(object):
 
 def get_file_type(filename):
     return filename.split('.')[-1]
-
-
-def executor(cmd, expect_success=True):
-    runner = envoy.run(cmd)
-    status_code = runner.status_code
-    print(runner.std_out)
-    print(runner.std_err)
-    if expect_success:
-        assert status_code == 0
-    else:
-        assert status_code != 0
-    return status_code
-
 
 

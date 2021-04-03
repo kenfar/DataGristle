@@ -96,9 +96,10 @@ class TestExamples(object):
     """
 
     def setup_method(self, method):
+        self.pgm = None
+        self.script_dir = None
         self.example_dir = ''
-        self.script_dir = ''
-        self.temp_dir = tempfile.mkdtemp(prefix='gristle_profiler_')
+        self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
         self.cmd = None
 
     def teardown_method(self, method):
@@ -159,7 +160,7 @@ class TestExamples(object):
         self.expected_fqfn = glob.glob(pjoin(self.example_dir, f'{example_number}_*_expectedout.csv'))[0]
         self.out_fqfn = pjoin(self.temp_dir, f'{example_number}_actualout.csv')
 
-        self.cmd = f''' {pjoin(self.script_dir, 'gristle_profiler')}   \
+        self.cmd = f''' {pjoin(self.script_dir, self.pgm)}   \
                         -o {self.out_fqfn}
                         --verbosity debug
                         --config-fn {self.config_fn}
