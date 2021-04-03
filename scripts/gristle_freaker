@@ -83,6 +83,8 @@ Examples:
         of the file.  Each analysis produces three columns from the input - the first is a column
         number, second is a unique value from the column, and the third is the number of times
         that value appeared.  This output is repeated for each column.
+    Many more examples can be found here:
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 
 Licensing and further Info:

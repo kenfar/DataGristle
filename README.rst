@@ -145,7 +145,8 @@ gristle_slicer
       $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)
-    
+      Many more examples can be found here:  
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 gristle_freaker
 ===============
@@ -188,6 +189,8 @@ gristle_freaker
                    column number, second is a unique value from the column, 
                    and the third is the number of times that value appeared.  
                    This output is repeated for each column.
+      Many more examples can be found here:  
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 gristle_profiler
 ================
@@ -291,6 +294,9 @@ gristle_profiler
                -888                                     x 62 occurrences
                0                                        x 37 occurrences
 
+      Many more examples can be found here:  
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
+
 gristle_file_converter
 ======================
 
@@ -304,6 +310,8 @@ gristle_file_converter
         --out-delimiter='|'  --out-has-no-header --out-quoting quote_none --out-escapechar='\'
             Copies input file to output while completely changing every aspect
             of the csv dialect.
+      Many more examples can be found here:  
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_file_converter
 
 gristle_validator
 =================
@@ -436,6 +444,9 @@ gristle_differ
              copied into a batch_id column for every file, and the pkid is a sequence
              that will get incremented and used for new rows in the insert, delete and
              chgnew files.
+
+      Many more examples can be found here:  
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 gristle_metadata
 ================

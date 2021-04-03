@@ -42,7 +42,7 @@ Main Options:
 
 Examples:
     $ gristle_validator -i colors.csv
-        This is the simplest example - it will simply read each record, parse the csv based on 
+        This is the simplest example - it will simply read each record, parse the csv based on
         the auto-detected dialect, and write each record out to stdout.
     $ gristle_validator -i colors.csv --valid-schema colors_schema.yml \
             --outfile=/tmp/valid_colors.csv --outerr=/tmp/invalid_colors.csv
