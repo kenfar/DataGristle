@@ -47,7 +47,6 @@ class TestSampleConfigs(object):
         pass
 
     def test_all_example_configs(self):
-        #test_count = 0
         for test_count, test_config_fn in enumerate(sorted(glob.glob(pjoin(EXAMPLE_DIR, '*example-*.yml')))):
             print('\n')
             print('=' * 100)

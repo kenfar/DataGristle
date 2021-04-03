@@ -174,13 +174,21 @@ def override_dialect(dialect: Dialect,
         dialect.quotechar = None
 
     # We cannot have both doublequoting & escapechar at the same time:
-    if doublequote is not None:
-        dialect.doublequote = doublequote
+    if doublequote is True:
+        dialect.doublequote = True
         dialect.escapechar = None
+    elif doublequote is False:
+        dialect.doublequote = False
 
-    if escapechar is not None and dialect.doublequote in (False, None):
+    if escapechar:
         dialect.escapechar = escapechar
         dialect.doublequote = False
+    elif escapechar:
+        dialect.escapechar = None
+
+    if dialect.escapechar and dialect.doublequote:
+        dialect.doublequote = True
+        dialect.escapechar = None
 
     dialect.lineterminator = '\n'
 
