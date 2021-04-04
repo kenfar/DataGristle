@@ -1,9 +1,9 @@
 delimiter: ','
-doublequote: null
+doublequote: true
 escapechar: null
 has_header: true
-infiles: [example-04_dialect-qnone-skipspace-header_input.csv]
+infiles: [example-04_dialect-qall-doublequote_input.csv]
 outfile: /tmp/example-04_actualout.csv
 quotechar: null
-quoting: quote_none
-skipinitialspace: true
+quoting: quote_all
+skipinitialspace: null
