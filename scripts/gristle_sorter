@@ -43,6 +43,8 @@ Examples:
     $ gristle_sorter -i dialect_quoteall_escaped_delimiter.csv -k 0sf \
                      -d ',' --quoting quote_all --escapechar '\' --has-header
       This example sorts a file with escaped delimiters within a quoted string
+    Many more examples can be found here:
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_sorter
 
 
 Licensing and Further Info:

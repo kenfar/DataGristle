@@ -49,6 +49,8 @@ Examples:
     $ gristle_file_converter.py --infiles colors.csv  -o /tmp/colors.out \
              --delimiter ','  --quoting quote_none  \
              --out-delimiter '|' --out-quoting quote_all --out_escapechar '\'
+    Many more examples can be found here:
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_file_converter
 
 
 Licensing and Further Info:

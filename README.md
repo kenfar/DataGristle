@@ -112,7 +112,8 @@ More info is on the DataGristle wiki here:
        $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
                     Prints columns 0-4 for the last 100 records, csv
                     dialect info (delimiter, quoting) provided manually)
-     
+       Many more examples can be found here:  
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 # gristle_freaker
     Creates a frequency distribution of values from columns of the input file
@@ -151,7 +152,8 @@ More info is on the DataGristle wiki here:
                     column number, second is a unique value from the column, 
                     and the third is the number of times that value appeared.  
                     This output is repeated for each column.
-
+       Many more examples can be found here:  
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 # gristle_profiler
     Analyzes the structures and contents of csv files in the end producing a 
@@ -251,6 +253,8 @@ More info is on the DataGristle wiki here:
                 -888                                     x 62 occurrences
                 0                                        x 37 occurrences
 
+       Many more examples can be found here:  
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
 # gristle_file_converter
     Converts a file from one csv dialect to another
@@ -261,6 +265,8 @@ More info is on the DataGristle wiki here:
          --out-delimiter='|'  --out-has-no-header --out-quoting quote_none --out-escapechar='\'
              Copies input file to output while completely changing every aspect
              of the csv dialect.
+       Many more examples can be found here:  
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_file_converter
 
 
 # gristle_validator
@@ -384,6 +390,8 @@ More info is on the DataGristle wiki here:
               that will get incremented and used for new rows in the insert, delete and
               chgnew files.
 
+       Many more examples can be found here:  
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 # gristle_metadata
     Gristle_metadata provides a command-line interface to the metadata database.

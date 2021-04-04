@@ -61,6 +61,8 @@ Examples:
     $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all:
                             Prints columns 0-4 for the last 100 records, csv
                             dialect info (delimiter, quoting) provided manually)
+    Many more examples can be found here:
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 
 Licensing and Further Info:

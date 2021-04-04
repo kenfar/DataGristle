@@ -330,6 +330,7 @@ class Config(object):
         autodetected = csvhelper.get_dialect(infiles=self.nconfig.infiles,
                                              verbosity=self.nconfig.verbosity)
 
+        # First override auto-detected dialect with any explicit options
         overridden = csvhelper.override_dialect(autodetected,
                                                 delimiter=self.nconfig.delimiter,
                                                 quoting=csvhelper.get_quote_number(
@@ -340,6 +341,8 @@ class Config(object):
                                                 escapechar=self.nconfig.escapechar,
                                                 skipinitialspace=self.nconfig.skipinitialspace)
 
+        # Finally we can apply any defaults needed - using the extended-defaults, which exist
+        # because regular defaults would have been automatically applied.
         defaulted = csvhelper.default_dialect(overridden,
                                               delimiter=md['delimiter']['extended_default'],
                                               quoting=csvhelper.get_quote_number(

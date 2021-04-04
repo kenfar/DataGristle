@@ -102,6 +102,8 @@ Examples:
         The batchid will get copied into a batch_id column for every file, and the pkid is a
         sequence that will get incremented and used for new rows in the insert, delete and
         chgnew files.
+    Many more examples can be found here:
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 
 Licensing and Further Info:

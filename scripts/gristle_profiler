@@ -170,6 +170,9 @@ Examples:
         Example #3 - Provide csv dialect and column number and type
             ./gristle_profiler -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
 
+        Many more examples can be found here:
+            https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
+
 
 Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
