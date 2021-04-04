@@ -1,0 +1,13 @@
+# Ensure auto-detection works on a simple file
+infiles: [example-05_dialect-qnone-header_input.csv]
+outfile: /tmp/example-05_actualout.csv
+
+verbosity: normal
+
+delimiter: null
+doublequote: null
+escapechar: null
+has_header: null
+quotechar: null
+quoting: null
+skipinitialspace: null

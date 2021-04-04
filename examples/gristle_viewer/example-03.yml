@@ -1,0 +1,12 @@
+infiles: [example-03_dialect-qnone-escnewline-header_input.csv]
+outfile: '/tmp/example-03_actualout.csv'
+
+quoting: quote_none
+delimiter: ','
+escapechar: \
+has_header: true
+verbosity: normal
+
+doublequote: null
+quotechar: null
+skipinitialspace: null

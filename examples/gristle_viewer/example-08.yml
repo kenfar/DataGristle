@@ -1,0 +1,12 @@
+infiles: [example-08_dialect-qall-dqnewline-header_input.csv]
+outfile: /tmp/example-08_actualout.csv
+
+quoting: quote_all
+delimiter: ','
+doublequote: true
+has_header: true
+verbosity: normal
+
+escapechar: null
+quotechar: null
+skipinitialspace: null
