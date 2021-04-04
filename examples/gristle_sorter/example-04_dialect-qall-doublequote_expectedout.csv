@@ -1,0 +1,6 @@
+"num","alpha","alphanumeric"
+"2","aaa","embedded""quote"
+"1","bbb","simple"
+"3","ccc","embedded,delimiter"
+"4","ddd","new
+line"
