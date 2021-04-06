@@ -1,0 +1,5 @@
+ simple              -  1
+ escaped"quote       -  1
+ embedded,delimiter  -  1
+ embedded
+newline    -  1

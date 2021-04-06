@@ -1,6 +1,6 @@
-infiles: [example-01_dialect-qnone-escquote-header_input.csv]
+infiles: [example-01_dialect-qnone_input.csv]
 outfile: /tmp/example-01_actualout.csv
-columns: [2]
+columns: [1]
 
 quoting: quote_none
 delimiter: ','
