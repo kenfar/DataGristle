@@ -345,14 +345,18 @@ def is_timestamp(time_str: str) -> Tuple[bool, Optional[str], Optional[str]]:
         - consider consolidating epoch checks with rest of checks
     """
     non_date = (False, None, None)
-    if len(time_str) > DATE_MAX_LEN:
-        return non_date
 
+    if isinstance(time_str, str):
+        if len(time_str) > DATE_MAX_LEN:
+            return non_date
     try:
         float_str = float(time_str)
         if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:
             t_date = datetime.datetime.fromtimestamp(float(time_str))
             return True, 'second', 'epoch'
+        else:
+            # This was added to catch floats - returned by quoting=quote_nonnumeric
+            return False, None, None
     except ValueError:
         pass
 

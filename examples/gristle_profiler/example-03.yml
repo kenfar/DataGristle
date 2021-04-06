@@ -1,13 +1,14 @@
-infiles: [example-03_dialect-qnone-escnewline-header_input.csv]
+# Ensure auto-detection works on a simple file
+infiles: [example-03_dialect-qnone-autodetect_input.csv]
 outfile: /tmp/example-03_actualout.csv
 outputformat: parsable
 
-quoting: quote_none
-delimiter: ','
-escapechar: \
-
-has_header: true
-quotechar: null
-skipinitialspace: null
-doublequote: null
 verbosity: normal
+
+delimiter: null
+doublequote: null
+escapechar: null
+has_header: null
+quotechar: null
+quoting: null
+skipinitialspace: null

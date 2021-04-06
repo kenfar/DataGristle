@@ -1,13 +1,12 @@
-infiles: [example-02_dialect-qnone-escdel-header_input.csv]
+infiles: [example-02_dialect-qnone-skipinitialspace_input.csv]
 outfile: /tmp/example-02_actualout.csv
 outputformat: parsable
+verbosity: debug
 
 quoting: quote_none
 delimiter: ','
-escapechar: \
-has_header: true
-verbosity: normal
-
-quotechar: null
 doublequote: null
-skipinitialspace: null
+escapechar: null
+has_header: true
+quotechar: null
+skipinitialspace: true

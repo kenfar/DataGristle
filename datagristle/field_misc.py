@@ -167,6 +167,12 @@ def get_field_freq(filename: str,
                 freq[fields[field_number].strip()] = 1
             except IndexError:
                 invalid_row_cnt += 1
+            except AttributeError as e: # quote_nonnumeric returns floats(!)
+                if ("'float' object has no attribute 'strip'")  in repr(e):
+                    if fields[field_number] in freq:
+                        freq[fields[field_number]] += 1
+                    else:
+                        freq[fields[field_number]] = 1
             if max_freq_size > -1 and len(freq) >= max_freq_size:
                 print('      WARNING: freq dict is too large - will trunc')
                 truncated = True
