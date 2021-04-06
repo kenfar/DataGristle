@@ -1,5 +1,5 @@
 # Ensure auto-detection works on a simple file
-infiles: [example-03_dialect-qnone_autodetect_input.csv]
+infiles: [example-03_dialect-qnone-autodetect_input.csv]
 outfile: /tmp/example-03_actualout.csv
 keys: [1sf]
 dedupe: false
