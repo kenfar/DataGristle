@@ -330,11 +330,11 @@ def is_unknown(value: Any) -> bool:
 
 
 
-def is_timestamp(time_str: str) -> Tuple[bool, Optional[str], Optional[str]]:
+def is_timestamp(time_val: [float, str]) -> Tuple[bool, Optional[str], Optional[str]]:
     """ Determine if arg is a timestamp and if so what format
 
     Args:
-        time_str - character string that may be a date, time, epoch or combo
+        time_val - Value that may be a date, time, epoch or combo
     Returns:
         status   - True if date/time False if not
         scope    - kind of timestamp
@@ -345,13 +345,17 @@ def is_timestamp(time_str: str) -> Tuple[bool, Optional[str], Optional[str]]:
         - consider consolidating epoch checks with rest of checks
     """
     non_date = (False, None, None)
-    if len(time_str) > DATE_MAX_LEN:
-        return non_date
 
+    # Catch csv fields coming in as floats - from quoting=quote_nonnumeric
+    if not isinstance(time_val, str):
+        time_val = str(time_val)
+
+    if len(time_val) > DATE_MAX_LEN:
+        return non_date
     try:
-        float_str = float(time_str)
+        float_str = float(time_val)
         if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:
-            t_date = datetime.datetime.fromtimestamp(float(time_str))
+            t_date = datetime.datetime.fromtimestamp(float(time_val))
             return True, 'second', 'epoch'
     except ValueError:
         pass
@@ -360,15 +364,15 @@ def is_timestamp(time_str: str) -> Tuple[bool, Optional[str], Optional[str]]:
         if scope == "microsecond":
             # Special handling for microsecond part. AFAIK there isn't a
             # strftime code for this.
-            if time_str.count('.') != 1:
+            if time_val.count('.') != 1:
                 continue
-            time_str, microseconds_str = time_str.split('.')
+            time_val, microseconds_str = time_val.split('.')
             try:
                 microsecond = int((microseconds_str + '000000')[:6])
             except ValueError:
                 continue
         try:
-            t_date = datetime.datetime.strptime(time_str, date_format)
+            t_date = datetime.datetime.strptime(time_val, date_format)
         except ValueError:
             pass
         else:

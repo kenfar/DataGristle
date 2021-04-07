@@ -1,14 +1,13 @@
-# Ensure auto-detection works on a simple file
-dedupe: false
-delimiter: null
-doublequote: null
-escapechar: null
-has_header: null
-help: false
-infiles: [example-05_dialect-qnone-header_input.csv]
+infiles: [example-05_dialect-qall-escape_input.csv]
+outfile: /tmp/example-05-escape_actualout.csv
 keys: [1sf]
-outfile: /tmp/example-05_actualout.csv
-quotechar: null
-quoting: null
-skipinitialspace: null
+dedupe: false
 verbosity: normal
+
+quoting: quote_all
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+quotechar: null
+skipinitialspace: null

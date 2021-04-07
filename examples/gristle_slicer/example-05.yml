@@ -1,10 +1,11 @@
-# Ensure auto-detection works on a simple file
-delimiter: null
-doublequote: null
-escapechar: null
-has_header: null
-infiles: [example-05_dialect-qnone-header_input.csv]
+infiles: [example-05_dialect-qall-escape_input.csv]
 outfile: /tmp/example-05_actualout.csv
+
+quoting: quote_all
+delimiter: ','
+escapechar: \
+has_header: true
+
 quotechar: null
-quoting: null
+doublequote: null
 skipinitialspace: null

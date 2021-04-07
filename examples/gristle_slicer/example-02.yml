@@ -1,9 +1,10 @@
+infiles: [example-02_dialect-qnone-skipinitialspace_input.csv]
+outfile: /tmp/example-02_actualout.csv
+
+quoting: quote_none
 delimiter: ','
 doublequote: null
-escapechar: \
+escapechar: null
 has_header: true
-infiles: [example-02_dialect-qnone-escdel-header_input.csv]
-outfile: /tmp/example-02_actualout.csv
 quotechar: null
-quoting: quote_none
-skipinitialspace: null
+skipinitialspace: true

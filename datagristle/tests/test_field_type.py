@@ -102,18 +102,14 @@ class TestIsTimestamp(object):
         assert self.runner("blah") == (False, None)
         assert self.runner("2009 ") == (False, None)
         assert self.runner("2009 ") == (False, None)
-
         assert self.runner("2009-10-06-18") == (True, 'hour')
         assert self.runner("2009-10-06-03.02.01") == (True, 'second')
 
     def test_is_timestamp_good_dates(self):
         assert self.runner("1172969203.1") == (True, 'second')
-
         assert self.runner("2009") == (True, 'year')
-
         assert self.runner("200910") == (True, 'month')
         assert self.runner("2009-10") == (True, 'month')
-
         assert self.runner("20090206") == (True, 'day')
         assert self.runner("2009-10-06") == (True, 'day')
         assert self.runner("10/26/09") == (True, 'day')

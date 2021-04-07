@@ -1,13 +1,13 @@
-infiles: [example-07_dialect-qall-dqdel-header_input.csv]
+infiles: [example-07_dialect-qnonnum_input.csv]
 outfile: /tmp/example-07_actualout.csv
 outputformat: parsable
-
-quoting: quote_all
-delimiter: ','
-doublequote: true
-has_header: true
 verbosity: normal
 
-escapechar: null
+quoting: quote_nonnumeric
+delimiter: ','
+escapechar: \
+has_header: true
+
+doublequote: null
 quotechar: null
 skipinitialspace: null

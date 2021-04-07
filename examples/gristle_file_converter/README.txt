@@ -1,13 +1,8 @@
-
-Set #1: Examples of configs for interpreting different csv dialects - no actual conversions:
-    Example-01: test escaping of quotes with quoting_none and escapechar
-    Example-02: test escaping of delimiter with quoting_none and escapechar
-    Example-03: test escaping of newline with quoting_none and escapechar
-    Example-04: test skipinitial space with quoting_none
-    Example-05: test auto-detection of quoting_none, delimiter, and header
-    Example-06: test escaping of quotes with quoting_all and doublequoting
-    Example-07: test handling of delimiters with quoting_all and doublequoting
-    Example-08: test handling of newlines with quoting_all and doublequoting
-    Example-09: test escaping of quotes with quoting_all and escapechar
-    Example-10: test escaping of delimiter with quoting_all and escapechar
-    Example-11: test handling of newlines with quoting_all and escapechar
+CSV Dialect Examples:
+    Example-01: quote_none with escaping of delimiters and newlines
+    Example-02: quote_none with skipinitial space
+    Example-03: quote_none with auto-detection of delimiter, and header
+    Example-04: quote_all with double-quoting to ignore embedded quotes
+    Example-05: quote_all with escapechar to ignore embedded quotes
+    Example-06: quote_minimum
+    Example-07: quote_nonnumeric

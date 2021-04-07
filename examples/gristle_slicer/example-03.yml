@@ -1,9 +1,11 @@
-delimiter: ','
-doublequote: null
-escapechar: \
-has_header: true
-infiles: [example-03_dialect-qnone-escnewline-header_input.csv]
-outfile: ['/tmp/example-03_actualout.csv']
+# Ensure auto-detection works on a simple file
+infiles: [example-03_dialect-qnone-autodetect_input.csv]
+outfile: /tmp/example-03_actualout.csv
+
 quotechar: null
-quoting: quote_none
+delimiter: null
+doublequote: null
+escapechar: null
+has_header: null
+quoting: null
 skipinitialspace: null

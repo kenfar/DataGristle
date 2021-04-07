@@ -1,9 +1,0 @@
-delimiter: ','
-doublequote: null
-escapechar: \
-has_header: true
-infiles: [example-11_dialect-qall-escnewline-header_input.csv]
-outfile: /tmp/example-11_actualout.csv
-quotechar: null
-quoting: quote_all
-skipinitialspace: null

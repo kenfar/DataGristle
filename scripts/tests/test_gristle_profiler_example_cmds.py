@@ -26,7 +26,29 @@ class TestExamples(test_tools.TestExamples):
     """
 
     def setup_method(self, method):
+        super().setup_method(method)
+
         self.pgm = 'gristle_profiler'
         self.example_dir = EXAMPLE_DIR
         self.script_dir = SCRIPT_DIR
-        super().setup_method(method)
+
+    def test_example_01(self):
+        self.run_example_config('example-01')
+
+    def test_example_02(self):
+        self.run_example_config('example-02')
+
+    def test_example_03(self):
+        self.run_example_config('example-03')
+
+    def test_example_04(self):
+        self.run_example_config('example-04')
+
+    def test_example_05(self):
+        self.run_example_config('example-05')
+
+    def test_example_06(self):
+        self.run_example_config('example-06')
+
+    def test_example_07(self):
+        self.run_example_config('example-07')

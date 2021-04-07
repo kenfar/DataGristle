@@ -1,13 +1,13 @@
-infiles: [example-04_dialect-qnone-skipspace-header_input.csv]
+infiles: [example-04_dialect-qall-doublequote_input.csv]
 outfile: /tmp/example-04_actualout.csv
 outputformat: parsable
-
-quoting: quote_none
-delimiter: ','
-skipinitialspace: true
-has_header: true
 verbosity: normal
 
-doublequote: null
-escapechar: null
+quoting: quote_all
+delimiter: ','
+doublequote: true
+has_header: true
+
 quotechar: null
+escapechar: null
+skipinitialspace: null

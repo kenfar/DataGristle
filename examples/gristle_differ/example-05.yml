@@ -1,15 +1,14 @@
-# Ensure auto-detection works on a simple file
-#
-infiles: [example-05_dialect-qnone-header_input1.csv,
-          example-05_dialect-qnone-header_empty_input2.csv]
+infiles: [example-05_dialect-qall-escape_input1.csv,
+          example-05_dialect-qall-escape_empty_input2.csv]
 out-dir: /tmp/example-05_actual_output_files
 key-cols: [2]
+verbosity: debug
 
-delimiter: null   # should figure out it's ','
-quoting: null     # should figure out it's quote_none
-has_header: null  # should figure out it's true
+quoting: quote_all
+delimiter: ','
+escapechar: \
+has_header: true
 
-doublequote: null
-escapechar: null
 quotechar: null
+doublequote: null
 skipinitialspace: null
