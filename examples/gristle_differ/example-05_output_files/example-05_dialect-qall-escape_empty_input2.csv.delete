@@ -1,0 +1,5 @@
+"4","ddd","embedded
+newline"
+"3","ccc","embedded,delimiter"
+"1","bbb","escaped\"quote"
+"2","aaa","simple"

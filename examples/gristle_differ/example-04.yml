@@ -1,13 +1,14 @@
-infiles: [example-04_dialect-qnone-skipspace-header_input1.csv,
-          example-04_dialect-qnone-skipspace-header_empty_input2.csv]
-out-dir: '/tmp/example-04_actual_output_files'
+infiles: [example-04_dialect-qall-doublequote_input1.csv,
+          example-04_dialect-qall-doublequote_empty_input2.csv]
+out-dir: /tmp/example-04_actual_output_files
 key-cols: [2]
+verbosity: debug
 
+quoting: quote_all
 delimiter: ','
+doublequote: true
 has_header: true
-quoting: quote_none
-skipinitialspace: true
 
-quotechar: null
-doublequote: null
 escapechar: null
+quotechar: null
+skipinitialspace: null

@@ -1,13 +1,14 @@
-infiles: [example-06_dialect-qall-dqquote-header_input1.csv,
-          example-06_dialect-qall-dqquote-header_empty_input2.csv]
+infiles: [example-06_dialect-qmin_input1.csv,
+          example-06_dialect-qmin_empty_input2.csv]
 out-dir: /tmp/example-06_actual_output_files
 key-cols: [2]
+verbosity: debug
 
-quoting: quote_all
+quoting: quote_minimal
 delimiter: ','
-doublequote: true
+escapechar: \
 has_header: true
 
-escapechar: null
 quotechar: null
+doublequote: null
 skipinitialspace: null

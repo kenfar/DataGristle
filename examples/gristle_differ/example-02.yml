@@ -1,0 +1,14 @@
+infiles: [example-02_dialect-qnone-skipinitialspace_input1.csv,
+          example-02_dialect-qnone-skipinitialspace_empty_input2.csv]
+out-dir: '/tmp/example-02_actual_output_files'
+key-cols: [2]
+verbosity: debug
+
+quoting: quote_none
+delimiter: ','
+has_header: true
+skipinitialspace: true
+
+quotechar: null
+doublequote: null
+escapechar: null

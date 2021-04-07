@@ -43,48 +43,56 @@ class TestExamples(test_tools.TestExamples):
         self.expected_files = []
         self.actual_files = []
 
+    def test_example_01(self):
+        self.run_example_config('example-01')
+
+    def test_example_02(self):
+        self.run_example_config('example-02')
+
+    def test_example_03(self):
+        self.run_example_config('example-03')
+
+    def test_example_04(self):
+        self.run_example_config('example-04')
+
+    def test_example_05(self):
+        self.run_example_config('example-05')
+
+    def test_example_06(self):
+        self.run_example_config('example-06')
+
+    def test_example_07(self):
+        self.run_example_config('example-07')
 
 
-    def test_all_example_configs(self):
-        for test_count, test_config_fn in enumerate(sorted(glob.glob(pjoin(self.example_dir, '*example-*.yml')))):
-            print('\n')
-            print('=' * 100)
-            print(test_config_fn)
-            print('=' * 100)
+    def run_example_config(self, example_number):
+        test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))
+        print('\n')
+        print('=' * 100)
+        print(test_config_fn)
+        print('=' * 100)
 
-            example_number = basename(test_config_fn).split('.')[0]
-            self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
-            self.in_fqfn1 = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input1.csv'))[0]
-            self.in_fqfn2 = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input2.csv'))[0]
-            self.expected_files = glob.glob(pjoin(self.example_dir, f'{example_number}_expected_output_files/*csv*'))
+        self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
+        self.in_fqfn1 = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input1.csv'))[0]
+        self.in_fqfn2 = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input2.csv'))[0]
+        self.expected_files = glob.glob(pjoin(self.example_dir, f'{example_number}_output_files/*csv*'))
 
-            self.load_config(example_number)
-            self.actual_dir = self.config['out-dir']
-            self.create_output_dir(self.actual_dir)
-            self.make_command(example_number)
-            print('\n**** Execution: ****')
-            test_tools.executor(self.cmd, expect_success=True)
+        self.load_config(example_number)
+        self.actual_dir = self.config['out-dir']
+        self.create_output_dir(self.actual_dir)
+        self.make_command(example_number)
+        print('\n**** Execution: ****')
+        test_tools.executor(self.cmd, expect_success=True)
 
-            self.actual_files = glob.glob(pjoin(self.config['out-dir'], f'{example_number}_*csv*'))
-            self.print_files()
+        self.actual_files = glob.glob(pjoin(self.config['out-dir'], f'{example_number}_*csv*'))
+        self.print_files()
 
-            print('\n**** os diff of files: ****')
-
-            rc = self.diff_file_pair(self.expected_files, self.actual_files, '.same')
-            rc += self.diff_file_pair(self.expected_files, self.actual_files, '.insert')
-            rc += self.diff_file_pair(self.expected_files, self.actual_files, '.delete')
-            rc += self.diff_file_pair(self.expected_files, self.actual_files, '.chgold')
-            rc += self.diff_file_pair(self.expected_files, self.actual_files, '.chgnew')
-
-            if rc == 0:
-                print(Fore.GREEN + '\nTEST PASSED: actual files matched expected files')
-            else:
-                print(Fore.RED + '\nTEST FAILED: file differences were encountered!')
-            print(Fore.RESET)
-
-        print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++')
-        print(f'Tests run: {test_count}')
-        print('+++++++++++++++++++++++++++++++++++++++++++++++++++')
+        print('\n**** os diff of files: ****')
+        self.diff_file_pair(self.expected_files, self.actual_files, '.same')
+        self.diff_file_pair(self.expected_files, self.actual_files, '.insert')
+        self.diff_file_pair(self.expected_files, self.actual_files, '.delete')
+        self.diff_file_pair(self.expected_files, self.actual_files, '.chgold')
+        self.diff_file_pair(self.expected_files, self.actual_files, '.chgnew')
 
 
     def get_fqfn_of_filetype(self, fileset, filetype):
@@ -110,7 +118,7 @@ class TestExamples(test_tools.TestExamples):
         os.system(f'sort {actual_fqfn} > {sorted_actual_fqfn}')
         os.system(f'cat {sorted_actual_fqfn}')
 
-        return os.system(f'diff {sorted_expected_fqfn} {sorted_actual_fqfn}')
+        assert os.system(f'diff {sorted_expected_fqfn} {sorted_actual_fqfn}') == 0
 
 
     def create_output_dir(self,

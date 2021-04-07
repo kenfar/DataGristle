@@ -1,13 +1,16 @@
-infiles: [example-03_dialect-qnone-escnewline-header_input1.csv,
-          example-03_dialect-qnone-escnewline-header_empty_input2.csv]
-out-dir: '/tmp/example-03_actual_output_files'
+# Ensure auto-detection works on a simple file
+#
+infiles: [example-03_dialect-qnone-autodetect_input1.csv,
+          example-03_dialect-qnone-autodetect_empty_input2.csv]
+out-dir: /tmp/example-03_actual_output_files
 key-cols: [2]
+verbosity: debug
 
-quoting: quote_none
-delimiter: ','
-escapechar: \
-has_header: true
+delimiter: null   # should figure out it's ','
+quoting: null     # should figure out it's quote_none
+has_header: null  # should figure out it's true
 
-quotechar: null
 doublequote: null
+escapechar: null
+quotechar: null
 skipinitialspace: null
