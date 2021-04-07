@@ -1,9 +1,12 @@
-delimiter: ','
-doublequote: null
-escapechar: null
-has_header: true
-infiles: [example-04_dialect-qnone-skipspace-header_input.csv]
+infiles: [example-04_dialect-qall-doublequote_input.csv]
 outfile: /tmp/example-04_actualout.csv
+verbosity: debug
+
+quoting: quote_all
+delimiter: ','
+doublequote: true
+has_header: true
+
+escapechar: null
 quotechar: null
-quoting: quote_none
-skipinitialspace: true
+skipinitialspace: null
