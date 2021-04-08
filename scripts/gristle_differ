@@ -46,7 +46,7 @@ Main Options:
                         name.  This option is mutually exclusive with compare-cols and key-cols.
                         If this column is provided then all cols except for these identified here and
                         key-cols will be compared.
-    --col_names [COL_NAMES [COL_NAMES ...]]
+    --col-names [COL_NAMES [COL_NAMES ...]]
                         Column names - allows other args to reference col names rather than positions.
                         If nothing is provided but the files have headers they will automatically be
                         added to col_names with a couple of changes: all values are turned to

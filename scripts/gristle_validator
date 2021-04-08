@@ -17,7 +17,7 @@ usage: gristle_validator [options]
 
 
 Main Options:
-    -i, --infiles=<infiles>
+    -i, --infiles INFILES
                         One or more input files or '-' (the default) for stdin.
     -o, --outfile OUTFILE
                         The output file with a default of '-' for stdout.
@@ -26,9 +26,9 @@ Main Options:
     -f, --field-cnt FIELD_CNT
                         The number of fields in the record.
                         If not provided it will default to number of fields on first record
-    --valid-schema=<VALID_SCHEMA>
+    --valid-schema VALID_SCHEMA
                         Validation schema file name.
-    --random-out=<RANDOM_OUT>
+    --random-out RANDOM_OUT
                         Write a percentage of records out, valid values are 0-100.
     --errmsg            Append error msg at end of each invalid record.
                         Defaults on.
