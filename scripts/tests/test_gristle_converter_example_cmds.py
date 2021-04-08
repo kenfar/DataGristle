@@ -19,7 +19,7 @@ import tempfile
 import datagristle.csvhelper as csvhelper
 import datagristle.test_tools as test_tools
 
-EXAMPLE_DIR = pjoin(dirname(dirname(dirname(os.path.realpath(__file__)))), 'examples', 'gristle_file_converter')
+EXAMPLE_DIR = pjoin(dirname(dirname(dirname(os.path.realpath(__file__)))), 'examples', 'gristle_converter')
 SCRIPT_DIR = dirname(dirname(os.path.realpath((__file__))))
 
 
@@ -31,7 +31,7 @@ class TestExamples(test_tools.TestExamples):
     def setup_method(self, method):
         super().setup_method(method)
 
-        self.pgm = 'gristle_file_converter'
+        self.pgm = 'gristle_converter'
         self.example_dir = EXAMPLE_DIR
         self.script_dir = SCRIPT_DIR
         self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)

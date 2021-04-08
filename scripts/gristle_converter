@@ -9,7 +9,7 @@ Output file csv dilect is determined by defaulting to the input file dialect and
 with any options provided by the user.
 
 
-Usage: gristle_file_converter [options]
+Usage: gristle_converter [options]
 
 
 {see: helpdoc.HELP_SECTION}
@@ -46,11 +46,11 @@ Output Formatting Options: All of these options will default to the final input 
 
 
 Examples:
-    $ gristle_file_converter.py --infiles colors.csv  -o /tmp/colors.out \
+    $ gristle_converter.py --infiles colors.csv  -o /tmp/colors.out \
              --delimiter ','  --quoting quote_none  \
              --out-delimiter '|' --out-quoting quote_all --out_escapechar '\'
     Many more examples can be found here:
-        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_file_converter
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
 
 
 Licensing and Further Info:

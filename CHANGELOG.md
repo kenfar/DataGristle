@@ -1,5 +1,14 @@
+# V0.2.0 - 2021-04
+   * Improvement: now supports python versions 3.8 and 3.9
+   * BREAKING CHANGE: dropped support for python version 3.7
+   * Improvement: now all csv programs support envvars and config files
+   * BREAKING CHANGES: all csv programs:
+       * Various changes to names of options for consistency, with older versions
+         caught with an error to provides new name.
+       * Various changes to csv dialect handling for consistency.
 
-# v0.1.7 - 2020-07
+
+s v0.1.7 - 2020-07
    * Improvement: now supports python versions 3.7 and 3.8
    * BREAKING CHANGE: dropped support for python version 3.6
    * Bumped versions on dependent modules to eliminate vulnerabilities

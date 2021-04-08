@@ -67,7 +67,7 @@ CSV Utilities provided in this release:
    -  Post delta transformations can include assign sequence numbers,
       copying field values, etc.
 
--  gristle_file_converter
+-  gristle_converter (was: gristle_file_converter)
 
    -  Converts an input file with one csv dialect into an output file
       with another.
@@ -297,21 +297,21 @@ gristle_profiler
       Many more examples can be found here:  
           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
-gristle_file_converter
-======================
+gristle_converter
+=================
 
 ::
 
    Converts a file from one csv dialect to another
 
    Examples:
-      $ gristle_file_converter -i foo.csv -o bar.csv \
+      $ gristle_converter -i foo.csv -o bar.csv \
         --delimiter=',' --has-header --quoting=quote-all doublequote \
         --out-delimiter='|'  --out-has-no-header --out-quoting quote_none --out-escapechar='\'
             Copies input file to output while completely changing every aspect
             of the csv dialect.
       Many more examples can be found here:  
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_file_converter
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
 
 gristle_validator
 =================
