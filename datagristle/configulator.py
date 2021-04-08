@@ -406,7 +406,10 @@ class Config(object):
                 actual_key = self._app_metadata[key].get('dest', key)
                 consolidated_args[actual_key] = val
         except KeyError as e:
-            comm.abort(f'ERROR: Unregistered arg: {key}')
+            if key in self.obsolete_args.keys():
+                comm.abort('Error: obsolete option', self.obsolete_args[arg])
+            else:
+                comm.abort(f'ERROR: Unknown option: {arg}')
 
         for key, val in env_args.items():
             actual_key = self._app_metadata[key].get('dest', key)

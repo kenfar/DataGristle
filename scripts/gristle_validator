@@ -23,12 +23,12 @@ Main Options:
                         The output file with a default of '-' for stdout.
     -e, --outerr OUTERR
                         The output file for invalid records with a default of stderr.
-    -f, --fieldcnt FIELD_CNT
+    -f, --field-cnt FIELD_CNT
                         The number of fields in the record.
                         If not provided it will default to number of fields on first record
     --valid-schema=<VALID_SCHEMA>
                         Validation schema file name.
-    --randomout=<RANDOMOUT>
+    --random-out=<RANDOM_OUT>
                         Write a percentage of records out, valid values are 0-100.
     --errmsg            Append error msg at end of each invalid record.
                         Defaults on.
@@ -113,16 +113,16 @@ def main() -> int:
                                             input_handler.dialect,
                                             sys.stdout,
                                             dry_run=False,
-                                            random_out=nconfig.randomout)
+                                            random_out=nconfig.random_out)
     outerr_handler = file_io.OutputHandler(nconfig.errfile,
                                            input_handler.dialect,
                                            sys.stderr,
                                            dry_run=False,
-                                           random_out=nconfig.randomout)
+                                           random_out=nconfig.random_out)
 
 
     rec_schema = load_schema(nconfig.valid_schema)
-    rec_validator = RecValidator(valid_field_cnt=nconfig.fieldcnt,
+    rec_validator = RecValidator(valid_field_cnt=nconfig.field_cnt,
                                  rec_schema=rec_schema)
 
     invalid_cnt = process_all_records(input_handler,
@@ -168,7 +168,7 @@ def process_all_records(input_handler: 'InputHandler',
         if input_handler.dialect.has_header and input_handler.rec_cnt == 1:
             pass
         elif not valid_rec:
-            pass  # don't check schema if the rec failed fieldcnt check
+            pass  # don't check schema if the rec failed field_cnt check
         else:
             if rec_validator.rec_schema:
                 if not rec_validator.check_schema(rec):
@@ -487,11 +487,11 @@ class ConfigManager(conf.Config):
         self.add_custom_metadata(name='valid_schema',
                                  type=str)
 
-        self.add_custom_metadata(name='randomout',
+        self.add_custom_metadata(name='random_out',
                                  type=float,
                                  default=1.0)
 
-        self.add_custom_metadata(name='fieldcnt',
+        self.add_custom_metadata(name='field_cnt',
                                  short_name='f',
                                  type=int)
 
@@ -501,14 +501,20 @@ class ConfigManager(conf.Config):
         self.add_all_help_configs()
 
 
+    def define_obsolete_config(self) -> None:
+        self.add_obsolete_metadata("validschema",
+                                   short_name=None,
+                                   msg="--validschema has been renamed to --valid-schema")
+
+
     def validate_custom_config(self,
                                custom_config: conf.CONFIG_TYPE) -> None:
 
         if len(custom_config['infiles']) > 1 and not self.config.delimiter:
             comm.abort('Please provide delimiter when reading multiple input files')
 
-        if custom_config['randomout'] > 1.0 or custom_config['randomout'] < 0.0:
-            comm.abort('Valid values for randomout are from 0.0 to 1.0')
+        if custom_config['random_out'] > 1.0 or custom_config['random_out'] < 0.0:
+            comm.abort('Valid values for random_out are from 0.0 to 1.0')
 
 
     def extend_config(self):

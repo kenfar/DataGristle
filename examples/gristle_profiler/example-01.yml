@@ -1,6 +1,6 @@
 infiles: [example-01_dialect-qnone_input.csv]
 outfile: /tmp/example-01_actualout.csv
-outputformat: parsable 
+output-format: parsable 
 verbosity: debug
 
 quoting: quote_none

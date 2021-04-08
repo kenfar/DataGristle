@@ -1,6 +1,6 @@
 infiles: [example-05_dialect-qall-escape_input.csv]
 outfile: /tmp/example-05_actualout.csv
-outputformat: parsable
+output-format: parsable
 verbosity: normal
 
 quoting: quote_all
