@@ -1,14 +1,17 @@
 # V0.2.0 - 2021-04
-   * Improvement: now supports python versions 3.8 and 3.9
+   * Improvement: Now supports python versions 3.8 and 3.9.
+   * Improvement: All csv programs now support envvars and config files for input
+     and can generate config files.
+   * Improvement: Programs always autodetect file csv dialect before applying
+     user overrides - except for piped-in data.
    * BREAKING CHANGE: dropped support for python version 3.7
-   * Improvement: now all csv programs support envvars and config files
-   * BREAKING CHANGES: all csv programs:
+   * BREAKING CHANGES to all csv programs:
        * Various changes to names of options for consistency, with older versions
-         caught with an error to provides new name.
-       * Various changes to csv dialect handling for consistency.
+         caught with an error msg to provides new name.
+       * Various changes to csv dialect handling for consistency and correct
+         handling of escapechar, doublequoting, skipinitialspace.
 
-
-s v0.1.7 - 2020-07
+# v0.1.7 - 2020-07
    * Improvement: now supports python versions 3.7 and 3.8
    * BREAKING CHANGE: dropped support for python version 3.6
    * Bumped versions on dependent modules to eliminate vulnerabilities
@@ -43,7 +46,6 @@ s v0.1.7 - 2020-07
      - affects: gristle_freaker, gristle_slicer, gristle_validator, and gristle_viewer
      - This means that behavior in handling multiple files, piped input, and other edge cases
        is more consistent between utilities.
-
 
 # v0.1.2 - 2017-06
    * long-overdue code quality updates

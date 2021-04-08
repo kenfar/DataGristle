@@ -202,7 +202,7 @@ class TestFieldCount(object):
                          --infiles %(in_fqfn)s
                          -d ','
                          --quoting 'quote_none'
-                         --fieldcnt 7
+                         --field-cnt 7
                          --outfile %(outfile)s
                          --errfile %(errfile)s
                    """ % {'pgm': self.pgm,
@@ -252,7 +252,7 @@ class TestFieldCount(object):
         self.cmd = """%(pgm)s                      \
                          --infiles %(in_fqfn)s     \
                          -d ','                    \
-                         --fieldcnt 70             \
+                         --field-cnt 70             \
                          --quoting 'quote_none'    \
                          --outfile %(outfile)s     \
                          --errfile %(errfile)s      \
@@ -289,7 +289,7 @@ class TestFieldCount(object):
         self.cmd = """%(pgm)s                      \
                          --infiles %(in_fqfn)s     \
                          -d ','                    \
-                         --fieldcnt 70             \
+                         --field-cnt 70             \
                          --quoting 'quote_none'    \
                          --outfile %(outfile)s     \
                          --errfile  %(errfile)s    \
@@ -338,16 +338,16 @@ class TestFieldCount(object):
         assert valid_cnt_found
 
 
-    def test_randomout_1(self):
+    def test_random_out_1(self):
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
-        self.cmd = """%(pgm)s                      \
-                         --infiles %(in_fqfn)s     \
-                         -d ','                    \
-                         --fieldcnt 6              \
-                         --quoting 'quote_none'    \
-                         --outfile %(outfile)s     \
-                         --errfile %(errfile)s     \
-                         --randomout 1.0           \
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
+                         -d ','
+                         --field-cnt 6
+                         --quoting 'quote_none'
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
+                         --random-out 1.0
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -363,16 +363,16 @@ class TestFieldCount(object):
         assert len(self.good_output) == 10000
 
 
-    def test_randomout_0(self):
+    def test_random_out_0(self):
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
-        self.cmd = """%(pgm)s                      \
-                         --infiles %(in_fqfn)s     \
-                         -d ','                    \
-                         --fieldcnt 6              \
-                         --quoting 'quote_none'    \
-                         --outfile %(outfile)s     \
-                         --errfile %(errfile)s      \
-                         --randomout 0             \
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
+                         -d ','
+                         --field-cnt 6
+                         --quoting 'quote_none'
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
+                         --random-out 0
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -388,17 +388,17 @@ class TestFieldCount(object):
         assert not self.good_output
 
 
-    def test_randomout_01(self):
+    def test_random_out_01(self):
 
         in_fqfn = _generate_foobarbatz_file(10000, dir_name=self.tmp_dir)
-        self.cmd = """%(pgm)s                      \
-                         --infiles %(in_fqfn)s     \
-                         -d ','                    \
-                         --fieldcnt 6              \
-                         --quoting 'quote_none'    \
-                         --outfile %(outfile)s     \
-                         --errfile %(errfile)s     \
-                         --randomout 0.1           \
+        self.cmd = """%(pgm)s
+                         --infiles %(in_fqfn)s
+                         -d ','
+                         --field-cnt 6
+                         --quoting 'quote_none'
+                         --outfile %(outfile)s
+                         --errfile %(errfile)s
+                         --random-out 0.1
                    """ % {'pgm':     self.pgm,
                           'outfile': self.outgood_fqfn,
                           'errfile': self.outerr_fqfn,
@@ -532,7 +532,7 @@ class TestSchemaValidation(object):
         self.cmd = """%(pgm)s
                          --infiles %(in_fqfn)s
                          -d ','
-                         --fieldcnt 7
+                         --field-cnt 7
                          --quoting 'quote_none'
                          --outfile %(outfile)s
                          --errfile %(errfile)s
@@ -572,7 +572,7 @@ class TestSchemaValidation(object):
         self.cmd = """%(pgm)s
                          --infiles %(in_fqfn)s
                          -d ','
-                         --fieldcnt 6
+                         --field-cnt 6
                          --quoting 'quote_all'
                          --outfile %(outfile)s
                          --errfile %(errfile)s

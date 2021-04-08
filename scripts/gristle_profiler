@@ -25,7 +25,7 @@ Main Options:
 
 
 Output Format Options:
-    --outputformat OUTPUTFORMAT
+    --output-format OUTPUT_FORMAT
                         Choices include: readable, parsable, metadata with a default of readable.
     -b, --brief         Skip field-level analysis
     --verbosity VERBOSITY
@@ -36,9 +36,9 @@ Output Format Options:
 Metadata Database Options:
     --metadata          Indicates whether or not to write results into metadata database.
     --schema-id SCHEMA_ID
-                        Used with metadata outputformat to identify structure set being analyzed.
+                        Used with metadata output-format to identify structure set being analyzed.
     --collection-id COLLECTION_ID
-                        Used with metadata outputformat to identify structure being analyzed.
+                        Used with metadata output-format to identify structure being analyzed.
 
 
 {see: helpdoc.CSV_SECTION}
@@ -129,7 +129,7 @@ Examples:
             123                                      x 1 occurrences
         < some output truncated for brevity >
     Example #2 - same as the first, but this time writing the output to the "parsable" output format
-    $ ./gristle_profiler --infiles /etc/passwd  --outputformat parsable
+    $ ./gristle_profiler --infiles /etc/passwd  --output-format parsable
             "file_analysis_results"|"main"|"main"|"format_type"|"csv"
             "file_analysis_results"|"main"|"main"|"field_count"|"7"
             "file_analysis_results"|"main"|"main"|"record_count"|"42"
@@ -220,7 +220,7 @@ def main() -> int:
     if nconfig.metadata:
         md_man = MetadataManager(nconfig.schema_id, nconfig.collection_id)
 
-    out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.outputformat)
+    out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.output_format)
 
     # Get Analysis on File:
     my_file = file_type.FileTyper(nconfig.dialect, nconfig.infiles[0], read_limit=nconfig.read_limit)
@@ -538,37 +538,12 @@ class OutputWriter(object):
 
 class ConfigManager(configulator.Config):
 
-    def define_obsolete_config(self) -> None:
-        self.add_obsolete_metadata("schemaid",
-                                   short_name=None,
-                                   msg="--schemaid has been renamed --schema-id")
-        self.add_obsolete_metadata("collectionid",
-                                   short_name=None,
-                                   msg="--collectionid has been renamed --collection-id")
-        self.add_obsolete_metadata("types",
-                                   short_name="T",
-                                   msg="-T and --types have been renamed --column-types")
-        self.add_obsolete_metadata("column",
-                                   short_name="",
-                                   msg="--column has been renamed --column-number")
-        self.add_obsolete_metadata("",
-                                   short_name="v",
-                                   msg="-v (verbose) has been replaced by --verbosity high")
-        self.add_obsolete_metadata("output",
-                                   short_name="",
-                                   msg="--output has been renamed --outfile")
-        self.add_obsolete_metadata("number",
-                                   short_name="",
-                                   msg="--number has been renamed --max-freq")
-        # the arguments for infiles have also been replaced with -i - but this function doesn't support this
-
-
     def define_user_config(self) -> None:
         """Defines the user config or metadata.   Does not get the user input."""
         self.add_standard_metadata("infiles")
         self.add_standard_metadata("outfile")
 
-        self.add_custom_metadata(name="outputformat",
+        self.add_custom_metadata(name="output_format",
                                  default="readable",
                                  type=str)
         self.add_custom_metadata(name="brief",
@@ -602,6 +577,33 @@ class ConfigManager(configulator.Config):
         self.add_all_help_configs()
 
 
+    def define_obsolete_config(self) -> None:
+        self.add_obsolete_metadata("outputformat",
+                                   short_name=None,
+                                   msg="--outputformat has been renamed --output-format")
+        self.add_obsolete_metadata("schemaid",
+                                   short_name=None,
+                                   msg="--schemaid has been renamed --schema-id")
+        self.add_obsolete_metadata("collectionid",
+                                   short_name=None,
+                                   msg="--collectionid has been renamed --collection-id")
+        self.add_obsolete_metadata("types",
+                                   short_name="T",
+                                   msg="-T and --types have been renamed --column-types")
+        self.add_obsolete_metadata("column",
+                                   short_name="",
+                                   msg="--column has been renamed --column-number")
+        self.add_obsolete_metadata("",
+                                   short_name="v",
+                                   msg="-v (verbose) has been replaced by --verbosity high")
+        self.add_obsolete_metadata("output",
+                                   short_name="",
+                                   msg="--output has been renamed --outfile")
+        self.add_obsolete_metadata("number",
+                                   short_name="",
+                                   msg="--number has been renamed --max-freq")
+        # the arguments for infiles have also been replaced with -i - but this function doesn't support this
+
     def validate_custom_config(self, config: configulator.CONFIG_TYPE):
 
         if len(config["infiles"]) > 1:
@@ -621,7 +623,7 @@ class ConfigManager(configulator.Config):
         self.generate_csv_dialect_config()
 
         # turn off verbose if parsable output is going to stdout
-        if self.nconfig.outputformat == "parsable":
+        if self.nconfig.output_format == "parsable":
             if self.nconfig.outfile in ('-', None):
                 self.config["verbosty"] = "quiet"  # don't mix data and info
                 self.replace_configs(self.config)

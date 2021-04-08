@@ -1,6 +1,6 @@
 infiles: [example-06_dialect-qmin_input.csv]
 outfile: /tmp/example-06_actualout.csv
-outputformat: parsable
+output-format: parsable
 verbosity: normal
 
 quoting: quote_minimal

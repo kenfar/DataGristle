@@ -1,3 +1,19 @@
+V0.2.0 - 2021-04
+================
+
+-  Improvement: Now supports python versions 3.8 and 3.9.
+-  Improvement: All csv programs now support envvars and config files
+   for input and can generate config files.
+-  Improvement: Programs always autodetect file csv dialect before
+   applying user overrides - except for piped-in data.
+-  BREAKING CHANGE: dropped support for python version 3.7
+-  BREAKING CHANGES to all csv programs:
+
+   -  Various changes to names of options for consistency, with older
+      versions caught with an error msg to provides new name.
+   -  Various changes to csv dialect handling for consistency and
+      correct handling of escapechar, doublequoting, skipinitialspace.
+
 v0.1.7 - 2020-07
 ================
 
