@@ -20,7 +20,7 @@ import envoy
 import pytest
 
 SCRIPT_PATH = dirname(dirname(os.path.realpath((__file__))))
-PGM = os.path.join(SCRIPT_PATH, 'gristle_file_converter')
+PGM = os.path.join(SCRIPT_PATH, 'gristle_converter')
 
 
 
