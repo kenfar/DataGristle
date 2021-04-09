@@ -164,6 +164,26 @@ def get_median(values: FreqType) -> Optional[float]:
 
 
 
+def get_max_decimals(values: FreqType) -> Optional[int]:
+    ''' Returns the maximum number of decimal places on any value.
+
+        Not using typical numeric methods since they can easily expand the size of the decimals
+        due to floating point characteristics.
+    '''
+    if not values:
+        return None
+
+    float_values = [str(x[0]) for x in values if common.isnumeric(x[0]) and '.' in str(x[0])]
+
+    decimals = [len(x.rsplit('.', 1)[-1]) for x in float_values]
+
+    if decimals:
+        return max(decimals)
+    else:
+        return 0
+
+
+
 
 def get_clean_freq_dist_for_numbers(values: NumericFreqType) -> NumericFreqType:
     """

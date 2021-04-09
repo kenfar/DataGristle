@@ -220,6 +220,32 @@ class TestGetMean(object):
         assert mod.get_mean([(1, 1)]) == 1
 
 
+class TestGetMaxDecimals(object):
+
+    def test_none(self):
+        assert mod.get_max_decimals(None) is None
+
+    def test_emptiness(self):
+        assert mod.get_max_decimals({}) is None
+
+    def test_alpha_values(self):
+        assert mod.get_max_decimals([('blah', 2)]) == 0
+
+    def test_ints(self):
+        assert mod.get_max_decimals([(10, 4), (100, 86)]) == 0
+
+    def test_floats(self):
+        assert mod.get_max_decimals([(2.5, 4), (10.02, 1)]) == 2
+        assert mod.get_max_decimals([(2.0, 4), (10.00, 1)]) == 1
+        assert mod.get_max_decimals([(2, 4), (10.1234, 1)]) == 4
+
+    def test_string_ints(self):
+        assert mod.get_max_decimals([('10', 4), ('100', 86)]) == 0
+
+    def test_str_floats(self):
+        assert mod.get_max_decimals([('2.5', 4), ('10.02', 1)]) == 2
+
+
 
 class TestGetMeanLength(object):
 

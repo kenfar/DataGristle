@@ -54,6 +54,7 @@ class FieldDeterminator(object):
           - self.field_min_length   - dictionary with fieldnumber key
           - self.field_max_length   - dictionary with fieldnumber key
           - self.field_trunc  - dictionary with fieldnumber key
+          - self.field_decimals - dictionary with fieldnumber key
     """
 
     def __init__(self,
@@ -82,6 +83,7 @@ class FieldDeterminator(object):
         self.field_median:      Dict[int, Optional[float]] = {}  # only for numeric data
         self.variance:          Dict[int, Optional[float]] = {}  # only for numeric data
         self.stddev:            Dict[int, Optional[float]] = {}  # only for numeric data
+        self.field_decimals:    Dict[int, Optional[int]] = {}    # only for numeric data
 
         self.field_case:        Dict[int, Optional[str]] = {}  # only for string data
         self.field_max_length:  Dict[int, Optional[int]] = {}  # only for string data
@@ -152,7 +154,6 @@ class FieldDeterminator(object):
                 for col_no in field_types_overrides:
                     self.field_types[col_no] = field_types_overrides[col_no]
 
-
             self.field_max[f_no] = miscer.get_max(self.field_types[f_no], field_freqs)
             self.field_min[f_no] = miscer.get_min(self.field_types[f_no], field_freqs)
 
@@ -167,17 +168,18 @@ class FieldDeterminator(object):
                 self.field_max_length[f_no] = None
                 self.field_mean_length[f_no] = None
 
-
             if self.field_types[f_no] in ('integer', 'float'):
                 self.field_mean[f_no] = mather.get_mean(field_freqs)
                 self.field_median[f_no] = mather.get_median(field_freqs)
                 (self.variance[f_no], self.stddev[f_no])   \
                    = mather.get_variance_and_stddev(field_freqs, self.field_mean[f_no])
+                self.field_decimals[f_no] = mather.get_max_decimals(field_freqs)
             else:
                 self.field_mean[f_no] = None
                 self.field_median[f_no] = None
                 self.variance[f_no] = None
                 self.stddev[f_no] = None
+                self.field_decimals[f_no] = None
 
 
     def get_known_values(self, fieldno: int) -> common.FreqType:

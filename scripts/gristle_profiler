@@ -453,10 +453,13 @@ class OutputWriter(object):
             self.write_string("Known Values", len(my_fields.get_known_values(sub)), indent=4)
 
             if my_fields.field_types[sub] in ("integer", "float"):
-                self.write_string("Mean", my_fields.field_mean[sub], indent=4)
-                self.write_string("Median", my_fields.field_median[sub], indent=4)
-                self.write_string("Variance", my_fields.variance[sub], indent=4)
-                self.write_string("Std Dev", my_fields.stddev[sub], indent=4)
+                max_decimals = my_fields.field_decimals[sub]
+                self.write_string("Mean", float_truncator(my_fields.field_mean[sub], max_decimals), indent=4)
+                self.write_string("Median", float_truncator(my_fields.field_median[sub], max_decimals), indent=4)
+                self.write_string("Variance", float_truncator(my_fields.variance[sub], max_decimals), indent=4)
+                self.write_string("Std Dev", float_truncator(my_fields.stddev[sub], max_decimals), indent=4)
+                if my_fields.field_types[sub] == 'float':
+                    self.write_string("Max Decimal Places", my_fields.field_decimals[sub], indent=4)
             elif my_fields.field_types[sub] == "string":
                 self.write_string("Case", my_fields.field_case[sub], indent=4)
                 self.write_string("Min Length", my_fields.field_min_length[sub], indent=4)
@@ -533,6 +536,19 @@ class OutputWriter(object):
 
     def _parsify(self, val: str) -> str:
         return '"%s"' % val.lower().replace(" ", "_")
+
+
+
+def float_truncator(numeric_value, max_decimals):
+    """ trim unnecessary digits
+
+    Note though that quoted integers may be recorded with a single digit of precision,
+    and max_decimals of 1.   So, when this is run on an unquoted file it will produce
+    two decimals, but on a quoted file three.
+    """
+    str_value = str(numeric_value)
+    assert str_value.count('.') <= 1
+    return f'{numeric_value:.{max_decimals+2}f}'
 
 
 

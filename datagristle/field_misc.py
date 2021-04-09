@@ -15,7 +15,7 @@
             number of fields
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 import csv
 from typing import List, Union, Dict, Tuple, Any, Optional
@@ -155,7 +155,7 @@ def get_field_freq(filename: str,
     invalid_row_cnt = 0
 
     row_cnt = 0
-    with open(filename, 'rt') as infile:
+    with open(filename, 'rt', newline='') as infile:
         reader = csv.reader(infile, dialect)
         for fields in reader:
             row_cnt += 1
@@ -203,7 +203,6 @@ def get_min(value_type: str, values: common.FreqType) -> Optional[str]:
         myfunc = float
     else:
         myfunc = str
-
 
     def transform(val):
         try:
