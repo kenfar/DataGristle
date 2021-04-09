@@ -173,7 +173,7 @@ class FieldDeterminator(object):
                 self.field_median[f_no] = mather.get_median(field_freqs)
                 (self.variance[f_no], self.stddev[f_no])   \
                    = mather.get_variance_and_stddev(field_freqs, self.field_mean[f_no])
-                self.field_decimals[f_no] = mather.get_max_decimals(field_freqs)
+                self.field_decimals[f_no] = mather.get_max_decimals(field_freqs, self.field_types[f_no])
             else:
                 self.field_mean[f_no] = None
                 self.field_median[f_no] = None

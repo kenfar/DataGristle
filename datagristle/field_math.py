@@ -164,7 +164,8 @@ def get_median(values: FreqType) -> Optional[float]:
 
 
 
-def get_max_decimals(values: FreqType) -> Optional[int]:
+def get_max_decimals(values: FreqType,
+                     field_type: Optional[str] = None) -> Optional[int]:
     ''' Returns the maximum number of decimal places on any value.
 
         Not using typical numeric methods since they can easily expand the size of the decimals
@@ -172,6 +173,8 @@ def get_max_decimals(values: FreqType) -> Optional[int]:
     '''
     if not values:
         return None
+    if field_type == 'integer':
+        return 0
 
     float_values = [str(x[0]) for x in values if common.isnumeric(x[0]) and '.' in str(x[0])]
 
