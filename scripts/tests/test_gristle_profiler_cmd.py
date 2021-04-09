@@ -224,9 +224,9 @@ class TestOutputFormattingAndContents(object):
         assert self.field_struct['field_1']['main']['max'] == '19'
         assert self.field_struct['field_1']['main']['unique_values'] == '4'
         assert self.field_struct['field_1']['main']['wrong_field_cnt'] == '0'
-        assert self.field_struct['field_1']['main']['mean'] == '8.2'
-        assert self.field_struct['field_1']['main']['median'] == '6.0'
-        assert self.field_struct['field_1']['main']['std_dev'] == '5.74108003776293'
+        assert self.field_struct['field_1']['main']['mean'] == '8.20'
+        assert self.field_struct['field_1']['main']['median'] == '6.00'
+        assert self.field_struct['field_1']['main']['std_dev'] == '5.74'
         assert self.field_struct['field_1']['main']['variance'] == '32.96'
 
     def test_top_value_info(self):
