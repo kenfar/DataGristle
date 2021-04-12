@@ -187,8 +187,8 @@ def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[in
 
     try:
         result =  [int(x) if isnumeric(x) else colname_lookup[x] for x in lookup_list]
-    except KeyError:
-        raise KeyError('Column name not found in colname list')
+    except KeyError as err:
+        raise KeyError(f'Column name not found in colname list: {repr(err)}')
 
     # extra edit to look for offsets not found within a colname listing:
     if colname_lookup:
