@@ -38,12 +38,12 @@ Main Options:
     -c, --compare-cols [COMPARE_COLS [COMPARE_COLS ...]]
                         Columns to compare.
                         These are referenced either using a zero-offset integer or by the column
-                        name.  This option is mutually exclusive with ignore-cols and key-cols.  If no
+                        name.  This option is mutually exclusive with ignore-cols.  If no
                         value is provided then all non-key cols will be compared.
     --ignore-cols [IGNORE_COLS [IGNORE_COLS ...]]
                         Columns to ignore.
                         These are referenced either using a zero-offset integer or by the column
-                        name.  This option is mutually exclusive with compare-cols and key-cols.
+                        name.  This option is mutually exclusive with compare-cols.
                         If this column is provided then all cols except for these identified here and
                         key-cols will be compared.
     --col-names [COL_NAMES [COL_NAMES ...]]
@@ -227,7 +227,6 @@ def delta_runner(nconfig,
         delta.dass.set_special_values(key, value)
 
     #--- handle all assignment logic --------------
-    #if 'assignments' in nconfig:
     if getattr(nconfig, 'assignments', None):
         asgn_offsets = get_assign_with_offsets_for_names(nconfig.col_names,
                                                          nconfig.assignments)
