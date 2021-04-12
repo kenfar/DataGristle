@@ -223,7 +223,7 @@ def delta_runner(nconfig,
         delta.set_fields('compare', col)
 
     for kv_pair in nconfig.variables:
-        key, value = kv_pair.split(':')
+        key, value = kv_pair.split(':', 1)
         delta.dass.set_special_values(key, value)
 
     #--- handle all assignment logic --------------
