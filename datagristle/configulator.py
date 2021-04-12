@@ -406,10 +406,10 @@ class Config(object):
                 actual_key = self._app_metadata[key].get('dest', key)
                 consolidated_args[actual_key] = val
         except KeyError as e:
-            if key in self.obsolete_args.keys():
-                comm.abort('Error: obsolete option', self.obsolete_args[arg])
+            if key in self.obsolete_options.keys():
+                comm.abort('Error: obsolete option', self.obsolete_options[arg])
             else:
-                comm.abort(f'ERROR: Unknown option: {arg}')
+                comm.abort(f'ERROR: Unknown option: {key}')
 
         for key, val in env_args.items():
             actual_key = self._app_metadata[key].get('dest', key)
@@ -740,12 +740,12 @@ class _CommandLineArgs(object):
                  short_help,
                  long_help,
                  app_metadata: str,
-                 obsolete_args: Dict[str, str] = {})-> None:
+                 obsolete_options: Dict[str, str] = {})-> None:
 
         self._app_metadata = app_metadata
         self.short_help = short_help
         self.long_help = long_help
-        self.obsolete_args = obsolete_args
+        self.obsolete_options = obsolete_options
         self.cli_args = self._get_args(short_help)
 
 
@@ -818,8 +818,8 @@ class _CommandLineArgs(object):
 
     def _process_unknown_args(self, unknown_args: list) -> None:
         for arg in unknown_args:
-            if arg in self.obsolete_args.keys():
-                comm.abort('Error: obsolete option', self.obsolete_args[arg])
+            if arg in self.obsolete_options.keys():
+                comm.abort('Error: obsolete option', self.obsolete_options[arg])
             else:
                 comm.abort(f'ERROR: Unknown option: {arg}')
 
