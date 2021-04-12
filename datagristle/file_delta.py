@@ -438,7 +438,7 @@ class DeltaAssignments(object):
                     elif assigner['src_type'] == 'special':
                         outrec[dest_field] = self._get_special_value(assigner['src_val'])
                 except (ValueError, IndexError) as err:
-                    msg = f'assignments={assigner}, dest_field={dest_field}'
+                    msg = f'assignments={assigner}, dest_field={dest_field}, outtype={outtype}'
                     abort(err, msg, verbosity='debug')
         return outrec
 
@@ -469,10 +469,10 @@ class DeltaAssignments(object):
         Raises:
             ValueError if args are invalid
         """
-        if not self.old_rec:
-            raise ValueError('Assign-Copy refers to non-existing old_rec - invalid config')
         try:
             if src_file == 'old':
+                if not self.old_rec:
+                    raise ValueError('Assign-Copy refers to non-existing old_rec - invalid config')
                 return self.old_rec[src_field]
             elif src_file == 'new':
                 return self.new_rec[src_field]
