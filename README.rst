@@ -1,3 +1,6 @@
+Introduction
+============
+
 | Datagristle is a toolbox of tough and flexible data connectors and
   analyzers.
 | It’s kind of an interactive mix between ETL and data analysis
@@ -6,6 +9,9 @@
 
 More info is on the DataGristle wiki here:
 `wiki <https://github.com/kenfar/DataGristle/wiki>`__
+
+And examples of all csv utilities can be found here:
+`examples <https://github.com/kenfar/DataGristle/tree/master/examples>`__
 
 Installation
 ============
@@ -114,7 +120,7 @@ gristle_slicer
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)
       Many more examples can be found here:  
-          [gristle_slicer_examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer)
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 gristle_freaker
 ===============
@@ -158,7 +164,7 @@ gristle_freaker
                    and the third is the number of times that value appeared.  
                    This output is repeated for each column.
       Many more examples can be found here:  
-          [gristle_freaker examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker)
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 gristle_profiler
 ================
@@ -263,7 +269,7 @@ gristle_profiler
                0                                        x 37 occurrences
 
       Many more examples can be found here:  
-          [gristle_profiler examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler)
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
 gristle_converter
 =================
@@ -279,7 +285,7 @@ gristle_converter
             Copies input file to output while completely changing every aspect
             of the csv dialect.
       Many more examples can be found here:  
-          [gristle_converter examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter)
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
 
 gristle_validator
 =================
@@ -374,7 +380,7 @@ gristle_differ
    populate fields with static values, values from other fields, variables
    from the command line, or incrementing sequence numbers.
 
-   More info on the wiki here:  [wiki](https://github.com/kenfar/DataGristle/wiki/gristle_differ)
+   More info on the wiki here:  https://github.com/kenfar/DataGristle/wiki/gristle_differ
 
    Examples:
 
@@ -414,7 +420,7 @@ gristle_differ
              chgnew files.
 
       Many more examples can be found here:  
-          [gristle_differ examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ)
+          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 gristle_metadata
 ================

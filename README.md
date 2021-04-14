@@ -1,9 +1,14 @@
+# Introduction
+
 Datagristle is a toolbox of tough and flexible data connectors and analyzers.  
 It's kind of an interactive mix between ETL and data analysis optimized for 
 rapid analysis and manipulation of a wide variety of data at the command line.
 
 More info is on the DataGristle wiki here: 
    [wiki](https://github.com/kenfar/DataGristle/wiki)
+
+And examples of all csv utilities can be found here:
+   [examples](https://github.com/kenfar/DataGristle/tree/master/examples)
 
 
 # Installation
@@ -83,7 +88,7 @@ More info is on the DataGristle wiki here:
                     Prints columns 0-4 for the last 100 records, csv
                     dialect info (delimiter, quoting) provided manually)
        Many more examples can be found here:  
-           [gristle_slicer_examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer)
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 # gristle_freaker
     Creates a frequency distribution of values from columns of the input file
@@ -123,7 +128,7 @@ More info is on the DataGristle wiki here:
                     and the third is the number of times that value appeared.  
                     This output is repeated for each column.
        Many more examples can be found here:  
-           [gristle_freaker examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker)
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 # gristle_profiler
     Analyzes the structures and contents of csv files in the end producing a 
@@ -224,7 +229,7 @@ More info is on the DataGristle wiki here:
                 0                                        x 37 occurrences
 
        Many more examples can be found here:  
-           [gristle_profiler examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler)
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
 # gristle_converter
     Converts a file from one csv dialect to another
@@ -236,7 +241,7 @@ More info is on the DataGristle wiki here:
              Copies input file to output while completely changing every aspect
              of the csv dialect.
        Many more examples can be found here:  
-           [gristle_converter examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter)
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
 
 
 # gristle_validator
@@ -321,7 +326,7 @@ More info is on the DataGristle wiki here:
     populate fields with static values, values from other fields, variables
     from the command line, or incrementing sequence numbers.
 
-    More info on the wiki here:  [wiki](https://github.com/kenfar/DataGristle/wiki/gristle_differ)
+    More info on the wiki here:  https://github.com/kenfar/DataGristle/wiki/gristle_differ
 
     Examples:
 
@@ -361,7 +366,7 @@ More info is on the DataGristle wiki here:
               chgnew files.
 
        Many more examples can be found here:  
-           [gristle_differ examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ)
+           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 # gristle_metadata
     Gristle_metadata provides a command-line interface to the metadata database.
