@@ -1,0 +1,10 @@
+org|sensor_id|site|sensor_ip|sensor_brand|sensor_ver|sensor_type|update_ts|comments|delete_flag|batch_id|pkey|start_ts|stop_ts
+01|09|site-03|192.168.0.1|snort|2.0.4|residential|2021-03-28T17:45:00|delete||80||2021-03-28T17:45:00|
+02|10|site-04|192.168.0.1|snort|2.9.7|residential|2021-03-29T09:00:00|same||81||2021-03-29T09:00:00|
+03|13|site-07|192.168.0.1|sourcefire|2.7|commercial|2021-03-29T17:30:00|delete||82||2021-03-29T17:30:00|
+04|05|site-08|192.168.0.1|sourcefire|2.8|commercial|2021-03-30T07:15:00|same||83||2021-03-30T07:15:00|
+05|07|site-09|192.168.0.1|sourcefire|2.9|commercial|2021-03-30T18:00:00|same||84||2021-03-30T18:00:00|
+06|08|site-02|192.168.0.1|intrushield|3.1|residential|2021-03-31T08:30:00|delete||85||2021-03-31T08:30:00|
+08|09|site-05|192.168.0.1|cisco|4.1|commercial|2021-03-31T18:00:00|delete||86||2021-03-31T18:00:00|
+09|04|site-10|192.168.0.1|cisco|4.2|commercial|2021-04-01T08:15:00|same||87||2021-04-01T08:15:00|
+10|01|site-11|192.168.0.1|cisco|4.3|commercial|2021-04-01T15:30:00|change||88||2021-04-01T15:30:00|

@@ -204,10 +204,10 @@ def delta_runner(nconfig,
         try:
             off0 = comm.colnames_to_coloff0(nconfig.col_names, lookup_cols)
         except (KeyError, ValueError, TypeError) as err:
-            print(err)
-            print('Column lookup list: %s' % ','.join(lookup_cols))
-            print('Column names known: %s' % ','.join(nconfig.col_names))
-            abort('Invalid config cols for %s: ' % col_title)
+            msg1 = 'Column lookup list: %s' % ','.join([str(x) for x in lookup_cols])
+            msg2 = f'Column names known ({len(nconfig.col_names)}): %s' % ','.join(nconfig.col_names)
+            msg3 = 'Note that this is sometimes caused by an incorrect delimiter'
+            abort('Invalid config cols for %s: ' % col_title, ',   '.join((repr(err), msg1, msg2, msg3)))
         return off0
 
     keys_off0 = convert_cols('key_cols', nconfig.key_cols)
