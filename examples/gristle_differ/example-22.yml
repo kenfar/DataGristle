@@ -1,0 +1,89 @@
+# This example shows what a full-featured diff towards the bottom of a data warehouse pipeline
+# using most of the program's features would look like.  
+#
+# In this configuration the new file is transformed to match the target table, with extra empty
+# fields added that we'll use for assignments here.  The old file is extracted from the table
+# with the same fields populated.
+# 
+# The following features are involved in this config:
+# * Col_names provides so they can be used rather than field positions
+# * Ignore_cols used to ensure that the unpopulated fields from the new file do not affect 
+#   the diff operation.
+# * Variables are defined here that are added to the records. However, this is really for a
+#   demonstration.  In normal usage these would be passed to the program as command line 
+#   options or environmental variables rather than here though.
+#     * var_pkey - holds the current maximum primary key value and will be used to add new ones 
+#     * var_batch_id - holds a unique identifier for this batch of rows
+#     * var_extract_ts - holds the timestamp when the extract was produced from the source 
+# * A unique sequence, the primary key, is incremented and assigned to each row.
+# * start_timestamps are assigned in most cases by copying the updated_ts, but since the delete
+#   rows don't have an updated time the var_extract_ts is used instead.
+# * A delete_flag of 'd' is assigned to each deleted row
+# * A batch_id variable is assigned to all rows.
+#
+infiles: [example-22_sensor_old.csv,
+          example-22_sensor_new.csv]
+out-dir: /tmp/example-22_actual_output_files
+temp_dir: null
+
+
+# Ordered list of columns that get assigned positions starting at 0.  This allows us to refer
+# to the fields by name.  Note that most error messages will still refer to them by position.
+col_names: [org,sensor_id,site,sensor_ip,sensor_brand,sensor_ver,sensor_type,update_ts, # actual data
+            comments,        # just populated to help in evaluating the diff operation
+            delete_flag,     # assigned to all deleted rows
+            batch_id,        # assigned to all written rows - represents a single execution of a file
+            pkey,            # assigned to all written rows - is the unique id
+            start_ts,        # part of the unique key, assigned to all but same files
+            stop_ts ]        # part of the unique key, assigned to delete & chgold files
+
+key-cols: [org, sensor_id]
+ignore_cols: [comments,      # won't be on new file - just our debugging comments
+              start_ts,      # won't be on new file
+              stop_ts,       # won't be on new file
+              batch_id,      # won't be on new file
+              pkey]          # won't be on new file
+compare_cols: []
+
+# Variables can be used to input data into each run, probably mostly conveniently through 
+# command-line options or envvars:
+variables: [var_pkey:89,
+            var_batch_id:101,
+            var_extract_ts:2021-04-02T18:00:00]
+
+already_sorted: false
+already_uniq: false
+
+# Here's where the output records are transformed slightly.  Note that all fields must be provided, even if null.
+assignments:  [
+   # Assign the primary keys:
+   {dest_field: pkey, dest_file: delete, src_field: null, src_file: null, src_type: sequence, src_val: var_pkey},
+   {dest_field: pkey, dest_file: insert, src_field: null, src_file: null, src_type: sequence, src_val: var_pkey},
+   {dest_field: pkey, dest_file: chgnew, src_field: null, src_file: null, src_type: sequence, src_val: var_pkey},
+   {dest_field: pkey, dest_file: chgnew, src_field: null, src_file: null, src_type: sequence, src_val: var_pkey},
+
+   # Assign the timestamps:
+   {dest_field: stop_ts,  dest_file: delete, src_field: null,      src_file: null,   src_type: special, src_val: var_extract_ts},
+   {dest_field: start_ts, dest_file: insert, src_field: update_ts, src_file: new,    src_type: copy,    src_val: null},
+   {dest_field: stop_ts,  dest_file: chgold, src_field: update_ts, src_file: new,    src_type: copy,    src_val: null},
+   {dest_field: start_ts, dest_file: chgnew, src_field: update_ts, src_file: new,    src_type: copy,    src_val: null},
+
+   # Assign the delete_flag:
+   {dest_field: delete_flag, dest_file: delete, src_field: null, src_file: null, src_type: literal, src_val: d},
+
+   # Assign the batch_id:
+   {dest_field: batch_id, dest_file: delete, src_field: null, src_file: null, src_type: special, src_val: var_batch_id},
+   {dest_field: batch_id, dest_file: insert, src_field: null, src_file: null, src_type: special, src_val: var_batch_id},
+   {dest_field: batch_id, dest_file: chgold, src_field: null, src_file: null, src_type: special, src_val: var_batch_id},
+   {dest_field: batch_id, dest_file: chgnew, src_field: null, src_file: null, src_type: special, src_val: var_batch_id},
+ ]
+
+verbosity: debug
+
+quoting: quote_none
+delimiter: '|'
+has_header: true
+quotechar: null
+escapechar: null
+doublequote: null
+skipinitialspace: null

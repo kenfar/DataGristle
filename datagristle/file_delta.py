@@ -116,7 +116,7 @@ class FileDelta(object):
         self.dry_run = dry_run
         self.new_fqfn = new_fqfn
         self.old_fqfn = old_fqfn
-        # validate inputs
+
         assert isfile(old_fqfn)
         assert isfile(new_fqfn)
 
@@ -141,29 +141,30 @@ class FileDelta(object):
         self._read_old_csv()
         self._read_new_csv()
 
-        while self.old_rec or self.new_rec:
-            if not self.old_rec: # old file is eof
-                self._writer('insert', self.new_rec)
-                self._read_new_csv()
-            elif not self.new_rec: # new file is eof
+        while self.old_rec and self.new_rec:
+            key_match_result = self._key_match()
+            if key_match_result == 'new-greater':
                 self._writer('delete', self.old_rec)
                 self._read_old_csv()
+            elif key_match_result == 'old-greater':
+                self._writer('insert', self.new_rec)
+                self._read_new_csv()
             else:
-                key_match_result = self._key_match()
-                if key_match_result == 'new-greater':
-                    self._writer('delete', self.old_rec)
-                    self._read_old_csv()
-                elif key_match_result == 'old-greater':
-                    self._writer('insert', self.new_rec)
-                    self._read_new_csv()
+                if self._data_match(ignore_fields, compare_fields):
+                    self._writer('same', self.old_rec)
                 else:
-                    if self._data_match(ignore_fields, compare_fields):
-                        self._writer('same', self.old_rec)
-                    else:
-                        self._writer('chgold', self.old_rec)
-                        self._writer('chgnew', self.new_rec)
-                    self._read_new_csv()
-                    self._read_old_csv()
+                    self._writer('chgold', self.old_rec)
+                    self._writer('chgnew', self.new_rec)
+                self._read_new_csv()
+                self._read_old_csv()
+
+        while self.new_rec:
+            self._writer('insert', self.new_rec)
+            self._read_new_csv()
+
+        while self.old_rec:
+            self._writer('delete', self.old_rec)
+            self._read_old_csv()
 
         old_f.close()
         new_f.close()
@@ -347,7 +348,7 @@ class DeltaAssignments(object):
             assert int(dest_field)
         if src_field:
             assert int(src_field)
-        if dest_file not in ['insert', 'delete', 'chgold', 'chgnew']:
+        if dest_file not in ['insert', 'delete', 'chgold', 'chgnew', 'same']:
             raise ValueError('Invalid dest_file: %s' % dest_file)
         if not comm.isnumeric(dest_field):
             raise ValueError('Invalid dest_field: %s' % dest_field)
@@ -436,8 +437,9 @@ class DeltaAssignments(object):
                         outrec[dest_field] = self._get_seq_value(assigner['src_field'])
                     elif assigner['src_type'] == 'special':
                         outrec[dest_field] = self._get_special_value(assigner['src_val'])
-                except ValueError as err:
-                    abort(err)
+                except (ValueError, IndexError) as err:
+                    msg = f'assignments={assigner}, dest_field={dest_field}, outtype={outtype}'
+                    abort(err, msg, verbosity='debug')
         return outrec
 
 
@@ -467,10 +469,10 @@ class DeltaAssignments(object):
         Raises:
             ValueError if args are invalid
         """
-        if not self.old_rec:
-            raise ValueError('Assign-Copy refers to non-existing old_rec - invalid config')
         try:
             if src_file == 'old':
+                if not self.old_rec:
+                    raise ValueError('Assign-Copy refers to non-existing old_rec - invalid config')
                 return self.old_rec[src_field]
             elif src_file == 'new':
                 return self.new_rec[src_field]
