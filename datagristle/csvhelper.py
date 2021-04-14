@@ -9,20 +9,22 @@ import csv
 import fileinput
 import os.path
 from pprint import pprint as pp
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any, Union, Type
 import _csv
 
 import datagristle.common as comm
 
 
 
-def get_quote_number(quote_name: str) -> int:
+def get_quote_number(quote_name: Optional[str]) -> Optional[int]:
     """ used to help applications look up quote names typically provided by users.
         Inputs:
            - quote_name
         Outputs:
            - quote_number
     """
+    assert type(quote_name) in (str, type(None))
+
     if quote_name is None:
         return None
     else:
@@ -30,10 +32,12 @@ def get_quote_number(quote_name: str) -> int:
 
 
 
-def get_quote_name(quote_number: int) -> str:
+def get_quote_name(quote_number: int) -> Optional[str]:
     """ used to help applications look up quote names based on the number
         users.
     """
+    assert type(quote_number) in (int, type(None))
+
     if quote_number is None:
         return None
 
@@ -46,12 +50,18 @@ def get_quote_name(quote_number: int) -> str:
 
 
 class Dialect(csv.Dialect):
+    """ A simple Dialect class
+
+    This dialect class includes has_header and minimal defaulting that make it work
+    better for this application - where we want to pass around csv info, not define
+    reusable dialects.
+    """
     def __init__(self,
-                 delimiter: str,
-                 has_header: bool,
-                 quoting: int,
-                 quotechar: str = None,
-                 doublequote: Optional[str] = None,
+                 delimiter: Optional[str],
+                 has_header: Optional[bool],
+                 quoting: Optional[int],
+                 quotechar: Optional[str] = None,
+                 doublequote: Optional[bool] = None,
                  escapechar: Optional[str] = None,
                  lineterminator: Optional[str] = None,
                  skipinitialspace: Optional[bool] = None) -> None:
@@ -72,6 +82,15 @@ class Dialect(csv.Dialect):
         self.skipinitialspace = skipinitialspace
         self.has_header = has_header
 
+def convert_dialect(std_dialect: Type[_csv.Dialect]) -> Dialect:
+    return Dialect(delimiter=std_dialect.delimiter,
+                   has_header=None,
+                   quoting=std_dialect.quoting,
+                   quotechar=std_dialect.quotechar,
+                   doublequote=std_dialect.doublequote,
+                   escapechar=std_dialect.escapechar,
+                   lineterminator=std_dialect.lineterminator,
+                   skipinitialspace=std_dialect.skipinitialspace)
 
 
 def get_dialect(infiles: List[str],
@@ -135,7 +154,8 @@ def get_dialect(infiles: List[str],
 
 
 
-def get_empty_dialect():
+#def get_empty_dialect() -> datagristle.csvhelper.Dialect:
+def get_empty_dialect() -> Dialect:
     return Dialect(delimiter=None,
                    quoting=None,
                    quotechar=None,
@@ -156,7 +176,7 @@ def override_dialect(dialect: Dialect,
                      skipinitialspace: Optional[bool]) -> Dialect:
     """ Overrides the dialect with any non-None values from other args
     """
-    assert quoting is None or comm.isnumeric(quoting)
+    assert isinstance(quoting, (str, type(None)))
 
     if delimiter is not None:
         dialect.delimiter = delimiter
@@ -167,7 +187,7 @@ def override_dialect(dialect: Dialect,
 
     # Cannot have a quotechar if there's no quoting
     if quoting is not None:
-        dialect.quoting = quoting
+        dialect.quoting = get_quote_number(quoting)
     if quotechar is not None:
         dialect.quotechar = quotechar
     if dialect.quoting is None:
@@ -206,12 +226,12 @@ def default_dialect(dialect: Dialect,
                     skipinitialspace: Optional[bool]) -> Dialect:
     """ defaults the dialect with any non-None values from other args
     """
-    assert quoting is None or comm.isnumeric(quoting)
+    assert isinstance(quoting, (str, type(None)))
 
     if dialect.delimiter is None:
         dialect.delimiter = delimiter
     if dialect.quoting is None:
-        dialect.quoting = quoting
+        dialect.quoting = get_quote_number(quoting)
     if dialect.quotechar is None:
         dialect.quotechar = quotechar
     if dialect.has_header is None:
@@ -259,7 +279,7 @@ def print_dialect(dialect, name) -> None:
 
 
 def autodetect_dialect(fqfn: str,
-                       read_limit: int = 5000) -> csv.Dialect:
+                       read_limit: int = 5000) -> Dialect:
     """ gets the dialect for a file
         Uses the csv.Sniffer class
         Then performs additional processing to try to improve accuracy of quoting.
@@ -269,8 +289,9 @@ def autodetect_dialect(fqfn: str,
 
     with open(fqfn, newline='') as csvfile:
         try:
-            dialect = csv.Sniffer().sniff(csvfile.read(read_limit))
+            dialect = convert_dialect(csv.Sniffer().sniff(csvfile.read(read_limit)))
             dialect.lineterminator = '\n'
+            dialect.has_header = None
         except _csv.Error:
             #This shouldn't raise error here - since it may get overridden later
             dialect = get_empty_dialect()
@@ -289,7 +310,7 @@ def autodetect_dialect(fqfn: str,
 
 
 
-def _get_dialect_quoting(dialect: csv.Dialect,
+def _get_dialect_quoting(dialect: _csv.Dialect,
                          fqfn: str) -> int:
     """ Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
         get a more accurate guess.  In the event that there's an extremely
@@ -300,13 +321,13 @@ def _get_dialect_quoting(dialect: csv.Dialect,
     # total_field_cnt has a key for each number of fields found in a
     # record, and a value that indicates how often this total was found
     #total_field_cnt  = collections.defaultdict(int)
-    total_field_cnt: Dict[int, int] = {}
+    total_field_cnt: Dict[Any, Union[int, float]] = {}
 
     # quoted_field_cnt has a key for each number of quoted fields found
     # in a record, and a value that indicates how often this total was
     # found.
     #quoted_field_cnt = collections.defaultdict(int)
-    quoted_field_cnt: Dict[int, int] = {}
+    quoted_field_cnt: Dict[Any, Union[int, float]] = {}
 
     for rec in fileinput.input(fqfn):
         fields = rec[:-1].split(dialect.delimiter)
@@ -358,7 +379,7 @@ def _get_dialect_quoting(dialect: csv.Dialect,
     return dialect.quoting
 
 
-def _get_dialect_escapechar(dialect):
+def _get_dialect_escapechar(dialect: _csv.Dialect):
     """ Populate the escapechar on a dialog if it is missing
     """
     if dialect.doublequote is True:

@@ -20,6 +20,7 @@
 import datetime
 import math
 from itertools import groupby
+from pprint import pprint as pp
 from typing import Any, List, Tuple, Dict, Optional, Union
 
 
@@ -92,6 +93,7 @@ def get_field_type(values: Union[List[Any], Dict[str, int]]) -> str:
         return 'unknown'
 
     type_freq: Dict[str, int] = {}
+    assert isinstance(values, dict)
 
     if isinstance(values, list):
         transformed_values = [_get_type(x) for x in values]
@@ -330,7 +332,7 @@ def is_unknown(value: Any) -> bool:
 
 
 
-def is_timestamp(time_val: [float, str]) -> Tuple[bool, Optional[str], Optional[str]]:
+def is_timestamp(time_val: Union[float, str]) -> Tuple[bool, Optional[str], Optional[str]]:
     """ Determine if arg is a timestamp and if so what format
 
     Args:

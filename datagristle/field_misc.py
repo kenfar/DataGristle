@@ -150,7 +150,7 @@ def get_field_freq(filename: str,
         Issues:
             - has limited checking for wrong number of fields in rec
     """
-    freq = {}
+    freq: Dict[Any, int] = {}
     truncated = False
     invalid_row_cnt = 0
 
@@ -185,7 +185,7 @@ def get_field_freq(filename: str,
 
 
 
-def get_min(value_type: str, values: common.FreqType) -> Optional[str]:
+def get_min(value_type: str, values: common.FreqType) -> Any:
     """ Returns the minimum value of the input.  Ignores unknown values, if
         no values found besides unknown it will just return 'None'
 

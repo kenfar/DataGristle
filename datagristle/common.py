@@ -9,6 +9,7 @@ import errno
 import logging
 import csv
 import inspect
+import logging
 import math
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
@@ -121,11 +122,12 @@ def abort(summary: str,
     def print_text_line(text):
         text = repr(text)
         if text:
-            for i in range(int(math.ceil(len(text)/68))):
+            for i in range(int(math.ceil(len(text)/74))):
                 print('=== ', end='')
-                print('%-71.71s' % text[i*68:(i*68)+68], end='')
+                print('%-71.71s' % text[i*70:(i*70)+70], end='')
                 print(' ===')
 
+    print('')
     print_solid_line()
     print_text_line(summary)
     print_empty_line()
@@ -201,7 +203,7 @@ def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[in
 
 
 def get_best_col_names(config: Dict[str, Any],
-                       dialect: csv.Dialect) -> Dict[str, Any]:
+                       dialect) -> Optional[List[str]]:
 
     if not dialect.has_header:
         return config['col_names']
