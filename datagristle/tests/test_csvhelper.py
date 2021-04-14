@@ -33,7 +33,7 @@ class TestOverrideDialect(object):
                                     escapechar=None)
         override_dialect = csvhelper.override_dialect(dialect,
                                                       delimiter=',',
-                                                      quoting=csvhelper.get_quote_number('QUOTE_ALL'),
+                                                      quoting='QUOTE_ALL',
                                                       quotechar='"',
                                                       has_header=False,
                                                       doublequote=False,
@@ -77,7 +77,7 @@ class TestGetDialect(object):
 
         resulting_dialect = csvhelper.get_dialect([fqfn],
                                                   delimiter=',',
-                                                  quoting=csvhelper.get_quote_number('quote_none'),
+                                                  quoting='quote_none',
                                                   quotechar='!',
                                                   has_header=True,
                                                   doublequote=False,

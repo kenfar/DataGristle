@@ -157,16 +157,15 @@ class TestGetFieldType(object):
 
     def test_get_field_type_basics(self):
         assert mod.get_field_type(None) == 'unknown'
-        assert mod.get_field_type([]) == 'unknown'
         assert mod.get_field_type({}) == 'unknown'
         assert mod.get_field_type({'Texas': 4}) == 'string'
-        assert mod.get_field_type(['1']) == 'integer'
-        assert mod.get_field_type(['n/a', 'Texas']) == 'string'
-        assert mod.get_field_type(['n/a', '55']) == 'integer'
-        assert mod.get_field_type(['n/a', '55.5']) == 'float'
-        assert mod.get_field_type(['n/a', '']) == 'unknown'
-        assert mod.get_field_type(['n/a', '1310527566.7']) == 'timestamp'
-        assert mod.get_field_type(['4.3', '1310527566.7']) == 'float'
+        assert mod.get_field_type({'1': 4}) == 'integer'
+        assert mod.get_field_type({'n/a': 4, 'Texas':4}) == 'string'
+        assert mod.get_field_type({'n/a': 4, '55':4}) == 'integer'
+        assert mod.get_field_type({'n/a': 4, '55.5':4}) == 'float'
+        assert mod.get_field_type({'n/a': 4, '':4}) == 'unknown'
+        assert mod.get_field_type({'n/a': 4, '1310527566.7':4}) == 'timestamp'
+        assert mod.get_field_type({'4.3': 4, '1310527566.7':4}) == 'float'
 
         test_data = {'n/a':   3,
                      '0':     2,
