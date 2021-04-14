@@ -1,0 +1,4 @@
+01|09|site-03|192.168.0.1|snort|2.0.4|residential|2021-03-28T17:45:00|delete
+03|13|site-07|192.168.0.1|sourcefire|2.7|commercial|2021-03-29T17:30:00|delete
+06|08|site-02|192.168.0.1|intrushield|3.1|residential|2021-03-31T08:30:00|delete
+08|09|site-05|192.168.0.1|cisco|4.1|commercial|2021-03-31T18:00:00|delete

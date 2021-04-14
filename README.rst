@@ -2,42 +2,10 @@
   analyzers.
 | It’s kind of an interactive mix between ETL and data analysis
   optimized for rapid analysis and manipulation of a wide variety of
-  data.
-
-It’s neither an enterprise ETL tool, nor an enterprise analysis,
-reporting, or data mining tool. It’s intended to be an easily-adopted
-tool for technical analysts that combines the most useful subset of data
-transformation and analysis capabilities necessary to do 80% of the
-work. Its open source python codebase allows it to be easily extended to
-with custom code to handle that always challenging last 20%.
-
-Current Status: Strong support for easy analysis, simple transformations
-of csv files, ability to create data dictionaries, change detection, and
-emerging data quality capabilities.
+  data at the command line.
 
 More info is on the DataGristle wiki here:
-https://github.com/kenfar/DataGristle/wiki
-
-Next Steps:
-===========
-
--  attractive PDF output of gristle_determinator.py
--  metadata database population
-
-Its objectives include:
-=======================
-
--  multi-platform (unix, linux, mac os, windows with effort)
--  multi-language (primarily python)
--  free - no cripple-licensing
--  primary audience is programming data analysts - not non-technical
-   analysts
--  primary environment is command-line rather than windows, graphical
-   desktop or eclipse
--  extensible
--  allow a bi-directional iteration between ETL & data analysis
--  can quickly perform initial data analysis prior to longer-duration,
-   deeper analysis with heavier-weight tools.
+`wiki <https://github.com/kenfar/DataGristle/wiki>`__
 
 Installation
 ============
@@ -146,7 +114,7 @@ gristle_slicer
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)
       Many more examples can be found here:  
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
+          [gristle_slicer_examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer)
 
 gristle_freaker
 ===============
@@ -190,7 +158,7 @@ gristle_freaker
                    and the third is the number of times that value appeared.  
                    This output is repeated for each column.
       Many more examples can be found here:  
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
+          [gristle_freaker examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker)
 
 gristle_profiler
 ================
@@ -295,7 +263,7 @@ gristle_profiler
                0                                        x 37 occurrences
 
       Many more examples can be found here:  
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
+          [gristle_profiler examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler)
 
 gristle_converter
 =================
@@ -311,7 +279,7 @@ gristle_converter
             Copies input file to output while completely changing every aspect
             of the csv dialect.
       Many more examples can be found here:  
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
+          [gristle_converter examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter)
 
 gristle_validator
 =================
@@ -406,7 +374,7 @@ gristle_differ
    populate fields with static values, values from other fields, variables
    from the command line, or incrementing sequence numbers.
 
-   More info on the wiki here:  https://github.com/kenfar/DataGristle/wiki/gristle_differ
+   More info on the wiki here:  [wiki](https://github.com/kenfar/DataGristle/wiki/gristle_differ)
 
    Examples:
 
@@ -446,7 +414,7 @@ gristle_differ
              chgnew files.
 
       Many more examples can be found here:  
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
+          [gristle_differ examples](https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ)
 
 gristle_metadata
 ================

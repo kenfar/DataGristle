@@ -1,0 +1,8 @@
+org|sensor_id|site|sensor_ip|sensor_brand|sensor_ver|sensor_type|comments
+02|10|site-04|192.168.0.1|snort|2.9.7|residential|2021-03-29T09:00:00|same
+04|05|site-08|192.168.0.1|sourcefire|2.8|commercial|2021-03-30T07:15:00|same
+05|07|site-09|192.168.0.1|sourcefire|2.9|commercial|2021-03-30T18:00:00|same
+07|16|site-01|192.168.0.1|intrushield|4.1|commercial|2021-04-02T09:15:00|insert
+09|04|site-10|192.168.0.1|cisco|4.2|commercial|2021-04-01T08:15:00|same
+10|01|site-11|192.168.0.1|cisco|4.4|commercial|2021-04-02T13:30:00|change
+15|16|site-12|192.168.0.1|acme|1.1|residential|2021-04-02T15:45:00|insert

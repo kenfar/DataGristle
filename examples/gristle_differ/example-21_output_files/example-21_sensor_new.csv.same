@@ -1,0 +1,4 @@
+02|10|site-04|192.168.0.1|snort|2.9.7|residential|2021-03-29T09:00:00|same
+04|05|site-08|192.168.0.1|sourcefire|2.8|commercial|2021-03-30T07:15:00|same
+05|07|site-09|192.168.0.1|sourcefire|2.9|commercial|2021-03-30T18:00:00|same
+09|04|site-10|192.168.0.1|cisco|4.2|commercial|2021-04-01T08:15:00|same
