@@ -71,7 +71,7 @@ from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, Type, Callable
 
 import validictory as valid
 import ruamel.yaml as yaml
@@ -144,9 +144,9 @@ def main() -> int:
 
 
 
-def process_all_records(input_handler: 'InputHandler',
-                        outfile_handler: 'OutputHandler',
-                        outerr_handler: 'OutputHandler',
+def process_all_records(input_handler: file_io.InputHandler,
+                        outfile_handler: file_io.OutputHandler,
+                        outerr_handler: file_io.OutputHandler,
                         rec_validator: 'RecValidator',
                         verbosity: int) -> int:
     """ Walks through input file, validating each record, and writing
@@ -222,9 +222,9 @@ class RecValidator(object):
                  rec_schema=None) -> None:
 
         self.rec_schema = rec_schema
-        self.valid_field_cnt = valid_field_cnt
-        self.last_field_cnt = None
-        self.error = None # holds last error encountered
+        self.valid_field_cnt: Optional[int] = valid_field_cnt
+        self.last_field_cnt: Optional[int] = None
+        self.error: Optional[str] = None # holds last error encountered
         if rec_schema:
             try:
                 ValidateTheValidator(rec_schema)
@@ -269,7 +269,7 @@ class RecValidator(object):
         try:
             valid.validate(record, self.rec_schema)
         except ValueError as err:
-            self.error = err
+            self.error = repr(err)
             return False
         else:
             return True
@@ -324,6 +324,8 @@ class RecValidator(object):
         for index, col_info in enumerate(self.rec_schema['items']):
             if 'dg_type' not in col_info:
                 continue
+
+            caster: Callable
             if col_info['dg_type'] == 'integer':
                 caster = int
             else:
@@ -334,7 +336,7 @@ class RecValidator(object):
                         msg = self._msg_formatter(index, 'dg_minimum', record[index], col_info)
                         return msg
                 except ValueError as err:
-                    return err
+                    return repr(err)
                 except IndexError:
                     return 'Failed to validate field due to parsing error.  Wrong delimiter?'
             if 'dg_maximum' in col_info:
@@ -343,7 +345,7 @@ class RecValidator(object):
                         msg = self._msg_formatter(index, 'dg_maximum', record[index], col_info)
                         return msg
                 except ValueError as err:
-                    return err
+                    return repr(err)
                 except IndexError:
                     return 'Failed to validate field due to parsing error.  Wrong delimiter?'
 
@@ -354,14 +356,14 @@ class RecValidator(object):
     def _msg_formatter(field_num: int,
                        field_check: str,
                        field_value: str,
-                       col_info: str,
+                       col_info: Dict[str, Any],
                        hard_msg: str = None):
 
         if hard_msg:
             return hard_msg
 
         if 'title' in col_info:
-            field_title = ' (%s) ' % col_info['title']
+            field_title = f" ({col_info['title']}) "
         else:
             field_title = ' '
 
@@ -510,7 +512,7 @@ class ConfigManager(conf.Config):
     def validate_custom_config(self,
                                custom_config: conf.CONFIG_TYPE) -> None:
 
-        if len(custom_config['infiles']) > 1 and not self.config.delimiter:
+        if len(custom_config['infiles']) > 1 and not self.config['delimiter']:
             comm.abort('Please provide delimiter when reading multiple input files')
 
         if custom_config['random_out'] > 1.0 or custom_config['random_out'] < 0.0:
