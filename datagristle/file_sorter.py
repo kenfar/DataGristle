@@ -10,7 +10,7 @@ from pprint import pprint as pp
 import subprocess
 import sys
 import time
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Tuple, Optional
 
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
@@ -20,15 +20,16 @@ import datagristle.file_io as file_io
 class SortKeysConfig(object):
 
     def __init__(self,
-                 sort_keys: str):
-        self.key_fields = []
+                 sort_keys: List[str]):
+
+        self.key_fields: List[SortKeyRecord] = []
         self.load_config(sort_keys)
 
 
     def load_config(self,
-                    key_fields: List[str]) -> None:
+                    sort_keys: List[str]) -> None:
 
-        for key_field in key_fields:
+        for key_field in sort_keys:
             sort_key_rec = SortKeyRecord(key_field)
             self.key_fields.append(sort_key_rec)
 
@@ -113,8 +114,8 @@ class CSVPythonSorter(object):
         self.sort_key_config = sort_keys_config
         self.keep_header = keep_header
 
-        self.all_recs = []
-        self.keys = []
+        self.all_recs: List[str] = []
+        self.keys: List[Tuple[Any, ...]] = []
         self.header_rec = None
 
         self.stats = {}
@@ -132,7 +133,7 @@ class CSVPythonSorter(object):
                                                     sys.stdout)
 
 
-    def sort_file(self) -> Dict[str, int]:
+    def sort_file(self):
         """ Sort input file giving output file
             Returns a dictionary of counts.
         """
@@ -246,8 +247,8 @@ class CSVPythonSorter(object):
 
 
 
-def isduplicate(key: Union[str, int, float],
-                last_key: Union[str, int, float] = [None]) -> bool:
+def isduplicate(key: Tuple[Any, ...],
+                last_key: Optional[List[Any]] = [None]) -> bool:
 
     if last_key[0] is not None and last_key[0] == key:
         return True
@@ -262,6 +263,7 @@ def transform(field_value: str,
               key_field: SortKeyRecord,
               primary_order: str) -> Union[str, int, float]:
 
+    transformed_field_value: Union[str, int, float] = None
     if key_field.type == 'str':
         transformed_field_value = field_value
     elif key_field.type == 'int':
@@ -274,7 +276,7 @@ def transform(field_value: str,
     if (primary_order == 'forward'
             and key_field.type in ('int', 'float')
             and key_field.order == 'reverse'):
-                return transformed_field_value * -1
+        return transformed_field_value * -1
     else:
         return transformed_field_value
 
@@ -382,7 +384,7 @@ class CSVSorter(object):
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
-            raise IOError('invalid sort return code: %s, %s, %s' % (proc.returncode, stdout, stderr))
+            raise IOError(f'invalid sort return code: {proc.returncode}, {repr(stdout)}, {repr(stderr)}')
 
         return out_fqfn
 

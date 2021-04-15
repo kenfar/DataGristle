@@ -18,7 +18,7 @@ import os
 from os.path import isfile, splitext, basename, isabs, dirname, abspath, join as pjoin, exists
 from pprint import pprint as pp
 import sys
-from typing import List, Dict, Any, Callable, Optional, NamedTuple
+from typing import List, Dict, Any, Callable, Optional, NamedTuple, Tuple
 
 import ruamel.yaml as yaml
 
@@ -46,9 +46,8 @@ def transform_lower(val):
 
 
 # These describe the valid types of the properties of configs
-VALID_CONFIG_PROP_TYPES = {}
+VALID_CONFIG_PROP_TYPES: Dict[str, Any] = {}
 VALID_CONFIG_PROP_TYPES['short_name'] = str
-VALID_CONFIG_PROP_TYPES['required'] = bool
 VALID_CONFIG_PROP_TYPES['required'] = bool
 VALID_CONFIG_PROP_TYPES['nargs'] = str
 VALID_CONFIG_PROP_TYPES['action'] = str
@@ -153,6 +152,11 @@ ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'long-help']
 
 class Config(object):
 
+    class NConfig(NamedTuple):
+        """ Bare minimum nconfig for typing
+        """
+        verbosity: str
+
     def __init__(self,
                  app_name: str,
                  short_help: str,
@@ -161,13 +165,30 @@ class Config(object):
         self.app_name = splitext(basename(app_name))[0]
         self.short_help = short_help
         self.long_help = long_help
-        self.obsolete_options = {}
+        self.obsolete_options: Dict[str, Any] = {}
         self._app_metadata: META_CONFIG_TYPE = {}
         self.config: Dict = {}
-        self.nconfig: Optional[NamedTuple] = None
+        self.nconfig = self.NConfig
 
 
-    def get_config(self) -> Dict[str, Any]:
+    def extend_config(self):
+        """ Provide calling programs function placeholder for add-ons
+
+        This function exists so that additional attributes beyond what were picked up from
+        cli, config file, or envvar can be added to the config.  These might be derived from
+        the config, or wholly new.
+        """
+        pass
+
+    def define_user_config(self):
+        """ Provide calling programs function placeholder for defining config
+
+        This is where the calling program defines all config items.
+        """
+        pass
+
+
+    def get_config(self) -> Tuple[Any, Dict[Any, Any]]:
         self.define_user_config()
         self.process_configs()
 
@@ -241,7 +262,7 @@ class Config(object):
         env_args = env_args_manager.env_gristle_app_args
 
         cli_args_manager = _CommandLineArgs(self.short_help, self.long_help, self._app_metadata, self.obsolete_options)
-        cli_args_manager._get_args(test_cli_args)
+        cli_args_manager._get_args()
         cli_args = cli_args_manager.cli_args
 
         config_fn = cli_args.get('config_fn', None) or env_args.get('config_fn', None)
@@ -393,7 +414,7 @@ class Config(object):
         Then values from matching environmental variable keys are overlaid,
         Finally values from matching cli arg keys are overlaid,
         """
-        consolidated_args = {}
+        consolidated_args: Dict[str, Any] = {}
 
         for key in self._app_metadata:
             actual_key = self._app_metadata[key].get('dest', key)
@@ -405,7 +426,7 @@ class Config(object):
                 consolidated_args[actual_key] = val
         except KeyError as e:
             if key in self.obsolete_options.keys():
-                comm.abort('Error: obsolete option', self.obsolete_options[arg])
+                comm.abort('Error: obsolete option', self.obsolete_options[key])
             else:
                 comm.abort(f'ERROR: Unknown option: {key}')
 
@@ -652,7 +673,7 @@ class _FileArgs(object):
     def _get_args(self) -> CONFIG_TYPE:
         """ Returns a dictionary of config keys & vals associated with the calling program.
         """
-        file_args = {}
+        file_args: Dict[str, Any] = {}
 
         if not self.config_fn:
             return file_args
@@ -737,18 +758,17 @@ class _CommandLineArgs(object):
     def __init__(self,
                  short_help,
                  long_help,
-                 app_metadata: str,
+                 app_metadata: META_CONFIG_TYPE,
                  obsolete_options: Dict[str, str] = {})-> None:
 
         self._app_metadata = app_metadata
         self.short_help = short_help
         self.long_help = long_help
         self.obsolete_options = obsolete_options
-        self.cli_args = self._get_args(short_help)
+        self.cli_args = self._get_args()
 
 
-    def _get_args(self,
-                  desc: str) -> CONFIG_TYPE:
+    def _get_args(self) -> CONFIG_TYPE:
         """ Gets config items from cli arguments.
         """
         self._build_parser(desc='')
@@ -810,7 +830,7 @@ class _CommandLineArgs(object):
         self.parser.add_argument(*args, **kwargs)
 
 
-    def _convert_arg_name_delimiter(self, arg_name: str) -> None:
+    def _convert_arg_name_delimiter(self, arg_name: str) -> str:
         return arg_name.replace('_', '-')
 
 
@@ -822,7 +842,8 @@ class _CommandLineArgs(object):
                 comm.abort(f'ERROR: Unknown option: {arg}')
 
 
-    def _process_help_args(self, known_args: list) -> None:
+    def _process_help_args(self,
+                           known_args: argparse.Namespace) -> None:
         if known_args.help:
             print(self.short_help)
             sys.exit(0)
