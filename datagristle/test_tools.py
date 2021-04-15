@@ -31,7 +31,7 @@ def load_script(script_name: str):
     py_source_description = (".py", py_source_open_mode, imp.PY_SOURCE)
     script_filepath = os.path.join(script_dir, script_name)
     with open(script_filepath, py_source_open_mode) as script_file:
-        mod = imp.load_module(script_name, script_file, script_filepath,  py_source_description)
+        mod = imp.load_module(script_name, script_file, script_filepath,  py_source_description) # type: ignore
 
     return mod
 

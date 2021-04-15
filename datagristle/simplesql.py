@@ -159,7 +159,6 @@ class TableTools(object):
                 raise
             if result.rowcount == 0:       # this is the only way to catch
                 print('update exception')
-                print(except_detail)        # might want to get rid of this
                 print(result)
                 # usually constraint violations
                 raise exc.IntegrityError (upd_sql, kw_update, None)

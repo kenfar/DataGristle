@@ -16,7 +16,7 @@ from os.path import join as pjoin
 from pprint import pprint as pp
 import sys
 import traceback
-from typing import List, Dict, Any, Optional, Tuple, Union
+from typing import List, Dict, Any, Optional, Tuple, Union, NoReturn
 
 from datagristle._version import __version__
 
@@ -107,7 +107,7 @@ def dialect_del_fixer(values: str) -> str:
 def abort(summary: str,
           details: Optional[str] = None,
           rc: int = 1,
-          verbosity: str = 'normal') -> None:
+          verbosity: str = 'normal') -> NoReturn:
     """ Creates formatted error message within a box of = characters
         then exits.
     """
@@ -143,9 +143,9 @@ def abort(summary: str,
         traceback.print_stack(file=sys.stdout)
 
     try:
-        logger.critical(summary)
+        logger.critical(summary)      # type: ignore
         if details:
-            logger.critical(details)
+            logger.critical(details)  # type: ignore
     except NameError:
         pass
 

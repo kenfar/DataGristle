@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import csv
+import json
 from os.path import isfile
 from os.path import basename
 from os.path import join  as pjoin
-import csv
 from pprint import pprint as pp
 from typing import Dict, Tuple, List, Union, Any, Optional, IO
 
@@ -439,7 +440,7 @@ class DeltaAssignments(object):
                         outrec[dest_field] = self._get_special_value(assigner['src_val'])
                 except (ValueError, IndexError) as err:
                     msg = f'assignments={assigner}, dest_field={dest_field}, outtype={outtype}'
-                    abort(err, msg, verbosity='debug')
+                    abort(repr(err), msg, verbosity='debug')
         return outrec
 
 
@@ -455,8 +456,7 @@ class DeltaAssignments(object):
         try:
             return self.special_values[src_val]
         except KeyError:
-            pp(self.special_values)
-            abort('Invalid special value referenced in assignment: %s' % src_val)
+            abort(f'Invalid special value in assignment: {src_val}', json.dumps(self.special_values))
 
 
     def _get_copy_value(self, src_file: str, src_field: int) -> str:

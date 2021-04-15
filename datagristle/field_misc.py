@@ -197,16 +197,14 @@ def get_min(value_type: str, values: common.FreqType) -> Any:
     """
     assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
 
-    if value_type == 'integer':
-        myfunc = int
-    elif value_type == 'float':
-        myfunc = float
-    else:
-        myfunc = str
-
     def transform(val):
         try:
-            result = myfunc(val)
+            if value_type == 'integer':
+                result = int(val)
+            elif value_type == 'float':
+                result = float(val)
+            else:
+                result = str(val)
         except ValueError:
             pass # just drop any invalid data
         else:
@@ -235,16 +233,14 @@ def get_max(value_type: str, values: common.FreqType) -> Optional[Any]:
     """
     assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
 
-    if value_type == 'integer':
-        myfunc = int
-    elif value_type == 'float':
-        myfunc = float
-    else:
-        myfunc = str
-
     def transform(val):
         try:
-            result = myfunc(val)
+            if value_type == 'integer':
+                result = int(val)
+            elif value_type == 'float':
+                result = float(val)
+            else:
+                result = str(val)
         except ValueError:
             pass # just drop any invalid data
         else:

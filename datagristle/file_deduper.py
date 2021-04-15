@@ -73,12 +73,12 @@ class CSVDeDuper(object):
             out_fqfn = pjoin(out_dir, basename(in_fqfn) + '.uniq')
 
         # walk through input file, dropping duplicates
-        outfile = open(out_fqfn, 'w')
-        outwriter = csv.writer(outfile, dialect=self.dialect) # type: csv.writer
+        outfile = open(out_fqfn, 'w', newline='')
+        outwriter = csv.writer(outfile, dialect=self.dialect)
         last_rec: List[str] = []
         write_cnt = 0
         read_cnt = 0
-        with open(in_fqfn, 'rt') as infile:
+        with open(in_fqfn, 'rt', newline='') as infile:
             reader = csv.reader(infile, self.dialect)
             for rec in reader:
                 read_cnt += 1
