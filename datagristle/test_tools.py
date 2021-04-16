@@ -63,7 +63,7 @@ def generate_7x7_test_file(prefix: str, hasheader: bool = False, delimiter: str 
     data_7x7 = []
     if hasheader:
         data_7x7.append(f'col0{dlm}scol1{dlm}scol2{dlm}scol3{dlm}scol4{dlm}scol5{dlm}scol6')
- 
+
     data_7x7.append(f'0-0{dlm}0-1{dlm}0-2{dlm}0-3{dlm}0-4{dlm}0-5{dlm}0-6')
     data_7x7.append(f'1-0{dlm}1-1{dlm}1-2{dlm}1-3{dlm}1-4{dlm}1-5{dlm}1-6')
     data_7x7.append(f'2-0{dlm}2-1{dlm}2-2{dlm}2-3{dlm}2-4{dlm}2-5{dlm}2-6')
@@ -184,6 +184,3 @@ def executor(cmd, expect_success=True):
     else:
         assert status_code != 0
     return status_code
-
-
-

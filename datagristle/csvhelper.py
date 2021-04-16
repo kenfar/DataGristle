@@ -398,6 +398,3 @@ def _get_has_header(fqfn: str,
     """
     sample = open(fqfn, 'r').read(read_limit)
     return csv.Sniffer().has_header(sample)
-
-
-

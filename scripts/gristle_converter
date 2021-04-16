@@ -176,16 +176,15 @@ class ConfigManager(conf.Config):
         """
         self.generate_csv_dialect_config()
 
-        out_dialect = csvhelper.get_dialect('-',
-                                            self.config['out_delimiter']   or self.nconfig.dialect.delimiter,
-                                            self.config['out_quoting']
-                                                or csvhelper.get_quote_name(self.nconfig.dialect.quoting),
-                                            self.config['out_quotechar']   or self.nconfig.dialect.quotechar,
-                                            self.config['out_has_header']  or self.nconfig.dialect.has_header,
-                                            self.config['out_doublequote'] or self.nconfig.dialect.doublequote,
-                                            self.config['out_escapechar']  or self.nconfig.dialect.escapechar,
-                                            self.config['out_skipinitialspace']  or self.nconfig.dialect.skipinitialspace,
-                                            verbosity='normal')
+        out_dialect = csvhelper.get_dialect('-',  # type: ignore
+            self.config['out_delimiter']   or self.nconfig.dialect.delimiter,  # type: ignore
+            self.config['out_quoting'] or csvhelper.get_quote_name(self.nconfig.dialect.quoting), # type: ignore
+            self.config['out_quotechar']   or self.nconfig.dialect.quotechar, # type: ignore
+            self.config['out_has_header']  or self.nconfig.dialect.has_header, # type: ignore
+            self.config['out_doublequote'] or self.nconfig.dialect.doublequote, # type: ignore
+            self.config['out_escapechar']  or self.nconfig.dialect.escapechar, # type: ignore
+            self.config['out_skipinitialspace']
+                or self.nconfig.dialect.skipinitialspace, verbosity='normal') # type: ignore
 
         self.update_config('out_dialect', out_dialect)
 

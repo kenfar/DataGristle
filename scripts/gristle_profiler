@@ -639,15 +639,15 @@ class ConfigManager(configulator.Config):
         self.generate_csv_dialect_config()
 
         # turn off verbose if parsable output is going to stdout
-        if self.nconfig.output_format == "parsable":
-            if self.nconfig.outfile in ('-', None):
+        if self.nconfig.output_format == "parsable":  # type: ignore
+            if self.nconfig.outfile in ('-', None):  # type: ignore
                 self.config["verbosty"] = "quiet"  # don't mix data and info
                 self.replace_configs(self.config)
 
         # set up column_type_overrides
         self.config["column_type_overrides"] = {}
         if self.config["column_types"]:
-            for col_type_pair in self.nconfig.column_types.split(","):
+            for col_type_pair in self.nconfig.column_types.split(","):  # type: ignore
                 try:
                     (col_no, col_type) = col_type_pair.split(":")
                     try:

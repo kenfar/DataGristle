@@ -11,6 +11,5 @@ CSV Dialect Examples:
 Data Warehousing Functionality Examples:
     Example-21: Simple diff for an extract process with no assignments.
     Example-22: Complex post-transform diff of incoming new file vs an extract from the warehouse
-                that combines all assignments for a typical data warehouse: delete flag, batch_id, 
+                that combines all assignments for a typical data warehouse: delete flag, batch_id,
                 primary-key generation, and timestamps.
-

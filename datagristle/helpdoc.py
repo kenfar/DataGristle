@@ -106,7 +106,7 @@ def get_short_help_from_long(val):
             continue
         elif option:
             if short_desc_found:
-                continue  # must be in the details 
+                continue  # must be in the details
             else:
                 temp_line = line.replace('...', '   ') # need to ignore ellipses
                 if '.' in temp_line:
@@ -116,6 +116,3 @@ def get_short_help_from_long(val):
 
         results.append(line)
     return '\n'.join(results)
-
-
-

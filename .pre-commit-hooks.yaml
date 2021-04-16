@@ -1,0 +1,9 @@
+
+-   id: mypy
+    name: mypy
+    entry: mypy
+    language: python
+    'types': [python]
+    args: ["--ignore-missing-imports", "--scripts-are-modules", "--no-strict-optional"]
+    require_serial: true
+    additional_dependencies: []

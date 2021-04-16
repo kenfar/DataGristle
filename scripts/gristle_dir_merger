@@ -139,12 +139,11 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE, SIG_DFL)
 
 
-__version__ = 'unknown'
 try:
     from gristle._version import __version__
 except ImportError:
     # We're running in a directory that doesn't have pathing set up quite right
-    pass
+    __version__ = 'unknown'
 
 
 
@@ -627,7 +626,7 @@ def log_reason(reason):
 
 
 def kill_if_symlink(fqfn, dir_type, ignore_errors):
-    """ Tests a fully-qualified file name to see if it's a symlink. If it 
+    """ Tests a fully-qualified file name to see if it's a symlink. If it
         fails the test it generally exits the program.
         Inputs:
             - fqfn - "fully qualified file name" - may be either a file or a
@@ -762,4 +761,3 @@ def get_args():
 
 if __name__ == '__main__':
     sys.exit(main())
-

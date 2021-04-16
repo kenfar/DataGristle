@@ -782,4 +782,3 @@ class TestCSVDialects(object):
         status_code, stdout, stderr, good_recs, err_recs = self.get_outputs(runner)
         os.system('cat %s' % self.in_fqfn)
         assert status_code == 0
-

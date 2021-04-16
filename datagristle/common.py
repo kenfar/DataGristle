@@ -232,6 +232,3 @@ def get_col_names_from_header(file1_fqfn: str,
         return col_names
     except StopIteration:
         return None
-
-
-

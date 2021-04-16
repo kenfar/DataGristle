@@ -20,11 +20,11 @@
      - Fixes --already-unix option bug with file parsing
      - Fixes --stats bug with empty files
      - Improvement: added ability to use column names from file headers
-     - Improvement: if a key-col is in the ignore-cols - it will simply be ignored, 
+     - Improvement: if a key-col is in the ignore-cols - it will simply be ignored,
        and the program will continue processing.
-     - Improvement: if a key-col is in the compare-cols - it will simply be ignored, 
+     - Improvement: if a key-col is in the compare-cols - it will simply be ignored,
        and the program will continue processing.
-     - Improvement: if neither compare or ignore cols are provided it will use all cols 
+     - Improvement: if neither compare or ignore cols are provided it will use all cols
        as compare-cols and continue processing.
      - Improvement: CLI help is updated to provide more details and accurate examples of these options.
 
@@ -57,7 +57,7 @@
 # v0.59 - 2016-11
    * gristle_differ
      - totally rewritten.  Can now handle very large files, perform post-transform
-       transformations, handle more complex comparisons, and use column names rather 
+       transformations, handle more complex comparisons, and use column names rather
        than just positions.
    * gristle_determinator
      - added read-limit argument.  This allows the tool to be easily run against a
@@ -71,13 +71,13 @@
    * minor:
      - gristle_md_reporter - slight formatting change: text descriptions of fields are
        now included, and column widths were tweaked.
-     - all utilities - a substantial performance improvement for large files when 
+     - all utilities - a substantial performance improvement for large files when
        quoting information is not provided.
 
 # v0.58 - 2014-08
    * gristle_dir_merger
      - initial addition to toolkit.  Merges directories of files using a variety
-       of matching criteria and matching actions.   
+       of matching criteria and matching actions.
 
 # v0.57 - 2014-07
    * gristle_processor

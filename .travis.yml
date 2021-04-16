@@ -1,5 +1,5 @@
 language: python
-python:   
+python:
    - 3.7
    - 3.8
 before_install:

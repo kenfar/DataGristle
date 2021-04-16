@@ -94,6 +94,7 @@ def main() -> int:
 
     sorter.sort_file()
     sorter.close()
+    return 0
 
 
 
@@ -133,7 +134,7 @@ class ConfigManager(conf.Config):
         """ Add derrived attributes to our config so they're all in one place.
         """
         self.generate_csv_dialect_config()
-        self.update_config('sort_keys', file_sorter.SortKeysConfig(self.nconfig.keys))
+        self.update_config('sort_keys', file_sorter.SortKeysConfig(self.nconfig.keys)) # type: ignore
 
 
 

@@ -4,6 +4,7 @@ envoy       == 0.0.3
 Flask       == 1.1.2
 Jinja2      == 2.11.3
 jsonschema  == 3.2.0
+pre-commit  == 2.12.0
 pytest      == 6.2.2
 ruamel.yaml == 0.17.0
 SQLAlchemy  == 1.4.3

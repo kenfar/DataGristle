@@ -56,4 +56,3 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_07(self):
         self.run_example_config('example-07')
-

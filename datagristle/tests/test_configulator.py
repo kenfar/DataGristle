@@ -149,9 +149,3 @@ def create_config_file(temp_dir, config_dict):
     with open(pjoin(temp_dir, 'config_file.json'), 'w') as outbuf:
         json.dump(config_dict, outbuf)
     return pjoin(temp_dir, 'config_file.json')
-
-
-
-
-
-

@@ -81,8 +81,3 @@ def generate_file(temp_dir, records=1):
     md5sum, _ = runner.std_out.split()
 
     return fqfn, md5sum
-
-
-
-
-

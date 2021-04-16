@@ -225,5 +225,3 @@ class IOErrorEmptyFile(IOError):
     """Error due to empty file
     """
     pass
-
-

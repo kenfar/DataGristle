@@ -221,4 +221,3 @@ class TableTools(object):
                     results.append(column.name)
         #print 'constraint_list: ' + ','.join(results)
         return results
-

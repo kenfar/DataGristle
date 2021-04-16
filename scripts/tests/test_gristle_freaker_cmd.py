@@ -329,5 +329,3 @@ def generate_test_file(delim, record_cnt, name='generic'):
 
     fp.close()
     return fqfn
-
-

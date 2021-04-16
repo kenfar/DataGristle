@@ -227,5 +227,3 @@ def cast_numeric(val: Union[int, float]) -> Union[int, float]:
         return int_val
     else:
         return float_val
-
-

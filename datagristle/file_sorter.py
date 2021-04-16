@@ -400,4 +400,3 @@ class CSVSorter(object):
             #return ''' " `echo '\t'` " '''
         else:
             return "'%s'" % delimiter  # good for envoy, not subprocess
-

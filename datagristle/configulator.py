@@ -157,6 +157,7 @@ class Config(object):
         """
         verbosity: str
 
+
     def __init__(self,
                  app_name: str,
                  short_help: str,
@@ -782,7 +783,7 @@ class _CommandLineArgs(object):
                       desc) -> None:
 
         #fixme: can only handle 1 positional argument: it doesn't actually have 'position' for positionals
-        #This isn't a big problem since we're only using options - in order to also support envvars and 
+        #This isn't a big problem since we're only using options - in order to also support envvars and
         #config files
         self.parser = argparse.ArgumentParser(usage = '%(prog)s --long-help for detailed usage and help',
                                               add_help=False)
@@ -853,5 +854,3 @@ class _CommandLineArgs(object):
         if known_args.version:
             print(__version__)
             sys.exit(0)
-
-
