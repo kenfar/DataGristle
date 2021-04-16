@@ -447,6 +447,3 @@ class TestCSVDialects(object):
                                  runtype='arg')
         assert valid == actual
         assert rc == 0
-
-
-

@@ -383,6 +383,3 @@ def is_timestamp(time_val: Union[float, str]) -> Tuple[bool, Optional[str], Opti
             return True, scope, pattern
     else:
         return False, None, None
-
-
-

@@ -105,7 +105,7 @@ class GristleMetaData(object):
 
         #-------------------------------------------------------------------
         # This explicit connection was not initially needed - originally all
-        # work was performed through implicit connections.  But the need to 
+        # work was performed through implicit connections.  But the need to
         # run methods like:
         #    existing_views = engine.dialect.get_view_names(connect)
         # requires the explicit connection.
@@ -1195,4 +1195,3 @@ def create_view_rpt_field_analysis_v(engine, connection):
     if 'rpt_field_analysis_v' not in existing_views:
         create_sql = text(sql)
         _ = engine.execute(create_sql)
-

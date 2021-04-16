@@ -113,7 +113,7 @@ def main():
 
 
 
-def get_field_names(input_files, dialect):
+def get_field_names(input_files, dialect) -> Dict[int, str]:
 
     field_cnt = file_type.get_field_cnt(dialect, input_files[0])
     my_fields = field_determinator.FieldDeterminator(input_files[0],
@@ -125,7 +125,7 @@ def get_field_names(input_files, dialect):
 
 
 def display_rec(rec: str,
-                field_names: List[str],
+                field_names: Dict[int, str],
                 output_handler: file_io.OutputHandler):
     """ Displays a single record
     """
@@ -138,7 +138,7 @@ def display_rec(rec: str,
         min_format_len = max_v_len + 4
     else:
         for f_sub in range(len(rec)):
-            field_names.append('field_%d' % f_sub)
+            field_names[f_sub] = f'field_{f_sub}'
         min_format_len = 12
 
     # write in column order:

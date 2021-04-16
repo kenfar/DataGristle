@@ -82,7 +82,7 @@ class FileAndTestManager(object):
         assert len(self.MyFields.get_top_freq_values(fieldno=5, limit=2)) == 1
         assert len(self.MyFields.get_top_freq_values(fieldno=6, limit=2)) == 1
 
-        # this is an empty field - it should show up as a single value with 
+        # this is an empty field - it should show up as a single value with
         # occurance of 100
         assert len(self.MyFields.get_top_freq_values(fieldno=4, limit=2)) == 1
 
@@ -97,7 +97,7 @@ class FileAndTestManager(object):
         self.MyFields.analyze_fields(None, self.overrides, read_limit=10)
 
         # there are 100 unique values for this column normally, this time
-        # it should be truncated at 10 
+        # it should be truncated at 10
         assert len(self.MyFields.get_known_values(self.id_col)) == 10
         assert self.MyFields.field_trunc[self.id_col] is True
         assert self.MyFields.field_trunc[self.very_mixed_col] is True
@@ -109,7 +109,7 @@ class FileAndTestManager(object):
         self.MyFields.analyze_fields(None, self.overrides, max_freq_number=10)
 
         # there are 100 unique values for this column normally, this time
-        # it should be truncated at 10 
+        # it should be truncated at 10
         assert len(self.MyFields.get_known_values(self.id_col)) == 10
         assert self.MyFields.field_trunc[self.id_col] is True
         # the rest of these only have a single static value:

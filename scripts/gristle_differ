@@ -190,7 +190,7 @@ def main():
 
 
 def delta_runner(nconfig,
-                 dialect: csv.Dialect) -> gdelta.FileDelta:
+                 dialect: csvhelper.Dialect) -> gdelta.FileDelta:
     """ sets up config items for delta class,
         prepares input files,
         instantiates delta class and runs comparison
@@ -287,7 +287,7 @@ def get_assign_with_offsets_for_names(col_names: List[str],
 
 
 def prep_file(filename: str,
-              dialect: csv.Dialect,
+              dialect: csvhelper.Dialect,
               key_cols: List[int],
               temp_dir: str,
               out_dir: str,

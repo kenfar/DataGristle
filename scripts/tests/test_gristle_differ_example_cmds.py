@@ -160,5 +160,3 @@ class TestExamples(test_tools.TestExamples):
 
 def get_file_type(filename):
     return filename.split('.')[-1]
-
-

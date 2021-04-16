@@ -9,7 +9,7 @@
 <form method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/fv{{ fv }}/{{ action }}">
   <table border="1">
     <tr>
-	<th>Field Value:        </th> 
+	<th>Field Value:        </th>
 	{% if action == 'new' %}<td><input name='fv' type="text" value="{{ fv }}"></td>{% endif %}
 	{% if action == 'edit' %}<td>{{ fvd }}</td>{% endif %}
     </tr>

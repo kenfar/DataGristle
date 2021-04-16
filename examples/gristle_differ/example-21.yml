@@ -1,6 +1,6 @@
 # This example demonstrates a simple data warehouse diff that might be used at the start of a data
 # pipeline, right after extracting the files.  It compares a full extract to the prior full extract.
-# 
+#
 # Not many features of the diff are used other than being csv dialect aware, and referencing columns
 # by name rather than field position.
 #
@@ -14,7 +14,7 @@ temp_dir: null
 # by position instead.
 col_names: [org,sensor_id,site,sensor_ip,sensor_brand,sensor_ver,sensor_type,update_ts,comments]
 
-key-cols: [org, sensor_id]  # 
+key-cols: [org, sensor_id]  #
 ignore_cols: [comments]     # won't be on new file - just our debugging comments
 compare_cols: []            #
 

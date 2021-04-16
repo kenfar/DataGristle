@@ -26,7 +26,7 @@ items:
       maxLength:        10
       required:         True
       pattern:          '[0-9]*/[0-9]*/[1-2][0-9][0-9][0-9]'
-    - title:            end_date 
+    - title:            end_date
       blank:            False
       minLength:        8
       maxLength:        10
@@ -38,4 +38,3 @@ items:
       maxLength:        20
       required:         True
       enum:             ['Arkansas','Illinois','Virginia','Texas','Ohio','Iowa','California','Michigan','Georgia','New York','Missouri','Indiana','Massachusetts','New Jersey','Tennessee','Pennsylvania','Louisiana','New Hampshire']
-

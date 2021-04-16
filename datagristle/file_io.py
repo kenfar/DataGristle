@@ -160,6 +160,3 @@ class OutputHandler(object):
     def close(self):
         if self.output_filename != '-':
             self.outfile.close()
-
-
-

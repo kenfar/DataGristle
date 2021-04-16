@@ -193,9 +193,10 @@ class ColSetFreaker(object):
         self.sort_order = sort_order
         self.sort_col = sort_col
         self.max_key_len = max_key_len
-        self.col_len_tracker = None
-        self.field_freq = None
-        self.sort_freq = None
+
+        self.col_len_tracker: ColumnLengthTracker = None
+        self.field_freq: Dict[Any, Any] = {}
+        self.sort_freq: List[Any] = None
         self.truncated: bool = None
         self.read_cnt = 0
 
@@ -366,8 +367,8 @@ class ColumnLengthTracker(object):
         except KeyError:
             self.max_dict[col_num] = len(value)
 
-    def add_all_values(self, freq_list: Dict[Tuple[str], int]) -> None:
-        """ Step through a dictionary in which the key is a tuple of 1-many
+    def add_all_values(self, freq_list: List[Tuple[Tuple[str, ...], int]]) -> None:
+        """ Step through a list of tuples which the key is a tuple of 1-many
             parts, and the value is the count.  For each part of the key call
             the add_val function to then store the max length.
         """
@@ -403,7 +404,7 @@ class ConfigManager(configulator.Config):
         self.add_obsolete_metadata('number', short_name='n', msg='-n/--number have been replaced by --max-freq')
 
 
-    def define_user_config(self) -> Dict[str, Any]:
+    def define_user_config(self) -> None:
         """ Get the configuration elements from arguements and config files
         """
 

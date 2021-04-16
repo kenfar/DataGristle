@@ -325,8 +325,3 @@ class AnimalTools(simplesql.TableTools):
         self._table  = self.animal
 
         return self._table
-
-
-
-
-

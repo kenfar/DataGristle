@@ -286,7 +286,7 @@ class FileAnalyzer(object):
     def _check_exclusion_phase(self, fn, fqfn):
         # exclude if symbolic link
         # exclude if root?
-        # exclude if 
+        # exclude if
         return True   # true == passed checks
 
 
@@ -784,4 +784,3 @@ def get_args():
 
 if __name__ == '__main__':
     sys.exit(main())
-

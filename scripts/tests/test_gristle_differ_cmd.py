@@ -970,4 +970,3 @@ class Config(object):
         #        if not isfile(bkup_config_fn):
         #            break
         #    os.system('cp %s %s' % (self.config_fqfn, bkup_config_fn))
-

@@ -94,6 +94,7 @@ def main() -> int:
 
     sorter.sort_file()
     sorter.close()
+    return 0
 
 
 

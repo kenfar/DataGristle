@@ -54,4 +54,3 @@ class TestColnamesToColoff0(object):
     def test_error_number_not_found(self):
         with pytest.raises(KeyError):
             assert mod.colnames_to_coloff0(['foo', 'bar', 'baz'], [5])
-

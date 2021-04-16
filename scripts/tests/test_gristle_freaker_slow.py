@@ -82,6 +82,3 @@ def generate_test_file(delim, record_cnt):
 
     fp.close()
     return fqfn
-
-
-

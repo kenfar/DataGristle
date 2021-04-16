@@ -119,7 +119,7 @@ gristle_slicer
       $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)
-      Many more examples can be found here:  
+      Many more examples can be found here:
           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 gristle_freaker
@@ -128,17 +128,17 @@ gristle_freaker
 ::
 
    Creates a frequency distribution of values from columns of the input file
-   and prints it out in columns - the first being the unique key and the last 
+   and prints it out in columns - the first being the unique key and the last
    being the count of occurances.
 
    Examples:
       $ gristle_freaker -i sample.csv -c 0
                    Creates two columns from the input - the first with
                    unique keys from column 0, the second with a count of
-                   how many times each exists. 
+                   how many times each exists.
       $ gristle_freaker -i sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
-                   In addition to what was described in the first example, 
-                   this example adds sorting of the output by count ascending 
+                   In addition to what was described in the first example,
+                   this example adds sorting of the output by count ascending
                    and just prints the first 25 entries.
       $ gristle_freaker -i sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
                    In addition to what was described in the first example,
@@ -146,11 +146,11 @@ gristle_freaker
                    every third record.
       $ gristle_freaker -i sample.csv -d '|'  -c 0,1
                    Creates three columns from the input - the first two
-                   with unique key combinations from columns 0 & 1, the 
+                   with unique key combinations from columns 0 & 1, the
                    third with the number of times each combination exists.
       $ gristle_freaker -i sample.csv -d '|'  -c -1
                    Creates two columns from the input - the first with unique
-                   keys from the last column of the file (negative numbers 
+                   keys from the last column of the file (negative numbers
                    wrap), then a second with the number of times each exists.
       $ gristle_freaker -i sample.csv -d '|'  --columntype all
                    Creates two columns from the input - all columns combined
@@ -159,11 +159,11 @@ gristle_freaker
       $ gristle_freaker -i sample.csv -d '|'  --columntype each
                    Unlike the other examples, this one performs a separate
                    analysis for every single column of the file.  Each analysis
-                   produces three columns from the input - the first is a 
-                   column number, second is a unique value from the column, 
-                   and the third is the number of times that value appeared.  
+                   produces three columns from the input - the first is a
+                   column number, second is a unique value from the column,
+                   and the third is the number of times that value appeared.
                    This output is repeated for each column.
-      Many more examples can be found here:  
+      Many more examples can be found here:
           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 gristle_profiler
@@ -171,7 +171,7 @@ gristle_profiler
 
 ::
 
-   Analyzes the structures and contents of csv files in the end producing a 
+   Analyzes the structures and contents of csv files in the end producing a
    report of its findings.  It is intended to speed analysis of csv files by
    automating the most common and frequently-performed analysis tasks.  It's
    useful in both understanding the format and data and quickly spotting issues.
@@ -186,60 +186,60 @@ gristle_profiler
        field cnt:         4
        record cnt:        100
        has header:        True
-       delimiter:                   
-       csv quoting:       False   
-       skipinitialspace:  False    
-       quoting:           QUOTE_NONE  
-       doublequote:       False   
-       quotechar:         "       
-       lineterminator:    '\n'    
-       escapechar:        None    
+       delimiter:
+       csv quoting:       False
+       skipinitialspace:  False
+       quoting:           QUOTE_NONE
+       doublequote:       False
+       quotechar:         "
+       lineterminator:    '\n'
+       escapechar:        None
 
-       Field Analysis Progress: 
+       Field Analysis Progress:
        Analyzing field: 0
        Analyzing field: 1
        Analyzing field: 2
        Analyzing field: 3
 
-       Fields Analysis Results: 
+       Fields Analysis Results:
 
            ------------------------------------------------------
-           Name:             station_id           
-           Field Number:     0                    
-           Wrong Field Cnt:  0                    
-           Type:             timestamp            
-           Min:              1010000001           
-           Max:              1140000006           
-           Unique Values:    99                   
-           Known Values:     99                   
+           Name:             station_id
+           Field Number:     0
+           Wrong Field Cnt:  0
+           Type:             timestamp
+           Min:              1010000001
+           Max:              1140000006
+           Unique Values:    99
+           Known Values:     99
            Top Values not shown - all values are unique
 
            ------------------------------------------------------
-           Name:             datetime_utc         
-           Field Number:     1                    
-           Wrong Field Cnt:  0                    
-           Type:             timestamp            
-           Min:              2011-02-28 15:00:00  
-           Max:              2011-02-28 15:00:00  
-           Unique Values:    1                    
-           Known Values:     1                    
-           Top Values: 
+           Name:             datetime_utc
+           Field Number:     1
+           Wrong Field Cnt:  0
+           Type:             timestamp
+           Min:              2011-02-28 15:00:00
+           Max:              2011-02-28 15:00:00
+           Unique Values:    1
+           Known Values:     1
+           Top Values:
                2011-02-28 15:00:00                      x 99 occurrences
 
            ------------------------------------------------------
-           Name:             sa                   
-           Field Number:     2                    
-           Wrong Field Cnt:  0                    
-           Type:             integer              
-           Min:              -999                 
-           Max:              52                   
-           Unique Values:    35                   
-           Known Values:     35                   
-           Mean:             2.45454545455        
-           Median:           38.0                 
-           Variance:         31470.2681359        
-           Std Dev:          177.398613681        
-           Top Values: 
+           Name:             sa
+           Field Number:     2
+           Wrong Field Cnt:  0
+           Type:             integer
+           Min:              -999
+           Max:              52
+           Unique Values:    35
+           Known Values:     35
+           Mean:             2.45454545455
+           Median:           38.0
+           Variance:         31470.2681359
+           Std Dev:          177.398613681
+           Top Values:
                41                                       x 7 occurrences
                42                                       x 7 occurrences
                39                                       x 6 occurrences
@@ -252,23 +252,23 @@ gristle_profiler
                44                                       x 4 occurrences
 
            ------------------------------------------------------
-           Name:             ra                   
-           Field Number:     3                    
-           Wrong Field Cnt:  0                    
-           Type:             integer              
-           Min:              -888                 
-           Max:              0                    
-           Unique Values:    2                    
-           Known Values:     2                    
-           Mean:             -556.121212121       
-           Median:           -888.0               
-           Variance:         184564.833792        
-           Std Dev:          429.610095077        
-           Top Values: 
+           Name:             ra
+           Field Number:     3
+           Wrong Field Cnt:  0
+           Type:             integer
+           Min:              -888
+           Max:              0
+           Unique Values:    2
+           Known Values:     2
+           Mean:             -556.121212121
+           Median:           -888.0
+           Variance:         184564.833792
+           Std Dev:          429.610095077
+           Top Values:
                -888                                     x 62 occurrences
                0                                        x 37 occurrences
 
-      Many more examples can be found here:  
+      Many more examples can be found here:
           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
 gristle_converter
@@ -284,7 +284,7 @@ gristle_converter
         --out-delimiter='|'  --out-has-no-header --out-quoting quote_none --out-escapechar='\'
             Copies input file to output while completely changing every aspect
             of the csv dialect.
-      Many more examples can be found here:  
+      Many more examples can be found here:
           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
 
 gristle_validator
@@ -298,7 +298,7 @@ gristle_validator
         number required.  The correct number of fields can be provided in an
         argument or will default to using the number from the first record.
       - Schema - uses csv file requirements defined in a json-schema file for
-        quality checking.  These requirements include the number of fields, 
+        quality checking.  These requirements include the number of fields,
         and for each field - the type, min & max length, min & max value,
         whether or not it can be blank, existance within a list of valid
         values, and finally compliance with a regex pattern.
@@ -309,11 +309,11 @@ gristle_validator
 
    Examples:
       $ gristle_validator  -i sample.csv -f 3
-            Prints all valid input rows to stdout, prints all records with 
+            Prints all valid input rows to stdout, prints all records with
             other than 3 fields to stderr along with an extra final field that
             describes the error.
-      $ gristle_validator  -i sample.csv 
-            Prints all valid input rows to stdout, prints all records with 
+      $ gristle_validator  -i sample.csv
+            Prints all valid input rows to stdout, prints all records with
             other than the same number of fields found on the first record to
             stderr along with an extra final field that describes the error.
       $ gristle_validator  -i sample.csv  -d '|' --has-header
@@ -328,9 +328,9 @@ gristle_validator
       $ gristle_validator  -i sample.csv --silent
             Same comparison as above, but writes nothing out.  Exit code can be
             used to determine if any bad records were found.
-      $ gristle_validator  -i sample.csv --validschema sample_schema.csv 
+      $ gristle_validator  -i sample.csv --validschema sample_schema.csv
             The above command checks both field count as well as validations
-            described in the sample_schema.csv file.  Here's an example of what 
+            described in the sample_schema.csv file.  Here's an example of what
             that file might look like:
                items:
                    - title:            rowid
@@ -355,28 +355,28 @@ gristle_viewer
 
 ::
 
-   Displays a single record of a file, one field per line, with field names 
-   displayed as labels to the left of the field values.  Also allows simple 
+   Displays a single record of a file, one field per line, with field names
+   displayed as labels to the left of the field values.  Also allows simple
    navigation between records.
 
    Examples:
-      $ gristle_viewer -i sample.csv -r 3 
+      $ gristle_viewer -i sample.csv -r 3
                    Presents the third record in the file with one field per line
                    and field names from the header record as labels in the left
                    column.
       $ gristle_viewer -i sample.csv -r 3  -d '|' -q quote_none
                    In addition to what was described in the first example this
                    adds explicit csv dialect overrides.
-                          
+
 
 gristle_differ
 ==============
 
 ::
 
-   gristle_differ compares two files, typically an old and a new file, based 
+   gristle_differ compares two files, typically an old and a new file, based
    on explicit keys in a way that is far more accurate than diff.  It can also
-   compare just subsets of columns, and perform post-delta transforms to 
+   compare just subsets of columns, and perform post-delta transforms to
    populate fields with static values, values from other fields, variables
    from the command line, or incrementing sequence numbers.
 
@@ -384,7 +384,7 @@ gristle_differ
 
    Examples:
 
-      $ gristle_differ --infiles file0.dat file1.dat --key-cols 0 2 --ignore_cols  19 22 33 
+      $ gristle_differ --infiles file0.dat file1.dat --key-cols 0 2 --ignore_cols  19 22 33
 
            - Sorts both files on columns 0 & 2
            - Dedupes both files on column 0
@@ -399,7 +399,7 @@ gristle_differ
 
       $ gristle_differ --infiles file0.dat file1.dat --key-cols 0 --compare-cols 1 2 3 4 5 6 7  -d '|'
 
-           - Sorts both files on columns 0 
+           - Sorts both files on columns 0
            - Dedupes both files on column 0
            - Compares fields 1,2,3,4,5,6,7
            - Uses '|' as the field delimiter
@@ -419,7 +419,7 @@ gristle_differ
              that will get incremented and used for new rows in the insert, delete and
              chgnew files.
 
-      Many more examples can be found here:  
+      Many more examples can be found here:
           https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 gristle_metadata
@@ -435,9 +435,9 @@ gristle_metadata
       $ gristle_metadata --table schema --action list
                    Prints a list of all rows for the schema table.
       $ gristle_metadata --table element --action put --prompt
-                   Allows the user to input a row into the element table and 
+                   Allows the user to input a row into the element table and
                    prompts the user for all fields necessary.
-                          
+
 
 gristle_md_reporter
 ===================

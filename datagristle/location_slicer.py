@@ -210,7 +210,3 @@ class SpecProcessor(object):
                     return False
                 else:
                     return True
-
-
-
-

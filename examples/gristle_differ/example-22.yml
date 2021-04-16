@@ -1,20 +1,20 @@
 # This example shows what a full-featured diff towards the bottom of a data warehouse pipeline
-# using most of the program's features would look like.  
+# using most of the program's features would look like.
 #
 # In this configuration the new file is transformed to match the target table, with extra empty
 # fields added that we'll use for assignments here.  The old file is extracted from the table
 # with the same fields populated.
-# 
+#
 # The following features are involved in this config:
 # * Col_names provides so they can be used rather than field positions
-# * Ignore_cols used to ensure that the unpopulated fields from the new file do not affect 
+# * Ignore_cols used to ensure that the unpopulated fields from the new file do not affect
 #   the diff operation.
 # * Variables are defined here that are added to the records. However, this is really for a
-#   demonstration.  In normal usage these would be passed to the program as command line 
+#   demonstration.  In normal usage these would be passed to the program as command line
 #   options or environmental variables rather than here though.
-#     * var_pkey - holds the current maximum primary key value and will be used to add new ones 
+#     * var_pkey - holds the current maximum primary key value and will be used to add new ones
 #     * var_batch_id - holds a unique identifier for this batch of rows
-#     * var_extract_ts - holds the timestamp when the extract was produced from the source 
+#     * var_extract_ts - holds the timestamp when the extract was produced from the source
 # * A unique sequence, the primary key, is incremented and assigned to each row.
 # * start_timestamps are assigned in most cases by copying the updated_ts, but since the delete
 #   rows don't have an updated time the var_extract_ts is used instead.
@@ -45,7 +45,7 @@ ignore_cols: [comments,      # won't be on new file - just our debugging comment
               pkey]          # won't be on new file
 compare_cols: []
 
-# Variables can be used to input data into each run, probably mostly conveniently through 
+# Variables can be used to input data into each run, probably mostly conveniently through
 # command-line options or envvars:
 variables: [var_pkey:89,
             var_batch_id:101,

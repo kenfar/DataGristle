@@ -199,4 +199,3 @@ def create_complex_test_file(temp_dir, delimiter=',', duplicate=False, header=Fa
         f.write(delimiter.join(['3', 'aaa', 'b23']) + '\n')
         f.write(delimiter.join(['3', 'aaa', 'b23']) + '\n')
     return fqfn
-

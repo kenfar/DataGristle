@@ -433,5 +433,3 @@ def create_test_file(temp_dir, delimiter=',', duplicate=False, header=False):
         if duplicate:
             f.write(delimiter.join(['3', 'aaa', 'b23']) + '\n')
     return fqfn
-
-
