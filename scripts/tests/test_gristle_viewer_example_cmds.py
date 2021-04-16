@@ -36,4 +36,3 @@ class TestExamples(test_tools.TestExamples):
         self.example_dir = EXAMPLE_DIR
         self.script_dir = SCRIPT_DIR
         self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
-

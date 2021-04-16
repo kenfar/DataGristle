@@ -157,6 +157,7 @@ class Config(object):
         """
         verbosity: str
 
+
     def __init__(self,
                  app_name: str,
                  short_help: str,

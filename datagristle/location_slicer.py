@@ -68,7 +68,9 @@ def is_sequence(val: Any) -> bool:
 
 class SpecProcessor(object):
 
-    def __init__(self, spec: str, spec_name: str) -> None:
+    def __init__(self,
+                 spec: List[str],
+                 spec_name: str) -> None:
 
         self._spec_validator(spec)      # will raise exceptions if any exist
         self.orig_spec = spec
@@ -77,7 +79,7 @@ class SpecProcessor(object):
         self.adj_spec: List[Optional[str]] = None  # spec with negatives converted
 
 
-    def _is_negative_spec(self, spec: str) -> bool:
+    def _is_negative_spec(self, spec: List[str]) -> bool:
         """ Checks for negative values in a single spec lists.
             Each string within the list will be searched for a '-' sign.
         """
@@ -87,7 +89,8 @@ class SpecProcessor(object):
         return False
 
 
-    def _spec_validator(self, spec: str) -> bool:
+    def _spec_validator(self,
+                        spec: List[str]) -> bool:
         """ Checks for any invalid specifications.
         """
         if not is_sequence(spec):
