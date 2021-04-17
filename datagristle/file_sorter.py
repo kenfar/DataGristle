@@ -78,22 +78,22 @@ class SortKeyRecord:
         """ The input string looks like this: '5SF 3ir 2ff'
         """
         if len(key_field) < 3:
-            raise ValueError(f'Invalid key field value: {key_field} - expect 3+ characters')
+            raise ValueError('Invalid key field value: {key_field} - expect 3+ characters')
 
         try:
             self.order = self.order_transform[key_field[-1].lower()]
         except KeyError:
-            raise ValueError(f"Invalid key order value - should be forward or reverse ")
+            raise ValueError("Invalid key order value - should be forward or reverse ")
 
         try:
             self.type = self.type_transform[key_field[-2].lower()]
         except KeyError:
-            raise ValueError(f"Invalid key type value - should be str, int or float ")
+            raise ValueError("Invalid key type value - should be str, int or float ")
 
         try:
             self.position = int(key_field[:-2])
         except ValueError:
-            raise ValueError(f"Invalid key position value - should be an integer")
+            raise ValueError("Invalid key position value - should be an integer")
 
 
 
