@@ -36,36 +36,36 @@ DATE_INVALID_CHARS = ['`', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')'
                       ';', '"', "'", '<', '>', '?',
                       'q', 'z', 'x']
 DATE_FORMATS = [ # <scope>, <pattern>, <format>
-                ("year",   "YYYY",           "%Y"),
-                ("month",  "YYYYMM",         "%Y%m"),
-                ("month",  "YYYY-MM",        "%Y-%m"),
-                ("month",  "YYYYMM",         "%Y%m"),
-                ("day",    "YYYYMMDD",       "%Y%m%d"),
-                ("day",    "YYYY-MM-DD",     "%Y-%m-%d"),
-                ("day",    "DD/MM/YY",       "%d/%m/%y"),
-                ("day",    "DD-MM-YY",       "%d-%m-%y"),
-                ("day",    "MM/DD/YY",       "%m/%d/%y"),
-                ("day",    "MM-DD-YY",       "%m-%d-%y"),
-                ("day",    "MM/DD/YYYY",     "%m/%d/%Y"),
-                ("day",    "MM-DD-YYYY",     "%m-%d-%Y"),
-                ("day",    "DD/MM/YYYY",     "%d/%m/%Y"),
-                ("day",    "DD-MM-YYYY",     "%d-%m-%Y"),
-                ("day",    "MON DD,YYYY",    "%b %d,%Y"),
-                ("day",    "MON DD, YYYY",   "%b %d, %Y"),
-                ("day",    "MONTH DD,YYYY",  "%B %d,%Y"),
-                ("day",    "MONTH DD, YYYY", "%B %d, %Y"),
-                ("day",    "DD MON,YYYY",    "%d %b,%Y"),
-                ("day",    "DD MON, YYYY",   "%d %b, %Y"),
-                ("day",    "DD MONTH,YYYY",  "%d %B,%Y"),
-                ("day",    "DD MONTH, YYYY", "%d %B, %Y"),
-                ("hour",   "YYYY-MM-DD HH",  "%Y-%m-%d %H"),
-                ("hour",   "YYYY-MM-DD-HH",  "%Y-%m-%d-%H"),
-                ("minute", "YYYY-MM-DD HH:MM", "%Y-%m-%d %H:%M"),
-                ("minute", "YYYY-MM-DD-HH.MM", "%Y-%m-%d-%H.%M"),
-                ("second", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S"),
-                ("second", "YYYY-MM-DD-HH.MM.SS", "%Y-%m-%d-%H.%M.%S"),
-                # ".<microsecond>" at end is manually handled below
-                ("microsecond", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S") ]
+    ("year", "YYYY", "%Y"),
+    ("month", "YYYYMM", "%Y%m"),
+    ("month", "YYYY-MM", "%Y-%m"),
+    ("month", "YYYYMM", "%Y%m"),
+    ("day", "YYYYMMDD", "%Y%m%d"),
+    ("day", "YYYY-MM-DD", "%Y-%m-%d"),
+    ("day", "DD/MM/YY", "%d/%m/%y"),
+    ("day", "DD-MM-YY", "%d-%m-%y"),
+    ("day", "MM/DD/YY", "%m/%d/%y"),
+    ("day", "MM-DD-YY", "%m-%d-%y"),
+    ("day", "MM/DD/YYYY", "%m/%d/%Y"),
+    ("day", "MM-DD-YYYY", "%m-%d-%Y"),
+    ("day", "DD/MM/YYYY", "%d/%m/%Y"),
+    ("day", "DD-MM-YYYY", "%d-%m-%Y"),
+    ("day", "MON DD,YYYY", "%b %d,%Y"),
+    ("day", "MON DD, YYYY", "%b %d, %Y"),
+    ("day", "MONTH DD,YYYY", "%B %d,%Y"),
+    ("day", "MONTH DD, YYYY", "%B %d, %Y"),
+    ("day", "DD MON,YYYY", "%d %b,%Y"),
+    ("day", "DD MON, YYYY", "%d %b, %Y"),
+    ("day", "DD MONTH,YYYY", "%d %B,%Y"),
+    ("day", "DD MONTH, YYYY", "%d %B, %Y"),
+    ("hour", "YYYY-MM-DD HH", "%Y-%m-%d %H"),
+    ("hour", "YYYY-MM-DD-HH", "%Y-%m-%d-%H"),
+    ("minute", "YYYY-MM-DD HH:MM", "%Y-%m-%d %H:%M"),
+    ("minute", "YYYY-MM-DD-HH.MM", "%Y-%m-%d-%H.%M"),
+    ("second", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S"),
+    ("second", "YYYY-MM-DD-HH.MM.SS", "%Y-%m-%d-%H.%M.%S"),
+    # ".<microsecond>" at end is manually handled below
+    ("microsecond", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S")]
 
 
 
@@ -180,7 +180,7 @@ def _get_field_type_rule(types: List[str]) -> Optional[str]:
     result = None
     if len(types) == 0:
         result = 'unknown'
-    elif len(types)  == 1:
+    elif len(types) == 1:
         result = types[0]
     elif len(types) == 2:
         if not type_set.symmetric_difference(float_set_2i):

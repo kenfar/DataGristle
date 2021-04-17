@@ -9,7 +9,7 @@ from pprint import pprint as pp
 from typing import Dict, Tuple, List, Union, Any, Optional, IO
 
 import datagristle.common as comm
-from datagristle.common import abort as abort
+from datagristle.common import abort
 import datagristle.csvhelper as csvhelper
 
 OUTPUT_TYPES = ['insert', 'delete', 'same', 'chgnew', 'chgold']
@@ -19,7 +19,7 @@ RecordType = List[str]
 
 
 
-class FileDelta(object):
+class FileDelta:
     """" Compares two files based on a common key writing results to multiple
          output files.
 
@@ -314,7 +314,7 @@ class FileDelta(object):
 
 
 
-class DeltaAssignments(object):
+class DeltaAssignments:
     """ Manages the post-delta transformations (aka assignments).
     """
 
