@@ -14,3 +14,9 @@ repos:
                --ignore-missing-imports,
                --no-strict-optional,
                --scripts-are-modules ]
+-   repo: https://github.com/pre-commit/mirrors-pylint
+    rev: v2.4.2
+    hooks:
+    -   id: pylint
+        args: [--disable=all,
+               --enable=unused-import]
