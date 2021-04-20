@@ -267,6 +267,7 @@ class MetadataManager(object):
         self.collection_id = collection_id
         self.instance_id = None
         self.analysis_profile_id = None
+        self.ca_id = None
         self.md = metadata.GristleMetaData()
 
         if self.md.collection_tools.getter(collection_id=collection_id) is None:
@@ -297,6 +298,7 @@ class MetadataManager(object):
             ca_has_header=dialect.has_header,
             ca_quoting=csvhelper.get_quote_name(dialect.quoting).lower(),
             ca_quote_char=dialect.quotechar)
+
 
     def write_field_results(self,
                             field_analysis: field_determinator.FieldDeterminator,
@@ -357,12 +359,13 @@ class MetadataManager(object):
                 fa_mean_len=fa_mean_len,
             )
 
-            if field_analysis.field_freqs[sub] is not None:
-                sorted_list = field_analysis.get_top_freq_values(sub, limit=100)
-                for value, count in sorted_list:
-                    fav_id = self.md.field_analysis_value_tools.setter(fa_id=fa_id,
-                                                                       fav_value=value,
-                                                                       fav_count=count)
+            #fixme: orphaned code - what happened here?  Need to figure this out
+            #if field_analysis.field_freqs[sub] is not None:
+            #    sorted_list = field_analysis.get_top_freq_values(sub, limit=100)
+            #    for value, count in sorted_list:
+            #        fav_id = self.md.field_analysis_value_tools.setter(fa_id=fa_id,
+            #                                                           fav_value=value,
+            #                                                           fav_count=count)
 
 
 class OutputWriter(object):
@@ -490,7 +493,7 @@ class OutputWriter(object):
             return
 
         self.write_string("Top Values", indent=4)
-        for i, (key, val) in enumerate(sorted_list):
+        for (key, val) in sorted_list:
             if self.output_format == "readable":
                 self.write_string(key, f"x {val} occurrences", indent=8, key_width=30)
             else:

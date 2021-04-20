@@ -176,6 +176,7 @@ class ConfigManager(conf.Config):
         """
         self.generate_csv_dialect_config()
 
+        # pylint: disable=no-member
         out_dialect = csvhelper.get_dialect('-',  # type: ignore
             self.config['out_delimiter']   or self.nconfig.dialect.delimiter,  # type: ignore
             self.config['out_quoting'] or csvhelper.get_quote_name(self.nconfig.dialect.quoting), # type: ignore

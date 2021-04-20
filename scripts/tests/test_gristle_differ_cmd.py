@@ -647,7 +647,6 @@ class TestCommandLine(object):
                       ['new-row', '13a', '45b', 'same'],
                       ['same-row', '8', '18', 'same']]
         fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
-        fn = basename(fqfn2)
 
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
@@ -720,7 +719,6 @@ class TestCommandLine(object):
                       ['del-row', '6', '16'],
                       ['same-row', '8', '18']]
         fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        fn1 = basename(fqfn1)
         file2_recs = [['chg-row', '4', '1a'],
                       ['new-row', '13a', '45b'],
                       ['same-row', '8', '18']]
@@ -750,7 +748,6 @@ class TestCommandLine(object):
                       ['del-row', '6', '16'],
                       ['same-row', '8', '18']]
         fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        fn1 = basename(fqfn1)
         file2_recs = [['chg-row', '4', '1a'],
                       ['new-row', '13a', '45b'],
                       ['same-row', '8', '18']]
@@ -780,7 +777,6 @@ class TestCommandLine(object):
         file1_recs = [['chg-row', '4', '14'],
                       ['del-row', '6', '16']]
         fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        fn1 = basename(fqfn1)
         file2_recs = [['chg-row', '4', '1a'],
                       ['new-row', '13a', '45b']]
         fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
@@ -810,7 +806,6 @@ class TestCommandLine(object):
                       ['chg-row', '4', '14'],
                       ['del-row', '6', '16']]
         fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        fn1 = basename(fqfn1)
         file2_recs = [['rowkey' , 'col1', 'col2'],
                       ['chg-row', '4', '1a'],
                       ['new-row', '13a', '45b']]
@@ -849,7 +844,6 @@ class TestCommandLine(object):
                       ['chg-row', '4', '14'],
                       ['del-row', '6', '16']]
         fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        fn1 = basename(fqfn1)
         file2_recs = [['badkey' , 'badcol1', 'badcol2'],
                       ['chg-row', '4', '1a'],
                       ['new-row', '13a', '45b']]
@@ -886,7 +880,6 @@ class TestCommandLine(object):
                       ['chg-row', '4', '14'],
                       ['del-row', '6', '16']]
         fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        fn1 = basename(fqfn1)
         file2_recs = [['badkey' , 'badcol1', 'badcol2'],
                       ['chg-row', '4', '1a'],
                       ['new-row', '13a', '45b']]

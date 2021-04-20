@@ -244,8 +244,7 @@ class ProcessDirs(object):
                 if self.recursive:
                     self.walk(pjoin(src_dir, sub_dir), pjoin(dst_dir, sub_dir))
                 if not os.listdir(pjoin(src_dir, sub_dir)):
-                    self.merger.keep_dest(pjoin(src_dir, sub_dir),
-                                          pjoin(dst_dir, sub_dir), None)
+                    self.merger.keep_dest(pjoin(src_dir, sub_dir), None)
                     log_reason('source_dir empty - will be removed')
 
             else:
@@ -257,7 +256,7 @@ class ProcessDirs(object):
         for file_name in files:
             self.sfile_cnt += 1
             if file_name.startswith('.'):
-               self.sdotfile_cnt += 1
+                self.sdotfile_cnt += 1
             self._merge_source_file(pjoin(src_dir, file_name), dst_dir)
 
         if src_dir == self.starting_src_dir:
@@ -325,7 +324,7 @@ class ProcessDirs(object):
     def generate_dest_counts(self):
         ddir_cnt  = 0
         dfile_cnt = 0
-        for _, value in self.dest_dirs.iteritems():
+        for _, value in self.dest_dirs.items():
             if value > 0:
                 ddir_cnt += 1
                 dfile_cnt += value
@@ -335,7 +334,7 @@ class ProcessDirs(object):
 
     def remove_top_source(self):
         if not os.listdir(self.starting_src_dir):
-            self.merger.keep_dest(self.starting_src_dir, None, None)
+            self.merger.keep_dest(self.starting_src_dir, None)
             log_reason('source_dir empty - will be removed')
 
 
@@ -385,7 +384,7 @@ class MergeFiles(object):
         self.delete_source_cnt = 0
 
 
-    def keep_dest(self, src_path, dst_path, reason=''):
+    def keep_dest(self, src_path, reason=''):
         self._delete_source(src_path, rsn=reason)
 
 
@@ -572,39 +571,6 @@ def create_unique_file_name(dir_name, file_name):
         file_name = '%s.%d%s' % (base_name, i, extension)
 
     return file_name
-
-
-
-
-
-def abort(summary, details, rc=1):
-    """ Creates formatted error message within a box of = characters
-        then exits.
-    """
-
-    #---prints top line:
-    print('=' * 79)
-
-    #---prints message within = characters, assumes it is kinda short:
-    print('=== ', end='')
-    print('%-69.69s' % summary, end='')
-    print(' ===')
-    if logging:
-        logging.critical(summary)
-
-    #---prints exception msg, breaks it into multiple lines:
-    for i in range(int(math.ceil(len(details)/68))):
-        print('=== ', end='')
-        print('%-69.69s' % details[i*68:(i*68)+68], end='')
-        print(' ===')
-    if logging:
-        logging.critical(details)
-
-    #---prints bottom line:
-    print('=' * 79)
-
-    sys.exit(rc)
-
 
 
 

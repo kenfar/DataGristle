@@ -47,9 +47,9 @@ compare_cols: []
 
 # Variables can be used to input data into each run, probably mostly conveniently through
 # command-line options or envvars:
-variables: [var_pkey:89,
-            var_batch_id:101,
-            var_extract_ts:2021-04-02T18:00:00]
+variables: ['var_pkey:89',
+            'var_batch_id:101',
+            'var_extract_ts:2021-04-02T18:00:00']
 
 already_sorted: false
 already_uniq: false

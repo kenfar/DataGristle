@@ -17,11 +17,15 @@ in the source code root directory for the full language or refer to it here:
 
 Copyright 2014-2021 Ken Farmer
 """
+# pylint: disable=anomalous-backslash-in-string
+# pylint: disable=global-statement
+
 import argparse
 import errno
 import re
 import operator
 import os
+from pprint import pprint as pp
 import shutil
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
@@ -94,7 +98,7 @@ class ProcessDir(object):
 
         self._validate_config_section(kwargs)
 
-        self.name = kwargs['name']
+        #self.name = kwargs['name']
         self.gather_kwargs = kwargs['gathering_phase']
 
         if 'inclusion_phase' in kwargs:
@@ -115,7 +119,7 @@ class ProcessDir(object):
 
     def _validate_config_section(self, kwargs):
         self.kwargs = kwargs
-        config_validator = ConfigValidator(kwargs)
+        pp(kwargs)
         if (not os.path.exists(self.kwargs['gathering_phase']['dir'])
                 or  not os.path.isdir(self.kwargs['gathering_phase']['dir'])):
             comm.abort('ERROR: invalid config file',
@@ -182,24 +186,15 @@ class FileActioner(object):
         if self.test_run:
             return
 
-        if os.path.isfile(fqfn):
-            try:
+        try:
+            if os.path.isfile(fqfn):
                 os.remove(fqfn)
-            except OSError as e:
-                print(repr(e))
-                if e[0] == errno.ENOENT:
-                    logger.warning('Delete failed - file already gone: %s' % fqfn)
-                else:
-                    comm.abort('delete failed: %s' % fqfn, 'Delete msg: %s' % e)
-        elif os.path.isdir(fqfn):
-            try:
+            elif os.path.isdir(fqfn):
                 shutil.rmtree(fqfn)
-            except OSError as e:
-                print(repr(e))
-                if e[0] == errno.ENOENT:
-                    logger.warning('Delete failed - dir already gone: %s' % fqfn)
-                else:
-                    comm.abort('delete failed: %s' % fqfn, 'Delete msg: %s' % e)
+        except FileNotFoundError as err:
+            logger.warning('Delete failed - file already gone: %s' % fqfn)
+        except OSError as err:
+            comm.abort('delete failed: %s' % fqfn, 'Delete msg: %s' % repr(err))
 
     def _action_list(self, fqfn):
         logger.debug('%s on file %s' % ('list', self.file_name))
@@ -222,7 +217,7 @@ class FileAnalyzer(object):
                                    'days':'d', 'day':'d',
                                    'weeks':'w', 'week':'w',
                                    'months':'M', 'month':'M',
-                                   'year':'y', 'year':'y'}
+                                   'years':'y', 'year':'y'}
 
     def qualify_file(self, fn, fqfn):
         """
@@ -241,10 +236,6 @@ class FileAnalyzer(object):
 
         if not self._check_inclusion_phase(fn, fqfn):
             logger.debug('file disqualified in inclusion_phase: %s' % fqfn)
-            return False
-
-        if not self._check_exclusion_phase(fn, fqfn):
-            logger.debug('file disqualified in exclusion_phase: %s' % fqfn)
             return False
 
         logger.debug('file qualified: %s' % fqfn)
@@ -280,14 +271,6 @@ class FileAnalyzer(object):
             return os.path.isfile(fqfn)
         else:
             return os.path.isdir(fqfn)
-
-
-
-    def _check_exclusion_phase(self, fn, fqfn):
-        # exclude if symbolic link
-        # exclude if root?
-        # exclude if
-        return True   # true == passed checks
 
 
 
@@ -472,8 +455,8 @@ def get_config(arg_config_file=None, arg_config_name=None):
                    'User must provide either a config-fn or config-name', 1)
 
     if not os.path.exists(config_fn):
-        abort('ERROR: config file does not exist',
-              'file not found: %s' % config_fn, 1)
+        comm.abort('ERROR: config file does not exist',
+                   'file not found: %s' % config_fn, 1)
 
     config_fp = open(config_fn)
     config = yaml.safe_load(config_fp)
@@ -483,7 +466,7 @@ def get_config(arg_config_file=None, arg_config_name=None):
 
 
 
-class ConfigValidator(object):
+class ConfigValidator:
     """ Validates the config file - to ensure that it is correctly
         structured.   This includes checks on its structure, keywords, and
         values.
@@ -499,10 +482,9 @@ class ConfigValidator(object):
         #                         'blank',
         #                         'dg_type', 'dg_minimum', 'dg_maximum']
         self.config = config
-        self._validate_document(config)
+        self._validate_document()
 
-
-    def _validate_document(self, config):
+    def _validate_document(self):
         """ Validates a document - with a few high-level checks, and by
             running _validate_field for each field validation set.
         """
