@@ -485,6 +485,7 @@ class ConfigManager(configulator.Config):
         """
         self.generate_csv_dialect_config()
 
+        # pylint: disable=no-member
         if self.nconfig.col_type in ('each', 'all'):
             self.update_config('col_set', [0])
         else:

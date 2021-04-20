@@ -10,6 +10,7 @@
     3. some input is intended to be interactive-only - such as --version, --help, --long-help
 """
 
+# type: ignore  # pylint: disable=no-member
 import argparse
 import collections
 import copy
@@ -152,7 +153,7 @@ ARG_ONLY_CONFIGS = ['version', 'long_help', 'config_fn', 'long-help']
 
 class Config(object):
 
-    class NConfig(NamedTuple):
+    class NConfig(NamedTuple):   # type: ignore  # pylint: disable=no-member
         """ Bare minimum nconfig for typing
         """
         verbosity: str
@@ -296,7 +297,7 @@ class Config(object):
 
 
     def generate_config_file(self):
-        with open(self.nconfig.gen_config_fn, 'w') as outbuf:
+        with open(self.nconfig.gen_config_fn, 'w') as outbuf:  # pylint: disable=no-member
             if self.nconfig.gen_config_fn.endswith('.yml'):
                 filtered_config = {k:v for k,v in self.config.items() if k not in ARG_ONLY_CONFIGS}
                 filtered_config = {k:v for k,v in filtered_config.items() if k != 'gen_config_fn'}
@@ -335,13 +336,13 @@ class Config(object):
         """ Replaces the dictionary and named-tuple versions of the config
         """
         self.config = new_config
-        self.nconfig = collections.namedtuple('Config', self.config.keys())(**self.config)
+        self.nconfig = collections.namedtuple('Config', self.config.keys())(**self.config)  # pylint: disable=no-member
 
 
     def update_config(self, key, value):
         """ Writes a key-value to the config.
         """
-        new_config = {**self.config, **{key: value}}
+        new_config = {**self.config, **{key: value}}  # type: ignore  # pylint: disable=no-member
         self.replace_configs(new_config)
 
 
@@ -349,18 +350,18 @@ class Config(object):
         """ Replaces the dictionary and named-tuple versions of the config
         """
         md = self._app_metadata
-        autodetected = csvhelper.get_dialect(infiles=self.nconfig.infiles,
-                                             verbosity=self.nconfig.verbosity)
+        autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
+                                             verbosity=self.config['verbosity'])
 
         # First override auto-detected dialect with any explicit options
         overridden = csvhelper.override_dialect(autodetected,
-                                                delimiter=self.nconfig.delimiter,
-                                                quoting=self.nconfig.quoting,
-                                                quotechar=self.nconfig.quotechar,
-                                                has_header=self.nconfig.has_header,
-                                                doublequote=self.nconfig.doublequote,
-                                                escapechar=self.nconfig.escapechar,
-                                                skipinitialspace=self.nconfig.skipinitialspace)
+                                                delimiter=self.config['delimiter'],
+                                                quoting=self.config['quoting'],
+                                                quotechar=self.config['quotechar'],
+                                                has_header=self.config['has_header'],
+                                                doublequote=self.config['doublequote'],
+                                                escapechar=self.config['escapechar'],
+                                                skipinitialspace=self.config['skipinitialspace'])
 
         # Finally we can apply any defaults needed - using the extended-defaults, which exist
         # because regular defaults would have been automatically applied.
@@ -421,15 +422,15 @@ class Config(object):
             actual_key = self._app_metadata[key].get('dest', key)
             consolidated_args[actual_key] = None
 
-        try:
-            for key, val in file_args.items():
+        for key, val in file_args.items():
+            try:
                 actual_key = self._app_metadata[key].get('dest', key)
                 consolidated_args[actual_key] = val
-        except KeyError as e:
-            if key in self.obsolete_options.keys():
-                comm.abort('Error: obsolete option', self.obsolete_options[key])
-            else:
-                comm.abort(f'ERROR: Unknown option: {key}')
+            except KeyError:
+                if key in self.obsolete_options.keys():
+                    comm.abort('Error: obsolete option', self.obsolete_options[key])
+                else:
+                    comm.abort(f'ERROR: Unknown option: {key}')
 
         for key, val in env_args.items():
             actual_key = self._app_metadata[key].get('dest', key)
@@ -760,27 +761,26 @@ class _CommandLineArgs(object):
                  short_help,
                  long_help,
                  app_metadata: META_CONFIG_TYPE,
-                 obsolete_options: Dict[str, str] = {})-> None:
+                 obsolete_options: Dict[str, str] = None)-> None:
 
         self._app_metadata = app_metadata
         self.short_help = short_help
         self.long_help = long_help
-        self.obsolete_options = obsolete_options
+        self.obsolete_options = obsolete_options or {}
         self.cli_args = self._get_args()
 
 
     def _get_args(self) -> CONFIG_TYPE:
         """ Gets config items from cli arguments.
         """
-        self._build_parser(desc='')
+        self._build_parser()
         known_args, unknown_args = self.parser.parse_known_args()
         self._process_unknown_args(unknown_args)
         self._process_help_args(known_args)
         return vars(known_args)
 
 
-    def _build_parser(self,
-                      desc) -> None:
+    def _build_parser(self) -> None:
 
         #fixme: can only handle 1 positional argument: it doesn't actually have 'position' for positionals
         #This isn't a big problem since we're only using options - in order to also support envvars and

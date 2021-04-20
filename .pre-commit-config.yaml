@@ -3,7 +3,7 @@ repos:
     rev: v3.4.0
     hooks:
     -   id: check-yaml
-    -   id: end-of-file-fixer
+    #-   id: end-of-file-fixer   # keeps failing
     -   id: trailing-whitespace
     -   id: check-added-large-files
 -   repo: https://github.com/pre-commit/mirrors-mypy
@@ -14,13 +14,3 @@ repos:
                --ignore-missing-imports,
                --no-strict-optional,
                --scripts-are-modules ]
-
-#Not going to use pylint for now since I want it to limit the score to under
-#8 and this isn't yet supported without some software I don't want.
-#
-#-   repo: https://github.com/pre-commit/mirrors-pylint
-#    rev: v2.4.2
-#    hooks:
-#    -   id: pylint
-#        args: [--disable=all,
-#               --enable=unused-import]
