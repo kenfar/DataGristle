@@ -1,11 +1,10 @@
 Introduction
 ============
 
-| Datagristle is a toolbox of tough and flexible data connectors and
-  analyzers.
-| It’s kind of an interactive mix between ETL and data analysis
-  optimized for rapid analysis and manipulation of a wide variety of
-  data at the command line.
+Datagristle is a toolbox of tough and flexible command line tools for
+working with data. It’s kind of an interactive mix between ETL and data
+analysis optimized for rapid analysis and manipulation of a wide variety
+of data at the command line.
 
 More info is on the DataGristle wiki here:
 `wiki <https://github.com/kenfar/DataGristle/wiki>`__
@@ -119,8 +118,8 @@ gristle_slicer
       $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)
-      Many more examples can be found here:
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
+   Many more examples can be found here:
+      https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
 gristle_freaker
 ===============
@@ -163,8 +162,8 @@ gristle_freaker
                    column number, second is a unique value from the column,
                    and the third is the number of times that value appeared.
                    This output is repeated for each column.
-      Many more examples can be found here:
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
+   Many more examples can be found here:
+      https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
 gristle_profiler
 ================
@@ -268,8 +267,8 @@ gristle_profiler
                -888                                     x 62 occurrences
                0                                        x 37 occurrences
 
-      Many more examples can be found here:
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
+   Many more examples can be found here:
+      https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
 gristle_converter
 =================
@@ -284,8 +283,8 @@ gristle_converter
         --out-delimiter='|'  --out-has-no-header --out-quoting quote_none --out-escapechar='\'
             Copies input file to output while completely changing every aspect
             of the csv dialect.
-      Many more examples can be found here:
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
+   Many more examples can be found here:
+      https://github.com/kenfar/DataGristle/tree/master/examples/gristle_converter
 
 gristle_validator
 =================
@@ -368,6 +367,8 @@ gristle_viewer
                    In addition to what was described in the first example this
                    adds explicit csv dialect overrides.
 
+   Many more examples can be found here:
+      https://github.com/kenfar/DataGristle/tree/master/examples/gristle_viewer
 
 gristle_differ
 ==============
@@ -419,8 +420,8 @@ gristle_differ
              that will get incremented and used for new rows in the insert, delete and
              chgnew files.
 
-      Many more examples can be found here:
-          https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
+   Many more examples can be found here:
+       https://github.com/kenfar/DataGristle/tree/master/examples/gristle_differ
 
 gristle_metadata
 ================
@@ -437,7 +438,6 @@ gristle_metadata
       $ gristle_metadata --table element --action put --prompt
                    Allows the user to input a row into the element table and
                    prompts the user for all fields necessary.
-
 
 gristle_md_reporter
 ===================
