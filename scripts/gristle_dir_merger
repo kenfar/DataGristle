@@ -384,7 +384,7 @@ class MergeFiles(object):
         self.delete_source_cnt = 0
 
 
-    def keep_dest(self, src_path, reason=''):
+    def keep_dest(self, src_path, dst_path, reason=''):
         self._delete_source(src_path, rsn=reason)
 
 

@@ -1,3 +1,9 @@
+V0.2.1 - 2021-04
+================
+
+-  Improvement: added gristle_sorter as a script to install in the
+   system so that it is available to users.
+
 V0.2.0 - 2021-04
 ================
 
