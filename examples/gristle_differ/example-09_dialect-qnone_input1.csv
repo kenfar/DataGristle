@@ -1,0 +1,6 @@
+num	alpha 	alphanumeric
+1	bbb	simple1
+4 	ddd 	embedded\	delimiter
+3 	ccc 	simple2
+2 	aaa 	embedded\
+newline

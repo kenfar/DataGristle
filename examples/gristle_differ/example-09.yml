@@ -1,0 +1,14 @@
+infiles: [example-09_dialect-qnone_input1.csv,
+          example-09_dialect-qnone_empty_input2.csv]
+out-dir: /tmp/example-09_actual_output_files
+key-cols: [2]
+verbosity: debug
+
+quoting: quote_all
+delimiter: tab
+escapechar: \
+has_header: true
+
+quotechar: null
+doublequote: null
+skipinitialspace: null

@@ -64,6 +64,22 @@ class TestExamples(test_tools.TestExamples):
     def test_example_07(self):
         self.run_example_config('example-07')
 
+    def test_example_08(self):
+        self.run_example_config('example-08')
+
+    def test_example_09(self):
+        self.run_example_config('example-09')
+
+    #----------------------------------------------------------------------------
+    # Test the diff features
+    #----------------------------------------------------------------------------
+
+    def test_example_21(self):
+        self.run_example_config('example-21')
+
+    def test_example_22(self):
+        self.run_example_config('example-22')
+
 
     def run_example_config(self, example_number):
         test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))

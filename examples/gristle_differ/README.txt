@@ -6,7 +6,8 @@ CSV Dialect Examples:
     Example-05: quote_all with escapechar to ignore embedded quotes
     Example-06: quote_minimum
     Example-07: quote_nonnumeric
-    Example-08: quote_none with tab delimiter
+    Example-08: quote_none with tab delimiter - using delimiter=\t
+    Example-08: quote_none with tab delimiter - using delimiter=tab
 
 Data Warehousing Functionality Examples:
     Example-21: Simple diff for an extract process with no assignments.

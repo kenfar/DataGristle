@@ -34,26 +34,29 @@ FIELDS = {'pkid':0, 'vid':1, 'from_epoch':2, 'to_epoch':3, 'foo':4, 'bar':5, 'de
 
 
 
-class TestMillionRows(object):
+class TestBigFile(object):
     """ Assumptions:
         - oldfile is from a data warehouse destination
         - newfile is from a transactional source
     """
     def setup_method(self, method):
+
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
         self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
 
-        start_time = time.time()
+        self.start_time = time.time()
         print('\ncreating test files - starting')
-        self.files = CreateTestFiles(1000000, self.temp_dir)
-        print('creating test files - done with duration of %d seconds' % int(time.time() - start_time))
+        self.files = CreateTestFiles(100000, self.temp_dir)
+        print('creating test files - done with duration of %d seconds' % int(time.time() - self.start_time))
+
+        self.run_differ()
+
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
 
-    def test_assign_colname_list(self):
-        """
-        """
+
+    def run_differ(self):
         file1 = pjoin(self.temp_dir, 'old.csv')
         file2 = pjoin(self.temp_dir, 'new.csv')
         config = Config(self.temp_dir)
@@ -66,7 +69,6 @@ class TestMillionRows(object):
         config.add_property({'temp_dir': self.temp_dir})
         config.add_property({'infiles': [file1, file2]})
 
-        #pylint: disable=bad-whitespace
         assignments = [
             ['delete', 'del_flag',  'literal', 'd',          None, None],
             ['delete', 'to_epoch',  'special', 'start_epoch',None, None],
@@ -80,47 +82,48 @@ class TestMillionRows(object):
         for ass in assignments:
             config.add_assignment(ass[0], ass[1], ass[2], ass[3], ass[4], ass[5])
         config.write_config()
-        #pylint: enable=bad-whitespace
 
-        start_time = int(time.time())
+        self.start_time = int(time.time())
         cmd = ''' %s
                   --config-fn %s
                   --variables 'start_epoch:%s'
               ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn,
-                     start_time)
-        runner = envoy.run(cmd)
-        print(runner.std_out)
-        print(runner.std_err)
+                     self.start_time)
+        self.runner = envoy.run(cmd)
+        print(self.runner.std_out)
+        print(self.runner.std_err)
         print('running gristle_differ - starting')
-        print('running gristle_differ - done with duration of %d seconds' % int(time.time() - start_time))
+        print('running gristle_differ - done with duration of %d seconds' % int(time.time() - self.start_time))
         print('running assertions     - starting')
         self._print_counts()
 
-        #--- first check return code
-        assert runner.status_code == 0
 
-        #--- next check that the right number of rows got into each file:
+    def test_return_code(self):
+        assert self.runner.status_code == 0
+
+
+    def test_files_have_correct_number_of_rows(self):
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.insert'), self.dialect) == self.files.insert_cnt
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.delete'), self.dialect) == self.files.delete_cnt
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.same'), self.dialect) == self.files.same_cnt
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.chgold'), self.dialect) == self.files.chg_cnt
         assert get_file_count(pjoin(self.temp_dir, 'new.csv.chgnew'), self.dialect) == self.files.chg_cnt
 
-        #--- next check that the assignments were applied:
 
-        #--- delete file checks ---
+    def test_delete_file_assignments(self):
         for row in csv.reader(fileinput.input(pjoin(self.temp_dir, 'new.csv.delete')), self.dialect):
             assert row[6] == 'd'              # del_flag
-            assert row[3] == str(start_time)  # to_epoch
+            assert row[3] == str(self.start_time)  # to_epoch
         fileinput.close()
 
+    def test_insert_file_assignments(self):
         #--- insert file checks ---
         ins_pkid_list = []
         ins_vid_list = []
         min_pkid = None
         min_vid = None
         for row in csv.reader(fileinput.input(pjoin(self.temp_dir, 'new.csv.insert')), self.dialect):
-            assert row[FIELDS['from_epoch']] == str(start_time)
+            assert row[FIELDS['from_epoch']] == str(self.start_time)
             ins_pkid_list.append(int(row[FIELDS['pkid']]))
             ins_vid_list.append(int(row[FIELDS['vid']]))
             min_pkid = get_min_id(min_pkid, row[FIELDS['pkid']])
@@ -133,20 +136,25 @@ class TestMillionRows(object):
         assert min_pkid > self.files.old_rec_cnt
         assert min_vid > self.files.old_rec_cnt
 
-        #--- chgold file checks ---
+    def test_chgold_file_assignments(self):
         for row in csv.reader(fileinput.input(pjoin(self.temp_dir, 'new.csv.chgold')), self.dialect):
-            assert row[FIELDS['to_epoch']] == str(start_time)
+            assert row[FIELDS['to_epoch']] == str(self.start_time)
             assert row[FIELDS['del_flag']] == ''
         fileinput.close()
 
-        #--- chgnew file checks ---
+    def test_chgnew_file_assignments(self):
+        ins_vid_list = []
+        for row in csv.reader(fileinput.input(pjoin(self.temp_dir, 'new.csv.insert')), self.dialect):
+            ins_vid_list.append(int(row[FIELDS['vid']]))
+ 
         chgnew_vid_list = []
         for row in csv.reader(fileinput.input(pjoin(self.temp_dir, 'new.csv.chgnew')), self.dialect):
-            assert row[FIELDS['from_epoch']] == str(start_time)
+            assert row[FIELDS['from_epoch']] == str(self.start_time)
             assert row[FIELDS['del_flag']] == ''
             chgnew_vid_list.append(int(row[FIELDS['vid']]))
         fileinput.close()
         assert len(set(ins_vid_list).intersection(chgnew_vid_list)) == 0, 'dup vids across files'
+
 
     def _print_counts(self):
         actual_insert_cnt = get_file_count(pjoin(self.temp_dir, 'new.csv.insert'), self.dialect)
