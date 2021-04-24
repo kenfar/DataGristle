@@ -21,8 +21,8 @@
 # * A delete_flag of 'd' is assigned to each deleted row
 # * A batch_id variable is assigned to all rows.
 #
-infiles: [example-22_sensor_old.csv,
-          example-22_sensor_new.csv]
+infiles: [example-22_sensor_old_input2.csv,
+          example-22_sensor_new_input1.csv]
 out-dir: /tmp/example-22_actual_output_files
 temp_dir: null
 
