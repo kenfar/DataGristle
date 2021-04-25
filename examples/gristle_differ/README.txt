@@ -14,3 +14,7 @@ Data Warehousing Functionality Examples:
     Example-22: Complex post-transform diff of incoming new file vs an extract from the warehouse
                 that combines all assignments for a typical data warehouse: delete flag, batch_id,
                 primary-key generation, and timestamps.
+
+Other use cases:
+    Example-23: Simple diff for a non-warehouse comparison of two files.  Gets column-names 
+                from the file header, and skips deduping for performance.
