@@ -115,17 +115,17 @@ def abort(summary: str,
         print('=' * 79)
 
     def print_empty_line():
-        print('=== ', end='')
-        print(' ' * 71, end='')
-        print(' ===')
+        print('= ', end='')
+        print(' ' * 75, end='')
+        print(' =')
 
     def print_text_line(text):
         text = repr(text)
         if text:
-            for i in range(int(math.ceil(len(text)/74))):
-                print('=== ', end='')
-                print('%-71.71s' % text[i*70:(i*70)+70], end='')
-                print(' ===')
+            for i in range(int(math.ceil(len(text)/75))):
+                print('= ', end='')
+                print('%-75.75s' % text[i*75:(i*75)+75], end='')
+                print(' =')
 
     print('')
     print_solid_line()
