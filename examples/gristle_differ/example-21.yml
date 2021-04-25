@@ -4,8 +4,8 @@
 # Not many features of the diff are used other than being csv dialect aware, and referencing columns
 # by name rather than field position.
 #
-infiles: [example-21_sensor_old_input2.csv,
-          example-21_sensor_new_input1.csv]
+infiles: [example-21_sensor_old_input1.csv,
+          example-21_sensor_new_input2.csv]
 out-dir: /tmp/example-21_actual_output_files
 temp_dir: null
 

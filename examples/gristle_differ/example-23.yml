@@ -1,0 +1,51 @@
+# This example shows a simple diff just used to compare two csv files. 
+#
+# They may be an old file and a newer file, or they may two different by identically structured 
+# files. 
+#
+# It won't use the features more oriented towards data warehousing like Varibles & Assignments,
+# but will use features like getting column names from the file headers, and bypassing sorting
+# and deduping since these are assumed already done in this particular case.
+# 
+
+# The order of files is important - the first file provided should be the old file the second
+# the new file.  This is important in order to ensure that a missing record in the new file is
+# written to the delete file rather than the insert file for example.
+infiles: [example-23_sensor_old_input1.csv,
+          example-23_sensor_new_input2.csv]
+
+out-dir: /tmp/example-23_actual_output_files
+temp_dir: null
+
+col_names: []
+key-cols: [org, sensor_id]
+
+# Lets compare a subset of columns - ignoring those we leave out (all those at the bottom of the 
+# col_names list).  
+ignore_cols: []
+compare_cols: [site,       
+               sensor_ip,
+               sensor_brand,
+               sensor_ver,
+               sensor_type]
+
+# Variables aren't needed for a simple csv comparison
+variables: []
+
+# Files have headers and so are not eligible for skipping sorting, but they are already verified
+# to be unique so we'll skip this step to improve performance.
+already_sorted: false
+already_uniq: true
+
+# Assignments aren't needed for a simple csv comparison
+assignments:  []
+
+verbosity: debug
+
+quoting: quote_none
+delimiter: '|'
+has_header: true
+quotechar: null
+escapechar: null
+doublequote: null
+skipinitialspace: null

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import csv
+from pprint import pprint as pp
 from os.path import isdir
 from os.path import dirname, basename
 from os.path import join  as pjoin
-import csv
 from typing import Tuple, List
 
 import datagristle.csvhelper as csvhelper
@@ -21,6 +22,10 @@ class CSVDeDuper(object):
     Raises:
         ValueError: if key fields are invalid (ex: non-numeric)
         ValueError: if out_dir is invalid (ex: doesn't exist)
+
+    Notes:
+        - Does not consider headers - will drop one if there are duplicates,
+          but will otherwise write it out if it exists.
     """
 
     def __init__(self,
