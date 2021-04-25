@@ -83,6 +83,9 @@ class TestExamples(test_tools.TestExamples):
     def test_example_23(self):
         self.run_example_config('example-23')
 
+    def test_example_24(self):
+        self.run_example_config('example-24')
+
 
     def run_example_config(self, example_number):
         test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))

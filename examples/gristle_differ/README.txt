@@ -18,3 +18,5 @@ Data Warehousing Functionality Examples:
 Other use cases:
     Example-23: Simple diff for a non-warehouse comparison of two files.  Gets column-names 
                 from the file header, and skips deduping for performance.
+    Example-24: Simple diff for a non-warehouse comparison of two files - that uses column 
+                positions rather than names.
