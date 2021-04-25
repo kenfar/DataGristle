@@ -239,19 +239,19 @@ def delta_runner(nconfig,
 
     #--- sort & dedupe the two source files -----
     f0_sorted_uniq_fn, _ = prep_file(nconfig.infiles[0],
-                                     dialect,
-                                     keys_off0,
-                                     adj_temp_dir,
-                                     adj_out_dir,
-                                     nconfig.already_sorted,
-                                     nconfig.already_uniq)
+                                     dialect=dialect,
+                                     key_cols=keys_off0,
+                                     temp_dir=adj_temp_dir,
+                                     out_dir=adj_out_dir,
+                                     already_sorted=nconfig.already_sorted,
+                                     already_uniq=nconfig.already_uniq)
     f1_sorted_uniq_fn, _ = prep_file(nconfig.infiles[1],
-                                     dialect,
-                                     keys_off0,
-                                     adj_temp_dir,
-                                     adj_out_dir,
-                                     nconfig.already_sorted,
-                                     nconfig.already_uniq)
+                                     dialect=dialect,
+                                     key_cols=keys_off0,
+                                     temp_dir=adj_temp_dir,
+                                     out_dir=adj_out_dir,
+                                     already_sorted=nconfig.already_sorted,
+                                     already_uniq=nconfig.already_uniq)
 
     #--- finally, run the comparison ---
     delta.compare_files(f0_sorted_uniq_fn, f1_sorted_uniq_fn,
@@ -318,6 +318,8 @@ def prep_file(filename: str,
 
     # Sort the file if necessary
     if already_sorted:
+        if dialect.has_header:
+            abort('Invalid config: already_sorted and has-header')
         sorted_fn = filename
     elif (dialect.quoting == csv.QUOTE_NONE
           and dialect.escapechar is None
@@ -339,7 +341,7 @@ def prep_file(filename: str,
         dups_removed = sorter.stats['recs_deduped']    # type: ignore
         already_uniq = True
 
-    # Dedupe the file if necessary
+    # Dedupe the file if necessary - only for the CSVSorter:
     if already_uniq:
         final_name = sorted_fn
     else:
