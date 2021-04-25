@@ -235,78 +235,6 @@ class TestCommandLine(object):
         assert self.file_cnt(fn2, '.same') == 1
 
 
-    def test_with_multi_cols(self):
-        """
-        """
-        self.dialect.delimiter = '\t'
-        file1_recs = [['chg-row', '4', '14', 'foo'],
-                      ['del-row', '6', '16', 'foo'],
-                      ['same-row', '8', '18', 'bar']]
-        fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-
-        file2_recs = [['chg-row', '4', '1a', 'foo'],
-                      ['new-row', '13a', '45b', 'baz'],
-                      ['same-row', '8', '18', 'bar']]
-        fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
-        fn2 = basename(fqfn2)
-
-        config = Config(self.temp_dir)
-        config.add_property({'delimiter':'tab'})
-        config.add_property({'has_header':False})
-        config.add_property({'quoting':'quote_none'})
-        config.add_property({'key_cols': ['0', '1']})
-        config.add_property({'compare_cols': ['2', '3']})
-        config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'infiles': [fqfn1, fqfn2]})
-        config.write_config()
-
-        cmd = ''' %s   \
-                  --config-fn %s \
-              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
-        executor(cmd)
-
-        assert self.file_cnt(fn2, '.insert') == 1
-        assert self.file_cnt(fn2, '.delete') == 1
-        assert self.file_cnt(fn2, '.chgold') == 1
-        assert self.file_cnt(fn2, '.chgnew') == 1
-        assert self.file_cnt(fn2, '.same') == 1
-
-    def test_colnames_and_colnum_mix_for_ignorecol(self):
-        """
-        """
-        self.dialect.delimiter = '\t'
-        file1_recs = [['chg-row', '4', '14', 'same'],
-                      ['del-row', '6', '16', 'same'],
-                      ['same-row', '8', '18', 'same']]
-        fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-
-        file2_recs = [['chg-row', '4', '1a', 'same'],
-                      ['new-row', '13a', '45b', 'same'],
-                      ['same-row', '8', '18', 'same']]
-        fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
-
-        config = Config(self.temp_dir)
-        config.add_property({'delimiter':'tab'})
-        config.add_property({'has_header':False})
-        config.add_property({'quoting':'quote_none'})
-        config.add_property({'col_names': ['col0', 'col1', 'col2', 'col3']})
-        config.add_property({'key_cols': ['col0']})
-        config.add_property({'ignore_cols': ['col1', 3]})
-        config.add_property({'temp_dir': self.temp_dir})
-        config.add_property({'infiles': [fqfn1, fqfn2]})
-        config.write_config()
-
-        cmd = ''' %s   \
-                  --config-fn %s \
-              ''' % (pjoin(script_dir, 'gristle_differ'), config.config_fqfn)
-        executor(cmd)
-
-        assert self.file_cnt(fqfn2, '.insert') == 1
-        assert self.file_cnt(fqfn2, '.delete') == 1
-        assert self.file_cnt(fqfn2, '.chgold') == 1
-        assert self.file_cnt(fqfn2, '.chgnew') == 1
-        assert self.file_cnt(fqfn2, '.same') == 1
-
 
     def test_option_already_sorted(self):
         """
@@ -330,36 +258,6 @@ class TestCommandLine(object):
                                         fqfn1, fqfn2, self.temp_dir)
         executor(cmd)
 
-        assert self.file_cnt(fn2, '.insert') == 1
-        assert self.file_cnt(fn2, '.delete') == 1
-        assert self.file_cnt(fn2, '.chgold') == 1
-        assert self.file_cnt(fn2, '.chgnew') == 1
-        assert self.file_cnt(fn2, '.same') == 1
-
-
-    def test_option_already_uniq(self):
-        """
-        """
-        file1_recs = [['chg-row', '4', '14'],
-                      ['del-row', '6', '16'],
-                      ['same-row', '8', '18']]
-        fqfn1 = generate_test_file(self.temp_dir, 'old_', '.csv', self.dialect, file1_recs)
-        file2_recs = [['chg-row', '4', '1a'],
-                      ['new-row', '13a', '45b'],
-                      ['same-row', '8', '18']]
-        fqfn2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
-        fn2 = basename(fqfn2)
-        assert isfile(fqfn1)
-        assert isfile(fqfn2)
-
-        cmd = ''' %s \
-                  --infiles %s %s \
-                  -k 0 -c 2 --temp-dir %s \
-                  --already-uniq''' % (pjoin(script_dir, 'gristle_differ'),
-                                       fqfn1, fqfn2, self.temp_dir)
-        executor(cmd)
-
-        pp(os.listdir(self.temp_dir))
         assert self.file_cnt(fn2, '.insert') == 1
         assert self.file_cnt(fn2, '.delete') == 1
         assert self.file_cnt(fn2, '.chgold') == 1
