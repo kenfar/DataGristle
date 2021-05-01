@@ -232,7 +232,7 @@ class CSVPythonSorter(object):
 
         start_time = time.time()
 
-        # Run it once to initiate - especially for unit testing.
+        # Run it once to initiate
         isduplicate(None)
 
         if self.keep_header and self.header_rec:

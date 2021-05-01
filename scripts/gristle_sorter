@@ -25,7 +25,7 @@ Main Options:
                         by separating groups of 3 with a comma or including all within quotes and
                         separating the groups with a space.
                         For example: -k 0sf will sort the 0 column as a string with a forward order.
-   -D, --dedupe         Removes duplicates.
+   -D, --dedupe         Removes duplicates.  Default is False.
                         Directs program to remove duplicates - based on the key separately
                         provided. Note that this will treat 0 and 0.0 the same if the keys are
                         specified as numeric.  However, case differences will not be ignored.
@@ -38,11 +38,14 @@ Main Options:
 
 
 Examples:
-    $ gristle_sorter -i foo.csv -o foo_sorted.csv -k '3sf,1ir,2ir'
-    $ gristle_sorter -i foo.csv -o foo_sorted.csv -k '3sf,1ir,2ir' -d '|' --quotechar
+    $ gristle_sorter -i foo.csv -o foo_sorted.csv -k 3sf 1ir 2ir
+        This example sorts a file by three keys, each of a different type, one in forward
+        and the othre keys in reverse direction.
+
     $ gristle_sorter -i dialect_quoteall_escaped_delimiter.csv -k 0sf \
                      -d ',' --quoting quote_all --escapechar '\' --has-header
-      This example sorts a file with escaped delimiters within a quoted string
+        This example adds explicit csv dialect info.
+
     Many more examples can be found here:
         https://github.com/kenfar/DataGristle/tree/master/examples/gristle_sorter
 
