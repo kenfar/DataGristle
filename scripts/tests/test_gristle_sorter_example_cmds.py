@@ -57,3 +57,10 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_07(self):
         self.run_example_config('example-07')
+
+    def test_example_21_multi_keys_and_dedupe(self):
+        self.run_example_config('example-21')
+
+    def test_example_22_many_keys_and_orders(self):
+        self.run_example_config('example-22')
+

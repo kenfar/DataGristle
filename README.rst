@@ -165,6 +165,30 @@ gristle_freaker
    Many more examples can be found here:
       https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
+gristle_sorter
+==============
+
+::
+
+   Provides a csv dialect-aware sort that can safely handle delimiters, quotes, and newlines
+   within fields.
+
+   Examples:
+      $ gristle_sorter -i sample.csv -k 0sf -D
+                   Sort file by the 0-position string column in forward (ascending) direction,
+                   dedupes the results and writes them to stdout.  The csv dialect is auto-
+           detected.
+      $ gristle_sorter -i sample.csv --keys 0sf 3ir --outfile sample_out.csv
+                   Sorts file by the 0-position column string in forward direction followed
+           by the position 3 column integer in reverse direction.  The output is not
+           deduped, but is written to a file.  The csv dialect is auto-detected.
+      $ gristle_sorter -i sample.csv -k 0sf -d '|' -q quote_all --doublequote --has-header
+                   Sort file by the 0-position string column in forward (ascending) direction,
+                   specifies the csv dialect explicitly, including that the file has a header
+                   that will be written to the top of the output file.
+   Many more examples can be found here:
+      https://github.com/kenfar/DataGristle/tree/master/examples/gristle_sorter
+
 gristle_profiler
 ================
 

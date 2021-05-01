@@ -1,0 +1,17 @@
+# Typical sort example that features main capabilities:
+#     * sorts by multiple columns - one ascencing, one descending, one a string, the other an int
+#     * dedupes while working
+
+infiles: [example-21_multiple_keys_and_dedupe_input.csv]
+outfile: /tmp/example-21_actualout.csv
+keys: [0if, 1sr]
+dedupe: true
+verbosity: debug
+
+quoting: quote_none
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+quotechar: null
+skipinitialspace: null

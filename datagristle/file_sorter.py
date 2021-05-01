@@ -34,9 +34,9 @@ class SortKeysConfig(object):
             self.key_fields.append(sort_key_rec)
 
 
-    def multi_string_orders(self) -> bool:
-        string_orders = set([x.order for x in self.key_fields if x.type == 'str'])
-        return bool(len(string_orders) > 1)
+    def multi_orders(self) -> bool:
+        orders = set([x.order for x in self.key_fields])
+        return bool(len(orders) > 1)
 
 
     def get_primary_order(self) -> str:
@@ -45,9 +45,9 @@ class SortKeysConfig(object):
         """
         string_order = list(set([x.order for x in self.key_fields if x.type == 'str']))
         if string_order:
-            return string_order[0]
+            return 'forward' if 'forward' in string_order else 'reverse'
         else:
-            return self.key_fields[0].order # yep, returning any ole arbitrary type
+            return 'forward' if 'forward' in [x.order for x in self.key_fields] else 'reverse'
 
     def get_sort_fields(self) -> List[int]:
         """ Get the list of columns to sort the self.keys list on
@@ -139,7 +139,7 @@ class CSVPythonSorter(object):
         """
         self._load_file_and_prepare_data()
 
-        if self.sort_key_config.multi_string_orders():
+        if self.sort_key_config.multi_orders():
             self._multipass_sort()
         else:
             self._singlepass_sort()
@@ -194,12 +194,13 @@ class CSVPythonSorter(object):
 
 
     def _singlepass_sort(self) -> None:
-        """ Sorts the keys in a single direction
+        """ Faster sort that has limited ability to support multiple keys and orders
         """
         #print('\n ------------------ Sort Phase: -------------------------')
         start_time = time.time()
         sort_fields = self.sort_key_config.get_sort_fields()
         primary_order = self.sort_key_config.get_primary_order()
+
         if primary_order == 'forward':
             self.keys.sort(key=itemgetter(*sort_fields))
         else:
@@ -208,7 +209,7 @@ class CSVPythonSorter(object):
 
 
     def _multipass_sort(self) -> None:
-        """ Sorts keys in multiple directions
+        """ Slower sort that can handle keys with multiple orders
         """
         #print('\n ------------------ Multi-Pass Sort Phase: -------------------------')
         start_time = time.time()
@@ -224,7 +225,6 @@ class CSVPythonSorter(object):
 
 
     def _write_file_and_dedupe(self) -> None:
-        #note: it is no longer writing the header record out
         #print('\n ------------------ Write Phase: -------------------------')
         keys = self.keys
         all_recs = self.all_recs
@@ -232,7 +232,7 @@ class CSVPythonSorter(object):
 
         start_time = time.time()
 
-        # Run it once to initiate - especially for unit testing.
+        # Run it once to initiate
         isduplicate(None)
 
         if self.keep_header and self.header_rec:
@@ -262,7 +262,8 @@ def isduplicate(key: Tuple[Any, ...],
 def transform(field_value: str,
               key_field: SortKeyRecord,
               primary_order: str) -> Union[str, int, float]:
-
+    """ transforms fields into their type: int, float, str
+    """
     transformed_field_value: Union[str, int, float] = None
     if key_field.type == 'str':
         transformed_field_value = field_value
@@ -273,12 +274,7 @@ def transform(field_value: str,
     else:
         raise ValueError(f'Invalid key-field type: {key_field.type}')
 
-    if (primary_order == 'forward'
-            and key_field.type in ('int', 'float')
-            and key_field.order == 'reverse'):
-        return transformed_field_value * -1
-    else:
-        return transformed_field_value
+    return transformed_field_value
 
 
 
