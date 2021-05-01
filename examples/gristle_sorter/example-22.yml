@@ -1,0 +1,23 @@
+# Typical sort example that features main capabilities:
+#     * sorts by multiple columns - with multiple types and orders
+#     * dedupes while working
+
+infiles: [example-22_many_keys_and_orders_input.csv]
+outfile: /tmp/example-22_actualout.csv
+
+dedupe: true
+verbosity: normal
+
+# 0sf = position 0, string, and forward direction
+# 1if = position 1, integer, and forward direction
+# 2sr = position 2, string, and reverse direction
+# 3fr = position 3, float, and reverse direction
+keys: [0sf, 1if, 2sr, 3fr]
+
+quoting: quote_none
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+quotechar: null
+skipinitialspace: null

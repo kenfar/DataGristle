@@ -85,12 +85,18 @@ class TestSortkeysConfig(object):
         sort_keys = mod.SortKeysConfig(['1sf','2ir'])
         assert sort_keys.key_fields == [mod.SortKeyRecord('1sf'), mod.SortKeyRecord('2ir')]
 
-    def test_multi_string_orders(self):
+    def test_multi_orders(self):
         sort_keys = mod.SortKeysConfig(['1sf','2sr'])
-        assert sort_keys.multi_string_orders() is True
+        assert sort_keys.multi_orders() is True
 
         sort_keys = mod.SortKeysConfig(['1sf','2sf'])
-        assert sort_keys.multi_string_orders() is False
+        assert sort_keys.multi_orders() is False
+
+        sort_keys = mod.SortKeysConfig(['1sf'])
+        assert sort_keys.multi_orders() is False
+
+        sort_keys = mod.SortKeysConfig(['0if','1sr'])
+        assert sort_keys.multi_orders() is True
 
     def test_get_primary_order(self):
         sort_keys = mod.SortKeysConfig(['1sf','2ir'])
@@ -233,7 +239,7 @@ class TestCSVPythonSorter(object):
         rec = ['foo', 3, 'bar', 9]
         primary_order = 'forward'
         pp(sorter._get_sort_values(sort_keys_config.key_fields, rec, primary_order))
-        assert sorter._get_sort_values(sort_keys_config.key_fields, rec, primary_order) == ['foo', -3]
+        assert sorter._get_sort_values(sort_keys_config.key_fields, rec, primary_order) == ['foo', 3]
 
 
 
@@ -269,33 +275,9 @@ class TestTransform(object):
         sort_key_rec = mod.SortKeyRecord('2if')
         assert mod.transform('3', sort_key_rec, 'forward') == 3
 
-    def test_integer_reversed(self):
-        sort_key_rec = mod.SortKeyRecord('2ir')
-        assert mod.transform('3', sort_key_rec, 'forward') == -3
-
-    def test_integer_reversed_but_primary_is_already_reverse(self):
-        sort_key_rec = mod.SortKeyRecord('2ir')
-        assert mod.transform('3', sort_key_rec, 'reversed') == 3
-
     def test_float(self):
         sort_key_rec = mod.SortKeyRecord('2ff')
         assert mod.transform('3.2', sort_key_rec, 'forward') == 3.2
-
-    def test_float_reversed(self):
-        sort_key_rec = mod.SortKeyRecord('2fr')
-        assert mod.transform('3.2', sort_key_rec, 'forward') == -3.2
-
-    def test_float_reversed_but_primary_is_already_reverse(self):
-        sort_key_rec = mod.SortKeyRecord('2fr')
-        assert mod.transform('3.2', sort_key_rec, 'reversed') == 3.2
-
-    def test_string_reversed(self):
-        sort_key_rec = mod.SortKeyRecord('2sr')
-        assert mod.transform('3.2', sort_key_rec, 'forward') == '3.2'
-
-    def test_string_reversed_but_primary_is_already_reverse(self):
-        sort_key_rec = mod.SortKeyRecord('2sr')
-        assert mod.transform('3.2', sort_key_rec, 'reversed') == '3.2'
 
 
 
