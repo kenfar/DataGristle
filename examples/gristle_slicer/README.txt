@@ -6,3 +6,9 @@ CSV Dialect Examples:
     Example-05: quote_all with escapechar to ignore embedded quotes
     Example-06: quote_minimum
     Example-07: quote_nonnumeric
+
+gristle_slicer Feature Examples:
+    Example-21: includes individual rows and columns
+    Example-22: includes ranges of rows and columns
+    Example-23: excludes ranges of rows and columns
+    Example-24: combines inclusions and exclusions
