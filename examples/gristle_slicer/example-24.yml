@@ -1,0 +1,22 @@
+# Simple slicer that demonstrates the following features:
+#     * selects columns by first including ranges and then excluding from them
+#     * selects rows by first including ranges and then excluding from them
+
+infiles: [example-24_inclusion_and_exclusion_input.csv]
+outfile: /tmp/example-24_actualout.csv
+verbosity: normal
+
+columns:   ':1, -1:'   # includes all columns but the first and the last
+excolumns: '3:5'       # then exclude some columns in the middle
+
+records:   '1:6'       # includes rows from 1-5
+exrecords: '3:5'       # then excludes rows 2 and 4 in the middle
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_header: false
+
+doublequote: null
+quotechar: null
+skipinitialspace: null

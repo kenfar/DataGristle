@@ -141,11 +141,11 @@ And examples of all csv utilities can be found here:
        $ gristle_sorter -i sample.csv -k 0sf -D
                     Sort file by the 0-position string column in forward (ascending) direction,
                     dedupes the results and writes them to stdout.  The csv dialect is auto-
-		    detected.
+                    detected.
        $ gristle_sorter -i sample.csv --keys 0sf 3ir --outfile sample_out.csv
                     Sorts file by the 0-position column string in forward direction followed
- 		    by the position 3 column integer in reverse direction.  The output is not
-		    deduped, but is written to a file.  The csv dialect is auto-detected.
+                    by the position 3 column integer in reverse direction.  The output is not
+                    deduped, but is written to a file.  The csv dialect is auto-detected.
        $ gristle_sorter -i sample.csv -k 0sf -d '|' -q quote_all --doublequote --has-header
                     Sort file by the 0-position string column in forward (ascending) direction,
                     specifies the csv dialect explicitly, including that the file has a header
@@ -387,7 +387,7 @@ And examples of all csv utilities can be found here:
             - But in this case it gets the majority of its configuration items from
               the config file ('foo.yml').  This could include key columns, comparison
               columns, ignore columns, post-delta transformations, and other information.
-	    - The two variables options are used to pass in user-defined variables that
+            - The two variables options are used to pass in user-defined variables that
               can be referenced by the post-delta transformations.  The batchid will get
               copied into a batch_id column for every file, and the pkid is a sequence
               that will get incremented and used for new rows in the insert, delete and

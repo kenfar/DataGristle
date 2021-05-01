@@ -1,0 +1,21 @@
+# Simple slicer that demonstrates the following features:
+#     * excludes columns by ranges
+#     * excludes rows by ranges
+
+infiles: [example-23_exclusion_input.csv]
+outfile: /tmp/example-23_actualout.csv
+verbosity: normal
+
+# The column spec only features inclusions - and anything outside of these 
+# inclusions is an implied exclusion.
+excolumns: ':2, -2:'   # excludes the first two and last two columns
+exrecords: '2:5'       # excludes rows 2, 3, and 4
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_header: false
+
+doublequote: null
+quotechar: null
+skipinitialspace: null
