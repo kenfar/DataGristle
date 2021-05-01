@@ -55,3 +55,16 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_07(self):
         self.run_example_config('example-07')
+
+
+    def test_example_21_indiv_rows_and_cols(self):
+        self.run_example_config('example-21')
+
+    def test_example_22_ranges(self):
+        self.run_example_config('example-22')
+
+    def test_example_23_exclusions(self):
+        self.run_example_config('example-23')
+
+    def test_example_24_inclusions_and_exclusions(self):
+        self.run_example_config('example-24')

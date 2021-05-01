@@ -2,7 +2,7 @@
 #     * includes columns by individual offsets
 #     * includes rows by individual offsets
 
-infiles: [example-21_rows_and_cols_input.csv]
+infiles: [example-21_individual_cols_and_rows_input.csv]
 outfile: /tmp/example-21_actualout.csv
 verbosity: normal
 
