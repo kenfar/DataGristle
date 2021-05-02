@@ -1,0 +1,16 @@
+# Demonstrates the use of the col_type=all results in which the program
+# creates a distribution for a key composed of all fields.
+
+infiles: [example-25_coltype-all_input.csv]
+outfile: /tmp/example-25_actualout.csv
+verbosity: normal
+col_type: all
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_header: true
+
+doublequote: null
+quotechar: null
+skipinitialspace: null

@@ -131,11 +131,14 @@ def main() -> int:
     # in which they'll run the following loop once for each column.  Other col_types
     # will just run a single iteration of the loop.
     total_read_cnt = 0
+    file_cnt = 1
     while True:
         input_handler = file_io.InputHandler(nconfig.infiles,
                                              nconfig.dialect)
+
         output_handler = file_io.OutputHandler(nconfig.outfile,
-                                               input_handler.dialect)
+                                               dialect=None,
+                                               mode='wt' if file_cnt == 1 else 'a')
 
         colset_freaker = ColSetFreaker(input_handler,
                                        output_handler,
@@ -149,7 +152,8 @@ def main() -> int:
         colset_freaker.create_freq_from_column_set(nconfig.col_set)
         total_read_cnt += colset_freaker.read_cnt
 
-        colset_freaker.write_output(nconfig.outfile,
+        #colset_freaker.write_output(nconfig.outfile,
+        colset_freaker.write_output(colset_freaker.output_handler,
                                     nconfig.write_limit,
                                     nconfig.col_set[0])
 
@@ -293,14 +297,12 @@ class ColSetFreaker(object):
 
 
     def write_output(self,
-                     output: str,
+                     output: Any,
                      write_limit: int,
                      col_set_num: int):
         if output == '-':
             outfile = sys.stdout
             #outfile = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', newline='')
-        else:
-            outfile = open(output, 'a')
 
         write_cnt = 0
         for key_tup in self.sort_freq:
@@ -308,10 +310,7 @@ class ColSetFreaker(object):
             if write_limit and write_cnt > write_limit:
                 break
             row = self.create_output_row(key_tup, col_set_num)
-            outfile.write(row)
-
-        if output != '-':
-            outfile.close()
+            output.write_rec(row)
 
 
     def create_output_row(self,

@@ -1,0 +1,15 @@
+infiles: [example-23_sampling_input.csv]
+outfile: /tmp/example-23_actualout.csv
+columns: [2]
+verbosity: normal
+sampling_method: interval
+sampling_rate: 2
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_header: true
+
+doublequote: null
+quotechar: null
+skipinitialspace: null
