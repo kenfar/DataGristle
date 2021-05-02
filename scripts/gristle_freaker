@@ -131,8 +131,9 @@ def main() -> int:
     # in which they'll run the following loop once for each column.  Other col_types
     # will just run a single iteration of the loop.
     total_read_cnt = 0
-    file_cnt = 1
+    file_cnt = 0
     while True:
+        file_cnt += 1
         input_handler = file_io.InputHandler(nconfig.infiles,
                                              nconfig.dialect)
 
