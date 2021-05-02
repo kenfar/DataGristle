@@ -106,7 +106,8 @@ class OutputHandler(object):
                  dialect: csvhelper.Dialect,
                  default_output=sys.stdout,
                  dry_run: bool = False,
-                 random_out: float = 1.0):
+                 random_out: float = 1.0,
+                 mode: str = 'wt'):
 
         assert default_output in (sys.stdout, sys.stderr), "invalid default_output: {}".format(default_output)
         assert 0.0 <= random_out <= 1.0
@@ -119,11 +120,24 @@ class OutputHandler(object):
         if self.output_filename == '-':
             self.outfile = default_output
         else:
-            self.outfile = open(output_filename, "wt", encoding='utf-8', newline='')
+            self.outfile = open(output_filename, mode, encoding='utf-8', newline='')
         if dialect:
             self.writer = csv.writer(self.outfile, dialect=dialect)
         else:
-            self.writer = None
+            self.writer = self.noncsv_writer(self.outfile)  # type: ignore
+
+
+    class noncsv_writer:
+        """ Provides a simple writer with a csv-like signature
+        """
+
+        def __init__(self,
+                     outbuf):
+            self.outbuf = outbuf
+
+        def writerow(self,
+                     record):
+            self.outbuf.write(record)
 
 
     def write_rec(self,

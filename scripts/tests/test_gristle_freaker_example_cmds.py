@@ -57,3 +57,20 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_07(self):
         self.run_example_config('example-07')
+
+
+    def test_example_21_single_col(self):
+        self.run_example_config('example-21')
+
+    def test_example_22_multi_col(self):
+        self.run_example_config('example-22')
+
+    def test_example_23_sampling(self):
+        self.run_example_config('example-23')
+
+    def test_example_24_coltype_each(self):
+        self.run_example_config('example-24')
+
+    def test_example_25_coltype_all(self):
+        self.run_example_config('example-25')
+

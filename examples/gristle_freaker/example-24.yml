@@ -1,0 +1,16 @@
+# Demonstrates the use of the col_type=each results in which the program
+# creates a distribution for each column of the file.
+
+infiles: [example-24_coltype-each_input.csv]
+outfile: /tmp/example-24_actualout.csv
+verbosity: normal
+col_type: each
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_header: true
+
+doublequote: null
+quotechar: null
+skipinitialspace: null
