@@ -151,9 +151,8 @@ def main() -> int:
                                        nconfig.sort_col,
                                        nconfig.max_key_len)
         colset_freaker.create_freq_from_column_set(nconfig.col_set)
-        total_read_cnt += colset_freaker.read_cnt
+        total_read_cnt += colset_freaker.input_handler.rec_cnt
 
-        #colset_freaker.write_output(nconfig.outfile,
         colset_freaker.write_output(colset_freaker.output_handler,
                                     nconfig.write_limit,
                                     nconfig.col_set[0])
@@ -203,7 +202,6 @@ class ColSetFreaker(object):
         self.field_freq: Dict[Any, Any] = {}
         self.sort_freq: List[Any] = None
         self.truncated: bool = None
-        self.read_cnt = 0
 
 
     def create_freq_from_column_set(self, col_set: List[int]) -> None:
@@ -233,18 +231,14 @@ class ColSetFreaker(object):
                 - truncated  - True/False boolean that indicates if the dict was truncated
                 Tested via test-harness
         """
-        self.read_cnt = 0
         freq_cnt = 0
         self.field_freq = {}
         self.truncated = False
 
         def process_rec(record: List[str]) -> None:
             nonlocal freq_cnt
-            self.read_cnt += 1
-            if self.read_cnt == 1 and self.input_handler.dialect.has_header:
-                return
             if self.sampling_method == 'interval':
-                if self.read_cnt % self.sampling_rate != 0:
+                if (self.input_handler.rec_cnt+1) % self.sampling_rate != 0:
                     return
             key = self._create_key(record, columns)
             if key:

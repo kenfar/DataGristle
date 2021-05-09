@@ -80,7 +80,8 @@ def main():
     recnum = nconfig.recnum
     while True:
         input_handler = file_io.InputHandler(nconfig.infiles,
-                                             nconfig.dialect)
+                                             nconfig.dialect,
+                                             return_header=True)
         if not field_names:
             field_names = get_field_names(nconfig.infiles, input_handler.dialect)
         rec = get_rec(input_handler, recnum)

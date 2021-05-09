@@ -18,22 +18,47 @@ import datagristle.csvhelper as csvhelper
 
 
 class InputHandler(object):
+    """ Input File Reader
+
+    Example usage:
+        input_handler = file_io.InputHandler(nconfig.infiles,
+                                             nconfig.dialect,
+                                             return_header=True)
+    Notes:
+        - dialect: if None will not treat file as csv
+        - dialect.has_header if True it will read the header into self.header, then skip
+          ahead to the next record and return that.
+        - if return_header==True then the first read will be of the header record.  This is
+          helpful for programs that need it - like gristle_slicer & gristle_viewer.  Otherwise,
+          the header is not returned, but simply kept within self.header.
+    """
+
 
     def __init__(self,
                  files: List[str],
-                 dialect: csvhelper.Dialect) -> None:
+                 dialect: csvhelper.Dialect,
+                 return_header: bool = False) -> None:
 
         self.dialect = dialect
+        self.header: List[str] = []
+        self.return_header = return_header
         self.files = files
         self.files_read = 0
-        self.rec_cnt = 0
-        self.curr_file_rec_cnt = 0
+        self.rec_cnt = 0                # does not count header records
+        self.curr_file_rec_cnt = 0      # does not count header records
         self.infile = None
-        self.input_stream = None
-        self._open_next_input_file()
+
+        # If dialect.has_header==True then it will try to read the header.  If the file is empty
+        # we could get a stop iteration here.  Instead lets just leave self.header empty and let 
+        # the calling program pick up StopIteration on its first read.
+        try:
+            self._open_next_input_file()
+        except StopIteration:
+            pass
 
 #    No longer used - probably because seeking around a csv doesn't work well - because
-#    of newlines
+#    of newlines.  But lets keep it here for a bit, because we may be adding other file types soon.
+#    self.input_stream = None
 #    def seek(self, offset):
 #        return self.input_stream.seek(offset)
 #    def tell(self):
@@ -41,22 +66,26 @@ class InputHandler(object):
 
     def _open_next_input_file(self):
 
-        if self.files[0] == '-' and self.files_read == 0:
+        def handle_header():
+            if self.dialect.has_header and not self.return_header:
+                self.header = self.csv_reader.__next__()
 
+        if self.files[0] == '-' and self.files_read == 0:
+            # This will only run once
             if os.isatty(0):  # checks if data was piped into stdin
                 sys.exit(errno.ENODATA)
-
-            self.input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
-            self.csv_reader = csv.reader(self.input_stream, dialect=self.dialect)
+            input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', newline='')
+            self.csv_reader = csv.reader(input_stream, dialect=self.dialect)
             self.infile = sys.stdin
             self.files_read = 1
-            self.curr_file_rec_cnt = 1
-
+            self.curr_file_rec_cnt = 0
+            handle_header()
         elif self.files_read < len(self.files):
             self.infile = open(self.files[self.files_read - 1], 'rt', newline='', encoding='utf-8')
             self.csv_reader = csv.reader(self.infile, dialect=self.dialect)
             self.files_read += 1
-            self.curr_file_rec_cnt = 1
+            self.curr_file_rec_cnt = 0
+            handle_header()
         else:
             raise StopIteration
 
@@ -73,15 +102,14 @@ class InputHandler(object):
             try:
                 return self._read_next_rec()
             except StopIteration:   # end of file, loop around and get another
-                if self.files[0] == '-' and self.files_read == 1 and self.curr_file_rec_cnt == 1:
+                if self.files[0] == '-' and self.files_read == 1 and self.curr_file_rec_cnt == 0:
                     sys.exit(errno.ENODATA)
                 self.infile.close()
                 self._open_next_input_file()  # will raise StopIteration if out of files
 
 
     def _read_next_rec(self):
-        if self.curr_file_rec_cnt == 0 and self.dialect.has_header:
-            self.header = self.csv_reader.__next__()
+
         rec = self.csv_reader.__next__()
         self.rec_cnt += 1
         self.curr_file_rec_cnt += 1
