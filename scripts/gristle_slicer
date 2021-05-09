@@ -103,7 +103,8 @@ def main() -> int:
         return errno.ENODATA
 
     input_handler = file_io.InputHandler(nconfig.infiles,
-                                         nconfig.dialect)
+                                         nconfig.dialect,
+                                         return_header=True)
 
     (incl_rec_slicer,
      excl_rec_slicer,

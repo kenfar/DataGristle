@@ -116,10 +116,11 @@ class CSVPythonSorter(object):
 
         self.all_recs: List[str] = []
         self.keys: List[Tuple[Any, ...]] = []
-        self.header_rec = None
+        self.header_rec: List[str] = []
 
         self.stats = {}
         self.stats['recs_deduped'] = 0
+        self.has_header_adjustment = 0
 
         #todo: handle relative path subtleties:
         #    for reference:  https://stackoverflow.com/questions/918154/relative-paths-in-python
@@ -146,7 +147,7 @@ class CSVPythonSorter(object):
 
         self._write_file_and_dedupe()
 
-        self.stats['recs_read'] = self.input_handler.rec_cnt
+        self.stats['recs_read'] = self.input_handler.rec_cnt + self.has_header_adjustment
         self.stats['recs_written'] = self.output_handler.rec_cnt
 
 
@@ -167,17 +168,15 @@ class CSVPythonSorter(object):
         all_recs = self.all_recs
         primary_order = self.sort_key_config.get_primary_order()
         if self.input_handler.dialect.has_header:
-            has_header_adjustment = 1
+            self.has_header_adjustment = 1
         else:
-            has_header_adjustment = 0
+            self.has_header_adjustment = 0
 
+        self.header_rec = self.input_handler.header
         for rec in self.input_handler:
-            if self.input_handler.dialect.has_header and self.input_handler.rec_cnt == 1:
-                self.header_rec = rec
-            else:
-                all_recs.append(rec)
-                sort_values = self._get_sort_values(self.sort_key_config.key_fields, rec, primary_order)
-                keys.append((*sort_values, self.input_handler.rec_cnt - 1 - has_header_adjustment))
+            all_recs.append(rec)
+            sort_values = self._get_sort_values(self.sort_key_config.key_fields, rec, primary_order)
+            keys.append((*sort_values, self.input_handler.rec_cnt - 1))
         #print(f'    duration = {(time.time() - start_time):.4f}')
 
 
