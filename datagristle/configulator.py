@@ -347,7 +347,9 @@ class Config(object):
 
 
     def generate_csv_dialect_config(self):
-        """ Replaces the dictionary and named-tuple versions of the config
+        """ Adds the csv dialect to the config.
+
+            Added by calling programs within the extend_config method.
         """
         md = self._app_metadata
         autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
@@ -377,6 +379,18 @@ class Config(object):
         assert csvhelper.is_valid_dialect(defaulted)
 
         self.update_config('dialect', defaulted)
+
+
+    def generate_csv_header_config(self):
+        """ Adds the csv header to the config.
+
+            Added by calling programs within the extend_config method.
+        """
+
+        header = csvhelper.Header()
+        if self.config['infiles'][0] != '-':
+            header.load_from_files(self.config['infiles'], self.config['dialect'])
+        self.update_config('header', header)
 
 
 
@@ -512,11 +526,13 @@ class Config(object):
 
 
     def _validate_dialect_with_stdin(self, config) -> None:
-        if (config['infiles'] == '-'
-            and (config['delimiter'] is None
-                 or config['quoting'] is None
-                 or config['has_header'] is None)):
-                comm.abort('Error: csv dialect is required when piping data via stdin')
+        if config['infiles'] == '-':
+            if config['delimiter'] is None:
+                comm.abort('Error: csv dialect delimiter is required when piping data via stdin')
+            if config['quoting'] is None:
+                comm.abort('Error: csv dialect quoting is required when piping data via stdin')
+            if config['has_header'] is None:
+                comm.abort('Error: csv dialect header info is required when piping via stdin')
 
 
 

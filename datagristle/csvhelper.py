@@ -49,6 +49,92 @@ def get_quote_name(quote_number: int) -> Optional[str]:
 
 
 
+class Header:
+    """ Manages csv header information to support the use of field names rather
+        than field numbers in configs.
+    """
+
+    def __init__(self):
+        self.raw_field_names = []
+        self.field_names = []
+        self.fields_by_position = {}
+        self.fields_by_name = {}
+
+
+    def load_from_file(self,
+                       file_name: str,
+                       dialect):
+
+        if file_name == '-':
+            comm.abort(f'Invalid file_name for Header: {file_name}')
+
+        reader = csv.reader(open(file_name, newline=''), dialect=dialect)
+        for field_names in reader:
+            break
+        else:
+            raise EOFError
+
+        for field_sub, raw_field_name in enumerate(field_names):
+            if dialect.has_header:
+                field_name = self.format_raw_header_field_name(raw_field_name)
+            else:
+                field_name = f'field_{field_sub}'
+
+            self.raw_field_names.append(raw_field_name)
+            self.field_names.append(field_name)
+            self.fields_by_position[field_sub] = field_name
+            self.fields_by_name[field_name] = field_sub
+
+        if len(self.field_names) != len(set(self.field_names)):
+            comm.abort(f'Error: header has duplicate field names')
+
+
+    def format_raw_header_field_name(self, field_name):
+        return field_name.strip().replace(' ', '_').lower()
+
+
+    def load_from_files(self,
+                        file_names: List[str],
+                        dialect):
+        for file_name in file_names:
+            try:
+                self.load_from_file(file_name, dialect)
+                return
+            except EOFError:
+                pass
+        raise EOFError
+
+
+    def get_field_position(self,
+                           field_name):
+        return self.fields_by_name[field_name]
+
+
+    def get_field_name(self,
+                       field_position):
+        return self.fields_by_position[field_position]
+
+
+    def get_field_position_from_any(self,
+                                    lookup: Union[str, int]) -> int:
+        """ Returns a field position given either a field name or position
+        """
+        if comm.isnumeric(lookup):
+             return int(lookup)
+        else:
+             return self.get_field_position(lookup)
+
+
+    def get_field_positions_from_any(self,
+                                    lookups: List[Union[str, int]]) -> List[int]:
+        """ Returns a list of field positions given a list of positions or names
+        """
+        return [self.get_field_position_from_any(x) for x in lookups]
+
+
+
+
+
 class Dialect(csv.Dialect):
     """ A simple Dialect class
 
@@ -398,3 +484,4 @@ def _get_has_header(fqfn: str,
     """
     sample = open(fqfn, 'r').read(read_limit)
     return csv.Sniffer().has_header(sample)
+

@@ -58,6 +58,9 @@ class TestExamples(test_tools.TestExamples):
     def test_example_07(self):
         self.run_example_config('example-07')
 
+    def test_example_08_hasheader_references(self):
+        self.run_example_config('example-08')
+
 
     def test_example_21_single_col(self):
         self.run_example_config('example-21')

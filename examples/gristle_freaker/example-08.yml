@@ -1,0 +1,17 @@
+# Demonstrates how program can accept columns option references either as positions (offset
+# from 0) or by name as long as name can be referenced in file header.
+
+infiles: [example-08_hasheader_references_input.csv]
+outfile: /tmp/example-08_actualout.csv
+columns: [alphanumeric,1]
+
+verbosity: normal
+
+# Not going to provide any dialect info - but will instead let the program auto-detect it:
+delimiter: null
+doublequote: null
+escapechar: null
+has_header: null
+quotechar: null
+quoting: null
+skipinitialspace: null

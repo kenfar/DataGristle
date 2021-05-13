@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 """ Provides tools to assist in testing.
 """
+import csv
 import fileinput
 import glob
 import imp
 import os
 from os.path import basename, join as pjoin
 from pprint import pprint as pp
+import random
 import shutil
 import sys
 import tempfile
@@ -184,3 +186,35 @@ def executor(cmd, expect_success=True):
     else:
         assert status_code != 0
     return status_code
+
+
+
+
+
+def make_team_file(temp_dir,
+                   dialect,
+                   record_cnt):
+
+    fqfn = pjoin(temp_dir, 'testfile.csv')
+    name_list = ['smith', 'jones', 'thompson', 'ritchie']
+    role_list = ['pm', 'programmer', 'dba', 'sysadmin', 'qa', 'manager']
+    proj_list = ['cads53', 'jefta', 'norma', 'us-cepa']
+
+    def get_fields():
+        name = random.choice(name_list)
+        role = random.choice(role_list)
+        proj = random.choice(proj_list)
+        return name, role, proj
+
+    with open(fqfn, 'w', newline='') as outbuf:
+        fieldnames = ['id', 'proj', 'role', 'name']
+        writer = csv.DictWriter(outbuf, fieldnames=fieldnames, dialect=dialect)
+
+        if dialect.has_header and record_cnt > 0:
+            writer.writeheader()
+
+        for num in range(record_cnt):
+            name, role, proj = get_fields()
+            writer.writerow({'id': num, 'proj': proj, 'role':role, 'name':name})
+
+    return fqfn
