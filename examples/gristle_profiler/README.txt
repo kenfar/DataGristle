@@ -6,3 +6,7 @@ CSV Dialect Examples:
     Example-05: quote_all with escapechar to ignore embedded quotes
     Example-06: quote_minimum
     Example-07: quote_nonnumeric
+
+Feature Examples:
+    Example-08: uses --column_number with a field position to restrict analysis
+    Example-09: uses --column_number with a header field name to restrict analysis

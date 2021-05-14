@@ -52,3 +52,13 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_07(self):
         self.run_example_config('example-07')
+
+
+    def test_example_08_hasheader_with_colnum(self):
+        self.run_example_config('example-08')
+
+    def test_example_09_hasheader_with_colname(self):
+        self.run_example_config('example-09')
+
+
+

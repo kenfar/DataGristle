@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 """ Tests gristle_profiler.py
 
-    Contains a primary class: FileStructureFixtureManager
-    Which is extended by six classes that override various methods or variables.
-    This is a failed experiment - since the output isn't as informative as it
-    should be.  This should be redesigned.
-
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2021 Ken Farmer
 """
@@ -86,12 +81,9 @@ def get_value(parsable_out, division, section, subsection, key):
 
 
 class TestEmptyFile(object):
-    """ Temporarily suppressing - I think the problem is that the behavior for handling empty files was changed with the
-    new config
-    """
 
     def setup_method(self, method):
-        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_profiler_')
 
     def teardown_method(self, method):
         shutil.rmtree(self.tmp_dir)
@@ -135,12 +127,54 @@ class TestEmptyFile(object):
 
 
 
+class TestColumn(object):
+
+    def setup_method(self, method):
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_profiler_')
+        recs = [['state','num1','num2'],
+                ['Alabama','8','18'],
+                ['California','19','44']]
+        self.file_struct = {}
+        self.field_struct = {}
+        self.fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.tmp_dir)
+
+    def test_column_invalid_number_with_header(self):
+        cmd = '%s --infiles %s -c 99 --output-format=parsable' % (pjoin(script_path, 'gristle_profiler'), self.fqfn)
+        runner = envoy.run(cmd)
+        print(runner.std_out)
+        print(runner.std_err)
+        assert runner.status_code == 1
+
+    def test_column_invalid_name(self):
+        cmd = '%s --infiles %s -c hooligan --output-format=parsable' % (pjoin(script_path, 'gristle_profiler'), self.fqfn)
+        runner = envoy.run(cmd)
+        print(runner.std_out)
+        print(runner.std_err)
+        assert runner.status_code == 1
+
+    def test_column_invalid_number_with_no_header(self):
+        recs = [['Alabama','8','18'],
+                ['California','19','44']]
+        self.file_struct = {}
+        self.field_struct = {}
+        self.fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
+
+        cmd = '%s --infiles %s -c 99 --has-no-header --output-format=parsable' % (pjoin(script_path, 'gristle_profiler'), self.fqfn)
+        runner = envoy.run(cmd)
+        print(runner.std_out)
+        print(runner.std_err)
+        assert runner.status_code == 1
+
+
 
 
 class TestOutputFormattingAndContents(object):
 
     def setup_method(self, method):
-        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_profiler_')
         recs = [['Alabama', '8', '18'],
                 ['Alaska', '6', '16'],
                 ['Arizona', '6', '14'],
@@ -242,7 +276,7 @@ class TestOutputFormattingAndContents(object):
 class TestReadLimit(object):
 
     def setup_method(self, method):
-        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_profiler_')
         recs = [['Alabama', '8', '18'],
                 ['Alaska', '6', '16'],
                 ['Arizona', '6', '14'],
@@ -330,7 +364,7 @@ class TestReadLimit(object):
 class TestMaxFreq(object):
 
     def setup_method(self, method):
-        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_deter_')
+        self.tmp_dir = tempfile.mkdtemp(prefix='datagristle_profiler_')
         recs = [['Alabama', '8', '18'],
                 ['Alaska', '6', '16'],
                 ['Arizona', '6', '14'],
