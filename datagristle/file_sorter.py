@@ -21,7 +21,7 @@ class SortKeysConfig(object):
 
     def __init__(self,
                  sort_keys: List[str],
-                 header):
+                 header=None):
 
         self.key_fields: List[SortKeyRecord] = []
         self.load_config(sort_keys, header)
