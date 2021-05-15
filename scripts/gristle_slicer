@@ -80,7 +80,9 @@ from signal import signal, SIGPIPE, SIG_DFL
 import sys
 from typing import List, Tuple, Dict, Any, Optional, IO
 
+import datagristle.common as comm
 import datagristle.configulator as conf
+import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
 import datagristle.helpdoc as helpdoc
 import datagristle.location_slicer as slicer
@@ -114,7 +116,8 @@ def main() -> int:
                                       nconfig.records,
                                       nconfig.exrecords,
                                       nconfig.columns,
-                                      nconfig.excolumns)
+                                      nconfig.excolumns,
+                                      nconfig.header )
 
     output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
 
@@ -140,10 +143,11 @@ def setup_slicers(infiles: List[str],
                   config_records: str,
                   config_exrecords: str,
                   config_columns: str,
-                  config_excolumns: str) -> Tuple[slicer.SpecProcessor,
-                                                  slicer.SpecProcessor,
-                                                  slicer.SpecProcessor,
-                                                  slicer.SpecProcessor]:
+                  config_excolumns: str,
+                  config_header: csvhelper.Header) -> Tuple[slicer.SpecProcessor,
+                                                            slicer.SpecProcessor,
+                                                            slicer.SpecProcessor,
+                                                            slicer.SpecProcessor]:
     """  Sets up the 4 slicer objects: inclusion & exclusion for
          rec and column.
 
@@ -159,24 +163,23 @@ def setup_slicers(infiles: List[str],
 
     incl_rec_slicer = slicer.SpecProcessor(records,   'incl_rec_spec')
     excl_rec_slicer = slicer.SpecProcessor(exrecords, 'excl_rec_spec')
-    incl_col_slicer = slicer.SpecProcessor(columns,   'incl_col_spec')
-    excl_col_slicer = slicer.SpecProcessor(excolumns, 'excl_col_spec')
+    incl_col_slicer = slicer.SpecProcessor(columns,   'incl_col_spec', config_header)
+    excl_col_slicer = slicer.SpecProcessor(excolumns, 'excl_col_spec', config_header)
 
     rec_cnt = None
-    if incl_rec_slicer.has_negatives or excl_rec_slicer.has_negatives:
+    if incl_rec_slicer.has_negatives() or excl_rec_slicer.has_negatives():
         if infiles == '-':
-            raise ValueError('ERROR: negative record slicing with stdin')
+            comm.abort('ERROR: negative record slicing with stdin')
         rec_cnt = get_rec_count(infiles, dialect)
     incl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
     excl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
 
-    col_cnt = None
-    if incl_col_slicer.has_negatives or excl_col_slicer.has_negatives:
+    col_count = len(config_header.field_names)-1
+    if incl_col_slicer.has_negatives() or excl_col_slicer.has_negatives():
         if infiles == '-':
-            raise ValueError('negative column slicing with stdin')
-        col_cnt = get_col_count(infiles, dialect)
-    incl_col_slicer.spec_adjuster(loc_max=col_cnt)
-    excl_col_slicer.spec_adjuster(loc_max=col_cnt)
+            comm.abort('negative column slicing with stdin')
+    incl_col_slicer.spec_adjuster(loc_max=col_count)
+    excl_col_slicer.spec_adjuster(loc_max=col_count)
 
     return incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer
 
@@ -192,21 +195,6 @@ def get_rec_count(files: List[str],
         rec_cnt += 1
     fileinput.close()
     return rec_cnt
-
-
-
-def get_col_count(files: List[str],
-                  dialect: csv.Dialect) -> int:
-    """ Gets column counts for input files.
-        - Counts have an offset of 0
-    """
-    for record in csv.reader(fileinput.input(files[0]), dialect):
-        field_cnt = len(record) -1
-        break
-    fileinput.close()
-    return field_cnt
-
-
 
 
 
@@ -292,7 +280,9 @@ class ConfigManager(conf.Config):
 
 
     def extend_config(self) -> None:
+
         self.generate_csv_dialect_config()
+        self.generate_csv_header_config()
 
 
 

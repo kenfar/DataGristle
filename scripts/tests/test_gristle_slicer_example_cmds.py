@@ -68,3 +68,6 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_24_inclusions_and_exclusions(self):
         self.run_example_config('example-24')
+
+    def test_example_25_field_names(self):
+        self.run_example_config('example-25')

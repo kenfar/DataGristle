@@ -29,25 +29,16 @@
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 
-import sys
 from pprint import pprint as pp
+import re
+import sys
 from typing import List, Dict, Tuple, Union, Any, Optional
 
-
-def is_negative_spec(*specs: List[List[str]]) -> bool:
-    """ Checks for negative values in a variable number of spec lists
-        Each spec list can have multiple strings.  Each string within each
-        list will be searched for a '-' sign.
-    """
-    for specset in specs:
-        if specset:
-            for spec in specset:
-                if '-' in spec:
-                    return True
-    return False
+import datagristle.common as comm
+import datagristle.csvhelper as csvhelper
 
 
 
@@ -56,9 +47,6 @@ def is_sequence(val: Any) -> bool:
             input:  val
             output:  True or False
     """
-    ### old python2 version - didn't work with python3 since strings startd to support __iter__
-    ###return (hasattr(val, "__iter__") or (not hasattr(val, "strip") and hasattr(val, "__getitem__")))
-
     if isinstance(val, (list, tuple)):
         return True
     else:
@@ -70,23 +58,65 @@ class SpecProcessor(object):
 
     def __init__(self,
                  spec: List[str],
-                 spec_name: str) -> None:
+                 spec_name: str,
+                 header: csvhelper.Header = None) -> None:
+        """
+        Header: Is always expected for column specs that read from files, but will just be None
+                for columns specs for stdin inputs.  Is also always None for record specs.
+        """
 
-        self._spec_validator(spec)      # will raise exceptions if any exist
-        self.orig_spec = spec
         self.spec_name = spec_name
-        self.has_negatives = self._is_negative_spec(spec)
+        self.numeric_spec: List[Optional[str]] = None # spec with names converted to positions
         self.adj_spec: List[Optional[str]] = None  # spec with negatives converted
 
+        if header is not None:
+            self.numeric_spec = self._spec_name_translater(spec, header)
+        else:
+            self.numeric_spec = spec
 
-    def _is_negative_spec(self, spec: List[str]) -> bool:
+        self._spec_validator(self.numeric_spec)      # will raise exceptions if any exist
+
+
+    def has_negatives(self) -> bool:
         """ Checks for negative values in a single spec lists.
             Each string within the list will be searched for a '-' sign.
         """
-        for item in spec:
+        for item in self.numeric_spec:
             if '-' in item:
                 return True
         return False
+
+
+    def _spec_name_translater(self,
+                              spec: List[str],
+                              header: csvhelper.Header) -> List[str]:
+        """ Reads through a single spec (ie, record inclusion spec, column
+            exclusion spec, etc) and remaps any column names to their position
+            offsets.
+            Inputs:
+                - spec, ex: [' 1',' -3',' 4:7', ' home_state', ' last_name:']
+                - header object
+            Outputs:
+                - a numeric-only spec, ex: ['1','-3','4:7','9','12:']
+        """
+        num_spec = []
+        for item in spec:
+            new_parts = []
+            for part in item.split(':'):
+                part = part.strip()
+                if part is None or part == '':
+                    new_parts.append(part)
+                elif comm.isnumeric(part):
+                    new_parts.append(part.strip())
+                else:
+                    try:
+                        new_parts.append(str(header.get_field_position(part)))
+                    except KeyError:
+                        comm.abort(f'Error: Invalid string in spec: {part}',
+                                    f'Not in header list: {header.field_names}')
+            num_spec.append(':'.join(new_parts))
+
+        return num_spec
 
 
     def _spec_validator(self,
@@ -134,10 +164,11 @@ class SpecProcessor(object):
                 - none
         """
         if loc_max is None:
-            if self.has_negatives:
-                raise ValueError('adjust_specs missing count - and has negative specs')
+            if self.has_negatives():
+                raise ValueError('adjust_specs missing loc_max - and has negative specs')
+
         adj_spec: List[Optional[str]] = []
-        for item in self.orig_spec:
+        for item in self.numeric_spec:
             parts = item.split(':')
             new_parts = []
             for part in parts:
@@ -174,16 +205,14 @@ class SpecProcessor(object):
             To do:
                - support slice steps
         """
-        int_location  = int(location)
-
         if not self.adj_spec:
             # the self.adj_spec will often be None for 1-2 of the 4 specs.
             # ex: incl criteria provided (or defaulted to ':'), but if no
             # excl critieria provided it will be None.
             return False
-        else:
-            if any([self._spec_item_evaluator(x, int_location) for x in self.adj_spec]):
-                 return True
+
+        if any([self._spec_item_evaluator(x, int(location)) for x in self.adj_spec]):
+            return True
 
         return False
 

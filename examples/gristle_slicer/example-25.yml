@@ -1,0 +1,19 @@
+# Simple slicer that demonstrates the following features:
+#     * selects columns by field names from header
+
+infiles: [example-25_field_names_input.csv]
+outfile: /tmp/example-25_actualout.csv
+verbosity: normal
+
+# include third, forth, sixth, and seventh columns:
+columns:   'denver, la:boulder, -2' 
+
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_header: true
+
+doublequote: null
+quotechar: null
+skipinitialspace: null
