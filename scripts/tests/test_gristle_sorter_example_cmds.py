@@ -64,3 +64,5 @@ class TestExamples(test_tools.TestExamples):
     def test_example_22_many_keys_and_orders(self):
         self.run_example_config('example-22')
 
+    def test_example_23_field_names_and_tildes_in_key_fields(self):
+        self.run_example_config('example-23')

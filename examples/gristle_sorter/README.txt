@@ -12,4 +12,5 @@ Primary Feature Examples:
                 and dedupe the results
     Example-22: sort by four keys of three different types, with two different directions,
                 and dedupe the results
-
+    Example-23: sort by multiple keys using field names from the header and also showing the
+                use of the optional tilde (~) to separate the key parts

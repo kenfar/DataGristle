@@ -1,0 +1,10 @@
+alpha1,int,alpha2,float,alpha3
+a,1,c,1.1,first
+b,0,a,2.2,second
+b,2,c,4.9,third
+b,2,c,3.8,forth
+b,2,c,2.7,fifth
+b,2,b,4.4,sixth
+b,2,a,5.5,seventh
+b,3,a,0.0,eighth
+z,3,d,6.6,ninth
