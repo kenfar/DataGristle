@@ -12,3 +12,4 @@ gristle_slicer Feature Examples:
     Example-22: includes ranges of rows and columns
     Example-23: excludes ranges of rows and columns
     Example-24: combines inclusions and exclusions
+    Example-25: uses field names from header in column specs 

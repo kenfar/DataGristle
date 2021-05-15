@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2020 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -16,11 +16,9 @@ import os
 from os.path import dirname, join as pjoin
 from pprint import pprint as pp
 
-import datagristle.test_tools as test_tools
+import datagristle.file_freaker as mod
 import datagristle.file_io as file_io
-
-pgm_path = dirname(dirname(os.path.realpath((__file__))))
-mod = test_tools.load_script(pjoin(pgm_path, 'gristle_freaker'))
+import datagristle.test_tools as test_tools
 
 
 

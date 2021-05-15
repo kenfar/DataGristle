@@ -60,7 +60,8 @@ class TestCommandLine(object):
         # thing, which you get depends on platform.
         print(os.strerror(runner.returncode).lower())
         assert os.strerror(runner.returncode).lower() in ['no data available',
-                                                          'no message available on stream']
+                                                          'no message available on stream',
+                                                          'no such file or directory']
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
@@ -124,6 +125,52 @@ class TestCommandLine(object):
         assert len(out_recs) == 100
         runner.stdin.close()
         assert runner.returncode == 0
+
+
+    def test_full_stdin(self):
+
+        cmd = [os.path.join(script_dir, 'gristle_freaker'),
+               '-d', ',',
+               '-q', 'quote_none',
+               '--has-no-header',
+               '-o', '-',
+               '-c', '0']
+        data = 'foo,bar,baz\nfoo,bar2,baz2\nfoo2,bar2,baz3'
+
+        pgmprocess = subprocess.Popen(cmd,
+                                      text=True,
+                                      stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+        pgmout, pgmerr = pgmprocess.communicate(input=data)
+
+        rows = pgmout.split('\n')
+        first_row = [tup for tup in rows[0].split('-')]
+        assert first_row[0].strip() == 'foo'
+        assert first_row[1].strip() == '2'
+
+
+    def test_full_stdin_with_col_names(self):
+        """ stdin is incompatible with use of header column names
+        """
+
+        cmd = [os.path.join(script_dir, 'gristle_freaker'),
+               '-d', ',',
+               '-q', 'quote_none',
+               '--has-no-header',
+               '-o', '-',
+               '-c', 'colone']
+        data = 'foo,bar,baz\nfoo,bar2,baz2\nfoo2,bar2,baz3'
+
+        pgmprocess = subprocess.Popen(cmd,
+                                      text=True,
+                                      stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+        pgmout, pgmerr = pgmprocess.communicate(input=data)
+        assert pgmprocess.returncode == 1
+        pp(pgmout)
+        pp(pgmerr)
 
 
 

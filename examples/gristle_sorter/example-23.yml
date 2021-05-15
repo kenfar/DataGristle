@@ -1,0 +1,23 @@
+# Typical sort example that features capabilities:
+#     * use of field names from header in sort key
+#     * use of optional tilde (~) to separate field, type and direction
+
+infiles: [example-23_field_names_and_tildes_for_keys_input.csv]
+outfile: /tmp/example-23_actualout.csv
+
+dedupe: true
+verbosity: normal
+
+# alpha1sf = position 0, string, and forward direction
+# int~i~f = position 1, integer, and forward direction
+# 2~s~r = position 2, string, and reverse direction
+# 3~f~r = position 3, float, and reverse direction
+keys: [alpha1sf, int~i~f, 2~s~r, 3fr]
+
+quoting: quote_none
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+quotechar: null
+skipinitialspace: null

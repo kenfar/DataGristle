@@ -18,13 +18,14 @@ Main Options:
    -k, --keys KEYS [KEYS ...]
                         The 3-part sort key consisting of offset|type|order.
                         Each key specified consists of three values:
-                            1) position (0-offset),
+                            1) position (0-offset position or name from header),
                             2) type (s=string, i=integer, f=float),
                             3) order (f=forward, r=reverse).
                         All 3 values are required for each key. Multiple keys can be specified
                         by separating groups of 3 with a comma or including all within quotes and
                         separating the groups with a space.
                         For example: -k 0sf will sort the 0 column as a string with a forward order.
+                        Optionally, a tilde (~) can be used to separate the three fields: -k 0~s~f
    -D, --dedupe         Removes duplicates.  Default is False.
                         Directs program to remove duplicates - based on the key separately
                         provided. Note that this will treat 0 and 0.0 the same if the keys are
@@ -40,7 +41,11 @@ Main Options:
 Examples:
     $ gristle_sorter -i foo.csv -o foo_sorted.csv -k 3sf 1ir 2ir
         This example sorts a file by three keys, each of a different type, one in forward
-        and the othre keys in reverse direction.
+        and the other keys in reverse direction.
+
+    $ gristle_sorter -i foo.csv -o foo_sorted.csv -k 3sf 1~i~r stateir year~i~f
+        This example sorts a file by four keys, using both position offsets and header field names
+        and uses both the concatenated and tilde-separated formats.
 
     $ gristle_sorter -i dialect_quoteall_escaped_delimiter.csv -k 0sf \
                      -d ',' --quoting quote_all --escapechar '\' --has-header
@@ -69,6 +74,8 @@ import datagristle.common as comm
 import datagristle.configulator as conf
 import datagristle.file_sorter as file_sorter
 import datagristle.helpdoc as helpdoc
+
+# pylint: disable=no-member
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
@@ -137,9 +144,10 @@ class ConfigManager(conf.Config):
         """ Add derrived attributes to our config so they're all in one place.
         """
         self.generate_csv_dialect_config()
+        self.generate_csv_header_config()
         self.update_config('sort_keys',
-                           file_sorter.SortKeysConfig(self.nconfig.keys)) # type: ignore # pylint: disable=no-member
-
+                           file_sorter.SortKeysConfig(self.nconfig.keys,    # type: ignore
+                                                      self.nconfig.header)) # type: ignore
 
 
 if __name__ == '__main__':

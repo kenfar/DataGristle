@@ -20,18 +20,53 @@ import datagristle.file_io as file_io
 class SortKeysConfig(object):
 
     def __init__(self,
-                 sort_keys: List[str]):
+                 sort_keys: List[str],
+                 header=None):
 
         self.key_fields: List[SortKeyRecord] = []
-        self.load_config(sort_keys)
+        self.load_config(sort_keys, header)
 
 
     def load_config(self,
-                    sort_keys: List[str]) -> None:
+                    sort_keys: List[str],
+                    header: csvhelper.Header = None) -> None:
 
         for key_field in sort_keys:
-            sort_key_rec = SortKeyRecord(key_field)
+            transformed_key_field = self._transform_key_field(header, key_field)
+            sort_key_rec = SortKeyRecord(transformed_key_field)
             self.key_fields.append(sort_key_rec)
+
+
+    def _transform_key_field(self,
+                             header: Optional[csvhelper.Header],
+                             key_field: str) -> str:
+        """key_field looks like:
+               - [field][~][type][~][direction]
+               - ex: 0sf
+               - ex: 3ir
+               - ex: home_statesf
+               - ex: home_state~s~f
+               - ex: 0~s~f
+        """
+        if key_field.count('~') == 2:
+            field, keytype, direction = key_field.split('~')
+        else:
+            direction = key_field[-1]
+            keytype = key_field[-2]
+            field = key_field[:-2]
+
+        if comm.isnumeric(field):
+            field_offset = field
+        else:
+            try:
+                field_offset = str(header.get_field_position(field))
+            except KeyError:
+                comm.abort('Error: field name not found in header',
+                           f'field name: {field}        '
+                           f'header fields: {header.field_names}')
+
+        new_key_field = f'{field_offset}{keytype}{direction}'
+        return new_key_field
 
 
     def multi_orders(self) -> bool:

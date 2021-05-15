@@ -76,8 +76,9 @@ And examples of all csv utilities can be found here:
     Examples:
        $ gristle_slicer -i sample.csv
                     Prints all rows and columns
-       $ gristle_slicer -i sample.csv -c":5, 10:15" -C 13
-                    Prints columns 0-4 and 10,11,12,14 for all records
+       $ gristle_slicer -i sample.csv -c":5, 10:15, dept" -C 13
+                    Prints columns 0-4 and 10,11,12,14, and the col associated 
+                    with the header field 'dept' for all records
        $ gristle_slicer -i sample.csv -C:-1
                     Prints all columns except for the last for all records
        $ gristle_slicer -i sample.csv -c:5 -r-100
@@ -102,33 +103,18 @@ And examples of all csv utilities can be found here:
                     Creates two columns from the input - the first with
                     unique keys from column 0, the second with a count of
                     how many times each exists.
+       $ gristle_freaker -i sample.csv -c home_state
+                    This is the same as the previous example - but in this case
+                    the column reference uses the name of the field from the
+                    file header.
        $ gristle_freaker -i sample.csv -d '|'  -c 0 --sortcol 1 --sortorder forward --writelimit 25
                     In addition to what was described in the first example,
                     this example adds sorting of the output by count ascending
                     and just prints the first 25 entries.
-       $ gristle_freaker -i sample.csv -d '|'  -c 0 --sampling_rate 3 --sampling_method interval
-                    In addition to what was described in the first example,
-                    this example adds a sampling in which it only references
-                    every third record.
        $ gristle_freaker -i sample.csv -d '|'  -c 0,1
                     Creates three columns from the input - the first two
                     with unique key combinations from columns 0 & 1, the
                     third with the number of times each combination exists.
-       $ gristle_freaker -i sample.csv -d '|'  -c -1
-                    Creates two columns from the input - the first with unique
-                    keys from the last column of the file (negative numbers
-                    wrap), then a second with the number of times each exists.
-       $ gristle_freaker -i sample.csv -d '|'  --columntype all
-                    Creates two columns from the input - all columns combined
-                    into a key, then a second with the number of times each
-                    combination exists.
-       $ gristle_freaker -i sample.csv -d '|'  --columntype each
-                    Unlike the other examples, this one performs a separate
-                    analysis for every single column of the file.  Each analysis
-                    produces three columns from the input - the first is a
-                    column number, second is a unique value from the column,
-                    and the third is the number of times that value appeared.
-                    This output is repeated for each column.
     Many more examples can be found here:
        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_freaker
 
@@ -142,6 +128,10 @@ And examples of all csv utilities can be found here:
                     Sort file by the 0-position string column in forward (ascending) direction,
                     dedupes the results and writes them to stdout.  The csv dialect is auto-
                     detected.
+       $ gristle_sorter -i sample.csv -k 0~s~f dept-s-r -D
+                    This example uses the optional tildes to separate the parts of the key,
+                    and uses a fieldname reference from the file header (dept) rather than a
+                    numeric field position.
        $ gristle_sorter -i sample.csv --keys 0sf 3ir --outfile sample_out.csv
                     Sorts file by the 0-position column string in forward direction followed
                     by the position 3 column integer in reverse direction.  The output is not

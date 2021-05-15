@@ -18,10 +18,11 @@ Main Options:
     -c, --columns [COLUMNS [COLUMNS ...]]
                          Columns to collection distributions on.
                          Columns are identified based on a zero-offset, and multiple columns
-                         can be provided.
+                         can be provided.  Is not used with col-type=each
     --col-type COL_TYPE  Process columns individually or together as a group.
                          Valid values are: 'specified', 'all', or 'each'. The default is
-                         'specified'.
+                         'specified'.  The default is 'specified' in which the cols are
+                         provided by the user.
 
 
 Limiting Options:
@@ -95,7 +96,6 @@ Licensing and further Info:
 """
 
 import sys
-import operator
 from os.path import basename
 import errno
 from pprint import pprint as pp
@@ -103,8 +103,12 @@ from typing import Dict, List, Tuple, Optional, Any
 from signal import signal, SIGPIPE, SIG_DFL
 
 from datagristle.common import abort
+import datagristle.common as comm
 import datagristle.configulator as configulator
+import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
+import datagristle.field_misc as field_misc
+import datagristle.file_freaker as freaker
 import datagristle.helpdoc as helpdoc
 
 # Ignore SIG_PIPE and don't throw exceptions on it...
@@ -114,6 +118,8 @@ signal(SIGPIPE, SIG_DFL)
 NAME = basename(__file__)
 LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
+
+# pylint: disable=no-member
 
 
 
@@ -127,264 +133,50 @@ def main() -> int:
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
-    # Run once for each col_set.  Only col_type of 'each' will have > 1 col_set,
-    # in which they'll run the following loop once for each column.  Other col_types
-    # will just run a single iteration of the loop.
-    total_read_cnt = 0
-    file_cnt = 0
-    while True:
-        file_cnt += 1
-        input_handler = file_io.InputHandler(nconfig.infiles,
-                                             nconfig.dialect)
+    output_handler = file_io.OutputHandler(nconfig.outfile,
+                                           dialect=None)
 
-        output_handler = file_io.OutputHandler(nconfig.outfile,
-                                               dialect=None,
-                                               mode='wt' if file_cnt == 1 else 'a')
+    if nconfig.col_type in ('specified', 'all'):
+        run_one_freq(nconfig, nconfig.col_positions, output_handler)
+    elif nconfig.col_type == 'each':
+        for position in range(len(nconfig.header.field_names)):
+            run_one_freq(nconfig, [position], output_handler)
 
-        colset_freaker = ColSetFreaker(input_handler,
-                                       output_handler,
-                                       nconfig.col_type,
-                                       nconfig.max_freq,
-                                       nconfig.sampling_method,
-                                       nconfig.sampling_rate,
-                                       nconfig.sort_order,
-                                       nconfig.sort_col,
-                                       nconfig.max_key_len)
-        colset_freaker.create_freq_from_column_set(nconfig.col_set)
-        total_read_cnt += colset_freaker.input_handler.rec_cnt
-
-        colset_freaker.write_output(colset_freaker.output_handler,
-                                    nconfig.write_limit,
-                                    nconfig.col_set[0])
-
-        if colset_freaker.more_columns():   # col_type is 'each'
-            nconfig.col_set[0] += 1
-        else:
-            if total_read_cnt == 0:
-                return_code = errno.ENODATA # 61: empty file
-            elif colset_freaker.truncated:
-                return_code = errno.ENOMEM  # 12: too many unique values
-            break
-
-        input_handler.close()
-        output_handler.close()
-
-
+    output_handler.close()
     return return_code
 
 
 
-
-class ColSetFreaker(object):
-
-    def __init__(self,
-                 input_handler,
-                 output_handler,
-                 col_type: str,
-                 number: int,
-                 sampling_method: str,
-                 sampling_rate: float,
-                 sort_order: str,
-                 sort_col: int,
-                 max_key_len: int) -> None:
-
-        self.input_handler = input_handler
-        self.output_handler = output_handler
-        self.col_type = col_type
-        self.number = number
-        self.sampling_method = sampling_method
-        self.sampling_rate = sampling_rate
-        self.sort_order = sort_order
-        self.sort_col = sort_col
-        self.max_key_len = max_key_len
-
-        self.col_len_tracker: ColumnLengthTracker = None
-        self.field_freq: Dict[Any, Any] = {}
-        self.sort_freq: List[Any] = None
-        self.truncated: bool = None
+def run_one_freq(nconfig,
+                 col_set,
+                 output_handler):
 
 
-    def create_freq_from_column_set(self, col_set: List[int]) -> None:
+    input_handler = file_io.InputHandler(nconfig.infiles,
+                                         nconfig.dialect)
 
-        #----- calculate field lengths -----
-        self.build_freq(col_set)
+    colset_freaker = freaker.ColSetFreaker(input_handler,
+                                           output_handler,
+                                           nconfig.col_type,
+                                           nconfig.max_freq,
+                                           nconfig.sampling_method,
+                                           nconfig.sampling_rate,
+                                           nconfig.sort_order,
+                                           nconfig.sort_col,
+                                           nconfig.max_key_len)
+    colset_freaker.create_freq_from_column_set(col_set)
 
-        #----- sort the field_freq ------
-        revorder = (True if self.sort_order == 'reverse' else False)
-        self.sort_freq = sorted(self.field_freq.items(),
-                                key=operator.itemgetter(self.sort_col),
-                                reverse=revorder)
+    colset_freaker.write_output(colset_freaker.output_handler,
+                                nconfig.write_limit,
+                                col_set)
 
-        #----- calculate field lengths for output formmating -----
-        self.col_len_tracker = ColumnLengthTracker()
-        self.col_len_tracker.add_all_values(self.sort_freq)
-        self.col_len_tracker.trunc_all_col_lengths(self.max_key_len)
+    if colset_freaker.truncated:
+        abort(summary='Error: too many unique values',
+              details='gristle_freaker more unique values than its max_freq value.  Consider raising this to continue',
+              rc=errno.ENOMEM)
 
-
-    def build_freq(self, columns: List[int]) -> None:
-        """ Inputs:
-                - columns    - list of columns to put into key
-            Updates instance variables:
-                - freq_dict  - freq distribution dict - can be empty if column
-                               doesn't exist in file.  This happens when user
-                               is doing a freq on "each" columns.
-                - truncated  - True/False boolean that indicates if the dict was truncated
-                Tested via test-harness
-        """
-        freq_cnt = 0
-        self.field_freq = {}
-        self.truncated = False
-
-        def process_rec(record: List[str]) -> None:
-            nonlocal freq_cnt
-            if self.sampling_method == 'interval':
-                if (self.input_handler.rec_cnt+1) % self.sampling_rate != 0:
-                    return
-            key = self._create_key(record, columns)
-            if key:
-                try:
-                    self.field_freq[key] += 1
-                except KeyError:
-                    self.field_freq[key] = 1
-                    freq_cnt += 1
-                    if freq_cnt >= self.number:
-                        self.truncated = True
-                        print('WARNING: freq dict is too large - will truncate')
-                        raise TooLargeError
-
-        for rec in self.input_handler:
-            try:
-                process_rec(rec)
-            except TooLargeError:
-                break
-
-
-    def _create_key(self,
-                    fields: List[str],
-                    required_field_indexes: List[int]) -> Tuple[str, ...]:
-        """ input:
-                - fields - a single record in the form of a list of fields
-                - requird_fields - identifies which fields to put into output key
-                output:
-                - the required fields from fields in tuple format.
-                Tested via test-harness.
-        """
-        if self.col_type == 'all':
-            return tuple(fields)
-
-        key = []
-        for field_idx in required_field_indexes:
-            try:
-                key.append(fields[field_idx].strip())
-            except IndexError:
-                break # is probably freaking all cols with 'each' option.
-        return tuple(key)
-
-
-    def more_columns(self):
-        if self.col_type == 'each':
-            if self.sort_freq == []:   # columntype 'each' just ran out of cols
-                return False
-            else:
-                return True
-        else:
-            return False
-
-
-    def write_output(self,
-                     output: Any,
-                     write_limit: int,
-                     col_set_num: int):
-        if output == '-':
-            outfile = sys.stdout
-            #outfile = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', newline='')
-
-        write_cnt = 0
-        for key_tup in self.sort_freq:
-            write_cnt += 1
-            if write_limit and write_cnt > write_limit:
-                break
-            row = self.create_output_row(key_tup, col_set_num)
-            output.write_rec(row)
-
-
-    def create_output_row(self,
-                          freq_tup: Tuple[Tuple[str, ...], int],
-                          col_set_num: int) -> str:
-        """ input:
-            - freq_tup - is a tuple consisting of two entries: key & count.
-                Each key is also a tuple.  So it looks like this:
-                    (('key1a', 'key1b', 'key1c'), 5   )
-            output:
-            - an entire row to be written as output
-            tested via test-harness
-        """
-        if self.col_type == 'each':
-            key_label = 'col:%03d - ' % col_set_num
-        else:
-            key_label = ''
-
-        key_part = ''
-        for colnum, key in enumerate(freq_tup[0]):
-            key_string = ' %-*.*s  - ' % (self.col_len_tracker.max_dict[colnum],
-                                          self.col_len_tracker.max_dict[colnum],
-                                          key)
-            key_part += key_string
-        row = '%s%s %s\n' % (key_label, key_part, freq_tup[1])
-        return row
-
-
-
-
-
-class ColumnLengthTracker(object):
-    """ Tracks the maximum key length for each column.
-        This is useful later when printing columns - in order to keep them
-        of consistent widths for each record.
-        Tested via test harness.
-    """
-    def __init__(self):
-        self.max_dict: Dict[int, int] = {}
-
-    def add_val(self, col_num: int, value: str) -> None:
-        """ Update tracked max length for a given column if the new value
-            is greater than the old value.
-            Inputs:
-                 - col_num:  is the position of the column within the key
-                 - value:    is the actual column value
-            Outputs:
-                 - none:     it updates the internal object length dictionary
-        """
-        try:
-            if len(value) > self.max_dict[col_num]:
-                self.max_dict[col_num] = len(value)
-        except KeyError:
-            self.max_dict[col_num] = len(value)
-
-    def add_all_values(self, freq_list: List[Tuple[Tuple[str, ...], int]]) -> None:
-        """ Step through a list of tuples which the key is a tuple of 1-many
-            parts, and the value is the count.  For each part of the key call
-            the add_val function to then store the max length.
-        """
-        for keyval_tup in freq_list:
-            keys = keyval_tup[0]
-            for index, key in enumerate(keys):
-                self.add_val(index, key)
-
-    def trunc_all_col_lengths(self, maxkeylen: int) -> None:
-        """ Gradually reduces the length of columns, reducing the longest one
-            before the shorter ones.
-        """
-        while (self._get_tot_col_len() - maxkeylen) > 0:
-            max_key = max(self.max_dict, key=self.max_dict.get)
-            self.max_dict[max_key] -= 1
-
-    def _get_tot_col_len(self) -> int:
-        """ Returns the total column length by adding together to the longest
-            column value of each column.
-        """
-        return sum(list(self.max_dict.values()))
-
+    input_handler.close()
+    return colset_freaker.input_handler.rec_cnt
 
 
 
@@ -407,8 +199,8 @@ class ConfigManager(configulator.Config):
 
         self.add_custom_metadata(name='columns',
                                  short_name='c',
-                                 default=None,
-                                 type=int,
+                                 default=[],
+                                 type=str,
                                  nargs='*')
         self.add_custom_metadata(name='col_type',
                                  default='specified',
@@ -452,12 +244,17 @@ class ConfigManager(configulator.Config):
                                config) -> None:
 
         # Handle columns & col_type relationship
-        if config['columns'] is None:
+        if config['columns'] == []:
             if config['col_type'] == 'specified':
                 abort("ERROR: Columns must be provided for col_type of 'specified'.")
         else:
             if config['col_type'] != 'specified':
-                abort('ERROR: Columns can only be specified for col_type != specified.')
+                abort('ERROR: Columns cannot be provided for col_type of all or each')
+
+        # Validate for stdin
+        if config['infiles'][0] == '-':
+            if config['col_type'] == 'each':
+                abort("ERROR: col_type of 'each' is incompatible with piping with stdin")
 
         # Validate the sampling fields
         if config['sampling_method'] == 'non':
@@ -479,16 +276,17 @@ class ConfigManager(configulator.Config):
         """
         self.generate_csv_dialect_config()
 
-        # pylint: disable=no-member
-        if self.nconfig.col_type in ('each', 'all'):
-            self.update_config('col_set', [0])
-        else:
-            self.update_config('col_set', self.nconfig.columns)
+        # add col_names to config:
+        self.generate_csv_header_config()
 
-
-
-class TooLargeError(Exception):
-    pass
+        # add col_positions to config:
+        try:
+            col_positions = self.nconfig.header.get_field_positions_from_any(self.nconfig.columns)
+        except KeyError as err:
+            abort('ERROR: the columns option had invalid values within',
+                  f'The following value was not in the header: {err},  '
+                  'or the header was inaccessible (reading from stdin?)')
+        self.update_config('col_positions', col_positions)
 
 
 

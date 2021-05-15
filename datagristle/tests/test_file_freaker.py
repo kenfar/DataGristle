@@ -18,12 +18,11 @@ import random
 import sys
 import tempfile
 
-import datagristle.test_tools as test_tools
-import datagristle.file_io as file_io
 import datagristle.csvhelper as csvhelper
+import datagristle.file_freaker as mod
+import datagristle.file_io as file_io
+import datagristle.test_tools as test_tools
 
-pgm_path = dirname(dirname(os.path.realpath((__file__))))
-mod = test_tools.load_script(pjoin(pgm_path, 'gristle_freaker'))
 
 
 class TestBuildFreq(object):

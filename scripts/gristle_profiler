@@ -12,8 +12,11 @@ Main Options:
                         One input file.
     -o, --outfile OUTFILE
                         The output file with a default of '-' for stdout.
-    -c, --column-number COLUMN_NUMBER
-                        Restrict analysis to a single column (field number) - using a zero-offset.
+    -c, --column        COLUMN
+                        Restrict analysis to a single column (field number) - using a zero-offset
+                        or column name from header.  Note that header column names have spaces
+                        trimmed from ends, are changed to lower case, and spaces are replaced with
+                        underscores, eg: Home State  becomes home_state.
     --read-limit READ_LIMIT
                         Limit  the number of records read.
     --max-freq MAX_FREQ The max entries for freq dictionary.
@@ -188,6 +191,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 from typing import List, Tuple, Dict, Any, Optional
 
 from datagristle.common import abort
+import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.field_determinator as field_determinator
@@ -243,17 +247,17 @@ def main() -> int:
                                                      nconfig.verbosity)
 
     if nconfig.column_type_overrides:
-        if max(nconfig.column_type_overrides) < my_file.field_cnt:
-            abort("ERROR: column_type_override references non-existing column_number")
+        if max(nconfig.column_type_overrides) > my_file.field_cnt:
+            abort("ERROR: column_type_override references non-existing column")
 
-    my_fields.analyze_fields(nconfig.column_number,
+    my_fields.analyze_fields(nconfig.col_position,
                              nconfig.column_type_overrides,
                              nconfig.max_freq,
                              nconfig.read_limit)
 
-    out_writer.write_field_results(my_fields, nconfig.column_number)
+    out_writer.write_field_results(my_fields, nconfig.col_position)
     if nconfig.metadata:
-        md_man.write_field_results(my_fields, nconfig.column_number)
+        md_man.write_field_results(my_fields, nconfig.col_position)
 
     out_writer.terminate()
     return 0
@@ -432,18 +436,19 @@ class OutputWriter(object):
 
     def write_field_results(self,
                             my_fields: field_determinator.FieldDeterminator,
-                            column_number: int) -> None:
+                            col_position: int) -> None:
         self.write_header()
         self.write_header("Field Analysis Results")
         self.division = "Field Analysis Results"
         for sub in range(my_fields.field_cnt):
             self.section = "field_%d" % sub
             self.subsection = "main"
-            if column_number is not None and sub != column_number:
+            if col_position is not None and sub != col_position:
                 continue
             self.write_header()
             self.write_header("------------------------------------------------------", indent=6)
             self.write_string("Name", my_fields.field_names[sub], indent=4)
+            self.write_string("Gristle Name", my_fields.field_names[sub].strip().replace(' ', '_').lower(), indent=4)
             self.write_string("Field Number", sub, indent=4)
             self.write_string("Wrong Field Cnt", my_fields.field_rows_invalid[sub], indent=4)
             if my_fields.field_trunc[sub]:
@@ -574,9 +579,9 @@ class ConfigManager(configulator.Config):
         self.add_custom_metadata(name="read_limit",
                                  default=-1,
                                  type=int)
-        self.add_custom_metadata(name="column_number",
+        self.add_custom_metadata(name="column",
                                  short_name="c",
-                                 type=int)
+                                 type=str)
         self.add_custom_metadata(name="max_freq",
                                  type=int)
         self.add_custom_metadata(name="column_types",
@@ -609,9 +614,9 @@ class ConfigManager(configulator.Config):
         self.add_obsolete_metadata("types",
                                    short_name="T",
                                    msg="-T and --types have been renamed --column-types")
-        self.add_obsolete_metadata("column",
+        self.add_obsolete_metadata("column_number",
                                    short_name="",
-                                   msg="--column has been renamed --column-number")
+                                   msg="--column_number has been renamed --column")
         self.add_obsolete_metadata("",
                                    short_name="v",
                                    msg="-v (verbose) has been replaced by --verbosity high")
@@ -628,8 +633,8 @@ class ConfigManager(configulator.Config):
         if len(config["infiles"]) > 1:
             abort("ERROR: multiple files not supported")
 
-        if config["brief"] and config["column_number"]:
-            abort("ERROR: must not specify both brevity and column number")
+        if config["brief"] and config["column"]:
+            abort("ERROR: must not specify both brevity and column")
 
         if (config["schema_id"] or config["collection_id"]) and not config["metadata"]:
             abort("ERROR: schema_id and collection_id are only for metadata")
@@ -664,6 +669,27 @@ class ConfigManager(configulator.Config):
                 self.config["column_type_overrides"][int(col_no)] = col_type
         self.replace_configs(self.config)
 
+        # add col_name to config:
+        self.generate_csv_header_config()
+
+        # validate column offsets against header:
+        if self.config['column'] is not None and comm.isnumeric(self.config['column']):  # type: ignore
+            if int(self.config['column'] ) > len(self.nconfig.header.field_names):     # type: ignore
+                abort('ERROR: the column option is invalid',
+                    f"The value of {self.config['column']} is outside the valid range based on fields "
+                     'found within the first record')
+
+        # add col_position to config:
+        if self.config['column'] is None:
+            col_position = None
+        else:
+            try:
+                col_position = self.config['header'].get_field_position_from_any(self.config['column'])
+            except KeyError as err:
+                abort('ERROR: the column option had invalid values within',
+                    f'The following value was not in the header: {err},  '
+                    'or the header was inaccessible (reading from stdin?)')
+        self.update_config('col_position', col_position)
 
 if __name__ == "__main__":
     sys.exit(main())
