@@ -56,6 +56,9 @@ class Header:
 
     def __init__(self):
         self.raw_field_names = []
+        self.raw_fields_by_position = {}
+        self.raw_fields_by_name = {}
+
         self.field_names = []
         self.fields_by_position = {}
         self.fields_by_name = {}
@@ -78,12 +81,15 @@ class Header:
             if dialect.has_header:
                 field_name = self.format_raw_header_field_name(raw_field_name)
             else:
-                field_name = f'field_{field_sub}'
+                raw_field_name = field_name = f'field_{field_sub}'
 
-            self.raw_field_names.append(raw_field_name)
             self.field_names.append(field_name)
             self.fields_by_position[field_sub] = field_name
             self.fields_by_name[field_name] = field_sub
+
+            self.raw_field_names.append(raw_field_name)
+            self.raw_fields_by_position[field_sub] = raw_field_name
+            self.raw_fields_by_name[raw_field_name] = field_sub
 
         if len(self.field_names) != len(set(self.field_names)):
             comm.abort(f'Error: header has duplicate field names')
@@ -130,6 +136,17 @@ class Header:
         """ Returns a list of field positions given a list of positions or names
         """
         return [self.get_field_position_from_any(x) for x in lookups]
+
+
+    def get_raw_field_name(self,
+                           field_position):
+        return self.raw_fields_by_position[field_position]
+
+
+    def get_raw_field_position(self,
+                               raw_field_name):
+        return self.raw_fields_by_name[raw_field_name]
+
 
 
 

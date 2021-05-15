@@ -28,6 +28,15 @@ Examples:
         Presents the third record in the file with one field per line
         and field names from the header record as labels in the left
         column.
+    For example:
+        gristle_viewer  -i ../data/us_presidents.csv -r 3
+        presidency           -  3
+        president            -  Thomas Jefferson
+        wikipedia_entry      -  http://en.wikipedia.org/wiki/Thomas_Jefferson
+        took_office          -  4/03/1801
+        left_office          -  4/03/1809
+        home_state           -  Virginia
+
     $ gristle_viewer sample.csv -r 3  -d '|' -q quote_none
         In addition to what was described in the first example this
         adds explicit csv dialect overrides.
@@ -49,7 +58,9 @@ from typing import Dict, List, Optional, Any, Tuple
 
 import datagristle.common as comm
 import datagristle.configulator as conf
+import datagristle.csvhelper as csvhelper
 import datagristle.field_determinator  as field_determinator
+import datagristle.field_misc as field_misc
 import datagristle.field_type as field_type
 import datagristle.file_io as file_io
 import datagristle.file_type as file_type
@@ -75,15 +86,16 @@ def main():
     except EOFError:
         sys.exit(errno.ENODATA) # 61: empty file
 
-    field_names = None
+    if nconfig.raw_field_names:
+        field_name_len = get_field_name_len(nconfig.header.raw_field_names)
+    else:
+        field_name_len = get_field_name_len(nconfig.header.field_names)
 
     recnum = nconfig.recnum
     while True:
         input_handler = file_io.InputHandler(nconfig.infiles,
                                              nconfig.dialect,
                                              return_header=True)
-        if not field_names:
-            field_names = get_field_names(nconfig.infiles, input_handler.dialect)
         rec = get_rec(input_handler, recnum)
         input_handler.close()
         if rec is None:
@@ -91,7 +103,7 @@ def main():
             return
 
         output_handler = file_io.OutputHandler(nconfig.outfile, dialect=None)
-        display_rec(rec, field_names, output_handler)
+        display_rec(rec, nconfig.header, field_name_len, nconfig.raw_field_names, output_handler)
         output_handler.close()
 
         if nconfig.outfile != '-' or nconfig.exit_after:
@@ -114,38 +126,26 @@ def main():
 
 
 
-def get_field_names(input_files, dialect) -> Dict[int, str]:
-
-    field_cnt = file_type.get_field_cnt(dialect, input_files[0])
-    my_fields = field_determinator.FieldDeterminator(input_files[0],
-                                                     field_cnt,
-                                                     dialect)
-    my_fields.analyze_fields()
-    return my_fields.field_names
+def get_field_name_len(field_names):
+    max_field_len = max([len(x) for x in field_names])
+    padding = 4
+    return max_field_len + padding
 
 
 
 def display_rec(rec: str,
-                field_names: Dict[int, str],
+                header: csvhelper.Header,
+                field_name_len: int,
+                raw_field_names: bool,
                 output_handler: file_io.OutputHandler):
     """ Displays a single record
     """
-    # figure out label length for formatting:
-    if field_names:
-        max_v_len = 0
-        for val in field_names.values():
-            if len(val) > max_v_len:
-                max_v_len = len(val)
-        min_format_len = max_v_len + 4
-    else:
-        for f_sub in range(len(rec)):
-            field_names[f_sub] = f'field_{f_sub}'
-        min_format_len = 12
+    field_lookup = header.get_raw_field_name if raw_field_names else header.get_field_name
 
-    # write in column order:
     for f_sub in range(len(rec)):
         try:
-            output_handler.write_text_rec('%-*s  -  %-40s\n' % (min_format_len, field_names[f_sub], rec[f_sub]))
+            record = '%-*s  -  %-40s\n' % (field_name_len, field_lookup(f_sub), rec[f_sub])
+            output_handler.write_text_rec(record)
         except KeyError:
             output_handler.write_text_rec('*** Missing Field - possibly due to csv parsing issues ***\n')
 
@@ -188,6 +188,11 @@ class ConfigManager(conf.Config):
                                  type=bool,
                                  action='store_const',
                                  const=True)
+        self.add_custom_metadata(name='raw_field_names',
+                                 default=False,
+                                 type=bool,
+                                 action='store_const',
+                                 const=True)
 
         self.add_standard_metadata('verbosity')
         self.add_all_csv_configs()
@@ -197,6 +202,7 @@ class ConfigManager(conf.Config):
 
     def extend_config(self) -> None:
         self.generate_csv_dialect_config()
+        self.generate_csv_header_config()
 
 
     def validate_custom_config(self,
