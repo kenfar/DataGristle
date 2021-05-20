@@ -223,7 +223,7 @@ class CSVPythonSorter(object):
         try:
             sort_values = [transform(rec[key_field.position], key_field, primary_order) for key_field in key_fields]
         except IndexError:
-            comm.abort('Error: key references columns that does not exist in record', f'{rec=}')
+            comm.abort('Error: key references columns that does not exist in record', f'rec={rec}')
         return sort_values
 
 

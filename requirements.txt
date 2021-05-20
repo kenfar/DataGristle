@@ -1,5 +1,6 @@
 appdirs     == 1.4.4
 cletus      == 1.0.15
+colorama    == 0.4.3
 envoy       == 0.0.3
 Flask       == 1.1.2
 Jinja2      == 2.11.3
