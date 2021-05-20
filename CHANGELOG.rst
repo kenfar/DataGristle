@@ -1,3 +1,23 @@
+V0.2.2 - 2021-05
+================
+
+-  Improvement: the field-names from headers can now be used instead of
+   column offsets for gristle_sorter, gristle_freaker, gristle_profiler,
+   and gristle_slicer.
+-  Improvement: The use of the header now follows four simple rules:
+
+   -  It can be referred to as row 0 when it makes sense - like with
+      gristle_slicer & gristle_viewer.
+   -  It will be passed through when it makes sense - like with
+      gristle_sorter.
+   -  It will be used to translate field names to offsets for
+      configuration.
+   -  But will otherwise be ignored.
+
+-  Bug Fix: gristle_freaker was failing with 0-length files when using
+   col-type=each
+-  Bug Fix: gristle_sorter was failing with some multi-directional sorts
+
 V0.2.1 - 2021-04
 ================
 
