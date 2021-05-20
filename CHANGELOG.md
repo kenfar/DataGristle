@@ -3,11 +3,11 @@
    * Improvement: the field-names from headers can now be used instead of column offsets
      for gristle_sorter, gristle_freaker, gristle_profiler, and gristle_slicer.
    * Improvement: The use of the header now follows four simple rules:
-      * It can be referred to as row 0 when it makes sense - like with gristle_slicer
-        & gristle_viewer.
-      * It will be passed through when it makes sense - like with gristle_sorter.
-      * It will be used to translate field names to offsets for configuration.
-      * But will otherwise be ignored.
+       - It can be referred to as row 0 when it makes sense - like with gristle_slicer
+         & gristle_viewer.
+       - It will be passed through when it makes sense - like with gristle_sorter.
+       - It will be used to translate field names to offsets for configuration.
+       - But will otherwise be ignored.
    * Bug Fix: gristle_freaker was failing with 0-length files when using col-type=each
    * Bug Fix: gristle_sorter was failing with some multi-directional sorts
   
@@ -23,10 +23,10 @@
      user overrides - except for piped-in data.
    * BREAKING CHANGE: dropped support for python version 3.7
    * BREAKING CHANGES to all csv programs:
-       * Various changes to names of options for consistency, with older versions
-         caught with an error msg to provides new name.
-       * Various changes to csv dialect handling for consistency and correct
-         handling of escapechar, doublequoting, skipinitialspace.
+     - Various changes to names of options for consistency, with older versions
+       caught with an error msg to provides new name.
+     - Various changes to csv dialect handling for consistency and correct
+       handling of escapechar, doublequoting, skipinitialspace.
 
 # v0.1.7 - 2020-07
    * Improvement: now supports python versions 3.7 and 3.8
