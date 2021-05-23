@@ -112,22 +112,25 @@ def abort(summary: str,
         then exits.
     """
     def print_solid_line():
-        print('=' * 79)
+        print('=' * 79, file=sys.stderr)
 
     def print_empty_line():
-        print('= ', end='')
-        print(' ' * 75, end='')
-        print(' =')
+        print('= ', end='', file=sys.stderr)
+        print(' ' * 75, end='', file=sys.stderr)
+        print(' =', file=sys.stderr)
 
     def print_text_line(text):
-        text = repr(text)
+        if isinstance(text, str):
+            text = text
+        else:
+            text = repr(text)
         if text:
             for i in range(int(math.ceil(len(text)/75))):
-                print('= ', end='')
-                print('%-75.75s' % text[i*75:(i*75)+75], end='')
-                print(' =')
+                print('= ', end='', file=sys.stderr)
+                print('%-75.75s' % text[i*75:(i*75)+75], end='', file=sys.stderr)
+                print(' =', file=sys.stderr)
 
-    print('')
+    print('', file=sys.stderr)
     print_solid_line()
     print_text_line(summary)
     print_empty_line()
@@ -139,8 +142,8 @@ def abort(summary: str,
     print_solid_line()
 
     if verbosity == 'debug':
-        print(' ')
-        traceback.print_stack(file=sys.stdout)
+        print(' ', file=sys.stderr)
+        traceback.print_stack(file=sys.stderr)
 
     try:
         logger.critical(summary)      # type: ignore
