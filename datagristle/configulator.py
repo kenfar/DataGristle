@@ -182,6 +182,7 @@ class Config(object):
         """
         pass
 
+
     def define_user_config(self):
         """ Provide calling programs function placeholder for defining config
 
@@ -190,8 +191,17 @@ class Config(object):
         pass
 
 
+    def define_obsolete_config(self):
+        """ Provide calling programs function placeholder for defining obsolete config
+
+        This is where the calling program defines all obsolete config items.
+        """
+        pass
+
+
     def get_config(self) -> Tuple[Any, Dict[Any, Any]]:
         self.define_user_config()
+        self.define_obsolete_config()
         self.process_configs()
 
         self.extend_config()
