@@ -119,23 +119,29 @@ def abort(summary: str,
         print(' ' * 75, end='', file=sys.stderr)
         print(' =', file=sys.stderr)
 
-    def print_text_line(text):
-        if isinstance(text, str):
-            text = text
-        else:
-            text = repr(text)
-        if text:
-            for i in range(int(math.ceil(len(text)/75))):
-                print('= ', end='', file=sys.stderr)
-                print('%-75.75s' % text[i*75:(i*75)+75], end='', file=sys.stderr)
-                print(' =', file=sys.stderr)
+    def print_text_line(text:str):
+        for line_num in range(int(math.ceil(len(text)/75))):
+            line_start = line_num * 75
+            line_end = line_start + 75
+            print('= ', end='', file=sys.stderr)
+            print(f'{text[line_start:line_end]:<75}', end='', file=sys.stderr)
+            print(' =', file=sys.stderr)
 
     print('', file=sys.stderr)
     print_solid_line()
+
     print_text_line(summary)
     print_empty_line()
-    if details is not None:
-        print_text_line(details)
+
+    if details:
+        if isinstance(details, str):
+            text = details
+        else:
+            text = repr(details)
+        for text_line in text.split('\n'):
+            print_text_line(text_line)
+            print_empty_line()
+
     print_empty_line()
     print_text_line('Provide option --help or --long-help for usage information')
     print_empty_line()
