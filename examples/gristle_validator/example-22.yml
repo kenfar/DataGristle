@@ -1,0 +1,13 @@
+infiles: [example-22_errfieldcnt_option_input.csv]
+outfile: /tmp/example-22_actualout.csv
+errfile: /tmp/example-22_actualout_err.csv
+field_cnt: 2
+verbosity: normal
+
+quoting: quote_none
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+quotechar: null
+skipinitialspace: null

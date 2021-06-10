@@ -21,18 +21,20 @@ Main Options:
                         One or more input files or '-' (the default) for stdin.
     -o, --outfile OUTFILE
                         The output file with a default of '-' for stdout.
-    -e, --outerr OUTERR
+    -e, --errfile OUTERR
                         The output file for invalid records with a default of stderr.
     -f, --field-cnt FIELD_CNT
                         The number of fields in the record.
                         If not provided it will default to number of fields on first record
+    --err-out-fields    Appends four fields to the end of the outerr record: total error_count,
+                        and then for the first error: column_number, validator, and error_msg.
+    --err-out-text      Writes additional text records for each error following the record
+                        with the error.  These aren't csv records, but provide detail on every
+                        error encountered on the record.
     --valid-schema VALID_SCHEMA
                         Validation schema file name.
     --random-out RANDOM_OUT
                         Write a percentage of records out, valid values are 0-100.
-    --errmsg            Append error msg at end of each invalid record.
-                        Defaults on.
-
 
 {see: helpdoc.CSV_SECTION}
 
@@ -67,18 +69,17 @@ Licensing and Further Info:
     Copyright 2011-2021 Ken Farmer
 """
 import errno
-from os.path import basename
+import os
+from os.path import basename, dirname
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import Dict, List, Any, Optional, Union, Type, Callable
-
-import validictory as valid
-import ruamel.yaml as yaml
+from typing import Union, Type, Callable, Tuple
 
 import datagristle.common as comm
 import datagristle.configulator as conf
 import datagristle.file_io as file_io
+import datagristle.file_validator as file_validator
 import datagristle.helpdoc as helpdoc
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
@@ -121,345 +122,31 @@ def main() -> int:
                                            random_out=nconfig.random_out)
 
 
-    rec_schema = load_schema(nconfig.valid_schema)
-    rec_validator = RecValidator(valid_field_cnt=nconfig.field_cnt,
-                                 rec_schema=rec_schema)
+    rec_schema = file_validator.load_schema(nconfig.valid_schema, nconfig.schema_path)
+    rec_validator = file_validator.RecValidator(valid_field_cnt=nconfig.field_cnt,
+                                                rec_schema=rec_schema,
+                                                header=nconfig.header)
 
-    invalid_cnt = process_all_records(input_handler,
-                                      outfile_handler,
-                                      outerr_handler,
-                                      rec_validator,
-                                      nconfig.verbosity)
+    processor = file_validator.RecordProcessor(input_handler,
+                                               outfile_handler,
+                                               outerr_handler,
+                                               rec_validator,
+                                               nconfig.err_out_fields,
+                                               nconfig.err_out_text,
+                                               nconfig.verbosity)
+    processor.process_recs()
+
 
     input_handler.close()
     outfile_handler.close()
     outerr_handler.close()
 
-    if invalid_cnt > 0:
+    if processor.invalid_rec_cnt > 0:
         return errno.EBADMSG  # is a 74 on linux
     elif input_handler.rec_cnt == 0:  # catches empty stdin
         return errno.ENODATA  # is a 61 on linux
     else:
         return 0
-
-
-
-def process_all_records(input_handler: file_io.InputHandler,
-                        outfile_handler: file_io.OutputHandler,
-                        outerr_handler: file_io.OutputHandler,
-                        rec_validator: 'RecValidator',
-                        verbosity: int) -> int:
-    """ Walks through input file, validating each record, and writing
-        out results.
-    """
-
-    valid_cnt = 0
-    invalid_cnt = 0
-
-    for rec in input_handler:
-        valid_rec = True
-        field_cnt_msg = None
-        schema_msg = None
-
-        if not rec_validator.check_field_cnt(len(rec)):
-            valid_rec = False
-            field_cnt_msg = rec_validator.error
-
-        if input_handler.dialect.has_header and input_handler.rec_cnt == 1:
-            pass
-        elif not valid_rec:
-            pass  # don't check schema if the rec failed field_cnt check
-        else:
-            if rec_validator.rec_schema:
-                if not rec_validator.check_schema(rec):
-                    valid_rec = False
-                    schema_msg = rec_validator.error
-
-        if valid_rec:
-            valid_cnt += 1
-            outfile_handler.write_rec(rec)
-        else:
-            invalid_cnt += 1
-            rec.append(comm.coalesce(field_cnt_msg, schema_msg))
-            outerr_handler.write_rec(rec)
-
-    if verbosity in ('high', 'debug'):
-        write_stats(input_handler.rec_cnt,
-                    valid_cnt,
-                    invalid_cnt)
-    return invalid_cnt
-
-
-def write_stats(input_cnt: int, valid_cnt: int, invalid_cnt: int) -> None:
-    """ Writes input, output, and validation counts to stdout.
-    """
-    print('')
-    print('input_cnt        | %d ' % input_cnt)
-    print('invalid_cnt      | %d ' % invalid_cnt)
-    print('valid_cnt        | %d ' % valid_cnt)
-
-
-def load_schema(schema_file: str) -> Optional[Dict[Any, Any]]:
-    """ Loads validation schema.
-        If the schema_file argument is None, then it will not load,
-        this is useful when the user wants to check field counts,
-        but does not have or want to use a validation schema.
-    """
-    schema_dict = None
-    if schema_file:
-        with open(schema_file, 'r') as schema_buf:
-            schema_dict = yaml.safe_load(schema_buf)
-    return schema_dict
-
-
-
-
-class RecValidator(object):
-    # how to provide caller with actual vs valid values?
-
-    def __init__(self,
-                 valid_field_cnt: Optional[int] = None,
-                 rec_schema=None) -> None:
-
-        self.rec_schema = rec_schema
-        self.valid_field_cnt: Optional[int] = valid_field_cnt
-        self.last_field_cnt: Optional[int] = None
-        self.error: Optional[str] = None # holds last error encountered
-        if rec_schema:
-            try:
-                ValidateTheValidator(rec_schema)
-            except ValueError as error:
-                print(error)
-                sys.exit(1)
-
-
-    def check_field_cnt(self,
-                        actual_field_cnt: int):
-        """ If no valid_field_cnt was assigned originally, set it to the first
-            actual field cnt.
-        """
-
-        if self.valid_field_cnt is None:
-            self.valid_field_cnt = actual_field_cnt
-        self.last_field_cnt = actual_field_cnt
-
-        if actual_field_cnt == self.valid_field_cnt:
-            self.error = None
-            return True
-        else:
-            self.error = 'bad field count - should be %d but is: %d'  % \
-                  (self.valid_field_cnt, self.last_field_cnt)
-            return False
-
-
-    def check_schema(self, record: List[str]) -> bool:
-        """ First checks that the values match the dg_type custom value.
-            Doing the custom check first since it gives the most detailed
-            error message.
-            If that passes, then run the validictory validation for more.
-        """
-        self.error = self._check_types_for_record(record)
-        if self.error:
-            return False
-
-        self.error = self._check_ranges_for_record(record)
-        if self.error:
-            return False
-
-        try:
-            valid.validate(record, self.rec_schema)
-        except ValueError as err:
-            self.error = repr(err)
-            return False
-        else:
-            return True
-
-
-    def _check_types_for_record(self, record: List[str]) -> Optional[str]:
-        """ Json schema and Validictory can't check types for us - since data
-            returned from the csv module is a string.  So, this is the work around.
-               - the json schema type should normally be: string
-               - we're adding our own type called 'dg_type' - which allows values
-                 of string, float or integer.  We will test for integers and floats.
-        """
-        # Loop through the schema, processing one column at a time.
-        # for each column, check its info against record.
-        # if any fail the test, exit early with msg.
-        # else return None.
-        for index, col_info in enumerate(self.rec_schema['items']):
-            if 'dg_type' in col_info:
-                if col_info['dg_type'] == 'integer':
-                    try:
-                        int(record[index])
-                    except ValueError:
-                        msg = self._msg_formatter(index, 'dg_type:integer', record[index], col_info)
-                        return msg
-                    except IndexError:
-                        return 'Failed to validate field due to parsing error.  Wrong delimiter?'
-                elif col_info['dg_type'] == 'float':
-                    try:
-                        float(record[index])
-                    except ValueError:
-                        msg = self._msg_formatter(index, 'dg_type:float', record[index], col_info)
-                        return msg
-                    except IndexError:
-                        return 'Failed to validate field due to parsing error.  Wrong delimiter?'
-
-        return None
-
-
-    def _check_ranges_for_record(self, record: List[str]) -> Optional[str]:
-        """ Json schema and Validictory can't check numeric min & max values -
-            since the data returned from the csv module is a string.  So, this
-            is the work around.
-               - the dg_type constraint must be provided, and either float or
-                 integer
-               - the dg_minimum or dg_maximum value must be some appropriate
-                 number
-        """
-        # Loop through the schema, processing one column at a time.
-        # for each column, check its info against record.
-        # if any fail the test, exit early with msg.
-        # else return None.
-        for index, col_info in enumerate(self.rec_schema['items']):
-            if 'dg_type' not in col_info:
-                continue
-
-            caster: Callable
-            if col_info['dg_type'] == 'integer':
-                caster = int
-            else:
-                caster = float
-            if 'dg_minimum' in col_info:
-                try:
-                    if caster(record[index]) < caster(col_info['dg_minimum']):
-                        msg = self._msg_formatter(index, 'dg_minimum', record[index], col_info)
-                        return msg
-                except ValueError as err:
-                    return repr(err)
-                except IndexError:
-                    return 'Failed to validate field due to parsing error.  Wrong delimiter?'
-            if 'dg_maximum' in col_info:
-                try:
-                    if caster(record[index]) > caster(col_info['dg_maximum']):
-                        msg = self._msg_formatter(index, 'dg_maximum', record[index], col_info)
-                        return msg
-                except ValueError as err:
-                    return repr(err)
-                except IndexError:
-                    return 'Failed to validate field due to parsing error.  Wrong delimiter?'
-
-        return None
-
-
-    @staticmethod
-    def _msg_formatter(field_num: int,
-                       field_check: str,
-                       field_value: str,
-                       col_info: Dict[str, Any],
-                       hard_msg: str = None):
-
-        if hard_msg:
-            return hard_msg
-
-        if 'title' in col_info:
-            field_title = f" ({col_info['title']}) "
-        else:
-            field_title = ' '
-
-        msg = (f'Failed to validate field number {field_num} {field_title} - '
-               f'failed {field_check} check with actual value of {field_value}')
-        return msg
-
-
-
-
-class ValidateTheValidator(object):
-    """ Validates the validation schema - to ensure that it is correctly
-        structured.   This includes checks on its structure, keywords, and
-        values.
-
-        Any errors found will be handled by a ValueError exception.
-    """
-
-    def __init__(self, validation_schema: Dict[Any, Any]) -> None:
-        self.schema = validation_schema
-        self.unsupported_keys = ['minimum', 'maximum', 'format', 'divisibleBy']
-        self.valid_keys = ['type', 'minLength', 'maxLength', 'title',
-                           'description', 'enum', 'pattern', 'required',
-                           'blank',
-                           'dg_type', 'dg_minimum', 'dg_maximum']
-        self._validate_schema()
-
-
-    def _validate_schema(self) -> None:
-        """ Validates entire schema - with a few high-level checks, and by
-            running _validate_field for each field validation set.
-        """
-        if 'items' not in self.schema:
-            raise ValueError("Error: invalid schema, missing 'items' key")
-        if len(self.schema.keys()) != 1:
-            raise ValueError("Error: invalid schema, incorrect number of 'items' keys")
-        for field_validators in self.schema['items']:
-            self._validate_field(field_validators)
-
-
-    def _validate_field(self, field_validators) -> None:
-        """ Validates one field, by running checks on each field
-            validator in the schema.
-        """
-        for v_key in field_validators.keys():
-            self._validate_validator(v_key, field_validators[v_key])
-
-        self._validate_field_dg_range(field_validators)
-
-
-    @staticmethod
-    def _validate_field_dg_range(field_validators):
-        """ Validates the custom dg_minimum and dg_maximum field validators.
-            These fields and their values are dependent on dg_type being
-            provided and having consistent types.
-        """
-
-        def limit_checker(limit: str):
-            if limit in field_validators:
-                if 'dg_type' not in field_validators:
-                    raise ValueError("Error: invalid schema, %s but no dg_type" % limit)
-                else:
-                    try:
-                        if field_validators['dg_type'] == 'integer':
-                            int(field_validators[limit])
-                        elif field_validators['dg_type'] == 'float':
-                            float(field_validators[limit])
-                        else:
-                            raise ValueError("Error: invalid schema, %s requires a numeric dg_type" % limit)
-                    except ValueError:
-                        raise ValueError("Error: invalid schema, %s not of dg_type" % limit)
-
-        limit_checker('dg_minimum')
-        limit_checker('dg_maximum')
-
-
-    def _validate_validator(self, v_key: str, v_value: Union[str, bool]) -> None:
-        """ Validate individual field validators:
-                - ensure all keys are valid & supported
-                - ensure values are valid for the keys
-        """
-
-        if v_key not in self.valid_keys:
-            if v_key in self.unsupported_keys:
-                raise ValueError('Error:  invalid schema, unsupported key value: %s' % v_key)
-            else:
-                raise ValueError('Error:  invalid schema, unknown key value: %s' % v_key)
-        if v_key == 'required':
-            if v_value not in [True, False]:
-                raise ValueError('Error:  invalid schema, unknown value for required: %s' % v_value)
-        if v_key == 'blank':
-            if v_value not in [True, False]:
-                raise ValueError('Error:  invalid schema, unknown value for blank: %s' % v_value)
-        if v_key == 'dg_type':
-            if v_value not in ['integer', 'float', 'string']:
-                raise ValueError('Error:  invalid schema, unknown value for dg_type: %s' % v_value)
 
 
 
@@ -497,6 +184,18 @@ class ConfigManager(conf.Config):
                                  short_name='f',
                                  type=int)
 
+        self.add_custom_metadata(name='err_out_fields',
+                                 type=bool,
+                                 default=False,
+                                 action='store_const',
+                                 const=True)
+
+        self.add_custom_metadata(name='err_out_text',
+                                 type=bool,
+                                 default=False,
+                                 action='store_const',
+                                 const=True)
+
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
         self.add_all_csv_configs()
@@ -507,6 +206,10 @@ class ConfigManager(conf.Config):
         self.add_obsolete_metadata("validschema",
                                    short_name=None,
                                    msg="--validschema has been renamed to --valid-schema")
+        self.add_obsolete_metadata("outerr",
+                                   short_name=None,
+                                   msg="--outerr has been renamed to --errfile")
+
 
 
     def validate_custom_config(self,
@@ -521,6 +224,12 @@ class ConfigManager(conf.Config):
 
     def extend_config(self):
         self.generate_csv_dialect_config()
+        self.generate_csv_header_config()
+        schema_path = []
+        schema_path.append(os.getcwd())
+        if self.nconfig.config_fn:
+            schema_path.append(dirname(self.nconfig.config_fn))
+        self.update_config('schema_path', schema_path)
 
 
 if __name__ == '__main__':

@@ -105,7 +105,7 @@ def dialect_del_fixer(values: str) -> str:
 
 
 def abort(summary: str,
-          details: Optional[str] = None,
+          details: Optional[Any] = None,
           rc: int = 1,
           verbosity: str = 'normal') -> NoReturn:
     """ Creates formatted error message within a box of = characters

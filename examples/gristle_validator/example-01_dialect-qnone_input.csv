@@ -1,0 +1,6 @@
+num,alpha,alphanumeric
+1,simple,foobar
+3,aaa,gorilla
+2,a\
+newline,blahblah
+4,a\,embeddeddelimiter,gahbaz
