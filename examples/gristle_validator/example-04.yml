@@ -1,0 +1,12 @@
+infiles: [example-04_dialect-qall-doublequote_input.csv]
+outfile: /tmp/example-04_dialect-qall_actualout.csv
+errfile: /tmp/example-04_dialect-qall_actualout_err.csv
+verbosity: normal
+
+quoting: quote_all
+delimiter: ','
+doublequote: true
+escapechar: null
+has_header: true
+quotechar: null
+skipinitialspace: null

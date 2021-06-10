@@ -1,0 +1,16 @@
+infiles: [example-24_err_out_fields_input.csv]
+outfile: /tmp/example-24_actualout.csv
+errfile: /tmp/example-24_actualout_err.csv
+valid_schema: example-24_schema.yml
+field_cnt: 6
+verbosity: normal
+err_out_fields: true
+#err_out_text: true
+
+quoting: quote_none
+delimiter: ','
+doublequote: null
+escapechar: \
+has_header: true
+quotechar: null
+skipinitialspace: null

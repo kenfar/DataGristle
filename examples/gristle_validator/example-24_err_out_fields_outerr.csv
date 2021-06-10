@@ -1,0 +1,3 @@
+42,Bill Clinton,http://en.wikipedia.org/wiki/Bill_Clinton,20/01/1993,20/01/2001,Arkansas,InvalidExtraField,error_cnt=1,col_num=,validator=field_cnt,msg=bad field count - should be 6 but is: 7
+43Invalid,George W. Bush,http://en.wikipedia.org/wiki/George_W._Bush,20/01/2001,20/01/2009,Texas,error_cnt=2,col_num=0,validator=type,msg='43Invalid' is not of type 'number'
+44,Barack Obama,http://en.wikipedia.org/wiki/Barack_Obama,20/01/2009,20/01/2017,IllinoisInvalid,error_cnt=3,col_num=5,validator=enum,msg='IllinoisInvalid' is not one of ['Arkansas'\, 'Illinois'\, 'Virginia'\, 'Texas'\, 'Ohio'\, 'Iowa'\, 'California'\, 'Michigan'\, 'Georgia'\, 'New York'\, 'Missouri'\, 'Indiana'\, 'Massachusetts'\, 'New Jersey'\, 'Tennessee'\, 'Pennsylvania'\, 'Louisiana'\, 'New Hampshire']

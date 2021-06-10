@@ -1,0 +1,13 @@
+infiles: [example-07_dialect-qnonnum_input.csv]
+outfile: /tmp/example-07_dialect-qnonnum_actualout.csv
+errfile: /tmp/example-07_dialect-qnonnum_actualout_err.csv
+verbosity: normal
+
+quoting: quote_nonnumeric
+delimiter: ','
+escapechar: \
+has_header: true
+
+doublequote: null
+quotechar: null
+skipinitialspace: null

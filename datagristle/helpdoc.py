@@ -9,7 +9,9 @@
 HELP_SECTION = """Help Options:
    -h, --help           Show help message and exit.
    --long-help          Show verbose help and exit.
-   -V, --version        Show version info and exit.  """
+   -V, --version        Show version info and exit.
+   --verbosity VERBOSITY
+                        Controls level of detail.  Valid values include: quiet, normal, high, debug."""
 
 
 CSV_SECTION = """CSV Dialect Options:    These options are useful in explicitely-defining your csv dialect, in

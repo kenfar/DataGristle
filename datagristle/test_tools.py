@@ -108,7 +108,7 @@ class TestExamples(object):
         shutil.rmtree(self.temp_dir)
 
 
-    def run_example_config(self, example_number):
+    def run_example_config(self, example_number, return_code=0):
         test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))
         print('\n')
         print('=' * 100)
@@ -118,7 +118,9 @@ class TestExamples(object):
         self.load_config(example_number)
         self.make_command(example_number)
         print('\n**** Execution: ****')
-        executor(self.cmd, expect_success=True)
+        pp(self.cmd)
+        expected_success = True if return_code == 0 else False
+        executor(self.cmd, expect_success=expected_success)
 
         self.print_files()
 
