@@ -49,7 +49,6 @@ Metadata Database Options:
 
 {see: helpdoc.CONFIG_SECTION}
 
-
 Examples:
     Example #1 - here's using it to look at a linux passwd file.  In this case we're not providing the
     delimiter and quoting info - but will let it figure these out itself.  There's no header - so it
@@ -173,8 +172,9 @@ Examples:
         Example #3 - Provide csv dialect and column number and type
             ./gristle_profiler -i 7x7.csv --has-header -d '|' --quoting quote_none --max-freq=11  --column-types="1:string"
 
-        Many more examples can be found here:
-            https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
+Further References:
+    Many examples can be found here:
+        https://github.com/kenfar/DataGristle/tree/master/examples/gristle_profiler
 
 
 Licensing and Further Info:
