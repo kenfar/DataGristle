@@ -34,10 +34,9 @@ import time
 #from pprint import pprint as pp
 import appdirs
 import cletus.cletus_log as log
-import cletus.cletus_supp as supp
 import cletus.cletus_job as job
 import ruamel.yaml as yaml
-import validictory as valid
+import jsonschema
 
 import datagristle.common as comm
 
@@ -55,7 +54,6 @@ def main():
             - gets args
             - gets config
             - ensures it isn't already running
-            - ensures it isn't suppressed (temporarily blocked)
             - sets up logging
        For each directory section in config:
             - processes directory
@@ -69,7 +67,6 @@ def main():
     logger.info('config_file used: %s' % config_fn)
 
     jobcheck = exit_if_already_running()
-    exit_if_suppressed()
 
     for dir_sect_name in config:
         if dir_sect_name == 'housekeeping':
@@ -475,12 +472,6 @@ class ConfigValidator:
     """
 
     def __init__(self, config):
-        #self.schema           = validation_schema
-        #self.unsupported_keys = ['minimum', 'maximum', 'format', 'divisibleBy']
-        #self.valid_keys       = ['type', 'minLength', 'maxLength', 'title',
-        #                         'description', 'enum', 'pattern', 'required',
-        #                         'blank',
-        #                         'dg_type', 'dg_minimum', 'dg_maximum']
         self.config = config
         self._validate_document()
 
@@ -511,10 +502,13 @@ class ConfigValidator:
                                                   "required": True},
                                          }
                            }
-        try:
-            valid.validate(gathering_config, gathering_schema)
-        except valid.validator.FieldValidationError as e:
-            comm.abort('ERROR: Config file is invalid', str(e), 1)
+        validator = jsonschema.Draft7Validator(schema=gathering_schema)
+        errors = validator.iter_errors(gathering_config)
+        details = ''
+        for error in errors:
+            details += f'msg: {error.message} \n path: {error.path} \n validator: {error.validator}'
+            comm.abort('ERROR: Config file gathering phase is invalid', details, 1)
+
 
 
     def _validate_inclusion_phase(self, inclusion_config):
@@ -532,10 +526,12 @@ class ConfigValidator:
                                                         "enum": ["gt", "lt"]},
                                          }
                            }
-        try:
-            valid.validate(inclusion_config, inclusion_schema)
-        except valid.validator.FieldValidationError as e:
-            comm.abort('ERROR: Config file is invalid', str(e), 1)
+        validator = jsonschema.Draft7Validator(schema=action_schema)
+        errors = validator.iter_errors(inclusion_config)
+        details = ''
+        for error in errors:
+            details += f'msg: {error.message} \n path: {error.path} \n validator: {error.validator}'
+            comm.abort('ERROR: Config file inclusion phase is invalid', details, 1)
 
 
         #--- if fntime set was included, make sure all necessary items are
@@ -569,10 +565,12 @@ class ConfigValidator:
                                                            "required": False}
                                       }
                         }
-        try:
-            valid.validate(action_config, action_schema)
-        except valid.validator.FieldValidationError as e:
-            comm.abort('ERROR: Config file is invalid', str(e), 1)
+        validator = jsonschema.Draft7Validator(schema=action_schema)
+        errors = validator.iter_errors(action_config)
+        details = ''
+        for error in errors:
+            details += f'msg: {error.message} \n path: {error.path} \n validator: {error.validator}'
+            comm.abort('ERROR: Config file action phase is invalid', details, 1)
 
         if ('action_builtin' in action_config
                 and 'action_external' in action_config):
@@ -684,17 +682,6 @@ def dynamic_comparison(v1, op, v2):
                     'lt': operator.lt}
 
     return operator_map[op](v1, v2)
-
-
-
-def exit_if_suppressed():
-
-    suppcheck = supp.SuppressCheck(app_name=APP_NAME)
-    if suppcheck.suppressed():
-        logger.warning('Pgm has been suppressed - this instance will be terminated.')
-        sys.exit(0)
-    else:
-        logger.info('SuppCheck has passed')
 
 
 
