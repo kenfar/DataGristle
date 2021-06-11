@@ -6,6 +6,7 @@ CSV Dialect Examples:
     Example-05: quote_all with escapechar to ignore embedded quotes
     Example-06: quote_minimum
     Example-07: quote_nonnumeric
+    Example-08: has_header column referencing
 
 gristle_freaker Functionality Examples:
     Example-21: single-col with sorting and write-limit

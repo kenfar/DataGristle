@@ -50,7 +50,7 @@ And examples of all csv utilities can be found here:
        - CSV-aware sort utility that handles data that breaks unix sorts.
    * gristle_validator
        - Validates csv files by confirming that all records have the right number
-         of fields, and by apply a json schema full of requirements to each record.
+         of fields, and by applying a json schema to each record.
    * gristle_viewer
        - Shows one record from a file at a time - formatted based on metadata.
 
@@ -284,16 +284,12 @@ And examples of all csv utilities can be found here:
              Prints all valid input rows to stdout, prints all records with
              other than the same number of fields found on the first record to
              stderr along with an extra final field that describes the error.
-       $ gristle_validator  -i sample.csv  -d '|' --has-header
-             Same comparison as above, but in this case the file was too small
-             or complex for the pgm to automatically determine csv dialect, so
-             we had to explicitly give that info to program.
-       $ gristle_validator  -i sample.csv -o sample_good.csv --outerr sample_err.csv
+       $ gristle_validator  -i sample.csv -o sample_good.csv --errfile sample_err.csv
              Same comparison as above, but explicitly splits good and bad data
              into separate files.
        $ gristle_validator  -i sample.csv --randomout 1
              Same comparison as above, but only writes a random 1% of data out.
-       $ gristle_validator  -i sample.csv --silent
+       $ gristle_validator  -i sample.csv --verbosity quiet
              Same comparison as above, but writes nothing out.  Exit code can be
              used to determine if any bad records were found.
        $ gristle_validator  -i sample.csv --validschema sample_schema.csv
@@ -317,6 +313,12 @@ And examples of all csv utilities can be found here:
                       minLength:        2
                       maxLength:        2
                       enum:             ['ny','tx','ca','fl','wa','ga','al','mo']
+       $ gristle_validator  -i sample.csv -o good.csv -e -
+         --validschema schema.csv --err-out-fields --err-out-text
+             The above command writes error records to stderr.  Err-out-fields 
+             adds error descriptions to the end of the error records, while
+             err-out-text added even more detailed error descriptions as records
+             following invalid records.
 
 
 # gristle_viewer

@@ -2,13 +2,13 @@
 """
 Gristle_validator is used to determine the validity of a file's structure
 and semantics.  It's functionality includes:
-   - output counts of invalid vs valid records
-   - an exit code that indicates findings (0 if everything's good, else 74)
-   - ability to split input file into separate valid & invalid files
-   - ability to use a json-schema compliant yaml config file to define
-     data validation requirements
+   - ability to use a json-schema compliant yaml config file to define data validation
+     requirements
    - ability to check every record for the proper number of fields based
      on an input argument
+   - output counts of invalid vs valid records
+   - ability to split input file into separate valid & invalid files
+   - an exit code that indicates findings (0 if everything's good, else 74)
 
 usage: gristle_validator [options]
 
@@ -52,6 +52,13 @@ Examples:
     $ gristle_validator -i colors.csv --valid-schema colors_schema.yml \
             --delimiter ',' --quoting quote_none --has-header
         This example includes some explicit csv dialect instructions
+    $ gristle_validator  -i sample.csv -o good.csv -e - \
+            --validschema schema.csv --err-out-fields --err-out-text
+        The above command writes error records to stderr.  Err-out-fields adds error
+        descriptions to the end of the error records, while err-out-text added even 
+        more detailed error descriptions as records following invalid records.
+
+
 
 
 Notes:
@@ -166,12 +173,6 @@ class ConfigManager(conf.Config):
                                  short_name='e',
                                  default='-',
                                  type=str)
-
-        self.add_custom_metadata(name='errmsg',
-                                 type=bool,
-                                 default=False,
-                                 action='store_const',
-                                 const=True)
 
         self.add_custom_metadata(name='valid_schema',
                                  type=str)
