@@ -83,11 +83,6 @@ File and Directory Utilities provided in this release:
    -  Used to consolidate large directories with options to control
       matching criteria as well as matching actions.
 
--  gristle_processor
-
-   -  Used to apply actions, like delete, compress, etc, to files based
-      on very flexible criteria.
-
 gristle_slicer
 ==============
 

@@ -58,10 +58,6 @@ And examples of all csv utilities can be found here:
    * gristle_dir_merger
        - Used to consolidate large directories with options to control matching
          criteria as well as matching actions.
-   * gristle_processor
-       - Used to apply actions, like delete, compress, etc, to files based on
-         very flexible criteria.
-
 
 # gristle_slicer
     Extracts subsets of input files based on user-specified columns and rows.
