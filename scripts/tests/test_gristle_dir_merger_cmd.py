@@ -71,10 +71,11 @@ class TestEmpties(TestFixture):
     """
     def test_empty_to_empty(self):
 
-        self.cmd = """%(pgm)s %(source_dir)s       \
-                              %(dest_dir)s         \
-                         --match-on-name-only      \
-                         --log-level debug         \
+        self.cmd = """%(pgm)s                      \
+                         --source-dir %(source_dir)s \
+                         --dest-dir %(dest_dir)s   \
+                         --match-on name_only      \
+                         --verbosity debug         \
                          -r                        \
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
@@ -86,10 +87,11 @@ class TestEmpties(TestFixture):
 
         tt.touch(os.path.join(self.source_dir, 'foo.csv'))
 
-        self.cmd = """%(pgm)s %(source_dir)s       \
-                              %(dest_dir)s         \
-                         --match-on-name-only      \
-                         --log-level debug         \
+        self.cmd = """%(pgm)s                      \
+                         --source-dir %(source_dir)s \
+                         --dest-dir   %(dest_dir)s \
+                         --match-on name_only      \
+                         --verbosity debug         \
                          -r                        \
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
@@ -115,10 +117,11 @@ class TestEmpties(TestFixture):
         os.mkdir(subdir)
         tt.touch(os.path.join(subdir, 'foo.csv'))
 
-        self.cmd = """%(pgm)s %(source_dir)s       \
-                              %(dest_dir)s         \
-                         --match-on-name-only      \
-                         --log-level debug         \
+        self.cmd = """%(pgm)s                      \
+                         --source-dir %(source_dir)s \
+                         --dest-dir %(dest_dir)s   \
+                         --match-on name_only      \
+                         --verbosity debug         \
                          -r                        \
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
@@ -658,11 +661,12 @@ class TestDryRun(TestFixture):
         tt.touch(os.path.join(dest_subdir, 'bar.csv'))
 
 
-        self.cmd = """%(pgm)s %(source_dir)s       \
-                              %(dest_dir)s         \
-                         --match-on-name-only      \
+        self.cmd = """%(pgm)s                      \
+                         --source-dir %(source_dir)s \
+                         --dest-dir %(dest_dir)s   \
+                         --match-on name_only      \
                          --dry-run                 \
-                         --log-level debug         \
+                         --verbosity debug         \
                    """ % {'pgm': PGM,
                           'source_dir': self.source_dir,
                           'dest_dir':   self.dest_dir}
@@ -795,19 +799,19 @@ def get_cmd(source_dir, dest_dir, match_on, on_match, on_partial_match=None):
 
     pgm = PGM
     if match_on == 'name_only':
-        mo_opt = '--match-on-name-only'
+        mo_opt = '--match-on name_only'
     else:
-        mo_opt = '--match-on-name-and-md5'
+        mo_opt = '--match-on name_and_md5'
     if on_partial_match is None:
         opm_opt = ''
     else:
         opm_opt = '--on-partial-match %s' % on_partial_match
-    cmd = f"""{pgm} {source_dir}
-                    {dest_dir}
+    cmd = f"""{pgm} --source-dir {source_dir}
+                    --dest-dir   {dest_dir}
                     {mo_opt}
                     --on-full-match {on_match}
                     {opm_opt}
-                    --log-level debug
+                    --verbosity debug
                     -r
            """
     print('\n command: %s' % cmd)

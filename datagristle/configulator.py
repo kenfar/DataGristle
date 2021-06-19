@@ -424,6 +424,7 @@ class Config(object):
                 if property_name == 'short_name':
                     if len(property_value) != 1:
                         raise ValueError(f'{arg}.short_name length is invalid')
+
                 if property_name == 'dest':
                     if property_value not in self._app_metadata:
                         raise ValueError(f'{arg}.dest refers to non-existing option')
@@ -536,7 +537,7 @@ class Config(object):
 
 
     def _validate_dialect_with_stdin(self, config) -> None:
-        if config['infiles'] == '-':
+        if config.get('infiles', '') == '-':
             if config['delimiter'] is None:
                 comm.abort('Error: csv dialect delimiter is required when piping data via stdin')
             if config['quoting'] is None:

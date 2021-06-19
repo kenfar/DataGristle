@@ -1,24 +1,33 @@
 #!/usr/bin/env python
 """
-Gristle_dir_merger is used to perform powerful directory merging.
+Directory merge tool that consolidates files from a source directory into the
+destination directory by comparing file names, file hashes, and file sizes and
+change timestamps.
 
 Usage:
-  $ gristle_dir_merger [source_dir] [dest_dir] [misc options]
+  $ gristle_dir_merger --source-dir [source_dir] --dest-dir [dest_dir] [misc options]
 
-positional arguments:
-  source_dir            The source directory - from which files are deleted and
+
+{see: helpdoc.HELP_SECTION}
+
+
+Main Options:
+  --source_dir [SOURCE_DIR]
+                        The source directory - from which files are deleted and
                         moved into the destination directory.
-  dest_dir              The destination directory - where files are moved into.
+  --dest_dir [DEST_DIR] The destination directory - where files are moved into.
 
-optional arguments:
 
-  --match-on-name-and-md5
-                        Match files on name and an MD5 commparison.  This is the
-                        default.
-  --match-on-name-only  Match files on name only.  Overrides default of
-                        match-on-name-and-md5.
+Match-Controlling Options:
 
-  --on-full-match       Action for files matched completely.
+  --match-on [MATCH_ON] Directs the program to match files on either just their names
+                        or on the combination of names and md5 hashes.  Valid values
+                        include:  name_only and name_and_md5.  The default is:
+                        name_and_md5.
+
+  --on-full-match [ON_FULL_MATCH]
+                        Describes the Action for files matched completely.
+                        Valid values include:
          keep_dest    - Keeps the desination file and deletes the source file.
                         This is the default - because it is the fastest, and
                         the two files are already deemed to be identical.
@@ -33,8 +42,10 @@ optional arguments:
                         determined by modification time.
          keep_biggest - Keeps the largest of the two matching files.
 
-  --on-partial-match    Action for files matched by name, but not by md5.  Only
-                        applies to match-on-name-and-md5.
+  --on-partial-match [ON_PARTIAL_MATCH]
+                        Describes the Action for files matched by name, but not 
+                        by md5.  Only applies to match-on=name_and_md5.
+                        Valid values include:
          keep_newest  - Keeps the newest of the two matching files, as
                         determined by modification time.  Ths is the default.
          keep_biggest - Keeps the largest of the two matching files.
@@ -44,25 +55,20 @@ optional arguments:
          keep_dest    - Keeps the desination file and deletes the source file.
          keep_source  - Keeps the source and deletes the destination.
 
+MISC Options:
+
   --dry-run             Lists files and action, but does not change them.
   -r, --recursive       Walk through directories recursively.  Default is
                         non-recursive.
-  -s, --stats           Prints processing counts.
-  --log-level           Controls level of detail for what is printed.
-        critical      - Prints only messages that cause the entire program to fail.
-        error         - Prints the above plus messages about operations that
-                        failed.
-        warning       - Prints the above plus warnings.
-        info          - Prints the above plus info about each file.  This is
-                        the Default.
-        debug         - Prints the above plus details on each file's process.
-  --version             Show program's version number and exit.
-  -h, --help            Show this help message and exit.
-  --long-help           Print more verbose help.
+  --ignore-errors       Will ignore errors that would otherwise stop processing
+                        such as encountering a symbolic link.
+
+
+{see: helpdoc.CONFIG_SECTION}
 
 
 Examples
-  $ gristle_dir_merger /tmp/foo /data/foo
+  $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo
         - Compares source of /tmp/foo to dest of /data/foo.
         - Files will be consolidated into /data/foo, and deleted from /tmp/foo.
         - Comparison will be: match-on-name-and-md5 (default)
@@ -70,23 +76,25 @@ Examples
         - Partial matches will use: keep_newest (default)
         - Bottom line: this is what you normally want
 
-  $ gristle_dir_merger /tmp/foo /data/foo --dry-run
+  $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo --dry-run
         - Same as the first example - except it only prints what it would do
           without actually doing it.
         - Bottom line: this is a good step to take prior to running it for real
 
-  $ gristle_dir_merger /tmp/foo /data/foo -r
+  $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo -r
         - Same as the first example - except it runs recursively through
           the directories.
 
-  $ gristle_dir_merger /tmp/foo /data/foo --on-partial-match keep-biggest
+  $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo
+    --on-partial-match keep_biggest
         - Comparison will be: match-on-name-and-md5 (default)
         - Full matches will use: keep_dest (default)
         - Partial matches will use: keep_biggest (override)
         - Bottom line: this is a good combo if you know that some files
           have been modified on both source & dest, and newest isn't the best.
 
-  $ gristle_dir_merger /tmp/foo /data/foo --match-on-name-only --on-full-match keep-source
+  $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo
+    --match-on name_only --on-full-match keep_source
         - Comparison will be: match-on-name-only (override)
         - Full matches will use: keep_source (override)
         - Bottom line: this is a good way to go if you have
@@ -118,52 +126,57 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2014,2017 Ken Farmer
+Copyright 2014-2021 Ken Farmer
 """
-import sys
-import argparse
-import time
-import math
-import shutil
+import errno
 import glob
 import hashlib
 import logging
 import os
 from os.path import dirname, basename
-from os.path import isdir, isfile, exists
-from os.path import join as pjoin
+from os.path import isdir, isfile, exists, join as pjoin
+from os.path import getsize
+from pprint import pprint as pp
+import shutil
 from signal import signal, SIGPIPE, SIG_DFL
+import sys
+import time
+from typing import Dict
+
+import datagristle.common as comm
+import datagristle.configulator as conf
+import datagristle.helpdoc as helpdoc
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
 
 
-try:
-    from gristle._version import __version__
-except ImportError:
-    # We're running in a directory that doesn't have pathing set up quite right
-    __version__ = 'unknown'
+NAME = basename(__file__)
+LONG_HELP = helpdoc.expand_long_help(__doc__)
+SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 
 
 def main():
-    """ Sets up the environment then runs the main process.
+    """ Sets up the environment then runs the primary process.
     """
-    args = get_args()
-    setup_logs(args.log_level)
+    config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+    nconfig, _ = config_manager.get_config()
 
-    process_dir = ProcessDirs(args.source_dir,
-                              args.matchon,
-                              args.on_f_match,
-                              args.on_p_match,
-                              args.recursive,
-                              args.dry_run,
-                              args.ignore_errors)
+    setup_logs(nconfig.verbosity)
 
-    process_dir.walk(args.source_dir, args.dest_dir)
+    process_dir = ProcessDirs(nconfig.source_dir,
+                              nconfig.match_on,
+                              nconfig.on_full_match,
+                              nconfig.on_partial_match,
+                              nconfig.recursive,
+                              nconfig.dry_run,
+                              nconfig.ignore_errors)
 
-    if args.stats:
+    process_dir.walk(nconfig.source_dir, nconfig.dest_dir)
+
+    if nconfig.verbosity in ('high', 'debug'):
         process_dir.write_stats()
 
     return 0
@@ -175,9 +188,14 @@ class ProcessDirs(object):
         against files within them.
     """
 
-    def __init__(self, starting_src_dir,
-                 matchon, full_match, part_match, recursive,
-                 dry_run, ignore_err):
+    def __init__(self,
+                 starting_src_dir: str,
+                 matchon: str,
+                 full_match: str,
+                 part_match: str,
+                 recursive: bool,
+                 dry_run: bool,
+                 ignore_err: bool):
 
         assert isdir(starting_src_dir)
 
@@ -186,8 +204,8 @@ class ProcessDirs(object):
         self.recursive = recursive
         self.matchon = matchon
         self.starting_src_dir = starting_src_dir
-        self.dest_dirs = {} # key is dirpath, value is count of files within
-        self.dest_files = {} # key is dirpath, value is list of files
+        self.dest_dirs: Dict[str, int] = {} # key is dirpath, value is count of files within
+        self.dest_files: Dict[str, str] = {} # key is dirpath, value is list of files
         self.full_match = full_match
         self.part_match = part_match
         self.merger = MergeFiles(dry_run, ignore_err)
@@ -359,19 +377,19 @@ class ProcessDirs(object):
         logging.info('Move Source Cnt:            %d', self.merger.move_source_cnt)
         logging.info('Rename And Move Source Cnt: %d', self.merger.rename_and_move_source_cnt)
         logging.info('')
-        logging.info('Seconds Duration:      %7.2f', (time.time() - self.start_time))
+        logging.info('Seconds Duration:     %7.0f', (time.time() - self.start_time))
 
 
 
 
 class MergeFiles(object):
     """ A collection of methods used to merge directories and files.
-        Inputs:
-           - dry_run - T/F
-           - ignore_errors - T/F
     """
 
-    def __init__(self, dry_run, ignore_err):
+    def __init__(self,
+                 dry_run: bool,
+                 ignore_err: bool):
+
         self.dry_run = dry_run
         self.ignore_err = ignore_err
         self.action = {'keep_dest': self.keep_dest,
@@ -393,7 +411,7 @@ class MergeFiles(object):
 
 
     def keep_biggest(self, src_path, dst_path, reason=''):
-        if os.path.getsize(src_path) > os.path.getsize(dst_path):
+        if getsize(src_path) > getsize(dst_path):
             self._move_source(src_path, dst_path, reason=reason)
         else:
             self._delete_source(src_path, rsn=reason)
@@ -414,7 +432,6 @@ class MergeFiles(object):
             get a modified name within the destination directory.
         """
         self._rename_and_move_source(src_path, dst_path, reason=reason)
-
 
 
     def _move_source(self, src_path, dst_path, reason):
@@ -483,6 +500,7 @@ class MergeFiles(object):
                 os.rmdir(src_path)
 
 
+
 def get_fileobj_type(path):
     if exists(path):
         if isfile(path):
@@ -498,6 +516,7 @@ def create_dest_dir_if_needed(dest_dir):
     if not exists(dest_dir):
         os.mkdir(dest_dir)
         logging.info('Created dir: %s' % dest_dir)
+
 
 
 def compare_md5s(src_path, dst_path):
@@ -517,13 +536,7 @@ def compare_md5s(src_path, dst_path):
     assert isfile(dst_path)
 
     #---- first run a cheap check: -----
-    size1 = os.path.getsize(src_path)
-    size2 = os.path.getsize(dst_path)
-    #if size1 == size2:
-    #    return 'match'
-    if size1 > size2:
-        return 'not-matched'
-    elif size1 < size2:
+    if os.path.getsize(src_path) != os.path.getsize(dst_path):
         return 'not-matched'
 
     #---- next keep comparing sections, hoping to bail out early
@@ -574,11 +587,15 @@ def create_unique_file_name(dir_name, file_name):
 
 
 
-def setup_logs(log_level='debug', log_to_console=True):
+def setup_logs(verbosity, log_to_console=True):
     """
     """
-    assert log_level.lower() in ('debug', 'info', 'warning', 'error', 'critical')
-    logging.basicConfig(level=log_level.upper(),
+    translation = {'quiet': 'CRITICAL',
+                   'normal': 'ERROR',
+                   'high': 'WARNING',
+                   'debug': 'DEBUG'}
+    log_level = translation[verbosity]
+    logging.basicConfig(level=log_level,
                         format='%(message)s')
 
 def log_action(on_f_match, file_name):
@@ -587,7 +604,6 @@ def log_action(on_f_match, file_name):
 def log_reason(reason):
     if reason:
         logging.debug('   %s', reason)
-
 
 
 
@@ -622,106 +638,62 @@ def kill_if_symlink(fqfn, dir_type, ignore_errors):
 
 
 
-def get_args():
-    """ gets args and returns them
-        Input:
-            - command line args & options
-        Output:
-            - args dictionary
-    """
-    use = ("gristle_dir_merger is used to merge directories"
-           " \n"
-           "   gristle_dir_merger source_dir dest_dir [misc options]")
-
-    parser = argparse.ArgumentParser(description=use,
-                                     formatter_class=argparse.RawTextHelpFormatter)
-
-    parser.add_argument('source_dir',
-                        help='Source directory.  Files from here will be deleted or moved into the dest_dir.')
-    parser.add_argument('dest_dir',
-                        help='Destination directory.  Files from the source_dir will be copied into here.')
-    parser.add_argument('--match-on-name-only',
-                        dest='matchon',
-                        action='store_const',
-                        const='name_only',
-                        help='Match files on name only.  Overrides default of match-on-name-and-md5.')
-    parser.add_argument('--match-on-name-and-md5',
-                        dest='matchon',
-                        action='store_const',
-                        const='name_and_md5',
-                        help='Match files on name and an MD5 commparison.  This is the default.')
-    parser.add_argument('--on-full-match',
-                        dest='on_f_match',
-                        choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
-                        default='keep_dest',
-                        required=False,
-                        help='Action for files matched completely.  Default is keep_dest.')
-    # default added below so it won't get added with match-on-name-only:
-    parser.add_argument('--on-partial-match',
-                        dest='on_p_match',
-                        choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'],
-                        required=False,
-                        help='Action for files matched by name but with different content.  Default is keep_newest.')
+class ConfigManager(conf.Config):
 
 
-    parser.add_argument('-i', '--ignore-errors',
-                        default=False,
-                        action='store_true',
-                        dest='ignore_errors',
-                        help='ignores errors, but reports them, when dry-run is true')
+    def define_user_config(self) -> None:
+        self.add_custom_metadata(name='source_dir',
+                                 type=str,
+                                 required=True)
+        self.add_custom_metadata(name='dest_dir',
+                                 type=str,
+                                 required=True)
 
-    parser.add_argument('--dry-run',
-                        default=False,
-                        action='store_true',
-                        dest='dry_run',
-                        help='Lists files and action, but does not change them.')
+        self.add_custom_metadata(name='match_on',
+                                 type=str,
+                                 default='name_and_md5',
+                                 choices=['name_only', 'name_and_md5'])
 
-    parser.add_argument('-r', '--recursive',
-                        default=False,
-                        action='store_true',
-                        help='Walk through directories recursively.  Default is non-recursive')
+        self.add_custom_metadata(name='on_full_match',
+                                 type=str,
+                                 default='keep_dest',
+                                 choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'])
 
-    parser.add_argument('-s', '--stats',
-                        default=False,
-                        action='store_true',
-                        help='Print statistics at end of job.  Default is False.')
+        self.add_custom_metadata(name='on_partial_match',
+                                 type=str,
+                                 choices=['keep_dest', 'keep_source', 'keep_both', 'keep_newest', 'keep_biggest'])
 
-    parser.add_argument('--log-level',
-                        dest='log_level',
-                        choices=['debug', 'info', 'warning', 'error', 'critical'],
-                        default='info',
-                        help='Level of log detail.  Default is Info.')
+        self.add_custom_metadata(name='recursive',
+                                 short_name='r',
+                                 type=bool,
+                                 default=False,
+                                 action='store_const',
+                                 const=True)
+        self.add_custom_metadata(name='ignore_errors',
+                                 type=bool,
+                                 default=False,
+                                 action='store_const',
+                                 const=True)
 
-    parser.add_argument('--long-help',
-                        default=False,
-                        action='store_true',
-                        help='Print more verbose help.')
-
-    parser.add_argument('--version',
-                        action='version',
-                        version='gristle_dir_merger %s' % __version__)
-
-    if '--long-help' in sys.argv:
-        print(__doc__)
-        sys.exit(0)
-
-    args = parser.parse_args()
-
-    if args.matchon is None:
-        args.matchon = 'name_and_md5'
-
-    if args.matchon == 'name_only':
-        if args.on_p_match is not None:
-            parser.error("on-partial-match must not be provided when match-on is 'name_only'")
-    else:
-        if args.on_p_match is None:
-            args.on_p_match = 'keep_newest'
-
-    if (not args.dry_run) and args.ignore_errors:
-        parser.error("ignore-errors requires dry-run")
+        self.add_standard_metadata('dry_run')
+        self.add_standard_metadata('verbosity')
+        self.add_all_config_configs()
+        self.add_all_help_configs()
 
 
-    return args
+    def extend_config(self) -> None:
+        if self.config['match_on'] == 'name_only':
+            if self.config['on_partial_match'] is not None:
+                comm.abort("on-partial-match must not be provided when match-on is 'name_only'")
+        else:
+            if self.config['on_partial_match'] is None:
+                self.config['on_partial_match'] = 'keep_newest'
+
+
+    def validate_custom_config(self,
+                               config: conf.CONFIG_TYPE):
+        if (not self.config.get('dry_run')) and self.config.get('ignore_errors'):
+            comm.abort("ignore-errors requires dry-run")
 
 
 
