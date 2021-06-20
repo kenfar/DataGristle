@@ -419,27 +419,29 @@ And examples of all csv utilities can be found here:
     on full (name and md5) and partial matches (name only) .
 
     Examples
-       $ gristle_dir_merger /tmp/foo /data/foo
+       $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo
              - Compares source of /tmp/foo to dest of /data/foo.
              - Files will be consolidated into /data/foo, and deleted from /tmp/foo.
              - Comparison will be: match-on-name-and-md5 (default)
              - Full matches will use: keep_dest (default)
              - Partial matches will use: keep_newest (default)
              - Bottom line: this is what you normally want.
-       $ gristle_dir_merger /tmp/foo /data/foo --dry-run
+       $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo --dry-run
              - Same as the first example - except it only prints what it would do
                without actually doing it.
              - Bottom line: this is a good step to take prior to running it for real.
-       $ gristle_dir_merger /tmp/foo /data/foo -r
+       $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo -r
              - Same as the first example - except it runs recursively through
                the directories.
-       $ gristle_dir_merger /tmp/foo /data/foo --on-partial-match keep-biggest
+       $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo 
+         --on-partial-match keep-biggest
              - Comparison will be: match-on-name-and-md5 (default)
              - Full matches will use: keep_dest (default)
              - Partial matches will use: keep_biggest (override)
              - Bottom line: this is a good combo if you know that some files
                have been modified on both source & dest, and newest isn't the best.
-       $ gristle_dir_merger /tmp/foo /data/foo --match-on-name-only --on-full-match keep-source
+       $ gristle_dir_merger --source-dir /tmp/foo --dest-dir /data/foo 
+         --match-on name_only --on-full-match keep-source
              - Comparison will be: match-on-name-only (override)
              - Full matches will use: keep_source (override)
              - Bottom line: this is a good way to go if you have
