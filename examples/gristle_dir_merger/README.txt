@@ -8,9 +8,6 @@ Example-01: Merge source_dir files into dest_dir by selecting all distinct files
       on filename, and the newest of any partial match files (when filename matches but 
       md5 hash is different)
 
-
-
-
-
-
+Example-02: Merge nested directories.  Source files on full matches will be delete, and
+      the biggest of any partial match (on md5) will be kept.
 
