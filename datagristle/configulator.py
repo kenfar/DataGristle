@@ -724,6 +724,8 @@ class _FileArgs(object):
         self._convert_file_path('outdir', file_args)
         self._convert_file_path('out_dir', file_args)
         self._convert_file_path('tmpdir', file_args)
+        self._convert_file_path('source_dir', file_args)
+        self._convert_file_path('dest_dir', file_args)
         return file_args
 
 
