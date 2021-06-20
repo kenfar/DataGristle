@@ -596,7 +596,8 @@ def setup_logs(verbosity, log_to_console=True):
                    'debug': 'DEBUG'}
     log_level = translation[verbosity]
     logging.basicConfig(level=log_level,
-                        format='%(message)s')
+                        format='%(message)s',
+                        stream=sys.stdout)
 
 def log_action(on_f_match, file_name):
     logging.info('%s - %s', on_f_match, file_name)
@@ -692,8 +693,13 @@ class ConfigManager(conf.Config):
 
     def validate_custom_config(self,
                                config: conf.CONFIG_TYPE):
-        if (not self.config.get('dry_run')) and self.config.get('ignore_errors'):
-            comm.abort("ignore-errors requires dry-run")
+        if (not config.get('dry_run')) and config.get('ignore_errors'):
+            comm.abort('ignore-errors requires dry-run')
+
+        if not isdir(config.get('source_dir', '')):
+            comm.abort(f"source_dir not found: {config.get('source_dir')}")
+        if not isdir(config.get('dest_dir', '')):
+            comm.abort(f"dest_dir not found: {config.get('dest_dir')}")
 
 
 
