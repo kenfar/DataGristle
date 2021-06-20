@@ -365,8 +365,12 @@ class Config(object):
             Added by calling programs within the extend_config method.
         """
         md = self._app_metadata
-        autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
-                                             verbosity=self.config['verbosity'])
+        try:
+            autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
+                                                 verbosity=self.config['verbosity'])
+        except FileNotFoundError:
+            comm.abort('Error: File not found',
+                       f"One of these files was not found: {','.join(self.config['infiles'])}")
 
         # First override auto-detected dialect with any explicit options
         overridden = csvhelper.override_dialect(autodetected,
