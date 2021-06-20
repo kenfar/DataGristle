@@ -134,7 +134,8 @@ STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
 
 STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'type': bool,
-                               'action': 'store_true'}
+                               'action': 'store_const',
+                               'const': True}
 
 STANDARD_CONFIGS['config_fn'] = {'default': None,
                                  'type': str}
@@ -307,12 +308,14 @@ class Config(object):
 
 
     def generate_config_file(self):
-        with open(self.nconfig.gen_config_fn, 'w') as outbuf:  # pylint: disable=no-member
-            if self.nconfig.gen_config_fn.endswith('.yml'):
+        with open(self.nconfig.gen_config_fn, 'wt') as outbuf:  # pylint: disable=no-member
+            if self.nconfig.gen_config_fn.endswith('.yml') or self.nconfig.gen_config_fn.endswith('.yaml'):
                 filtered_config = {k:v for k,v in self.config.items() if k not in ARG_ONLY_CONFIGS}
                 filtered_config = {k:v for k,v in filtered_config.items() if k != 'gen_config_fn'}
-                yaml.dump(filtered_config, outbuf, indent=4)
+                yaml.dump(filtered_config, outbuf, indent=4, default_flow_style=False)
             elif self.nconfig.gen_config_fn.endswith('.json'):
+                json.dump(self.config, outbuf)
+            else:
                 json.dump(self.config, outbuf)
 
 
@@ -563,7 +566,6 @@ class Config(object):
                      consolidated_args=None,
                      key=None) -> None:
 
-        print('Config contents: ')
         for a_key in self.config.keys():
             if key and key != a_key:
                 continue
