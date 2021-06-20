@@ -1,0 +1,35 @@
+move_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl2/lvl2_d_source_is_newer_and_bigger.csv
+   reason=partial-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl2/lvl2_c_dest_is_newer_and_biger.csv
+   reason=partial-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl2/lvl2_b_same.csv
+   reason=full-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl2/lvl2_a_same.csv
+   reason=full-match
+move_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl1_d_source_is_bigger.csv
+   reason=partial-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl1_c_dest_is_bigger.csv
+   reason=partial-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl1_a_same.csv
+   reason=full-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-02_nested_dirs__source/lvl1_b_same.csv
+   reason=full-match
+
+---------- Counts -----------
+Total Source Objects:       9
+   Directory Read Cnt:      1
+   File Read Cnt:           8
+      DotFile Read Cnt:     0
+Total Dest Objects:         9
+   Directory Read Cnt:      2
+   File Read Cnt:           7
+
+Full Match Cnt:             4
+Partial Match Cnt:          4
+No Match Cnt:               0
+
+Delete Source Cnt:          6
+Move Source Cnt:            2
+Rename And Move Source Cnt: 0
+
+Seconds Duration:           0

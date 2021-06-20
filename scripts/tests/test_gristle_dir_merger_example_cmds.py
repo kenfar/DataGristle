@@ -38,4 +38,7 @@ class TestExamples(test_tools.TestExamplesForStdout):
     def test_example_01_keep_dest_and_newest_partial_match_files(self):
         self.run_example_config('example-01')
 
+    def test_example_02_nested_directories(self):
+        self.run_example_config('example-02')
+
 

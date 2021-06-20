@@ -219,24 +219,6 @@ class ProcessDirs(object):
         self.dfile_cnt = 0
 
 
-    def get_walk_entries(self, src_dir):
-        """ Intended to emulate the os.walk() interaction.
-            Inputs:
-                - a_dir - a directory
-            Outputs:
-                - dirs  - a list of subdirectories within a_dir
-                - files - a list of files within a_dir
-        """
-        entries = os.listdir(src_dir)
-        dirs = []
-        files = []
-        for entry in entries:
-            if isdir(pjoin(src_dir, entry)):
-                dirs.append(entry)
-            else:
-                files.append(entry)
-        return dirs, files
-
 
     def walk(self, src_dir, dst_dir):
         """ Inputs:
@@ -244,7 +226,8 @@ class ProcessDirs(object):
                 - dst_dir - fully qualified destination directory
             Processing
                 - Will call itself
-                - Will terminate the program if it encounters a symbolic link
+                - Will terminate the program if it encounters a symbolic link,
+                  unless --ignore-errors option was provided
         """
         kill_if_symlink(src_dir, 'source', self.ignore_err)
         kill_if_symlink(dst_dir, 'dest', self.ignore_err)
@@ -280,6 +263,24 @@ class ProcessDirs(object):
         if src_dir == self.starting_src_dir:
             self.remove_top_source()
 
+
+    def get_walk_entries(self, src_dir):
+        """ Intended to emulate the os.walk() interaction.
+            Inputs:
+                - a_dir - a directory
+            Outputs:
+                - dirs  - a list of subdirectories within a_dir
+                - files - a list of files within a_dir
+        """
+        entries = os.listdir(src_dir)
+        dirs = []
+        files = []
+        for entry in entries:
+            if isdir(pjoin(src_dir, entry)):
+                dirs.append(entry)
+            else:
+                files.append(entry)
+        return dirs, files
 
 
     def _merge_source_file(self, src_path, dst_path):
@@ -402,102 +403,97 @@ class MergeFiles(object):
         self.delete_source_cnt = 0
 
 
-    def keep_dest(self, src_path, dst_path, reason=''):
-        self._delete_source(src_path, rsn=reason)
+    def keep_dest(self, src_fqfn, dst_dir, reason=''):
+        self._delete_source(src_fqfn, rsn=reason)
 
 
-    def keep_source(self, src_path, dst_path, reason=''):
-        self._move_source(src_path, dst_path, reason=reason)
+    def keep_source(self, src_fqfn, dst_dir, reason=''):
+        self._move_source(src_fqfn, dst_dir, reason=reason)
 
 
-    def keep_biggest(self, src_path, dst_path, reason=''):
-        if getsize(src_path) > getsize(dst_path):
-            self._move_source(src_path, dst_path, reason=reason)
+    def keep_biggest(self, src_fqfn, dst_dir, reason=''):
+        if getsize(src_fqfn) > getsize(pjoin(dst_dir, basename(src_fqfn))):
+            self._move_source(src_fqfn, dst_dir, reason=reason)
         else:
-            self._delete_source(src_path, rsn=reason)
+            self._delete_source(src_fqfn, rsn=reason)
 
 
-    def keep_newest(self, src_path, dst_path, reason=''):
-        src_fn_time = os.path.getmtime(src_path)
-        dst_fn_time = os.path.getmtime(dst_path)
+    def keep_newest(self, src_fqfn, dst_dir, reason=''):
+        src_fn_time = os.path.getmtime(src_fqfn)
+        dst_fn_time = os.path.getmtime(pjoin(dst_dir, basename(src_fqfn)))
 
         if src_fn_time > dst_fn_time:
-            self._move_source(src_path, dst_path, reason=reason)
+            self._move_source(src_fqfn, dst_dir, reason=reason)
         else:
-            self._delete_source(src_path, rsn=reason)
+            self._delete_source(src_fqfn, rsn=reason)
 
 
-    def keep_both(self, src_path, dst_path, reason=''):
+    def keep_both(self, src_fqfn, dst_dir, reason=''):
         """ No files will over-write one another - instead the new file will
             get a modified name within the destination directory.
         """
-        self._rename_and_move_source(src_path, dst_path, reason=reason)
+        self._rename_and_move_source(src_fqfn, dst_dir, reason=reason)
 
 
-    def _move_source(self, src_path, dst_path, reason):
+    def _move_source(self, src_fqfn, dst_dir, reason):
 
-        log_action('move_source', src_path)
+        log_action('move_source', src_fqfn)
         log_reason(reason)
-        kill_if_symlink(src_path, 'source', self.ignore_err)
-        kill_if_symlink(dst_path, 'dest', self.ignore_err)
+        kill_if_symlink(src_fqfn, 'source', self.ignore_err)
+        kill_if_symlink(dst_dir, 'dest', self.ignore_err)
         self.move_source_cnt += 1
 
-        stype = get_fileobj_type(src_path)
-        dtype = get_fileobj_type(dst_path)
+        stype = get_fileobj_type(src_fqfn)
+        dtype = get_fileobj_type(dst_dir)
 
         if stype == 'dir' and dtype == 'file':
-            logging.critical('dest_dir exists, but is a file: %s' % dst_path)
+            logging.critical('dest_dir exists, but is a file: %s' % dst_dir)
             if not self.ignore_err:
                 sys.exit(2)
 
         if not self.dry_run:
             if not dtype:  # dst_path doesn't exist
-                create_dest_dir_if_needed(dst_path)
+                create_dest_dir_if_needed(dst_dir)
             if stype == 'file':
-                shutil.copy2(src_path, dst_path)
-                os.remove(src_path)
+                shutil.copy2(src_fqfn, dst_dir)
+                os.remove(src_fqfn)
             else:
-                shutil.move(src_path, dst_path)
+                shutil.move(src_fqfn, dst_dir)
 
 
-    def _rename_and_move_source(self, src_path, dst_path, reason=None):
-        """ Requirements:
-            - src_path must refer to a file
-            - dst_path must refer to a dir, if a filename is provided it
-              will be removed.
-        """
-        log_action('rename_and_move_source', src_path)
+    def _rename_and_move_source(self, src_fqfn, dst_dir, reason=None):
+        log_action('rename_and_move_source', src_fqfn)
         log_reason(reason)
-        kill_if_symlink(src_path, 'source', self.ignore_err)
-        kill_if_symlink(dst_path, 'dest', self.ignore_err)
+        kill_if_symlink(src_fqfn, 'source', self.ignore_err)
+        kill_if_symlink(dst_dir, 'dest', self.ignore_err)
 
-        if isdir(src_path):
+        if isdir(src_fqfn):
             logging.critical('Invalid files: source must be file')
-            logging.critical('Source: %s' % src_path)
+            logging.critical('Source: %s' % src_fqfn)
             if self.ignore_err is False:
                 sys.exit(1)
 
-        if isfile(dst_path):
-            dst_path = dirname(dst_path)
+        if isfile(dst_dir):
+            dst_path = dirname(dst_dir)
 
         self.rename_and_move_source_cnt += 1
-        dest_file = create_unique_file_name(dst_path, basename(src_path))
+        dest_file = create_unique_file_name(dst_dir, basename(src_fqfn))
 
         if not self.dry_run:
-            shutil.move(src_path, pjoin(dst_path, dest_file))
+            shutil.move(src_fqfn, pjoin(dst_dir, dest_file))
 
 
-    def _delete_source(self, src_path, rsn=None):
-        log_action('delete_source', src_path or '')
+    def _delete_source(self, src_fqfn, rsn=None):
+        log_action('delete_source', src_fqfn or '')
         log_reason(rsn)
-        kill_if_symlink(src_path, 'source', self.ignore_err)
+        kill_if_symlink(src_fqfn, 'source', self.ignore_err)
         self.delete_source_cnt += 1
 
         if not self.dry_run:
-            if isfile(src_path):
-                os.remove(src_path)
+            if isfile(src_fqfn):
+                os.remove(src_fqfn)
             else:
-                os.rmdir(src_path)
+                os.rmdir(src_fqfn)
 
 
 
@@ -604,7 +600,7 @@ def log_action(on_f_match, file_name):
 
 def log_reason(reason):
     if reason:
-        logging.debug('   %s', reason)
+        logging.debug('   reason=%s', reason)
 
 
 
