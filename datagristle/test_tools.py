@@ -177,12 +177,104 @@ class TestExamples(object):
         os.system(f'cat {self.expected_fqfn}')
 
 
+class TestExamplesForStdout(object):
+    """ Test configs and files in the example directory for those programs that
+        need to be evaluated through their stdout and stderr rather than output
+        files.
+    """
 
-def executor(cmd, expect_success=True):
+    def setup_method(self, method):
+        self.pgm = None
+        self.script_dir = None
+        self.example_dir = ''
+        self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
+        self.cmd = None
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.temp_dir)
+
+
+    def run_example_config(self, example_number, return_code=0):
+        test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))
+        print('\n')
+        print('=' * 100)
+        print(test_config_fn)
+        print('=' * 100)
+
+        self.load_config(example_number)
+        self.make_command(example_number)
+        print('\n**** Execution: ****')
+        pp(self.cmd)
+        expected_success = True if return_code == 0 else False
+        executor(self.cmd, expect_success=expected_success, output=self.out_fqfn)
+
+        self.print_files()
+
+        print('\n**** os diff of files: ****')
+        assert os.system(f'diff {self.out_fqfn} {self.expected_fqfn}') == 0
+
+
+    def load_config(self,
+                    example_number):   # ex: 'example-1'
+
+        self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
+        with open(self.config_fn) as buf:
+            self.config = yaml.safe_load(buf)
+
+        self.docstrings = []
+        for rec in fileinput.input(self.config_fn):
+            if rec.startswith('#'):
+                self.docstrings.append(rec)
+        fileinput.close()
+
+        print(f'\n**** Config: ****')
+        pp(self.config)
+
+        print(f'\n**** Config docstring: ****')
+        pp(self.docstrings)
+
+
+    def make_command(self,
+                     example_number):   # ex: 'example-1'
+
+        self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
+        self.expected_fqfn = glob.glob(pjoin(self.example_dir, f'{example_number}*output.txt'))[0]
+        self.out_fqfn = pjoin(self.temp_dir, f'{example_number}_actualout.txt')
+
+        self.cmd = f''' {pjoin(self.script_dir, self.pgm)}   \
+                        --verbosity debug
+                        --config-fn {self.config_fn}
+                    '''
+
+    def print_files(self):
+
+        print('\n**** command: ****')
+        pp(self.cmd)
+
+        print('\n**** actual: ****')
+        os.system(f'cat {self.out_fqfn}')
+
+        print('\n**** expected: ****')
+        os.system(f'cat {self.expected_fqfn}')
+
+
+
+def executor(cmd,
+             expect_success=True,
+             output='stdout'):
+
     runner = envoy.run(cmd)
     status_code = runner.status_code
+
     print(runner.std_out)
     print(runner.std_err)
+    if output != 'stdout':
+        with open(output, 'w') as outbuf:
+            for rec in runner.std_out:
+                outbuf.write(rec)
+            for rec in runner.std_err:
+                outbuf.write(rec)
+
     if expect_success:
         assert status_code == 0
     else:

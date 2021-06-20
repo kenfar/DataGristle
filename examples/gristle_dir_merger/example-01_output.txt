@@ -1,0 +1,27 @@
+move_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-01_keep_dest_and_newest__source/d_source_is_newer.csv
+   partial-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-01_keep_dest_and_newest__source/b_same.csv
+   full-match
+move_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-01_keep_dest_and_newest__source/c_dest_is_newer.csv
+   partial-match
+delete_source - /home/kenfar/Envs/datagristle_config/DataGristle/examples/gristle_dir_merger/example-01_keep_dest_and_newest__source/a_same.csv
+   full-match
+
+---------- Counts -----------
+Total Source Objects:       4
+   Directory Read Cnt:      0
+   File Read Cnt:           4
+      DotFile Read Cnt:     0
+Total Dest Objects:         4
+   Directory Read Cnt:      1
+   File Read Cnt:           3
+
+Full Match Cnt:             2
+Partial Match Cnt:          2
+No Match Cnt:               0
+
+Delete Source Cnt:          2
+Move Source Cnt:            2
+Rename And Move Source Cnt: 0
+
+Seconds Duration:           0

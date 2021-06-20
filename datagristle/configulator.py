@@ -134,7 +134,8 @@ STANDARD_CONFIGS['verbosity'] = {'default': 'normal',
 
 STANDARD_CONFIGS['dry_run'] = {'default': False,
                                'type': bool,
-                               'action': 'store_true'}
+                               'action': 'store_const',
+                               'const': True}
 
 STANDARD_CONFIGS['config_fn'] = {'default': None,
                                  'type': str}
@@ -307,12 +308,14 @@ class Config(object):
 
 
     def generate_config_file(self):
-        with open(self.nconfig.gen_config_fn, 'w') as outbuf:  # pylint: disable=no-member
-            if self.nconfig.gen_config_fn.endswith('.yml'):
+        with open(self.nconfig.gen_config_fn, 'wt') as outbuf:  # pylint: disable=no-member
+            if self.nconfig.gen_config_fn.endswith('.yml') or self.nconfig.gen_config_fn.endswith('.yaml'):
                 filtered_config = {k:v for k,v in self.config.items() if k not in ARG_ONLY_CONFIGS}
                 filtered_config = {k:v for k,v in filtered_config.items() if k != 'gen_config_fn'}
-                yaml.dump(filtered_config, outbuf, indent=4)
+                yaml.dump(filtered_config, outbuf, indent=4, default_flow_style=False)
             elif self.nconfig.gen_config_fn.endswith('.json'):
+                json.dump(self.config, outbuf)
+            else:
                 json.dump(self.config, outbuf)
 
 
@@ -424,6 +427,7 @@ class Config(object):
                 if property_name == 'short_name':
                     if len(property_value) != 1:
                         raise ValueError(f'{arg}.short_name length is invalid')
+
                 if property_name == 'dest':
                     if property_value not in self._app_metadata:
                         raise ValueError(f'{arg}.dest refers to non-existing option')
@@ -536,7 +540,7 @@ class Config(object):
 
 
     def _validate_dialect_with_stdin(self, config) -> None:
-        if config['infiles'] == '-':
+        if config.get('infiles', '') == '-':
             if config['delimiter'] is None:
                 comm.abort('Error: csv dialect delimiter is required when piping data via stdin')
             if config['quoting'] is None:
@@ -562,7 +566,6 @@ class Config(object):
                      consolidated_args=None,
                      key=None) -> None:
 
-        print('Config contents: ')
         for a_key in self.config.keys():
             if key and key != a_key:
                 continue
@@ -721,6 +724,8 @@ class _FileArgs(object):
         self._convert_file_path('outdir', file_args)
         self._convert_file_path('out_dir', file_args)
         self._convert_file_path('tmpdir', file_args)
+        self._convert_file_path('source_dir', file_args)
+        self._convert_file_path('dest_dir', file_args)
         return file_args
 
 
