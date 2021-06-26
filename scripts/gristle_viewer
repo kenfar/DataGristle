@@ -207,8 +207,8 @@ class ConfigManager(conf.Config):
 
     def validate_custom_config(self,
                                config: conf.CONFIG_TYPE):
-        if config['infiles'] == '-':
-            comm.abort('An input filename is required')
+        if config['infiles'] == ['-'] or config['infiles'] == '-':
+            comm.abort('The --infiles option is required and piping data is not supported')
 
 
 
