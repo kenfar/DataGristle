@@ -564,6 +564,7 @@ class ConfigManager(configulator.Config):
 
     def define_user_config(self) -> None:
         """Defines the user config or metadata.   Does not get the user input."""
+
         self.add_standard_metadata("infiles")
         self.add_standard_metadata("outfile")
 
@@ -629,6 +630,9 @@ class ConfigManager(configulator.Config):
         # the arguments for infiles have also been replaced with -i - but this function doesn't support this
 
     def validate_custom_config(self, config: configulator.CONFIG_TYPE):
+
+        if len(config["infiles"]) == 0 or config["infiles"] == ['-']:
+            abort("ERROR: The infiles option is required and piping in data is not supported")
 
         if len(config["infiles"]) > 1:
             abort("ERROR: multiple files not supported")
