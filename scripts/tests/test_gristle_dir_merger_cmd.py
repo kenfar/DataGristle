@@ -40,7 +40,7 @@ def rmtree_ignore_error(path):
 
 
 
-class TestFixture(object):
+class TestFixture:
 
     def setup_method(self, method):
         self.source_dir = tempfile.mkdtemp(prefix='TestGristleDirMerger_source_')
@@ -786,8 +786,8 @@ def create_test_file(path, file_name,
 
 
 def get_file_contents(fqfn):
-    with open(fqfn, 'r') as f:
-        return f.read()
+    with open(fqfn, 'r') as inbuf:
+        return inbuf.read()
 
 
 def get_file_myear(fqfn):
