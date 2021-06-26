@@ -5,7 +5,7 @@ match_on: name_and_md5
 on_full_match: keep_dest
 on_partial_match: keep_biggest
 
-dry_run: true
+dry_run: false
 recursive: true
 ignore_errors: false
 
