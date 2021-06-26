@@ -232,9 +232,9 @@ class ProcessDirs(object):
         kill_if_symlink(src_dir, 'source', self.ignore_err)
         kill_if_symlink(dst_dir, 'dest', self.ignore_err)
 
-        sub_dirs, files = self.get_walk_entries(src_dir)
+        source_dirs, source_files = self.get_walk_entries(src_dir)
 
-        for sub_dir in sub_dirs:
+        for sub_dir in source_dirs:
 
             self.sdir_cnt += 1
             self._is_srcfile_in_destdir(None, dst_dir) # ensure dir in cache
@@ -254,7 +254,7 @@ class ProcessDirs(object):
                 self.merger.keep_source(pjoin(src_dir, sub_dir),
                                         pjoin(dst_dir, sub_dir), reason=reason)
 
-        for file_name in files:
+        for file_name in source_files:
             self.sfile_cnt += 1
             if file_name.startswith('.'):
                 self.sdotfile_cnt += 1
@@ -510,7 +510,7 @@ def get_fileobj_type(path):
 
 def create_dest_dir_if_needed(dest_dir):
     if not exists(dest_dir):
-        os.mkdir(dest_dir)
+        os.makedirs(dest_dir)
         logging.info('Created dir: %s' % dest_dir)
 
 
