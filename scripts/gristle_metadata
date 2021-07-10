@@ -24,10 +24,12 @@ import sys
 import argparse
 from signal import signal, SIGPIPE, SIG_DFL
 
+import datagristle.common as comm
 import datagristle.metadata as metadata
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
+comm.validate_python_version()
 
 
 

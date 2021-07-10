@@ -1,5 +1,3 @@
 #!/usr/bin/env sh
-#pylint: skip-file
-#pylint: disable=syntax-error
 
-./gristle_profiler "$@"
+gristle_profiler "$@"

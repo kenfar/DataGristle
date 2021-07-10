@@ -67,6 +67,7 @@ from signal import signal, SIGPIPE, SIG_DFL
 import sys
 from typing import Dict, List, Any, Optional, Union
 
+import datagristle.common as comm
 import datagristle.configulator as conf
 import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
@@ -78,6 +79,8 @@ signal(SIGPIPE, SIG_DFL)
 NAME = basename(__file__)
 LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
+
+comm.validate_python_version()
 
 
 
