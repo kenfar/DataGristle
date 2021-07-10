@@ -1,4 +1,4 @@
-V0.2.2 - 2021-05
+V0.2.2 - 2021-07
 ================
 
 -  Improvement: the field-names from headers can now be used instead of
@@ -14,6 +14,14 @@ V0.2.2 - 2021-05
       configuration.
    -  But will otherwise be ignored.
 
+-  Improvement: is now enforcing the minimum version of 3.8. It was
+   previously almost completely working on 3.7 but would occasionally
+   crash on a 3.8 feature.
+-  BREAKING CHANGE: Removed gristle_processor.
+-  BREAKING CHANGE: envvar and config file boolean args with values
+   other than True, true, t, or 1 will be rejected. This is because they
+   can be very ambiguous and confusing, in particular with with a pair
+   of args like has-header and has-no-header.
 -  Bug Fix: gristle_freaker was failing with 0-length files when using
    col-type=each
 -  Bug Fix: gristle_sorter was failing with some multi-directional sorts
