@@ -1,9 +1,10 @@
+infiles: [example-04_dialect-qall-doublequote_input.csv]
+outfile: /tmp/example-04_actualout.csv
+
 delimiter: ','
 doublequote: true
 escapechar: null
 has_header: true
-infiles: [example-04_dialect-qall-doublequote_input.csv]
-outfile: /tmp/example-04_actualout.csv
 quotechar: null
 quoting: quote_all
-skipinitialspace: null
+#skipinitialspace: null       # bools can only be set to true 

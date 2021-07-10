@@ -14,11 +14,11 @@
 infiles: [example-23_sensor_old_input1.csv,
           example-23_sensor_new_input2.csv]
 
-out-dir: /tmp/example-23_actual_output_files
+out_dir: /tmp/example-23_actual_output_files
 temp_dir: null
 
 col_names: []
-key-cols: [org, sensor_id]
+key_cols: [org, sensor_id]
 
 # Lets compare a subset of columns - ignoring those we leave out (all those at the bottom of the 
 # col_names list).  
@@ -34,7 +34,7 @@ variables: []
 
 # Files have headers and so are not eligible for skipping sorting, but they are already verified
 # to be unique so we'll skip this step to improve performance.
-already_sorted: false
+#already_sorted: true           # will default to false
 already_uniq: true
 
 # Assignments aren't needed for a simple csv comparison
@@ -47,5 +47,5 @@ delimiter: '|'
 has_header: true
 quotechar: null
 escapechar: null
-doublequote: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

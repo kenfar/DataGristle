@@ -61,7 +61,7 @@ class TestBigFile(object):
         file2 = pjoin(self.temp_dir, 'new.csv')
         config = Config(self.temp_dir)
         config.add_property({'delimiter':','})
-        config.add_property({'has_header':False})
+        config.add_property({'has_no_header':True})
         config.add_property({'quoting':'quote_none'})
         config.add_property({'col_names': sorted(FIELDS, key=FIELDS.get)})
         config.add_property({'key_cols':  ['pkid']})

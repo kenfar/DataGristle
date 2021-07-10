@@ -15,8 +15,8 @@ exrecords: '3:5'       # then excludes rows 2 and 4 in the middle
 quoting: quote_none
 delimiter: '|'
 escapechar: \
-has_header: false
+has_no_header: true
 
-doublequote: null
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

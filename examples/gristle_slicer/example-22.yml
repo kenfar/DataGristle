@@ -14,8 +14,8 @@ records: '2:5'       # includes rows 2, 3, and 4
 quoting: quote_none
 delimiter: '|'
 escapechar: \
-has_header: false
+has_no_header: true
 
-doublequote: null
 quotechar: null
-skipinitialspace: null
+#doublequote: null               # bools can only be set to true
+#skipinitialspace: null          # bools can only be set to true

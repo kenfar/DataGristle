@@ -7,6 +7,6 @@ delimiter: ','
 has_header: true
 skipinitialspace: true
 
-doublequote: null
 escapechar: null
-quotechar: null
+#doublequote: null      # bools can only be set to true
+#quotechar: null        # bools can only be set to true

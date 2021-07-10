@@ -1,13 +1,13 @@
 infiles: [example-01_dialect-qnone_input.csv]
 outfile: /tmp/example-01_actualout.csv
-output-format: parsable
+output_format: parsable
 verbosity: debug
 
 quoting: quote_none
 delimiter: ','
 escapechar: \
 
-doublequote: null
 has_header: true
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

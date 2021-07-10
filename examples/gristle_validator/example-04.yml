@@ -9,4 +9,4 @@ doublequote: true
 escapechar: null
 has_header: true
 quotechar: null
-skipinitialspace: null
+#skipinitialspace: null                 # bools can only be set to true

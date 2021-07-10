@@ -10,4 +10,4 @@ verbosity: debug
 
 escapechar: null
 quotechar: null
-doublequote: null
+#doublequote: null      # bools can only be set to true

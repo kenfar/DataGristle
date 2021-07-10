@@ -5,8 +5,8 @@ match_on: name_and_md5
 on_full_match: keep_dest
 on_partial_match: keep_biggest
 
-dry_run: false
+#dry_run: true                  # will default to false
 recursive: true
-ignore_errors: false
+#ignore_errors: true            # will default to false
 
 verbosity: debug

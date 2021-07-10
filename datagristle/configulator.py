@@ -280,7 +280,7 @@ class Config(object):
 
         config_fn = cli_args.get('config_fn', None) or env_args.get('config_fn', None)
         if config_fn:
-            file_args_manager = _FileArgs(config_fn)
+            file_args_manager = _FileArgs(config_fn, self._app_metadata)
             file_config = file_args_manager.file_gristle_app_args
         else:
             file_config = {}
@@ -445,32 +445,54 @@ class Config(object):
         """ Consolidates environmental and cli arguments.
 
         First all _app_metadata keys are added,
-        Then values from matching environmental variable keys are overlaid,
-        Finally values from matching cli arg keys are overlaid,
+        Then values from matching file, then env, then cli keys are overlaid
         """
         consolidated_args: Dict[str, Any] = {}
 
-        for key in self._app_metadata:
-            actual_key = self._app_metadata[key].get('dest', key)
-            consolidated_args[actual_key] = None
+        def _get_actual_value(key, config_val):
+            bool_val = None
+            if key != self._app_metadata[key].get('dest', key):
+                if (self._app_metadata[key]['type'] is bool
+                        and self._app_metadata[key]['action'] == 'store_const'):
+                    bool_val = self._app_metadata[key]['const']
+                    return bool_val
+            return config_val
 
-        for key, val in file_args.items():
-            try:
+        def _init_dictionary():
+            for key in self._app_metadata:
                 actual_key = self._app_metadata[key].get('dest', key)
-                consolidated_args[actual_key] = val
-            except KeyError:
-                if key in self.obsolete_options.keys():
-                    comm.abort('Error: obsolete option', self.obsolete_options[key])
-                else:
-                    comm.abort(f'ERROR: Unknown option: {key}')
+                consolidated_args[actual_key] = None
+            return consolidated_args
 
-        for key, val in env_args.items():
-            actual_key = self._app_metadata[key].get('dest', key)
-            consolidated_args[actual_key] = val
+        def _add_file_args():
+            for key, val in file_args.items():
+                try:
+                    actual_key = self._app_metadata[key].get('dest', key)
+                    actual_val = _get_actual_value(key, val)
+                    consolidated_args[actual_key] = actual_val
+                except KeyError:
+                    if key in self.obsolete_options.keys():
+                        comm.abort('Error: obsolete option', self.obsolete_options[key])
+                    else:
+                        comm.abort(f'ERROR: Unknown option: {key}')
+            return consolidated_args
 
-        for key, val in cli_args.items():
-            if val is not None and val != []:
-                consolidated_args[key] = val
+        def _add_env_args():
+            for key, val in env_args.items():
+                actual_key = self._app_metadata[key].get('dest', key)
+                consolidated_args[actual_key] = _get_actual_value(key, val)
+            return consolidated_args
+
+        def _add_cli_args():
+            for key, val in cli_args.items():
+                if val is not None and val != []:
+                    consolidated_args[key] = val
+            return consolidated_args
+
+        consolidated_args = _init_dictionary()
+        consolidated_args = _add_file_args()
+        consolidated_args = _add_env_args()
+        consolidated_args = _add_cli_args()
 
         return consolidated_args
 
@@ -634,7 +656,7 @@ class _EnvironmentalArgs(object):
                  app_config: METADATA_TYPE) -> None:
 
         self.gristle_app_name = gristle_app_name
-        self._app_metadata = app_config
+        self.app_metadata = app_config
         self.env_args = os.environ.items()
         self.env_gristle_app_args = self._get_gristle_app_args()
 
@@ -647,21 +669,15 @@ class _EnvironmentalArgs(object):
         for envkey, envval in sorted(self.env_args):
             if envkey in self._transform_config_keys_to_env_keys():
                 option_name = self._transform_env_key_to_option_name(envkey)
-                if self._app_metadata[option_name]['type'] is bool:
-                    if self._app_metadata[option_name].get('dest', option_name) == option_name:
-                        # issue: assumes env true/false matches app_config 'store_true'/'store_false'
-                        env_config[option_name] = self._app_metadata[option_name]['type'](envval)
-                    else:
-                        pass # ignore booleans used to reverse a different boolean
-                else:
-                    env_config[option_name] = self._app_metadata[option_name]['type'](envval)
-        return env_config
+                env_config[option_name] = self.app_metadata[option_name]['type'](envval)
+        env_config_binaries_cleaned = binary_arg_fixer(self.app_metadata, env_config)
+        return env_config_binaries_cleaned
 
     def _transform_config_keys_to_env_keys(self):
         """ Translates the configuration keys to the env key formats by adding
             'gristle_[app_name] as a prefix to each key.
         """
-        env_keys = [f'{self.gristle_app_name}_{key}' for key in self._app_metadata.keys()]
+        env_keys = [f'{self.gristle_app_name}_{key}' for key in self.app_metadata.keys()]
         return env_keys
 
     def _transform_env_key_to_option_name(self,
@@ -677,8 +693,7 @@ class _EnvironmentalArgs(object):
 class _FileArgs(object):
     """ Manages all file-based configuration arguments related to the gristle app
 
-        This class will collect these arguments from a config file,
-        format them,
+        This class will collect these arguments from a config file, format them,
         then provide them via class attributes:
            self.file_gristle_app_args
 
@@ -693,15 +708,20 @@ class _FileArgs(object):
                    c.  outfiles
                    d.  outdir
                    e.  tmpdir
+            3. Any keys that are binaries will be validated to ensure they evaluate
+               to true, and then their const values will be applied to their
+               destinations.
     """
 
     def __init__(self,
-                 config_fn: str) -> None:
+                 config_fn: str,
+                 app_metadata) -> None:
 
         if not isfile(config_fn):
             comm.abort(f'Error: config file not found!',
                        f'for config-fn: {config_fn}')
         self.config_fn = config_fn
+        self.app_metadata = app_metadata
         self.file_gristle_app_args = self._get_args()
 
 
@@ -721,16 +741,26 @@ class _FileArgs(object):
             with open(self.config_fn) as buf:
                 file_args = json.load(buf)
 
-        self._convert_arg_name_delimiter(file_args)
-        self._convert_file_path('infiles', file_args)
-        self._convert_file_path('outfile', file_args)
-        self._convert_file_path('outfiles', file_args)
-        self._convert_file_path('outdir', file_args)
-        self._convert_file_path('out_dir', file_args)
-        self._convert_file_path('tmpdir', file_args)
-        self._convert_file_path('source_dir', file_args)
-        self._convert_file_path('dest_dir', file_args)
-        return file_args
+        file_args_binaries_cleaned = binary_arg_fixer(self.app_metadata, file_args)
+        file_args_final = self.file_args_path_cleaner(file_args_binaries_cleaned)
+        return file_args_final
+
+
+    def file_args_path_cleaner(self,
+                               file_args):
+
+        output_args = copy.deepcopy(file_args)
+
+        self._convert_arg_name_delimiter(output_args)
+        self._convert_file_path('infiles', output_args)
+        self._convert_file_path('outfile', output_args)
+        self._convert_file_path('outfiles', output_args)
+        self._convert_file_path('outdir', output_args)
+        self._convert_file_path('out_dir', output_args)
+        self._convert_file_path('tmpdir', output_args)
+        self._convert_file_path('source_dir', output_args)
+        self._convert_file_path('dest_dir', output_args)
+        return output_args
 
 
     def _convert_file_path(self, path_key, args):
@@ -889,3 +919,58 @@ class _CommandLineArgs(object):
         if known_args.version:
             print(__version__)
             sys.exit(0)
+
+
+
+def binary_arg_fixer(app_metadata,
+                     args):
+    """ Returns a copy of the args in which:
+        - keys are replaced by any destination key names if they exist
+        - and store_const is used rather than value for bools
+
+        The reason for this function is that unlike cli args, envvars
+        and config files don't have flags whose mere existance indicates
+        True or False: instead config files have bools which can be set
+        either way and envvars just have strings - which might have a True
+        or False, 1 or 0.  This code helps treat the envvars & config files
+        like cli args.
+    """
+
+    def get_bool_actual_value(key,
+                              orig_config_val):
+        assert app_metadata[key]['type'] is bool
+        assert app_metadata[key]['action'] == 'store_const'
+        assert app_metadata[key]['const'] in (True, False)
+
+        if type(orig_config_val) is bool:
+            transformed_config_val = orig_config_val
+        elif orig_config_val is None or orig_config_val.strip().lower() in ('none', 'null'):
+            comm.abort(f'Config item {key} has a non-true value of {orig_config_val}',
+                       'This is a flag type whose value is established by pgm metadata '
+                       'and when provided via envvar or config file must always be set to true')
+        else:
+            transformed_config_val = orig_config_val.strip().lower() in ('true', 't', '1', '')
+
+        if not transformed_config_val:
+            comm.abort(f'Config item {key} has a non-true value of {orig_config_val}',
+                       'This is a flag type whose value is established by pgm metadata'
+                       'and when provided via envvar or config file must always be set to true')
+
+        return app_metadata[key]['const']
+
+    cleaned_args = {}
+    for orig_key, val in args.items():
+        try:
+            if app_metadata[orig_key]['type'] != bool:
+                cleaned_args[orig_key] = val
+            else:
+                actual_key = app_metadata[orig_key].get('dest', orig_key)
+                actual_val = get_bool_actual_value(orig_key, val)
+                cleaned_args[actual_key] = actual_val
+        except KeyError:
+            comm.abort(f'Error: option {orig_key} is unknown')
+
+    return cleaned_args
+
+
+

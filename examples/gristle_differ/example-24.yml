@@ -10,11 +10,11 @@
 
 infiles: [example-24_sensor_old_input1.csv,
           example-24_sensor_new_input2.csv]
-out-dir: /tmp/example-24_actual_output_files
+out_dir: /tmp/example-24_actual_output_files
 temp_dir: null
 
 col_names: []
-key-cols: [0, 1]
+key_cols: [0, 1]
 
 # Lets compare a subset of columns - ignoring those we leave out (all those at the bottom of the 
 # col_names list).  
@@ -24,8 +24,8 @@ compare_cols: [2, 3, 4, 5, 6]
 # Variables aren't needed for a simple csv comparison
 variables: []
 
-already_sorted: false
-already_uniq: false
+#already_sorted: true           # will default to false
+#already_uniq: true             # will default to false
 
 # Assignments aren't needed for a simple csv comparison
 assignments:  []
@@ -34,8 +34,8 @@ verbosity: debug
 
 quoting: quote_none
 delimiter: '|'
-has_header: false
+has_no_header: true
 quotechar: null
 escapechar: null
-doublequote: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

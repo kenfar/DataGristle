@@ -1,13 +1,13 @@
 infiles: [example-02_dialect-qnone-skipinitialspace_input.csv]
 outfile: /tmp/example-02_actualout.csv
 keys: [1sf]
-dedupe: false
+#dedupe: true                   # will default to true
 verbosity: normal
 
 quoting: quote_none
 delimiter: ','
-doublequote: null
 escapechar: null
 has_header: true
 quotechar: null
 skipinitialspace: true
+#doublequote: null              # bools can only be set to true

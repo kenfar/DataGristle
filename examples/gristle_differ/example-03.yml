@@ -2,15 +2,15 @@
 #
 infiles: [example-03_dialect-qnone-autodetect_input1.csv,
           example-03_dialect-qnone-autodetect_empty_input2.csv]
-out-dir: /tmp/example-03_actual_output_files
-key-cols: [2]
+out_dir: /tmp/example-03_actual_output_files
+key_cols: [2]
 verbosity: debug
 
-delimiter: null   # should figure out it's ','
-quoting: null     # should figure out it's quote_none
-has_header: null  # should figure out it's true
+delimiter: null                 # should figure out it's ','
+quoting: null                   # should figure out it's quote_none
+#has_header: null               # should figure out it's true, but not setting since bools can only be set to true
 
-doublequote: null
 escapechar: null
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

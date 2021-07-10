@@ -1,6 +1,6 @@
 infiles: [example-04_dialect-qall-doublequote_input.csv]
 outfile: /tmp/example-04_actualout.csv
-output-format: parsable
+output_format: parsable
 verbosity: normal
 
 quoting: quote_all
@@ -10,4 +10,4 @@ has_header: true
 
 quotechar: null
 escapechar: null
-skipinitialspace: null
+#skipinitialspace: null         # nulls can only be set to true

@@ -6,12 +6,12 @@ quoting: quote_none
 delimiter: ','
 escapechar: \
 has_header: true
-doublequote: null
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true
 
 out_quoting: quote_all
 out_delimiter: '|'
-out_has_header: false
+out_has_no_header: true
 out_doublequote: true
 out_quotechar: '"'

@@ -6,9 +6,9 @@ columns: [1]
 verbosity: normal
 
 delimiter: null
-doublequote: null
 escapechar: null
-has_header: null
 quotechar: null
 quoting: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#has_header: null               # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

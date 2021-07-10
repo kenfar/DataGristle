@@ -1,13 +1,14 @@
 infiles: [example-04_dialect-qall-doublequote_input.csv]
 outfile: /tmp/example-04-doublequote_actualout.csv
 keys: [1sf]
+#dedupe: true                   # will default to false
+
 verbosity: normal
 
 quoting: quote_all
-dedupe: false
 delimiter: ','
 doublequote: true
 escapechar: null
 has_header: true
 quotechar: null
-skipinitialspace: null
+#skipinitialspace: null         # bools can only be set to true
