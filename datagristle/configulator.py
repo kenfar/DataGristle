@@ -7,7 +7,8 @@
     Challenges:
     1. config files are hierarchical, args & envs are flat
     2. cli args and config keys have dashes, envvars have underscores
-    3. some input is intended to be interactive-only - such as --version, --help, --long-help
+    3. cli args have boolean flags, envvars have strings, config files have boolean values
+    4. some input is intended to be interactive-only - such as --version, --help, --long-help
 """
 
 # type: ignore  # pylint: disable=no-member
@@ -262,7 +263,6 @@ class Config(object):
         """ Adds the standard set of help items.
         """
         self.add_standard_metadata('help')
-
 
 
     def process_configs(self,
@@ -736,7 +736,7 @@ class _FileArgs(object):
         _, file_ext = os.path.splitext(self.config_fn)
         if file_ext in ('.yaml', '.yml'):
             with open(self.config_fn) as buf:
-                file_args = yaml.safe_load(buf)
+                file_args = yaml.YAML(typ='safe', pure=True).load(buf)
         elif file_ext in ('.json'):
             with open(self.config_fn) as buf:
                 file_args = json.load(buf)

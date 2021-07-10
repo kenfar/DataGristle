@@ -411,10 +411,10 @@ class Config(object):
         self.config['assignments'].append(assignment)
 
     def write_config(self, valid=True):
-        config_yaml = yaml.safe_dump(self.config)
-        print(config_yaml)
-        with open(self.config_fqfn, 'w') as f:
-            f.write(config_yaml)
+        with open(self.config_fqfn, 'w') as outbuf:
+            yaml.YAML(typ='safe', pure=True).dump(self.config, outbuf)
+        print(self.config)
+
         # uncomment this code to capture copies of all valid configs
         #if valid == True:
         #    for i in range(50):
