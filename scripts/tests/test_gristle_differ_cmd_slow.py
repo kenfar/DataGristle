@@ -33,7 +33,6 @@ FIELDS = {'pkid':0, 'vid':1, 'from_epoch':2, 'to_epoch':3, 'foo':4, 'bar':5, 'de
           'gor':7, 'org':8, 'horn':9, 'mook':10, 'hostname':11}
 
 
-
 class TestBigFile(object):
     """ Assumptions:
         - oldfile is from a data warehouse destination
@@ -214,9 +213,8 @@ class Config(object):
         self.config['assignments'].append(assignment)
 
     def write_config(self):
-        config_yaml = yaml.safe_dump(self.config)
-        with open(self.config_fqfn, 'w') as f:
-            f.write(config_yaml)
+        with open(self.config_fqfn, 'w') as outbuf:
+            yaml.YAML(typ='safe', pure=True).dump(self.config, outbuf)
 
 
 

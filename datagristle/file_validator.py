@@ -167,7 +167,7 @@ def load_schema(schema_file: str,
     if schema_file:
         schema_file = find_schema_file_on_path(schema_file)
         with open(schema_file, 'r') as schema_buf:
-            schema_dict = yaml.safe_load(schema_buf)
+            schema_dict = yaml.YAML(typ='safe', pure=True).load(schema_buf)
 
         try:
             config_validation_simple(schema_dict)

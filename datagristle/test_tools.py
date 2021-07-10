@@ -125,6 +125,8 @@ class TestExamples(object):
         self.print_files()
 
         print('\n**** os diff of files: ****')
+        pp(f'expected_fqfn={self.expected_fqfn}')
+        pp(f'actual_fqfn={self.out_fqfn}')
         assert os.system(f'diff {self.out_fqfn} {self.expected_fqfn}') == 0
 
 
@@ -133,7 +135,7 @@ class TestExamples(object):
 
         self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
         with open(self.config_fn) as buf:
-            self.config = yaml.safe_load(buf)
+            self.config = yaml.YAML(typ='safe', pure=True).load(buf)
 
         self.docstrings = []
         for rec in fileinput.input(self.config_fn):
