@@ -4,9 +4,9 @@ errfile: /tmp/example-03_dialect-qnone_actualout_err.csv
 verbosity: normal
 
 delimiter: null
-doublequote: null
 escapechar: null
-has_header: null
 quotechar: null
 quoting: null
-skipinitialspace: null
+#has_header: null               # bools can only be set to true
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

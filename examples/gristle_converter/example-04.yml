@@ -9,4 +9,4 @@ has_header: true
 
 escapechar: null
 quotechar: null
-skipinitialspace: null
+#skipinitialspace: null         # bools can only be set to true

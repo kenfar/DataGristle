@@ -100,13 +100,13 @@ class TestExamples(test_tools.TestExamples):
         self.expected_files = glob.glob(pjoin(self.example_dir, f'{example_number}_output_files/*csv*'))
 
         self.load_config(example_number)
-        self.actual_dir = self.config['out-dir']
+        self.actual_dir = self.config['out_dir']
         self.create_output_dir(self.actual_dir)
         self.make_command(example_number)
         print('\n**** Execution: ****')
         test_tools.executor(self.cmd, expect_success=True)
 
-        self.actual_files = glob.glob(pjoin(self.config['out-dir'], f'{example_number}_*csv*'))
+        self.actual_files = glob.glob(pjoin(self.config['out_dir'], f'{example_number}_*csv*'))
         self.print_files()
 
         print('\n**** os diff of files: ****')

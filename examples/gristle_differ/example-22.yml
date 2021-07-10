@@ -23,7 +23,7 @@
 #
 infiles: [example-22_sensor_old_input1.csv,
           example-22_sensor_new_input2.csv]
-out-dir: /tmp/example-22_actual_output_files
+out_dir: /tmp/example-22_actual_output_files
 temp_dir: null
 
 
@@ -37,7 +37,7 @@ col_names: [org,sensor_id,site,sensor_ip,sensor_brand,sensor_ver,sensor_type,upd
             start_ts,        # part of the unique key, assigned to all but same files
             stop_ts ]        # part of the unique key, assigned to delete & chgold files
 
-key-cols: [org, sensor_id]
+key_cols: [org, sensor_id]
 ignore_cols: [comments,      # won't be on new file - just our debugging comments
               start_ts,      # won't be on new file
               stop_ts,       # won't be on new file
@@ -51,8 +51,8 @@ variables: ['var_pkey:89',
             'var_batch_id:101',
             'var_extract_ts:2021-04-02T18:00:00']
 
-already_sorted: false
-already_uniq: false
+#already_sorted: true        # will default to false
+#already_uniq: true          # will default to false
 
 # Here's where the output records are transformed slightly.  Note that all fields must be provided, even if null.
 assignments:  [
@@ -85,5 +85,5 @@ delimiter: '|'
 has_header: true
 quotechar: null
 escapechar: null
-doublequote: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

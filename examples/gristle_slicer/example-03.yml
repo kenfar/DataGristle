@@ -4,8 +4,9 @@ outfile: /tmp/example-03_actualout.csv
 
 quotechar: null
 delimiter: null
-doublequote: null
 escapechar: null
-has_header: null
 quoting: null
-skipinitialspace: null
+
+#has_header: null               # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true
+#doublequote: null              # bools can only be set to true

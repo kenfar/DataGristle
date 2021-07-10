@@ -1,6 +1,6 @@
 infiles: [example-08_hasheader_colnum_input.csv]
 outfile: /tmp/example-08_actualout.csv
-output-format: parsable
+output_format: parsable
 verbosity: debug
 column: 0
 
@@ -8,7 +8,7 @@ quoting: quote_none
 delimiter: ','
 escapechar: \
 
-doublequote: null
 has_header: true
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

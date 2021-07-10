@@ -47,7 +47,7 @@ class TestInvalidInput(object):
         self.file2 = generate_test_file(self.temp_dir, 'new_', '.csv', self.dialect, file2_recs)
         self.config = Config(self.temp_dir)
         self.config.add_property({'delimiter':'tab'})
-        self.config.add_property({'has_header':False})
+        self.config.add_property({'has_no_header':True})
         self.config.add_property({'quoting':'quote_none'})
         self.config.add_property({'col_names': ['col0', 'col1', 'col2']})
         self.config.add_property({'key_cols': ['0']})
@@ -82,7 +82,8 @@ class TestInvalidInput(object):
         cmd = ''' %s   \
                   --config-fn %s \
               ''' % (pjoin(script_dir, 'gristle_differ'), self.config.config_fqfn)
-        executor(cmd, expect_success=False)
+        output = executor(cmd, expect_success=False)
+        assert 'colname' in output
 
 
 class TestCommandLine(object):
@@ -205,7 +206,7 @@ class TestCommandLine(object):
         config = Config(self.temp_dir)
         config.add_property({'delimiter':'tab'})
         config.add_property({'quoting':'quote_none'})
-        config.add_property({'has_header':False})
+        config.add_property({'has_no_header':True})
         config.write_config()
 
         self.dialect.delimiter = '\t'
@@ -357,12 +358,13 @@ class TestCommandLine(object):
 
 def executor(cmd, expect_success=True):
     runner = envoy.run(cmd)
-    print(runner.std_out)
-    print(runner.std_err)
+    output = runner.std_out + runner.std_err
+    print(output)
     if expect_success:
         assert runner.status_code == 0
     else:
         assert runner.status_code != 0
+    return output
 
 
 

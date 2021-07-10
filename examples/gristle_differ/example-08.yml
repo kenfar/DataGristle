@@ -1,7 +1,7 @@
 infiles: [example-08_dialect-qnone_input1.csv,
           example-08_dialect-qnone_empty_input2.csv]
-out-dir: /tmp/example-08_actual_output_files
-key-cols: [2]
+out_dir: /tmp/example-08_actual_output_files
+key_cols: [2]
 verbosity: debug
 
 quoting: quote_all
@@ -10,5 +10,5 @@ escapechar: \
 has_header: true
 
 quotechar: null
-doublequote: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

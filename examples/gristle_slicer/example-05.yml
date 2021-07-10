@@ -7,5 +7,5 @@ escapechar: \
 has_header: true
 
 quotechar: null
-doublequote: null
-skipinitialspace: null
+#doublequote: null               # bools can only be set to true
+#skipinitialspace: null          # bools can only be set to true

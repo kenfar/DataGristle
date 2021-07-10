@@ -10,6 +10,6 @@ delimiter: '|'
 escapechar: \
 has_header: true
 
-doublequote: null
-quotechar: null
-skipinitialspace: null
+quotechar: null                 
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

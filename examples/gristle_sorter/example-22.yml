@@ -16,8 +16,8 @@ keys: [0sf, 1if, 2sr, 3fr]
 
 quoting: quote_none
 delimiter: ','
-doublequote: null
 escapechar: \
 has_header: true
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

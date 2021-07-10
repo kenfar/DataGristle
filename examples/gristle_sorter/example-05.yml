@@ -1,13 +1,13 @@
 infiles: [example-05_dialect-qall-escape_input.csv]
 outfile: /tmp/example-05-escape_actualout.csv
 keys: [1sf]
-dedupe: false
+#dedupe: true                   # will default to false
 verbosity: normal
 
 quoting: quote_all
 delimiter: ','
-doublequote: null
 escapechar: \
 has_header: true
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

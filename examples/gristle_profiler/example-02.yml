@@ -1,12 +1,12 @@
 infiles: [example-02_dialect-qnone-skipinitialspace_input.csv]
 outfile: /tmp/example-02_actualout.csv
-output-format: parsable
+output_format: parsable
 verbosity: debug
 
 quoting: quote_none
 delimiter: ','
-doublequote: null
 escapechar: null
 has_header: true
 quotechar: null
+#doublequote: null              # will default to false
 skipinitialspace: true

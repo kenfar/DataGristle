@@ -5,8 +5,8 @@ verbosity: normal
 
 quoting: quote_all
 delimiter: ','
-doublequote: null
 escapechar: \
 has_header: true
 quotechar: null
-skipinitialspace: null
+#doublequote: null              # bools can only be set to true
+#skipinitialspace: null         # bools can only be set to true

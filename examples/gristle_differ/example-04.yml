@@ -1,7 +1,7 @@
 infiles: [example-04_dialect-qall-doublequote_input1.csv,
           example-04_dialect-qall-doublequote_empty_input2.csv]
-out-dir: /tmp/example-04_actual_output_files
-key-cols: [2]
+out_dir: /tmp/example-04_actual_output_files
+key_cols: [2]
 verbosity: debug
 
 quoting: quote_all
@@ -11,4 +11,4 @@ has_header: true
 
 escapechar: null
 quotechar: null
-skipinitialspace: null
+#skipinitialspace: null         # bools can only be set to true
