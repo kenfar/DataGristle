@@ -4,7 +4,9 @@
 import csv
 import fileinput
 import glob
-import imp
+import importlib
+import importlib.machinery
+import importlib.util
 import os
 from os.path import basename, join as pjoin
 from pprint import pprint as pp
@@ -12,6 +14,7 @@ import random
 import shutil
 import sys
 import tempfile
+import types
 
 from colorama import Fore, Style, Back
 import envoy
@@ -21,7 +24,7 @@ sys.dont_write_bytecode = True
 
 
 def load_script(script_name: str):
-    """ loads a script in the parent directory as a module, and passes back
+    """ Loads a script in the parent directory as a module, and passes back
         the module reference.  This is used when there is no .py suffix.
 
         Inputs:  the name of the script, without a directory
@@ -29,11 +32,14 @@ def load_script(script_name: str):
     """
     test_dir = os.path.dirname(os.path.realpath(__file__))
     script_dir = os.path.dirname(test_dir)
-    py_source_open_mode = "U"
-    py_source_description = (".py", py_source_open_mode, imp.PY_SOURCE)
     script_filepath = os.path.join(script_dir, script_name)
-    with open(script_filepath, py_source_open_mode) as script_file:
-        mod = imp.load_module(script_name, script_file, script_filepath,  py_source_description) # type: ignore
+
+    # A number of solutions offered for this don't work - since they don't 
+    # populate the __file__ attribute in the module.  This does:
+    importlib.machinery.SOURCE_SUFFIXES.append('') # empty string to allow any file
+    spec = importlib.util.spec_from_file_location(script_name, script_filepath)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
 
     return mod
 
