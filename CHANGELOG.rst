@@ -1,3 +1,29 @@
+Current, will become V0.2.3
+===========================
+
+-  BREAKING CHANGE: refactored gristle_validator:
+
+   -  added examples
+   -  improved error reporting
+   -  replaced obsolete customized jsonschema version with support for
+      the current version (Draft 7)
+
+-  BREAKING CHANGE: Removed gristle_processor.
+-  BREAKING CHANGE: envvar and config file boolean args with values
+   other than True, true, t, or 1 will be rejected. This is because they
+   can be very ambiguous and confusing, in particular with with a pair
+   of args like has-header and has-no-header.
+-  Improvement: crash reporting is now more consistent, complete and
+   informative
+-  Improvement: is now enforcing the minimum version of 3.8. It was
+   previously almost completely working on 3.7 but would occasionally
+   crash on a 3.8 feature.
+-  Improvement: replaced pyyaml with ruamel.yaml - to better support
+   config generation.
+-  Bug Fix: fixed pathing on two bash aliases: gristle_determinator &
+   gristle_file_converter
+-  Bug Fix: fixed bug in handling of obsolete options
+
 V0.2.2 - 2021-07
 ================
 
@@ -14,14 +40,6 @@ V0.2.2 - 2021-07
       configuration.
    -  But will otherwise be ignored.
 
--  Improvement: is now enforcing the minimum version of 3.8. It was
-   previously almost completely working on 3.7 but would occasionally
-   crash on a 3.8 feature.
--  BREAKING CHANGE: Removed gristle_processor.
--  BREAKING CHANGE: envvar and config file boolean args with values
-   other than True, true, t, or 1 will be rejected. This is because they
-   can be very ambiguous and confusing, in particular with with a pair
-   of args like has-header and has-no-header.
 -  Bug Fix: gristle_freaker was failing with 0-length files when using
    col-type=each
 -  Bug Fix: gristle_sorter was failing with some multi-directional sorts

@@ -118,6 +118,7 @@ signal(SIGPIPE, SIG_DFL)
 NAME = basename(__file__)
 LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
+comm.validate_python_version()
 
 # pylint: disable=no-member
 
