@@ -6,7 +6,7 @@ outfile: /tmp/example-25_actualout.csv
 verbosity: normal
 
 # include third, forth, sixth, and seventh columns:
-columns:   'denver, la:boulder, -2' 
+columns:   'la:boulder, -2, denver' 
 
 
 quoting: quote_none

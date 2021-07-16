@@ -164,9 +164,6 @@ class Header:
 
 
 
-
-
-
 class Dialect(csv.Dialect):
     """ A simple Dialect class
 
@@ -199,6 +196,8 @@ class Dialect(csv.Dialect):
         self.quoting = quoting
         self.skipinitialspace = skipinitialspace
         self.has_header = has_header
+
+
 
 def convert_dialect(std_dialect: Type[_csv.Dialect]) -> Dialect:
     return Dialect(delimiter=std_dialect.delimiter,

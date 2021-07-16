@@ -59,7 +59,9 @@ class SpecProcessor(object):
     def __init__(self,
                  spec: List[str],
                  spec_name: str,
-                 header: csvhelper.Header = None) -> None:
+                 header: Optional[csvhelper.Header],
+                 infiles: Union[str, List[str]],
+                 max_spec_items: int) -> None:
         """
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
@@ -67,24 +69,19 @@ class SpecProcessor(object):
 
         self.spec_name = spec_name
         self.numeric_spec: List[Optional[str]] = None # spec with names converted to positions
-        self.adj_spec: List[Optional[str]] = None  # spec with negatives converted
+        self.positive_spec: List[Optional[str]] = None  # spec with negatives converted
+        self.ordered_spec: List[Optional[str]] = None  # spec ranges converted to offsets
+        self.max_ordered_spec = 60
+        self.header = header
+        max_mem_recs = 50
 
-        if header is not None:
-            self.numeric_spec = self._spec_name_translater(spec, header)
-        else:
-            self.numeric_spec = spec
+        self.numeric_spec = self._spec_name_translater(spec, header)
+
+        self.positive_spec = self._spec_negative_translator(loc_max=max_spec_items)
 
         self._spec_validator(self.numeric_spec)      # will raise exceptions if any exist
 
-
-    def has_negatives(self) -> bool:
-        """ Checks for negative values in a single spec lists.
-            Each string within the list will be searched for a '-' sign.
-        """
-        for item in self.numeric_spec:
-            if '-' in item:
-                return True
-        return False
+        self.ordered_spec = self.make_ordered_spec(max_spec_items, max_mem_recs)
 
 
     def _spec_name_translater(self,
@@ -99,6 +96,9 @@ class SpecProcessor(object):
             Outputs:
                 - a numeric-only spec, ex: ['1','-3','4:7','9','12:']
         """
+        if header is None:
+            return spec
+
         num_spec = []
         for item in spec:
             new_parts = []
@@ -152,7 +152,7 @@ class SpecProcessor(object):
         return True
 
 
-    def spec_adjuster(self, loc_max: Optional[int]=None) -> None:
+    def _spec_negative_translator(self, loc_max: Optional[int]=None) -> None:
         """ Reads through a single spec (ie, record inclusion spec, column
             exclusion spec, etc) and remaps any negative values to their positive
             equiv.
@@ -165,9 +165,9 @@ class SpecProcessor(object):
         """
         if loc_max is None:
             if self.has_negatives():
-                raise ValueError('adjust_specs missing loc_max - and has negative specs')
+                raise ValueError('_spec_negative_translator missing loc_max - and has negative specs')
 
-        adj_spec: List[Optional[str]] = []
+        positive_spec: List[Optional[str]] = []
         for item in self.numeric_spec:
             parts = item.split(':')
             new_parts = []
@@ -179,8 +179,27 @@ class SpecProcessor(object):
                         new_parts.append(str(loc_max + int(part) + 1 ))
                     else:
                         new_parts.append(part)
-            adj_spec.append(':'.join(new_parts))
-        self.adj_spec = adj_spec
+            positive_spec.append(':'.join(new_parts))
+        return positive_spec
+
+
+    def make_ordered_spec(self,
+                          loc_max: Optional[int],
+                          max_spec_fields: int) -> None:
+        ordered_spec = []
+        for item in self.positive_spec:
+            parts = item.split(':')
+            if len(parts) == 1:
+                ordered_spec.append(int(parts[0]))
+            elif len(parts) == 2:
+                start_part = int(parts[0] if parts[0] != '' else 0)
+                stop_part = int(parts[1] if parts[1] != '' else loc_max+1)
+                for part in range(start_part, stop_part):
+                    ordered_spec.append(int(part))
+            if max_spec_fields > 0:
+                if len(self.ordered_spec) > max_spec_fields:
+                    return None
+        return ordered_spec
 
 
     def spec_evaluator(self, location: int) -> bool:
@@ -242,3 +261,27 @@ class SpecProcessor(object):
                     return False
                 else:
                     return True
+
+
+
+def spec_has_negatives(spec) -> bool:
+    """ Checks for negative values in a single spec
+    """
+    for item in spec:
+        if '-' in item:
+            return True
+    return False
+
+def spec_has_unbounded_range(spec) -> bool:
+    """ Checks for unbounded outer range in a single spec
+    """
+    for item in spec:
+        parts = item.split(':')
+        if len(parts) == 2:
+            if parts[1] == '':
+                return True
+    return False
+
+
+
+

@@ -403,7 +403,6 @@ class Config(object):
 
             Added by calling programs within the extend_config method.
         """
-
         header = csvhelper.Header()
         if self.config['infiles'][0] != '-':
             header.load_from_files(self.config['infiles'], self.config['dialect'])
