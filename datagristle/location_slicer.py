@@ -61,27 +61,32 @@ class SpecProcessor(object):
                  spec_name: str,
                  header: Optional[csvhelper.Header],
                  infiles: Union[str, List[str]],
-                 max_spec_items: int) -> None:
+                 actual_item_count: int,
+                 max_mem_item_count: int) -> None:
         """
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
+        actual_item_count: would be total number of records or total number of columns in file - used
+                for translating negative slices
         """
 
         self.spec_name = spec_name
         self.numeric_spec: List[Optional[str]] = None # spec with names converted to positions
         self.positive_spec: List[Optional[str]] = None  # spec with negatives converted
         self.ordered_spec: List[Optional[str]] = None  # spec ranges converted to offsets
-        self.max_ordered_spec = 60
         self.header = header
-        max_mem_recs = 50
+        #self.max_ordered_spec = 60
+        #max_in_mem_processing_recs = 50000
+        self.max_in_mem_processing_recs = 50
+        self.memory_overflow = False
 
         self.numeric_spec = self._spec_name_translater(spec, header)
 
-        self.positive_spec = self._spec_negative_translator(loc_max=max_spec_items)
+        self.positive_spec = self._spec_negative_translator(loc_max=actual_item_count)
 
         self._spec_validator(self.numeric_spec)      # will raise exceptions if any exist
 
-        self.ordered_spec = self.make_ordered_spec(max_spec_items, max_mem_recs)
+        self.ordered_spec = self._make_ordered_spec(actual_item_count, max_mem_item_count)
 
 
     def _spec_name_translater(self,
@@ -164,7 +169,7 @@ class SpecProcessor(object):
                 - none
         """
         if loc_max is None:
-            if self.has_negatives():
+            if spec_has_negatives(self.numeric_spec):
                 raise ValueError('_spec_negative_translator missing loc_max - and has negative specs')
 
         positive_spec: List[Optional[str]] = []
@@ -183,9 +188,9 @@ class SpecProcessor(object):
         return positive_spec
 
 
-    def make_ordered_spec(self,
-                          loc_max: Optional[int],
-                          max_spec_fields: int) -> None:
+    def _make_ordered_spec(self,
+                          actual_item_count: Optional[int],
+                          max_in_mem_processing_recs: int) -> None:
         ordered_spec = []
         for item in self.positive_spec:
             parts = item.split(':')
@@ -193,12 +198,15 @@ class SpecProcessor(object):
                 ordered_spec.append(int(parts[0]))
             elif len(parts) == 2:
                 start_part = int(parts[0] if parts[0] != '' else 0)
-                stop_part = int(parts[1] if parts[1] != '' else loc_max+1)
+                stop_part = int(parts[1] if parts[1] != '' else actual_item_count+1)
                 for part in range(start_part, stop_part):
                     ordered_spec.append(int(part))
-            if max_spec_fields > 0:
-                if len(self.ordered_spec) > max_spec_fields:
-                    return None
+        if max_in_mem_processing_recs > 0:
+            if ordered_spec is None:
+                return None
+            elif len(ordered_spec) > max_in_mem_processing_recs:
+                self.memory_overflow = True
+                return None
         return ordered_spec
 
 
@@ -224,13 +232,13 @@ class SpecProcessor(object):
             To do:
                - support slice steps
         """
-        if not self.adj_spec:
+        if not self.positive_spec:
             # the self.adj_spec will often be None for 1-2 of the 4 specs.
             # ex: incl criteria provided (or defaulted to ':'), but if no
             # excl critieria provided it will be None.
             return False
 
-        if any([self._spec_item_evaluator(x, int(location)) for x in self.adj_spec]):
+        if any([self._spec_item_evaluator(x, int(location)) for x in self.positive_spec]):
             return True
 
         return False
