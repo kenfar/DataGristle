@@ -13,6 +13,7 @@
 import errno
 import fileinput
 import os
+from pprint import pprint as pp
 import tempfile
 
 import envoy
@@ -71,18 +72,21 @@ class Test7x7File(object):
                          {ics}
                          {ecs}
                          {opt}
+                         --verbosity debug
                '''
         r = envoy.run(cmd)
         if r.status_code:
             print('Status Code:  %d' % r.status_code)
             print(r.std_out)
             print(r.std_err)
+        print(r.std_out)
+        print(r.std_err)
         p_recs = []
         for rec in fileinput.input(self.out_fqfn):
             p_recs.append(rec[:-1])
         fileinput.close()
 
-        return p_recs
+        return r.status_code, p_recs
 
 
     def test_select_first_row(self):
@@ -90,8 +94,8 @@ class Test7x7File(object):
         valid = []
         valid.append('0-0,0-1,0-2,0-3,0-4,0-5,0-6')
 
-        actual = self.runner('-r 0', None, None, None,
-                             options='''--delimiter=',' --quoting=quote_none --has-no-header''')
+        rc, actual = self.runner('-r 0', None, None, None,
+                     options='''--delimiter=',' --quoting=quote_none --has-no-header''')
         assert valid == actual
 
 
@@ -106,8 +110,8 @@ class Test7x7File(object):
         valid.append('5-0')
         valid.append('6-0')
 
-        actual = self.runner(None, None, '-c 0', None,
-                             options='''--delimiter=',' --quoting=quote_none''')
+        rc, actual = self.runner(None, None, '-c 0', None,
+                     options='''--delimiter=',' --quoting=quote_none''')
         assert valid == actual
 
 
@@ -116,8 +120,8 @@ class Test7x7File(object):
         valid = []
         valid.append('0-0')
 
-        actual = self.runner('-r 0', None, '-c 0', None,
-                             options='''--delimiter=',' --quoting=quote_none ''')
+        rc, actual = self.runner('-r 0', None, '-c 0', None,
+                     options='''--delimiter=',' --quoting=quote_none ''')
         assert valid == actual
 
 
@@ -128,8 +132,8 @@ class Test7x7File(object):
         valid.append('2-0,2-1,2-2,2-3,2-4,2-5,2-6')
         valid.append('3-0,3-1,3-2,3-3,3-4,3-5,3-6')
 
-        actual = self.runner('-r :4', '-R 1', None, None,
-                             options='''--delimiter=',' --quoting=quote_none''')
+        rc, actual = self.runner('-r :4', '-R 1', None, None,
+                     options='''--delimiter=',' --quoting=quote_none''')
         assert valid == actual
 
 
@@ -139,23 +143,21 @@ class Test7x7File(object):
         valid.append('0-0,0-6')
         valid.append('6-0,6-6')
 
-        actual = self.runner('-r 0,-1', None, '-c 0,-1', None,
-                             options='''--delimiter=',' --quoting=quote_none''')
+        rc, actual = self.runner('-r 0,-1', None, '-c 0,-1', None,
+                     options='''--delimiter=',' --quoting=quote_none''')
         assert valid == actual
 
-        actual = self.runner('-r 0,-1', None, None, '-C 1:-1',
-                             options='''--delimiter=',' --quoting=quote_none''')
+        rc, actual = self.runner('-r 0,-1', None, None, '-C 1:-1',
+                     options='''--delimiter=',' --quoting=quote_none''')
         assert valid == actual
 
 
     def test_select_asking_for_too_much(self):
 
-        valid = []
-        valid.append('0-0,0-1,0-2,0-3,0-4,0-5,0-6')
+        rc, _ = self.runner('-r 0:5', None, '-c 0:999', None,
+                options='''--delimiter=',' --quoting=quote_none --max-mem-recs=1''')
+        assert rc == 0
 
-        actual = self.runner('-r 0', None, '-c 0:100', None,
-                             options='''--delimiter=',' --quoting=quote_none''')
-        assert valid == actual
 
 
 

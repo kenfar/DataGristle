@@ -32,6 +32,8 @@
     Copyright 2011-2021 Ken Farmer
 """
 
+import copy
+from dataclasses import dataclass
 from pprint import pprint as pp
 import re
 import sys
@@ -40,58 +42,47 @@ from typing import List, Dict, Tuple, Union, Any, Optional
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
-
-
-def is_sequence(val: Any) -> bool:
-    """ test whether or not val is a squence - list or tuple
-            input:  val
-            output:  True or False
-    """
-    if isinstance(val, (list, tuple)):
-        return True
-    else:
-        return False
+MAX_MEM_RECS = 100000 # limits size of recs in memory
 
 
 
 class SpecProcessor(object):
 
     def __init__(self,
-                 spec: List[str],
+                 raw_spec: List[str],
                  spec_name: str,
-                 header: Optional[csvhelper.Header],
-                 infiles: Union[str, List[str]],
-                 actual_item_count: int,
-                 max_mem_item_count: int) -> None:
+                 header: Optional[csvhelper.Header] = None,
+                 infiles: Union[str, List[str]] = [],
+                 max_spec_items: int = 0,
+                 max_mem_recs: int = MAX_MEM_RECS) -> None:
         """
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
-        actual_item_count: would be total number of records or total number of columns in file - used
-                for translating negative slices
         """
 
         self.spec_name = spec_name
-        self.numeric_spec: List[Optional[str]] = None # spec with names converted to positions
-        self.positive_spec: List[Optional[str]] = None  # spec with negatives converted
-        self.ordered_spec: List[Optional[str]] = None  # spec ranges converted to offsets
+        self.raw_spec = raw_spec           # spec with names, ranges, negatives
+        self.numeric_spec: List[str] = []  # spec with names converted to positions
+        self.positive_spec: List[str] = [] # spec with negatives converted
+        self.ordered_spec: List[int] = []  # spec ranges converted to offsets
         self.header = header
-        #self.max_ordered_spec = 60
-        #max_in_mem_processing_recs = 50000
-        self.max_in_mem_processing_recs = 50
-        self.memory_overflow = False
+        self.max_mem_recs = max_mem_recs
 
-        self.numeric_spec = self._spec_name_translater(spec, header)
+        self.numeric_spec = self._spec_name_translater(self.raw_spec, header)
 
-        self.positive_spec = self._spec_negative_translator(loc_max=actual_item_count)
+        if spec_has_negatives(self.numeric_spec):
+            self.positive_spec = self._spec_negative_translator(loc_max=max_spec_items)
+        else:
+            self.positive_spec = copy.copy(self.numeric_spec)
 
         self._spec_validator(self.numeric_spec)      # will raise exceptions if any exist
 
-        self.ordered_spec = self._make_ordered_spec(actual_item_count, max_mem_item_count)
+        self.ordered_spec = self.make_ordered_spec(max_spec_items, max_mem_recs)
 
 
     def _spec_name_translater(self,
                               spec: List[str],
-                              header: csvhelper.Header) -> List[str]:
+                              header: Optional[csvhelper.Header]) -> List[str]:
         """ Reads through a single spec (ie, record inclusion spec, column
             exclusion spec, etc) and remaps any column names to their position
             offsets.
@@ -128,7 +119,7 @@ class SpecProcessor(object):
                         spec: List[str]) -> bool:
         """ Checks for any invalid specifications.
         """
-        if not is_sequence(spec):
+        if not spec_is_sequence(spec):
             raise ValueError('spec argument is not a sequence object')
 
         def _is_invalid_part(part: str) -> bool:
@@ -157,22 +148,20 @@ class SpecProcessor(object):
         return True
 
 
-    def _spec_negative_translator(self, loc_max: Optional[int]=None) -> None:
+    def _spec_negative_translator(self,
+                                  loc_max: int) -> List[str]:
         """ Reads through a single spec (ie, record inclusion spec, column
             exclusion spec, etc) and remaps any negative values to their positive
             equiv.
             Inputs:
-                - the max number of items to apply the spec to.  The location
-                  starts at an offset of 0.  So, a 4-item list will have a
-                  max-loc of 3.
+                - loc_max: the max number of items to apply the spec to.  The
+                  location starts at an offset of 0.  Additionally:
+                  - for a col spec this is the number of cols in a record
+                  - for a row spec this is the number of recs in the file
             Outputs:
                 - none
         """
-        if loc_max is None:
-            if spec_has_negatives(self.numeric_spec):
-                raise ValueError('_spec_negative_translator missing loc_max - and has negative specs')
-
-        positive_spec: List[Optional[str]] = []
+        positive_spec: List[str] = []
         for item in self.numeric_spec:
             parts = item.split(':')
             new_parts = []
@@ -188,9 +177,9 @@ class SpecProcessor(object):
         return positive_spec
 
 
-    def _make_ordered_spec(self,
-                          actual_item_count: Optional[int],
-                          max_in_mem_processing_recs: int) -> None:
+    def make_ordered_spec(self,
+                          loc_max: int,
+                          max_mem_recs: int) -> List[int]:
         ordered_spec = []
         for item in self.positive_spec:
             parts = item.split(':')
@@ -198,15 +187,12 @@ class SpecProcessor(object):
                 ordered_spec.append(int(parts[0]))
             elif len(parts) == 2:
                 start_part = int(parts[0] if parts[0] != '' else 0)
-                stop_part = int(parts[1] if parts[1] != '' else actual_item_count+1)
+                stop_part = int(parts[1] if parts[1] != '' else loc_max+1)
                 for part in range(start_part, stop_part):
                     ordered_spec.append(int(part))
-        if max_in_mem_processing_recs > 0:
-            if ordered_spec is None:
-                return None
-            elif len(ordered_spec) > max_in_mem_processing_recs:
-                self.memory_overflow = True
-                return None
+            if len(ordered_spec) > max_mem_recs:
+                sys.stderr.write('WARNING: insufficient memory - may be slow\n')
+                #comm.abort('Error: spec exceeds max_mem_recs')
         return ordered_spec
 
 
@@ -233,7 +219,7 @@ class SpecProcessor(object):
                - support slice steps
         """
         if not self.positive_spec:
-            # the self.adj_spec will often be None for 1-2 of the 4 specs.
+            # the self.positive_spec will often be None for 1-2 of the 4 specs.
             # ex: incl criteria provided (or defaulted to ':'), but if no
             # excl critieria provided it will be None.
             return False
@@ -272,7 +258,7 @@ class SpecProcessor(object):
 
 
 
-def spec_has_negatives(spec) -> bool:
+def spec_has_negatives(spec: List[str]) -> bool:
     """ Checks for negative values in a single spec
     """
     for item in spec:
@@ -280,7 +266,7 @@ def spec_has_negatives(spec) -> bool:
             return True
     return False
 
-def spec_has_unbounded_range(spec) -> bool:
+def spec_has_unbounded_range(spec: List[str]) -> bool:
     """ Checks for unbounded outer range in a single spec
     """
     for item in spec:
@@ -289,6 +275,16 @@ def spec_has_unbounded_range(spec) -> bool:
             if parts[1] == '':
                 return True
     return False
+
+def spec_is_sequence(spec: List[str]) -> bool:
+    """ test whether or not a spec is a squence - list or tuple
+            input:  val
+            output:  True or False
+    """
+    if isinstance(spec, (list, tuple)):
+        return True
+    else:
+        return False
 
 
 

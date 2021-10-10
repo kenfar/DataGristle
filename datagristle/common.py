@@ -41,20 +41,21 @@ def isnumeric(number: Any) -> bool:
 
 
 def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float]:
-    """  Provides the most common key in a dictionary as well as its frequency
-         expressed as a percentage.  For example:
-         cd = ['car':    7
+    """  Provides the most common key in a frequency distribution dictionary,
+         as well as its frequency expressed as a percentage.  For example:
+         cd = {'car':    7
                'boat':  30
                'truck':  8
-               'plane':  5
-         print most_common_key(cd)
+               'plane':  5}
+         print(most_common_key(cd))
          >>> boat, 60
     """
-    sorted_keys  = (sorted(count_dict, key=count_dict.get))
-    total_values = sum(count_dict.values())
-    most_common_key       = sorted_keys[-1]
-    most_common_key_value = count_dict[sorted_keys[-1]]
-    most_common_pct       = most_common_key_value / total_values  # type: ignore
+    count_items = count_dict.items()
+    total_values = sum([x[1] for x in count_items])
+    sorted_items = sorted(count_items, key=lambda x: x[1], reverse=True)
+    most_common_key = sorted_items[0][0]
+    most_common_key_value = sorted_items[0][1]
+    most_common_pct = most_common_key_value / total_values  # type: ignore
     return most_common_key, most_common_pct
 
 
@@ -232,7 +233,7 @@ def get_best_col_names(config: Dict[str, Any],
 
 
 def get_col_names_from_header(file1_fqfn: str,
-                              dialect: csv.Dialect) -> List[str]:
+                              dialect: csv.Dialect) -> Optional[List[str]]:
     try:
         with open(file1_fqfn, newline='') as f:
             reader = csv.reader(f, dialect=dialect)

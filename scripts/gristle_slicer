@@ -61,6 +61,11 @@ Examples:
     $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all:
                             Prints columns 0-4 for the last 100 records, csv
                             dialect info (delimiter, quoting) provided manually)
+    $ gristle_slicer -i sample.csv -r '-20 : -1'
+                            Prints a negative range - note that it must be quoted
+                            AND there must be spaces around the colon - otherwise
+                            the argument parsing will produce the error:
+                            "expected one argument"
     Many more examples can be found here:
         https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
@@ -99,52 +104,52 @@ comm.validate_python_version()
 
 def main() -> int:
 
-    # Set up config:
     try:
         config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
         nconfig, _ = config_manager.get_config()
     except EOFError:
         return errno.ENODATA
 
-
-    # Set up io:
     input_handler = file_io.InputHandler(nconfig.infiles,
                                          nconfig.dialect,
                                          return_header=True)
 
-    output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
+    # Set up the merged specs (resolves inclusion & exclusion specs), as
+    # well as the record slicers.  We need these record slicers because
+    # there may be too many recs to keep the merged_rec_spec in memory.
 
-    # Set up slicers:
     (incl_rec_slicer,
      excl_rec_slicer,
-     merged_recs) = setup_rec_slicers(nconfig.infiles,
-                                      input_handler.dialect,
-                                      nconfig.records,
-                                      nconfig.exrecords,
-                                      nconfig.max_mem_items)
+     merged_rec_spec) = setup_rec_slicers(nconfig.infiles,
+                                          input_handler.dialect,
+                                          nconfig.records,
+                                          nconfig.exrecords,
+                                          nconfig.max_mem_recs)
 
-    merged_cols = setup_col_slicers(nconfig.infiles,
-                                    nconfig.columns,
-                                    nconfig.excolumns,
-                                    nconfig.header,
-                                    nconfig.max_mem_items)
+    merged_col_spec = setup_col_slicers(nconfig.infiles,
+                                        nconfig.columns,
+                                        nconfig.excolumns,
+                                        nconfig.header)
 
-    if merged_recs and merged_cols:
-        # Process in memory:
+
+    output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
+
+    # If the number of recs is small, then process in memory.  Otherwise, use
+    # the rec slicers and read one rec at a time and process.
+    if merged_rec_spec:
         all_rows = [x for x in input_handler]
-        for rec_num in merged_recs:
+        for rec_num in merged_rec_spec:
             new_rec = process_rec_in_memory(all_rows[rec_num],
-                                            merged_cols)
+                                            merged_col_spec)
             if new_rec:
                 output_handler.write_rec(new_rec)
     else:
-        # Process in io:
         for rec in input_handler:
             new_rec = process_rec(input_handler.rec_cnt - 1,
                                   incl_rec_slicer,
                                   excl_rec_slicer,
                                   rec,
-                                  merged_cols)
+                                  merged_col_spec)
             if new_rec:
                 output_handler.write_rec(new_rec)
 
@@ -159,14 +164,15 @@ def setup_rec_slicers(infiles: List[str],
                       dialect: csv.Dialect,
                       config_records: str,
                       config_exrecords: str,
-                      max_mem_items: int) -> Tuple[slicer.SpecProcessor,
-                                                   slicer.SpecProcessor,
-                                                   List[int]]:
+                      max_mem_recs: int) -> Tuple[slicer.SpecProcessor,
+                                                  slicer.SpecProcessor,
+                                                  List[int]]:
     """  Sets up the slicer objects (inclusion & exclusion) for
          recs as well as the merged_recs_specs for columns.
 
-         Then counts records if negative slice references exist and calls
-         the spec adjuster.
+         Then creates a merged_rec_spec - which is the exact list of recs
+         to slice if possible.  If there's insufficient memory then this
+         list will be empty.
     """
 
     # first parse the config items;
@@ -180,38 +186,36 @@ def setup_rec_slicers(infiles: List[str],
             or slicer.spec_has_unbounded_range(records)
             or slicer.spec_has_unbounded_range(exrecords)):
         rec_cnt = get_rec_count(infiles, dialect)
+
     incl_rec_slicer = slicer.SpecProcessor(records,
                                            'incl_rec_spec',
                                            header=None,
                                            infiles=infiles,
-                                           actual_item_count=rec_cnt,
-                                           max_mem_item_count=max_mem_items)
+                                           max_spec_items=rec_cnt,
+                                           max_mem_recs=max_mem_recs)
     excl_rec_slicer = slicer.SpecProcessor(exrecords,
                                            'excl_rec_spec',
                                            header=None,
                                            infiles=infiles,
-                                           actual_item_count=rec_cnt,
-                                           max_mem_item_count=max_mem_items)
+                                           max_spec_items=rec_cnt,
+                                           max_mem_recs=max_mem_recs)
 
-    # merge column specs: 
-    merged_col_spec = merger(incl_rec_slicer.ordered_spec, excl_rec_slicer.ordered_spec)
-
+    merged_rec_spec = merge_specs(incl_rec_slicer.ordered_spec, excl_rec_slicer.ordered_spec)
     return (incl_rec_slicer,
             excl_rec_slicer,
-            merged_col_spec)
+            merged_rec_spec)
 
 
 
 def setup_col_slicers(infiles: List[str],
                       config_columns: str,
                       config_excolumns: str,
-                      config_header: csvhelper.Header,
-                      max_mem_items: int) -> List[int]:
+                      config_header: csvhelper.Header) -> List[int]:
     """  Sets up the 2 slicer objects: inclusion & exclusion for
-         recs and the merged_cols for columns.
+         recs and the merged_col_spec for columns.
 
-         Then counts records and columns if negative slice references
-         exist and calls the spec adjuster.
+         Then creates and returns a merged column spec that contains
+         an exact list of columns to slice.
     """
 
     # first parse the config items;
@@ -224,41 +228,30 @@ def setup_col_slicers(infiles: List[str],
                                            'incl_col_spec',
                                            config_header,
                                            infiles,
-                                           actual_item_count=col_count,
-                                           max_mem_item_count=max_mem_items)
+                                           max_spec_items=col_count)
     excl_col_slicer = slicer.SpecProcessor(excolumns,
                                            'excl_col_spec',
                                            config_header,
                                            infiles,
-                                           actual_item_count=col_count,
-                                           max_mem_item_count=max_mem_items)
+                                           max_spec_items=col_count)
 
-    # merge column specs:
-    merged_col_spec = merger(incl_col_slicer.ordered_spec, excl_col_slicer.ordered_spec)
-    if incl_col_slicer.memory_overflow or excl_col_slicer.memory_overflow:
-        comm.abort('Error: too many columns for memory.',
-                   f'It is currently limited to {incl_col_slicer.max_in_mem_processing_recs}. '
-                   'You can increase the number of cols allowed with the --max-mem-recs option')
+    merged_col_spec = merge_specs(incl_col_slicer.ordered_spec, excl_col_slicer.ordered_spec)
 
     return merged_col_spec
 
 
 
+def merge_specs(incl_ordered_spec, excl_ordered_spec):
+    assert incl_ordered_spec is not None
+    assert excl_ordered_spec is not None
+    merged_specs = []
 
-def merger(incl_ordered_spec, excl_ordered_spec):
-    pp('---------- merger ------------------')
-    pp(incl_ordered_spec)
-    pp(excl_ordered_spec)
-    pp('------------------------------------')
-    merged_cols = []
-    if incl_ordered_spec is None or excl_ordered_spec is None:
-        return None
-    for col in incl_ordered_spec:
-        if col in excl_ordered_spec:
+    for spec_item in incl_ordered_spec:
+        if spec_item in excl_ordered_spec:
             continue
         else:
-            merged_cols.append(int(col))
-    return merged_cols
+            merged_specs.append(int(spec_item))
+    return merged_specs
 
 
 
@@ -289,14 +282,13 @@ def process_rec(rec_number: int,
             - incl_rec_spec
             - excl_rec_spec
             - rec:             a list of all columns from the record
-            - merged_cols:     simple list of which columns to include
+            - merged_col_spec: simple list of which columns to slice
         Output:
             - if the rec_number fails:  None
             - if the rec_number passes: a list of the columns that qualified
     """
     # minimal validation
     assert int(rec_number) >= 0
-    assert merged_col_spec
 
     # reject record if it isn't in the inclusion spec
     if not incl_rec_slicer.spec_evaluator(rec_number):
@@ -319,6 +311,7 @@ def process_rec(rec_number: int,
 
 def process_rec_in_memory(rec: List,
                           merged_col_spec) -> Optional[List[str]]:
+    #todo: update following comment
     """ Evaluates all the specifications against a single record
         from the input file.  First it applies inclusion & exclusion
         specifications against the record, then it applies inclusion
@@ -328,13 +321,11 @@ def process_rec_in_memory(rec: List,
             - incl_rec_spec
             - excl_rec_spec
             - rec:             a list of all columns from the record
-            - merged_cols:     simple list of which columns to include
+            - merged_col_spec: simple list of which columns to slice
         Output:
             - if the rec_number fails:  None
             - if the rec_number passes: a list of the columns that qualified
     """
-    pp('******* Process in memory ***********')
-    pp(merged_col_spec)
     output_rec = []
     for col_number in merged_col_spec:
         try:
@@ -378,8 +369,8 @@ class ConfigManager(conf.Config):
                                  short_name='R',
                                  default='',
                                  type=str)
-        self.add_custom_metadata(name='max_mem_items',
-                                 default=1000000,
+        self.add_custom_metadata(name='max_mem_recs',
+                                 default=10000,
                                  type=int)
 
         self.add_standard_metadata('verbosity')

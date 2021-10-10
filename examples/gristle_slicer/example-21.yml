@@ -6,8 +6,8 @@ infiles: [example-21_individual_cols_and_rows_input.csv]
 outfile: /tmp/example-21_actualout.csv
 verbosity: normal
 
-columns: '1, 3, -1'   # includes columns 1, 3 and the last column
-records: '2, 4'       # includes rows 2 and 4
+columns: '1, 3, -1, 3'   # includes columns 1, 3 the last column, and then 3 again
+records: '2, 4'          # includes rows 2 and 4
 
 quoting: quote_none
 delimiter: '|'

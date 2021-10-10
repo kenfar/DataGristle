@@ -2,6 +2,8 @@
 """ See the file "LICENSE" for the full license governing this code.
     Copyright 2011,2012,2013,2017 Ken Farmer
 """
+from pprint import pprint as pp
+
 import pytest
 
 import datagristle.location_slicer  as mod
@@ -10,90 +12,73 @@ import datagristle.location_slicer  as mod
 class TestIsNegativeSpec(object):
 
     def test_has_negatives_simple_inputs(self):
-        spec = mod.SpecProcessor(['1'], 'rec_incl_spec')
 
-        spec.numeric_spec = ['1']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives(['1']) is False
 
-        spec.numeric_spec = ['1', '1']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives(['1', '1']) is False
 
-        spec.numeric_spec = ['-1', '1', '2', '-12']
-        assert spec.has_negatives()
+        assert mod.spec_has_negatives(['-1', '1', '2', '-12'])
 
-        spec.numeric_spec = ['0', '1', '2', '3']
-        assert spec.has_negatives() is False
-
+        assert mod.spec_has_negatives(['0', '1', '2', '3']) is False
 
 
     def test_has_negatives_complex_inputs(self):
-        spec = mod.SpecProcessor(['1'], 'rec_incl_spec')
 
-        spec.numeric_spec = ['1', '2']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives(['1', '2']) is False
 
-        spec.numeric_spec = [':', '1', '2']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives([':', '1', '2']) is False
 
-        spec.numeric_spec = ['1:', '1', '2']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives(['1:', '1', '2']) is False
 
-        spec.numeric_spec = [':1', '1', '2']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives([':1', '1', '2']) is False
 
-        spec.numeric_spec = ['1:1', '1', '2']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives(['1:1', '1', '2']) is False
 
-        spec.numeric_spec = ['1', '1:', '2']
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives(['1', '1:', '2']) is False
 
-        spec.numeric_spec = ['-1:', '2']
-        assert spec.has_negatives()
+        assert mod.spec_has_negatives(['-1:', '2'])
 
-        spec.numeric_spec = [':-1', '2']
-        assert spec.has_negatives()
+        assert mod.spec_has_negatives([':-1', '2'])
 
-        spec.numeric_spec = ['-1:-1', '2']
-        assert spec.has_negatives()
+        assert mod.spec_has_negatives(['-1:-1', '2'])
 
-        spec.numeric_spec = ['-1:-1', '3:9']
-        assert spec.has_negatives()
+        assert mod.spec_has_negatives(['-1:-1', '3:9'])
+
 
     def test_has_negatives_none_values(self):
 
-        spec = mod.SpecProcessor(['1'], 'rec_incl_spec')
-        spec.numeric_spec = []
-        assert spec.has_negatives() is False
+        assert mod.spec_has_negatives([]) is False
 
 
 
 class TestSpecProcessorValidator(object):
+
     def test_spec_validation(self):
 
         # pylint: disable=E1101
         with pytest.raises(ValueError):
-            mod.SpecProcessor('3', 'bad spec')
+            mod.SpecProcessor('3', 'bad spec', header=None, infiles=None, max_spec_items=10)
         with pytest.raises(ValueError):
-            mod.SpecProcessor('3', 'bad spec')
+            mod.SpecProcessor('3', 'bad spec', header=None, infiles=None, max_spec_items=10)
         # pylint: enable=E1101
 
-    def test_negative_check(self):
-        # check simplest spec
-        self.spec_processor = mod.SpecProcessor(['3'], 'rec_incl_spec')
-        assert self.spec_processor.has_negatives() is False
-
-        # check more complex spec
-        sp2 = mod.SpecProcessor(['3:5', '0', '18:', ':'], 'rec_incl_spec')
-        assert sp2.has_negatives() is False
-
-        # check negative spec
-        sp2 = mod.SpecProcessor(['3:5'], 'rec_incl_spec')
-        sp3 = mod.SpecProcessor(['-1'], 'rec_incl_spec')
-        assert sp3.has_negatives()
-
+#    def test_negative_check(self):
+#        # check simplest spec
+#        self.spec_processor = mod.SpecProcessor(['3'], 'rec_incl_spec', header=None, infiles=None, max_spec_items=10)
+#        assert self.spec_processor.has_negatives() is False
+#
+#        # check more complex spec
+#        sp2 = mod.SpecProcessor(['3:5', '0', '18:', ':'], 'rec_incl_spec')
+#        assert sp2.has_negatives() is False
+#
+#        # check negative spec
+#        sp2 = mod.SpecProcessor(['3:5'], 'rec_incl_spec')
+#        sp3 = mod.SpecProcessor(['-1'], 'rec_incl_spec')
+#        assert sp3.has_negatives()
+#
 
     def test_spec_validator(self):
-        sp5 = mod.SpecProcessor(['3:5'], 'rec_incl_spec')
+        sp5 = mod.SpecProcessor(['3:5'], 'rec_incl_spec', header=None, infiles=None, max_spec_items=10)
         assert sp5._spec_validator(['3'])
         assert sp5._spec_validator(['3:8'])
         assert sp5._spec_validator([':'])
@@ -117,49 +102,62 @@ class TestSpecProcessorValidator(object):
 
 
 
-class TestSpecProcessorAdjuster(object):
+class TestSpecProcessorNegativeTranslator(object):
 
-    def setup_method(self, method):
-        self.sp = mod.SpecProcessor(['3'], 'rec_inc_spec')
+#    def setup_method(self, method):
+#        self.sp = mod.SpecProcessor(['3'], 'rec_inc_spec')
 
     def test_adjust_one_spec(self):
+        header = None
+        infiles = None
+        max_spec_items = 80
 
-        self.sp = mod.SpecProcessor(['5'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
-        self.sp.spec_adjuster()
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        # test a single positive:
+        self.sp = mod.SpecProcessor(['5'], 'rec_inc_spec', header, infiles, max_spec_items)
+        #self.sp._spec_negative_translator(loc_max=80)
+        assert self.sp.positive_spec == self.sp.numeric_spec
+        #self.sp._spec_negative_translator(loc_max=80)
+        #assert self.sp.positive_spec == self.sp.numeric_spec
 
-        self.sp = mod.SpecProcessor(['5:15'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        # test a range of positives:
+        self.sp = mod.SpecProcessor(['5:15'], 'rec_inc_spec', header, infiles, max_spec_items)
+        self.sp._spec_negative_translator(loc_max=80)
+        pp(self.sp.numeric_spec)
+        pp(self.sp.positive_spec)
+        assert self.sp.positive_spec == self.sp.numeric_spec
 
-        self.sp = mod.SpecProcessor(['5:9', '10:'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        # test a couple of ranges, one unbound:
+        self.sp = mod.SpecProcessor(['5:9', '10:'], 'rec_inc_spec', header, infiles, max_spec_items)
+        self.sp._spec_negative_translator(loc_max=80)
+        assert self.sp.positive_spec == self.sp.numeric_spec
 
-        self.sp = mod.SpecProcessor([':'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        # test a single range with both sides unbounded:
+        self.sp = mod.SpecProcessor([':'], 'rec_inc_spec', header, infiles, max_spec_items)
+        self.sp._spec_negative_translator(loc_max=80)
+        assert self.sp.positive_spec == self.sp.numeric_spec
 
-        self.sp = mod.SpecProcessor(['-1'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=80)
-        assert self.sp.adj_spec == ['80']
+        # test a single negative:
+        self.sp = mod.SpecProcessor(['-1'], 'rec_inc_spec', header, infiles, max_spec_items)
+        self.sp._spec_negative_translator(loc_max=80)
+        assert self.sp.positive_spec == ['80']
 
-        self.sp = mod.SpecProcessor(['-20:-10'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=80)
-        assert self.sp.adj_spec == ['61:71']
+        # test a range of negatives:
+        self.sp = mod.SpecProcessor(['-20:-10'], 'rec_inc_spec', header, infiles, max_spec_items)
+        self.sp._spec_negative_translator(loc_max=80)
+        assert self.sp.positive_spec == ['61:71']
 
-        self.sp = mod.SpecProcessor(['-100:'], 'rec_inc_spec')
-        self.sp.spec_adjuster(loc_max=1234567890)
-        assert self.sp.adj_spec == ['1234567791:']
+        # test a range of negative and unbounded:
+        max_spec_items=1234567890
+        self.sp = mod.SpecProcessor(['-100:'], 'rec_inc_spec', header, infiles, max_spec_items)
+        self.sp._spec_negative_translator(loc_max=max_spec_items)
+        assert self.sp.positive_spec == ['1234567791:']
 
 
 
 class TestSpecProcessorItemEvaluator(object):
 
     def setup_method(self, method):
-        self.sp = mod.SpecProcessor([':'], 'foo')
+        self.sp = mod.SpecProcessor([':'], 'foo', max_spec_items=80)
 
     def test_a(self):
         assert self.sp._spec_item_evaluator(':', 10)
@@ -180,39 +178,39 @@ class TestSpecProcessorItemEvaluator(object):
 class TestSpecProcessorEvaluator(object):
 
     def simple_setup(self, spec, spec_name, loc_max):
-        self.sp = mod.SpecProcessor(spec, spec_name)
-        self.sp.spec_adjuster(loc_max)
+        self.sp = mod.SpecProcessor(spec, spec_name, max_spec_items=loc_max)
+        self.sp._spec_negative_translator(loc_max)
 
     def test_evaluate_starting_offsets(self):
 
         self.simple_setup(['0'], 'rec_incl_spec', 80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        assert self.sp.positive_spec == self.sp.numeric_spec
         assert self.sp.spec_evaluator(0)
         assert self.sp.spec_evaluator(1) is False
 
     def test_evaluate_positive_specs(self):
 
         self.simple_setup(['5'], 'rec_incl_spec', 80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        assert self.sp.positive_spec == self.sp.numeric_spec
         assert self.sp.spec_evaluator(5)
         assert self.sp.spec_evaluator(8) is False
 
         self.simple_setup(['5', '15'], 'rec_incl_spec', 80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        assert self.sp.positive_spec == self.sp.numeric_spec
         assert self.sp.spec_evaluator(5)
         assert self.sp.spec_evaluator(33) is False
 
         self.simple_setup(['5:10', '15'], 'rec_incl_spec', 80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        assert self.sp.positive_spec == self.sp.numeric_spec
         assert self.sp.spec_evaluator(7)
         assert self.sp.spec_evaluator(33) is False
 
         self.simple_setup([':'], 'rec_incl_spec', 80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        assert self.sp.positive_spec == self.sp.numeric_spec
         assert self.sp.spec_evaluator(7)
 
         self.simple_setup(['50:', '15'], 'rec_incl_spec', 80)
-        assert self.sp.adj_spec == self.sp.numeric_spec
+        assert self.sp.positive_spec == self.sp.numeric_spec
         assert self.sp.spec_evaluator(76)
         assert self.sp.spec_evaluator(15)
         assert self.sp.spec_evaluator(33) is False
@@ -226,7 +224,7 @@ class TestSpecProcessorEvaluator(object):
         self.simple_setup(['-60:-40'], 'rec_incl_spec', 80)
         assert self.sp.spec_evaluator(7) is False
         assert self.sp.spec_evaluator(25)
-        assert self.sp.spec_evaluator(79) is False
+        assert self.sp.spec_evaluator(78) is False
 
         self.simple_setup(['10', '50:-10'], 'rec_incl_spec', 80)
         assert self.sp.spec_evaluator(10)
@@ -276,8 +274,7 @@ class TestAgainstPythonSliceDocs(object):
         spec_name = 'foo'
         loc_max = 4     # max length - based on 0 offset
 
-        self.sp = mod.SpecProcessor(spec, spec_name)
-        self.sp.spec_adjuster(loc_max)
+        self.sp = mod.SpecProcessor(spec, spec_name, max_spec_items=loc_max)
         return self.sp.spec_evaluator(loc)
 
 
@@ -324,8 +321,6 @@ class TestAgainstPythonSliceDocs(object):
         assert self.simple_runner([':'], 2)
         assert self.simple_runner([':'], 3)
         assert self.simple_runner([':'], 4)
-
-
 
     def test_evaluate_python_doc_example_5(self):
         # a[-1]    # last item in the array
