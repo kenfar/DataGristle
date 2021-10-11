@@ -29,6 +29,10 @@ Main Options:
                         The record exclusion specification.
                         Default is None which excludes nothing.
 
+    --max-mem-recs RECS The total number of recs to keep in memory.  If the number of
+                        records in the file is greater than this it will use a slower
+                        process.
+
 Notes:
     Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
         'NumberN, StartOffset:StopOffset'
@@ -104,6 +108,8 @@ comm.validate_python_version()
 
 def main() -> int:
 
+    merged_col_spec = Optional[List[int]]
+
     try:
         config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
         nconfig, _ = config_manager.get_config()
@@ -130,7 +136,9 @@ def main() -> int:
                                         nconfig.columns,
                                         nconfig.excolumns,
                                         nconfig.header)
-
+    if merged_col_spec is None:
+        comm.abort('Error: too many columns to fit into memory',
+                   'consider increasing memory available with option --max_mem_recs')
 
     output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
 
@@ -188,19 +196,15 @@ def setup_rec_slicers(infiles: List[str],
         rec_cnt = get_rec_count(infiles, dialect)
 
     incl_rec_slicer = slicer.SpecProcessor(records,
-                                           'incl_rec_spec',
                                            header=None,
-                                           infiles=infiles,
-                                           max_spec_items=rec_cnt,
+                                           infile_item_count=rec_cnt,
                                            max_mem_recs=max_mem_recs)
     excl_rec_slicer = slicer.SpecProcessor(exrecords,
-                                           'excl_rec_spec',
                                            header=None,
-                                           infiles=infiles,
-                                           max_spec_items=rec_cnt,
+                                           infile_item_count=rec_cnt,
                                            max_mem_recs=max_mem_recs)
 
-    merged_rec_spec = merge_specs(incl_rec_slicer.ordered_spec, excl_rec_slicer.ordered_spec)
+    merged_rec_spec = merge_specs(incl_rec_slicer.expanded_specs, excl_rec_slicer.expanded_specs)
     return (incl_rec_slicer,
             excl_rec_slicer,
             merged_rec_spec)
@@ -225,29 +229,28 @@ def setup_col_slicers(infiles: List[str],
     # set up the slicers:
     col_count = len(config_header.field_names)-1
     incl_col_slicer = slicer.SpecProcessor(columns,
-                                           'incl_col_spec',
                                            config_header,
-                                           infiles,
-                                           max_spec_items=col_count)
+                                           infile_item_count=col_count)
     excl_col_slicer = slicer.SpecProcessor(excolumns,
-                                           'excl_col_spec',
                                            config_header,
-                                           infiles,
-                                           max_spec_items=col_count)
+                                           infile_item_count=col_count)
 
-    merged_col_spec = merge_specs(incl_col_slicer.ordered_spec, excl_col_slicer.ordered_spec)
+    merged_col_spec = merge_specs(incl_col_slicer.expanded_specs, excl_col_slicer.expanded_specs)
 
     return merged_col_spec
 
 
 
-def merge_specs(incl_ordered_spec, excl_ordered_spec):
-    assert incl_ordered_spec is not None
-    assert excl_ordered_spec is not None
+def merge_specs(incl_expanded_specs: Optional[List[int]],
+                excl_expanded_specs: Optional[List[int]]) -> Optional[List[int]]:
+
+    if incl_expanded_specs is None or excl_expanded_specs is None:
+        return None
+
     merged_specs = []
 
-    for spec_item in incl_ordered_spec:
-        if spec_item in excl_ordered_spec:
+    for spec_item in incl_expanded_specs:
+        if spec_item in excl_expanded_specs:
             continue
         else:
             merged_specs.append(int(spec_item))
@@ -300,7 +303,10 @@ def process_rec(rec_number: int,
 
     output_rec = []
     for col_number in merged_col_spec:
-        output_rec.append(rec[col_number])
+        try:
+            output_rec.append(rec[col_number])
+        except IndexError:
+            continue # maybe a short record, or user provided a spec that exceeded cols
 
     if output_rec:
         return output_rec

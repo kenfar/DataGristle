@@ -49,35 +49,32 @@ MAX_MEM_RECS = 100000 # limits size of recs in memory
 class SpecProcessor(object):
 
     def __init__(self,
-                 raw_spec: List[str],
-                 spec_name: str,
-                 header: Optional[csvhelper.Header] = None,
-                 infiles: Union[str, List[str]] = [],
-                 max_spec_items: int = 0,
+                 raw_specs: List[str],
+                 header: Optional[csvhelper.Header],
+                 infile_item_count: int,
                  max_mem_recs: int = MAX_MEM_RECS) -> None:
         """
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
         """
 
-        self.spec_name = spec_name
-        self.raw_spec = raw_spec           # spec with names, ranges, negatives
-        self.numeric_spec: List[str] = []  # spec with names converted to positions
-        self.positive_spec: List[str] = [] # spec with negatives converted
-        self.ordered_spec: List[int] = []  # spec ranges converted to offsets
+        self.raw_specs = raw_specs           # spec with names, ranges, negatives
+        self.numeric_specs: List[str] = []   # spec with names converted to positions
+        self.positive_specs: List[str] = []  # spec with negatives converted
+        self.expanded_specs: Optional[List[int]] = []    # spec ranges converted to offsets
         self.header = header
         self.max_mem_recs = max_mem_recs
 
-        self.numeric_spec = self._spec_name_translater(self.raw_spec, header)
+        self.numeric_specs = self._spec_name_translater(self.raw_specs, header)
 
-        if spec_has_negatives(self.numeric_spec):
-            self.positive_spec = self._spec_negative_translator(loc_max=max_spec_items)
+        if spec_has_negatives(self.numeric_specs):
+            self.positive_specs = self._spec_negative_translator(infile_item_count)
         else:
-            self.positive_spec = copy.copy(self.numeric_spec)
+            self.positive_specs = copy.copy(self.numeric_specs)
 
-        self._spec_validator(self.numeric_spec)      # will raise exceptions if any exist
+        self._spec_validator(self.numeric_specs)      # will raise exceptions if any exist
 
-        self.ordered_spec = self.make_ordered_spec(max_spec_items, max_mem_recs)
+        self.expanded_specs = self._spec_range_expander(infile_item_count, max_mem_recs)
 
 
     def _spec_name_translater(self,
@@ -149,12 +146,12 @@ class SpecProcessor(object):
 
 
     def _spec_negative_translator(self,
-                                  loc_max: int) -> List[str]:
+                                  infile_item_count: int) -> List[str]:
         """ Reads through a single spec (ie, record inclusion spec, column
             exclusion spec, etc) and remaps any negative values to their positive
             equiv.
             Inputs:
-                - loc_max: the max number of items to apply the spec to.  The
+                - infile_item_count: the max number of items to apply the spec to.  The
                   location starts at an offset of 0.  Additionally:
                   - for a col spec this is the number of cols in a record
                   - for a row spec this is the number of recs in the file
@@ -162,7 +159,7 @@ class SpecProcessor(object):
                 - none
         """
         positive_spec: List[str] = []
-        for item in self.numeric_spec:
+        for item in self.numeric_specs:
             parts = item.split(':')
             new_parts = []
             for part in parts:
@@ -170,29 +167,29 @@ class SpecProcessor(object):
                     new_parts.append(part)
                 else:
                     if int(part) < 0:
-                        new_parts.append(str(loc_max + int(part) + 1 ))
+                        new_parts.append(str(infile_item_count+ int(part) + 1 ))
                     else:
                         new_parts.append(part)
             positive_spec.append(':'.join(new_parts))
         return positive_spec
 
 
-    def make_ordered_spec(self,
-                          loc_max: int,
-                          max_mem_recs: int) -> List[int]:
+    def _spec_range_expander(self,
+                             infile_item_count: int,
+                             max_mem_recs: int) -> Optional[List[int]]:
         ordered_spec = []
-        for item in self.positive_spec:
+        for item in self.positive_specs:
             parts = item.split(':')
             if len(parts) == 1:
                 ordered_spec.append(int(parts[0]))
             elif len(parts) == 2:
                 start_part = int(parts[0] if parts[0] != '' else 0)
-                stop_part = int(parts[1] if parts[1] != '' else loc_max+1)
+                stop_part = int(parts[1] if parts[1] != '' else infile_item_count+1)
                 for part in range(start_part, stop_part):
                     ordered_spec.append(int(part))
             if len(ordered_spec) > max_mem_recs:
                 sys.stderr.write('WARNING: insufficient memory - may be slow\n')
-                #comm.abort('Error: spec exceeds max_mem_recs')
+                return None
         return ordered_spec
 
 
@@ -218,13 +215,13 @@ class SpecProcessor(object):
             To do:
                - support slice steps
         """
-        if not self.positive_spec:
-            # the self.positive_spec will often be None for 1-2 of the 4 specs.
+        if not self.positive_specs:
+            # the self.positive_specs will often be None for 1-2 of the 4 specs.
             # ex: incl criteria provided (or defaulted to ':'), but if no
             # excl critieria provided it will be None.
             return False
 
-        if any([self._spec_item_evaluator(x, int(location)) for x in self.positive_spec]):
+        if any([self._spec_item_evaluator(x, int(location)) for x in self.positive_specs]):
             return True
 
         return False
