@@ -145,21 +145,16 @@ def main() -> int:
     # If the number of recs is small, then process in memory.  Otherwise, use
     # the rec slicers and read one rec at a time and process.
     if merged_rec_spec:
-        all_rows = [x for x in input_handler]
-        for rec_num in merged_rec_spec:
-            new_rec = process_rec_in_memory(all_rows[rec_num],
-                                            merged_col_spec)
-            if new_rec:
-                output_handler.write_rec(new_rec)
+        process_recs_in_memory(input_handler,
+                               output_handler,
+                               merged_rec_spec,
+                               merged_col_spec)
     else:
-        for rec in input_handler:
-            new_rec = process_rec(input_handler.rec_cnt - 1,
-                                  incl_rec_slicer,
-                                  excl_rec_slicer,
-                                  rec,
-                                  merged_col_spec)
-            if new_rec:
-                output_handler.write_rec(new_rec)
+        process_recs_from_file(input_handler,
+                               output_handler,
+                               incl_rec_slicer,
+                               excl_rec_slicer,
+                               merged_col_spec)
 
     input_handler.close()
     output_handler.close()
@@ -271,79 +266,68 @@ def get_rec_count(files: List[str],
 
 
 
-def process_rec(rec_number: int,
-                incl_rec_slicer: slicer.SpecProcessor,
-                excl_rec_slicer: slicer.SpecProcessor,
-                rec: List[str],
-                merged_col_spec) -> Optional[List[str]]:
-    """ Evaluates all the specifications against a single record
-        from the input file.  First it applies inclusion & exclusion
-        specifications against the record, then it applies inclusion
-        & exclusion specifications against each column.
-        Input:
-            - rec_number:      used for rec specs
+def process_recs_from_file(input_handler,
+                           output_handler,
+                           incl_rec_slicer: slicer.SpecProcessor,
+                           excl_rec_slicer: slicer.SpecProcessor,
+                           merged_col_spec) -> None:
+    """ Reads the file one record at a time, compares against the
+        specification, and then writes out qualifying records and
+        columns.
+        Args:
+            - input_handler
+            - output_handler
             - incl_rec_spec
             - excl_rec_spec
-            - rec:             a list of all columns from the record
             - merged_col_spec: simple list of which columns to slice
-        Output:
-            - if the rec_number fails:  None
-            - if the rec_number passes: a list of the columns that qualified
     """
-    # minimal validation
-    assert int(rec_number) >= 0
 
-    # reject record if it isn't in the inclusion spec
-    if not incl_rec_slicer.specs_evaluator(rec_number):
-        return None
+    for rec in input_handler:
+        rec_number = input_handler.rec_cnt - 1
 
-    # reject record if it is in the exclusion spec
-    if excl_rec_slicer.specs_evaluator(rec_number):
-        return None
+        if not incl_rec_slicer.specs_evaluator(rec_number):
+            return None
 
-    output_rec = []
-    for col_number in merged_col_spec:
-        try:
-            output_rec.append(rec[col_number])
-        except IndexError:
-            continue # maybe a short record, or user provided a spec that exceeded cols
+        if excl_rec_slicer.specs_evaluator(rec_number):
+            return None
 
-    if output_rec:
-        return output_rec
-    else:
-        return None  # don't return empty list
+        output_rec = []
+        for col_number in merged_col_spec:
+            try:
+                output_rec.append(rec[col_number])
+            except IndexError:
+                pass # maybe a short record, or user provided a spec that exceeded cols
+
+        if output_rec:
+            output_handler.write_rec(output_rec)
 
 
 
-def process_rec_in_memory(rec: List,
-                          merged_col_spec) -> Optional[List[str]]:
-    #todo: update following comment
-    """ Evaluates all the specifications against a single record
-        from the input file.  First it applies inclusion & exclusion
-        specifications against the record, then it applies inclusion
-        & exclusion specifications against each column.
-        Input:
-            - rec_number:      used for rec specs
-            - incl_rec_spec
-            - excl_rec_spec
-            - rec:             a list of all columns from the record
+def process_recs_in_memory(input_handler,
+                           output_handler,
+                           merged_rec_spec,
+                           merged_col_spec) -> None:
+
+    """ Reads the entire file into memory, then processes one record
+        at a time, compares against the specification, and then writes
+        out qualifying records and columns.
+        Args:
+            - input_handler
+            - output_handler
+            - merged_rec_spec: a list of all columns from the record
             - merged_col_spec: simple list of which columns to slice
-        Output:
-            - if the rec_number fails:  None
-            - if the rec_number passes: a list of the columns that qualified
     """
-    output_rec = []
-    for col_number in merged_col_spec:
-        try:
-            output_rec.append(rec[col_number])
-        except IndexError:
-            # This indicates a spec was provided for cols not in the record
-            pass
+    all_rows = [x for x in input_handler]
+    for rec_num in merged_rec_spec:
+        output_rec = []
+        for col_number in merged_col_spec:
+            try:
+                output_rec.append(all_rows[rec_num][col_number])
+            except IndexError:
+                pass # maybe a short record, or user provided a spec that exceeded cols
 
-    if output_rec:
-        return output_rec
-    else:
-        return None  # don't return empty list
+        if output_rec:
+            output_handler.write_rec(output_rec)
 
 
 
