@@ -77,17 +77,6 @@ class Header:
         else:
             raise EOFError
 
-        def make_field_name_unique(starting_field_name, field_names):
-            temp_field_name = starting_field_name
-            for count in range(999):
-                if temp_field_name in self.field_names:
-                    temp_field_name = starting_field_name + f'__{count}'
-                else:
-                    break
-            else:
-                comm.abort('Error: cannot create unique header field name - 999 attempts failed')
-            return temp_field_name
-
 
         for field_sub, raw_field_name in enumerate(field_names):
             if dialect.has_header:
@@ -95,7 +84,7 @@ class Header:
             else:
                 raw_field_name = field_name = f'field_{field_sub}'
 
-            field_name = make_field_name_unique(field_name, field_names)
+            field_name = self._make_field_name_unique(field_name, field_names)
 
             self.field_names.append(field_name)
             self.fields_by_position[field_sub] = field_name
@@ -105,9 +94,37 @@ class Header:
             self.raw_fields_by_position[field_sub] = raw_field_name
             self.raw_fields_by_name[raw_field_name] = field_sub
 
-        #if len(self.field_names) != len(set(self.field_names)):
-        #    comm.abort(f'Error: header has duplicate field names',
-        #               f'Derrived header names: {self.field_names}')
+
+    def load_from_list(self,
+                       field_names: List[str]):
+
+
+        for field_sub, raw_field_name in enumerate(field_names):
+            field_name = self.format_raw_header_field_name(raw_field_name)
+
+            field_name = self._make_field_name_unique(field_name, field_names)
+
+            self.field_names.append(field_name)
+            self.fields_by_position[field_sub] = field_name
+            self.fields_by_name[field_name] = field_sub
+
+            self.raw_field_names.append(raw_field_name)
+            self.raw_fields_by_position[field_sub] = raw_field_name
+            self.raw_fields_by_name[raw_field_name] = field_sub
+
+
+    def _make_field_name_unique(self,
+                                starting_field_name: str,
+                                field_names: List[str]) -> str:
+        temp_field_name = starting_field_name
+        for count in range(999):
+            if temp_field_name in self.field_names:
+                temp_field_name = starting_field_name + f'__{count}'
+            else:
+                break
+        else:
+            comm.abort('Error: cannot create unique header field name - 999 attempts failed')
+        return temp_field_name
 
 
     def format_raw_header_field_name(self, field_name):

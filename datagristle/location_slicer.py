@@ -99,6 +99,8 @@ class SpecProcessor(object):
                 return val
             if comm.isnumeric(val):
                 return val
+            if header is None:
+                comm.abort(f'Error: non-numeric specs without a header to translate')
             try:
                 position = str(header.get_field_position(val))
             except KeyError:

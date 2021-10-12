@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2021 Ken Farmer
 """
 from pprint import pprint as pp
 
 import pytest
 
 import datagristle.location_slicer  as mod
+import datagristle.csvhelper as csvhelper
 
 
 class TestIsNegativeSpec(object):
@@ -36,45 +37,55 @@ class TestIsNegativeSpec(object):
 
 
 
+class TestSpecProcessor(object):
 
-class TestSpecProcessorNegativeTranslator(object):
 
-#    def setup_method(self, method):
-#        self.sp = mod.SpecProcessor(['3'], 'rec_inc_spec')
-
-    def test_adjust_one_spec(self):
+    def test_invalid_data_without_header(self):
         header = None
         infiles = None
         infile_item_count = 80
 
-        # test a single positive:
-        self.sp = mod.SpecProcessor(['5'], header, infile_item_count)
-        assert self.sp.clean_specs == [[5]]
+        # test a starting number larger than ending:
+        with pytest.raises(ValueError):
+            self.sp = mod.SpecProcessor(['5:2'], header, infile_item_count)
 
-        # test a range of positives:
-        self.sp = mod.SpecProcessor(['5:15'], header, infile_item_count)
-        assert self.sp.clean_specs == [[5, 15]]
+        # test invalid formats:
+        with pytest.raises(ValueError):
+            self.sp = mod.SpecProcessor(['5:2:3'], header, infile_item_count)
 
-        # test a couple of ranges, one unbound:
-        self.sp = mod.SpecProcessor(['5:9', '10:'], header, infile_item_count)
-        assert self.sp.clean_specs == [[5, 9], [10, None]]
+        # missing header
+        with pytest.raises(SystemExit):
+            self.sp = mod.SpecProcessor(['5 3'], header, infile_item_count)
 
-        # test a single range with both sides unbounded:
-        self.sp = mod.SpecProcessor([':'], header, infile_item_count)
-        assert self.sp.clean_specs == [[None, None]]
+        with pytest.raises(SystemExit):
+            self.sp = mod.SpecProcessor(['some_code'], header, infile_item_count)
 
-        # test a single negative:
-        self.sp = mod.SpecProcessor(['-1'], header, infile_item_count)
-        assert self.sp.clean_specs == [[80]]
 
-        # test a range of negatives:
-        self.sp = mod.SpecProcessor(['-20:-10'], header, infile_item_count)
-        assert self.sp.clean_specs == [[61, 71]]
+    def test_header(self):
+        header = csvhelper.Header()
+        header.load_from_list(['foo', 'bar', 'baz'])
+        infiles = None
+        infile_item_count = 80
 
-        # test a range of negative and unbounded:
-        infile_item_count=1234567890
-        self.sp = mod.SpecProcessor(['-100:'], header, infile_item_count)
-        assert self.sp.clean_specs == [[1234567791, None]]
+        # test a valid numeric range
+        self.sp = mod.SpecProcessor(['5:9'], header, infile_item_count)
+        assert self.sp.clean_specs == [[5, 9]]
+
+        # test a single header name
+        self.sp = mod.SpecProcessor(['foo'], header, infile_item_count)
+        assert self.sp.clean_specs == [[0]]
+
+        # test a name range
+        self.sp = mod.SpecProcessor(['foo:bar'], header, infile_item_count)
+        assert self.sp.clean_specs == [[0, 1]]
+
+        # test a name range with spaces:
+        self.sp = mod.SpecProcessor(['foo : bar'], header, infile_item_count)
+        assert self.sp.clean_specs == [[0, 1]]
+
+        # test an invalid name that isn't in the header:
+        with pytest.raises(SystemExit):
+            self.sp = mod.SpecProcessor(['foo:gorilla'], header, infile_item_count)
 
 
 
