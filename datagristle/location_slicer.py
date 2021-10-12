@@ -47,6 +47,11 @@ MAX_MEM_RECS = 100000 # limits size of recs in memory
 
 
 class SpecProcessor(object):
+    """ Manages all types of specifications - inclusion or exclusion for rows & cols.
+
+    That means, it translates the specs into useful structures, and supports the
+    evaluation of col or row numbers aginst the specs.
+    """
 
     def __init__(self,
                  raw_specs: List[str],
@@ -57,201 +62,169 @@ class SpecProcessor(object):
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
         """
+        self.clean_specs: List[Tuple[str, str]] \
+            = self._specs_cleaner(raw_specs, header, infile_item_count)
 
-        self.raw_specs = raw_specs           # spec with names, ranges, negatives
-        self.numeric_specs: List[str] = []   # spec with names converted to positions
-        self.positive_specs: List[str] = []  # spec with negatives converted
-        self.expanded_specs: Optional[List[int]] = []    # spec ranges converted to offsets
-        self.header = header
-        self.max_mem_recs = max_mem_recs
-
-        self.numeric_specs = self._spec_name_translater(self.raw_specs, header)
-
-        if spec_has_negatives(self.numeric_specs):
-            self.positive_specs = self._spec_negative_translator(infile_item_count)
-        else:
-            self.positive_specs = copy.copy(self.numeric_specs)
-
-        self._spec_validator(self.numeric_specs)      # will raise exceptions if any exist
-
-        self.expanded_specs = self._spec_range_expander(infile_item_count, max_mem_recs)
+        self.expanded_specs: Optional[List[int]] \
+            = self._specs_range_expander(infile_item_count, max_mem_recs)
 
 
-    def _spec_name_translater(self,
-                              spec: List[str],
-                              header: Optional[csvhelper.Header]) -> List[str]:
-        """ Reads through a single spec (ie, record inclusion spec, column
-            exclusion spec, etc) and remaps any column names to their position
-            offsets.
-            Inputs:
-                - spec, ex: [' 1',' -3',' 4:7', ' home_state', ' last_name:']
-                - header object
-            Outputs:
-                - a numeric-only spec, ex: ['1','-3','4:7','9','12:']
+    def _specs_cleaner(self,
+                       specs: List[str],
+                       header: Optional[csvhelper.Header],
+                       infile_item_count: int) -> List[Tuple[str, str]]:
+        """ Returns a transformed version of the specs
+
+        Args:
+            Specs: these are raw specs, ex: [':5', ':', '4', '3:19']
+            header: this is a csv header object - used to translate names to numbers
+            infile_item_count: this is either a row count or a column count, depending
+              on whether the class is used for rows or cols
+        Returns:
+            clean_specs: ex: [[None, 5], [None, None], [4], [3, 19]]
         """
-        if header is None:
-            return spec
 
-        num_spec = []
-        for item in spec:
+        def transform_none(val: str) -> str:
+            return None if val.strip() == '' else val
+
+        def transform_number(val: str) -> str:
+            if comm.isnumeric(part):
+                number = int(val)
+                return number
+            else:
+                return val
+
+        def transform_name(val: str) -> str:
+            if val is None:
+                return val
+            if comm.isnumeric(val):
+                return val
+            try:
+                position = str(header.get_field_position(val))
+            except KeyError:
+                comm.abort(f'Error: Invalid string in spec: {part}',
+                           f'Not in header list: {header.field_names}')
+            return position
+
+        def transform_negative_number(val: str) -> str:
+            if val is not None and int(val) < 0:
+                return str(infile_item_count + int(val) + 1 )
+            else:
+                return val
+
+        def validate_spec(spec: List[str]) -> None:
+            if len(spec) > 2:
+                raise ValueError(f'spec has too many parts: {spec}')
+            if len(spec) == 2 and spec[0] and spec[1]:
+                if int(spec[0]) >= int(spec[1]):
+                    raise ValueError(f'spec is an invalid range: {spec}')
+
+        clean_specs = []
+        for item in specs:
             new_parts = []
             for part in item.split(':'):
                 part = part.strip()
-                if part is None or part == '':
-                    new_parts.append(part)
-                elif comm.isnumeric(part):
-                    new_parts.append(part.strip())
-                else:
-                    try:
-                        new_parts.append(str(header.get_field_position(part)))
-                    except KeyError:
-                        comm.abort(f'Error: Invalid string in spec: {part}',
-                                    f'Not in header list: {header.field_names}')
-            num_spec.append(':'.join(new_parts))
-
-        return num_spec
+                part = transform_none(part)
+                part = transform_number(part)
+                part = transform_name(part)
+                part = transform_negative_number(part)
+                new_parts.append(int(part) if part is not None else None)
+            validate_spec(new_parts)
+            clean_specs.append(new_parts)
+        return clean_specs
 
 
-    def _spec_validator(self,
-                        spec: List[str]) -> bool:
-        """ Checks for any invalid specifications.
+    def _specs_range_expander(self,
+                              infile_item_count: int,
+                              max_mem_recs: int) -> Optional[List[int]]:
+        """ Explodes the specification ranges into individual positions.
+
+        This function returns a list of all positions that are included within a
+        specification - whether they're directly references, or they fall within
+        a range.
+
+        Note that if the number of elements of the resulting list exceeds the
+        max_mem_recs then this function will return None.
+
+        Args:
+            infile_item_count: the number of rows in the file or cols in the row.
+            max_mem_recs: the maximum number of records to explode a specification
+            into.  If this is exceeded then return None.
         """
-        if not spec_is_sequence(spec):
-            raise ValueError('spec argument is not a sequence object')
 
-        def _is_invalid_part(part: str) -> bool:
-            try:
-                int(part)
-            except (TypeError, ValueError):
-                return True
-            return False
-
-        for item in spec:
-            parts = item.split(':')
+        expanded_spec = []
+        for parts in self.clean_specs:
             if len(parts) == 1:
-                if _is_invalid_part(parts[0]):
-                    raise ValueError('spec is non-numeric')
+                expanded_spec.append(int(parts[0]))
             elif len(parts) == 2:
-                if parts[0] != '' and _is_invalid_part(parts[0]):
-                    raise ValueError('spec is non-numeric')
-                if parts[1] != '' and _is_invalid_part(parts[1]):
-                    raise ValueError('spec is non-numeric')
-                if (parts[0] != '' and parts[1] != ''):
-                    if int(parts[1]) >= 0:
-                        if int(parts[0]) >= int(parts[1]):
-                            raise ValueError('spec is an invalid range')
-            elif len(parts) > 2:
-                raise ValueError('spec has too many parts')
-        return True
-
-
-    def _spec_negative_translator(self,
-                                  infile_item_count: int) -> List[str]:
-        """ Reads through a single spec (ie, record inclusion spec, column
-            exclusion spec, etc) and remaps any negative values to their positive
-            equiv.
-            Inputs:
-                - infile_item_count: the max number of items to apply the spec to.  The
-                  location starts at an offset of 0.  Additionally:
-                  - for a col spec this is the number of cols in a record
-                  - for a row spec this is the number of recs in the file
-            Outputs:
-                - none
-        """
-        positive_spec: List[str] = []
-        for item in self.numeric_specs:
-            parts = item.split(':')
-            new_parts = []
-            for part in parts:
-                if part is None or part == '':
-                    new_parts.append(part)
-                else:
-                    if int(part) < 0:
-                        new_parts.append(str(infile_item_count+ int(part) + 1 ))
-                    else:
-                        new_parts.append(part)
-            positive_spec.append(':'.join(new_parts))
-        return positive_spec
-
-
-    def _spec_range_expander(self,
-                             infile_item_count: int,
-                             max_mem_recs: int) -> Optional[List[int]]:
-        ordered_spec = []
-        for item in self.positive_specs:
-            parts = item.split(':')
-            if len(parts) == 1:
-                ordered_spec.append(int(parts[0]))
-            elif len(parts) == 2:
-                start_part = int(parts[0] if parts[0] != '' else 0)
-                stop_part = int(parts[1] if parts[1] != '' else infile_item_count+1)
+                start_part = 0 if parts[0] is None else int(parts[0])
+                stop_part = infile_item_count+1 if parts[1] is None else int(parts[1])
                 for part in range(start_part, stop_part):
-                    ordered_spec.append(int(part))
-            if len(ordered_spec) > max_mem_recs:
+                    expanded_spec.append(int(part))
+            if len(expanded_spec) > max_mem_recs:
                 sys.stderr.write('WARNING: insufficient memory - may be slow\n')
                 return None
-        return ordered_spec
+        return expanded_spec
 
 
-    def spec_evaluator(self, location: int) -> bool:
+    def specs_evaluator(self,
+                        location: int) -> bool:
         """ Evaluates a location (column number or record number) against
-            a specifications list.  Description:
-               - uses the python string slicing formats to specify valid ranges
-                (all offset from 0):
-               - 4, 5, 9 = location 4, 5, and 9
-               - 1:3     = location 1 & 2 (end - 1)
-               - 5:      = location 5 to the end
-               - :5      = location 0 to 4 (end - 1)
-               - :       = all locations
-               - template:  spec, spec, spec:spec, spec, spec:spec
-               - example:   4,    8   , 10:14    , 21  , 48:55
-               - The above example is stored in a five-element spec-list
-            Input:
-               - location:  a column or record number
-            Output:
-               - True if the number matches one of the specs
-               - False if the number does not match one of the specs
-               - False if the spec_list is empty
-            To do:
-               - support slice steps
+        a specifications list.  Description:
+            - uses the python string slicing formats to specify valid ranges
+            (all offset from 0):
+            - [4]      = location 4
+            - [1,3]    = location 1 & 2 (end - 1)
+            - [5,None] = location 5 to the end
+            - [None,5] = location 0 to 4 (end - 1)
+            - [None,None] = all locations
+            - template:  spec, spec, spec:spec, spec, spec:spec
+            - example:   [4] , [8] , [10,14]  , [21], [48,55]
+            - The above example is stored in a five-element spec-list
+        Args:
+            - location:  a column or record number
+        Returns:
+            - True if the number matches one of the specs
+            - False if the number does not match one of the specs
+            - False if the spec_list is empty
         """
-        if not self.positive_specs:
-            # the self.positive_specs will often be None for 1-2 of the 4 specs.
-            # ex: incl criteria provided (or defaulted to ':'), but if no
-            # excl critieria provided it will be None.
-            return False
-
-        if any([self._spec_item_evaluator(x, int(location)) for x in self.positive_specs]):
+        if any([self._spec_item_check(spec, location) for spec in self.clean_specs]):
             return True
-
         return False
 
 
-    def _spec_item_evaluator(self, item: str, location: int) -> bool:
+    def _spec_item_check(self,
+                         spec: str,
+                         location: int) -> bool:
         """ evaluates a single item against a location
-            inputs:
-                - item in form of string like one of these:
-                     - '5'
-                     - '1:10'
-                - location - an integer to be compared to item
-            outputs:
-                - True or False
+        Args:
+            - spec: one line of the specifications, looking like:
+                - [5]
+                - [1, 10]
+                - [None, 10]
+                - [1, None]
+                - [None, None]
+            - location - an integer to be compared to spec
+        Returns:
+            - True or False
         """
-        if item == ':':
-            return True
-        else:
-            parts =  item.split(':')
-            if len(parts) == 1:
-                if parts[0] == '' or int(parts[0]) != location:
-                    return False
-                else:
-                    return True
+        if len(spec) == 1:
+            if spec[0] == location:
+                return True
             else:
-                if ((parts[0] != '' and location < int(parts[0]))
-                or ( parts[1] != '' and location >= int(parts[1]))):
-                    return False
-                else:
-                    return True
+                return False
+        else:
+            if spec == [None, None]:  # unbounded on both sides
+                return True
+            elif spec[1] is None and location >= spec[0]:  # unbounded on right
+                return True
+            elif spec[0] is None and location < spec[1]:   # unbounded on left
+                return True
+            elif (spec[0] is not None and location >= spec[0]   # within range
+                    and spec[1] is not None and location < spec[1]):
+                return True
+            else:
+                return False
 
 
 

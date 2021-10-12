@@ -294,11 +294,11 @@ def process_rec(rec_number: int,
     assert int(rec_number) >= 0
 
     # reject record if it isn't in the inclusion spec
-    if not incl_rec_slicer.spec_evaluator(rec_number):
+    if not incl_rec_slicer.specs_evaluator(rec_number):
         return None
 
     # reject record if it is in the exclusion spec
-    if excl_rec_slicer.spec_evaluator(rec_number):
+    if excl_rec_slicer.specs_evaluator(rec_number):
         return None
 
     output_rec = []
