@@ -189,9 +189,9 @@ class Dialect(csv.Dialect):
     reusable dialects.
     """
     def __init__(self,
-                 delimiter: Optional[str],
+                 delimiter: str,
                  has_header: Optional[bool],
-                 quoting: Optional[int],
+                 quoting: int,
                  quotechar: Optional[str] = None,
                  doublequote: Optional[bool] = None,
                  escapechar: Optional[str] = None,
@@ -225,6 +225,7 @@ def convert_dialect(std_dialect: Type[_csv.Dialect]) -> Dialect:
                    escapechar=std_dialect.escapechar,
                    lineterminator=std_dialect.lineterminator,
                    skipinitialspace=std_dialect.skipinitialspace)
+
 
 
 def get_dialect(infiles: List[str],
@@ -288,7 +289,6 @@ def get_dialect(infiles: List[str],
 
 
 
-#def get_empty_dialect() -> datagristle.csvhelper.Dialect:
 def get_empty_dialect() -> Dialect:
     return Dialect(delimiter=None,
                    quoting=None,

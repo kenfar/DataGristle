@@ -62,17 +62,18 @@ class SpecProcessor(object):
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
         """
-        self.clean_specs: List[Tuple[str, str]] \
+        self.clean_specs: List[List[Optional[int]]] \
             = self._specs_cleaner(raw_specs, header, infile_item_count)
 
-        self.expanded_specs: Optional[List[int]] \
+        self.expanded_specs_valid = True
+        self.expanded_specs: List[int] \
             = self._specs_range_expander(infile_item_count, max_mem_recs)
 
 
     def _specs_cleaner(self,
                        specs: List[str],
                        header: Optional[csvhelper.Header],
-                       infile_item_count: int) -> List[Tuple[str, str]]:
+                       infile_item_count: int) -> List[List[Optional[int]]]:
         """ Returns a transformed version of the specs
 
         Args:
@@ -84,19 +85,17 @@ class SpecProcessor(object):
             clean_specs: ex: [[None, 5], [None, None], [4], [3, 19]]
         """
 
-        def transform_none(val: str) -> str:
-            return None if val.strip() == '' else val
-
-        def transform_number(val: str) -> str:
-            if comm.isnumeric(part):
-                number = int(val)
-                return number
+        def transform_none(val: Optional[str]) -> Optional[str]:
+            if val is None:
+                return None
+            elif val.strip() == '':
+                return None
             else:
                 return val
 
-        def transform_name(val: str) -> str:
+        def transform_name(val: Optional[str]) -> Optional[str]:
             if val is None:
-                return val
+                return None
             if comm.isnumeric(val):
                 return val
             if header is None:
@@ -108,29 +107,31 @@ class SpecProcessor(object):
                            f'Not in header list: {header.field_names}')
             return position
 
-        def transform_negative_number(val: str) -> str:
+        def transform_negative_number(val: Optional[str]) -> Optional[str]:
             if val is not None and int(val) < 0:
+                assert infile_item_count > -1
                 return str(infile_item_count + int(val) + 1 )
             else:
                 return val
 
-        def validate_spec(spec: List[str]) -> None:
+        def validate_spec(spec: List[Optional[int]]) -> None:
+            if len(spec) == 0:
+                raise ValueError(f'spec is empty')
             if len(spec) > 2:
                 raise ValueError(f'spec has too many parts: {spec}')
             if len(spec) == 2 and spec[0] and spec[1]:
-                if int(spec[0]) >= int(spec[1]):
+                if spec[0] >= spec[1]:   # type: ignore
                     raise ValueError(f'spec is an invalid range: {spec}')
 
         clean_specs = []
         for item in specs:
             new_parts = []
             for part in item.split(':'):
-                part = part.strip()
-                part = transform_none(part)
-                part = transform_number(part)
-                part = transform_name(part)
-                part = transform_negative_number(part)
-                new_parts.append(int(part) if part is not None else None)
+                opt_part: Optional[str] = part.strip()
+                opt_part = transform_none(opt_part)
+                opt_part = transform_name(opt_part)
+                opt_part = transform_negative_number(opt_part)
+                new_parts.append(int(opt_part) if opt_part is not None else None)
             validate_spec(new_parts)
             clean_specs.append(new_parts)
         return clean_specs
@@ -138,7 +139,7 @@ class SpecProcessor(object):
 
     def _specs_range_expander(self,
                               infile_item_count: int,
-                              max_mem_recs: int) -> Optional[List[int]]:
+                              max_mem_recs: int) -> List[int]:
         """ Explodes the specification ranges into individual positions.
 
         This function returns a list of all positions that are included within a
@@ -153,19 +154,39 @@ class SpecProcessor(object):
             max_mem_recs: the maximum number of records to explode a specification
             into.  If this is exceeded then return None.
         """
+        # Handle stdin:
+        if infile_item_count == -1:
+            self.expanded_specs_valid = False
+            return []
 
         expanded_spec = []
         for parts in self.clean_specs:
+
             if len(parts) == 1:
-                expanded_spec.append(int(parts[0]))
+                assert parts[0] is not None
+                expanded_spec.append(parts[0])
+
             elif len(parts) == 2:
-                start_part = 0 if parts[0] is None else int(parts[0])
-                stop_part = infile_item_count+1 if parts[1] is None else int(parts[1])
+
+                if parts[0] is None:
+                    start_part = 0
+                else:
+                    start_part = parts[0]
+
+                if parts[1] is None:
+                    assert infile_item_count > -1
+                    stop_part = infile_item_count + 1
+                else:
+                    stop_part = parts[1]
+
                 for part in range(start_part, stop_part):
-                    expanded_spec.append(int(part))
-            if len(expanded_spec) > max_mem_recs:
-                sys.stderr.write('WARNING: insufficient memory - may be slow\n')
-                return None
+                    assert part is not None
+                    expanded_spec.append(part)
+                    if len(expanded_spec) > max_mem_recs:
+                        sys.stderr.write('WARNING: insufficient memory - may be slow\n')
+                        self.clean_spec_valid = False
+                        return []
+
         return expanded_spec
 
 
@@ -196,7 +217,7 @@ class SpecProcessor(object):
 
 
     def _spec_item_check(self,
-                         spec: str,
+                         spec: List[Optional[int]],
                          location: int) -> bool:
         """ evaluates a single item against a location
         Args:
@@ -218,9 +239,9 @@ class SpecProcessor(object):
         else:
             if spec == [None, None]:  # unbounded on both sides
                 return True
-            elif spec[1] is None and location >= spec[0]:  # unbounded on right
+            elif spec[1] is None and location >= spec[0]:  # type: ignore
                 return True
-            elif spec[0] is None and location < spec[1]:   # unbounded on left
+            elif spec[0] is None and location < spec[1]:   # type: ignore
                 return True
             elif (spec[0] is not None and location >= spec[0]   # within range
                     and spec[1] is not None and location < spec[1]):
