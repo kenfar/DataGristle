@@ -193,7 +193,7 @@ class Dialect(csv.Dialect):
                  has_header: Optional[bool],
                  quoting: int,
                  quotechar: Optional[str] = None,
-                 doublequote: Optional[bool] = None,
+                 doublequote: bool = True,
                  escapechar: Optional[str] = None,
                  lineterminator: Optional[str] = None,
                  skipinitialspace: Optional[bool] = None) -> None:

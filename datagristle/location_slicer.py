@@ -3,17 +3,18 @@
     that number meets the specifications or not.
 
     Typical Usage:
-        >>> sp = location_slicer.SpecProcessor(['1','5','10:20','70:-1'], 'rec incl')
-        >>> sp.spec_adjuster(loc_max=80)
-        >>> sp.spec_evaluator(5)
+        >>> sp = location_slicer.SpecProcessor(raw_specs=['1','5','10:20','70:-1'],
+        >>>                                    header=None,
+        >>>                                    infile_item_count=80)
+        >>> sp.specs_evaluator(5)
         True
-        >>> sp.spec_evaluator(0)
+        >>> sp.specs_evaluator(0)
         False
-        >>> sp.spec_evaluator(15)
+        >>> sp.specs_evaluator(15)
         True
-        >>> sp.spec_evaluator(78)
+        >>> sp.specs_evaluator(78)
         True
-        >>> sp.spec_evaluator(79)
+        >>> sp.specs_evaluator(79)
         False
 
     A few notes about the logic:
