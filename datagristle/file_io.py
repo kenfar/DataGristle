@@ -56,13 +56,6 @@ class InputHandler(object):
         except StopIteration:
             pass
 
-#    No longer used - probably because seeking around a csv doesn't work well - because
-#    of newlines.  But lets keep it here for a bit, because we may be adding other file types soon.
-#    self.input_stream = None
-#    def seek(self, offset):
-#        return self.input_stream.seek(offset)
-#    def tell(self):
-#        return self.input_stream.tell()
 
     def _open_next_input_file(self):
 
