@@ -87,6 +87,7 @@ from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
+import time
 from typing import List, Tuple, Dict, Any, Optional, IO
 
 import datagristle.common as comm
@@ -108,6 +109,7 @@ comm.validate_python_version()
 
 def main() -> int:
 
+    #start_time = time.time()
     try:
         config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
         nconfig, _ = config_manager.get_config()
@@ -117,63 +119,105 @@ def main() -> int:
     input_handler = file_io.InputHandler(nconfig.infiles,
                                          nconfig.dialect,
                                          return_header=True)
+    #pp(f'--------> config & input_handler duration: {time.time() - start_time}')
+
+    # Avoid getting a rec count unless necessary for negative specs, since
+    # it slows down processing of large files:
+    #start_time = time.time()
+    if need_rec_count(nconfig.records,
+                      nconfig.exrecords):
+        rec_count = get_rec_count(nconfig.infiles, input_handler.dialect)
+    else:
+        rec_count = -1
+    #pp(f'--------> get_rec_count duration: {time.time() - start_time}')
 
     # Set up the merged specs (resolves inclusion & exclusion specs), as
     # well as the record slicers.  We need these record slicers because
     # there may be too many recs to keep the merged_rec_spec in memory.
 
+    #start_time = time.time()
     (incl_rec_slicer,
      excl_rec_slicer,
      merged_rec_spec,
-     valid_rec_spec) = setup_rec_slicers(nconfig.infiles,
-                                          input_handler.dialect,
-                                          nconfig.records,
-                                          nconfig.exrecords,
-                                          nconfig.max_mem_recs)
+     valid_rec_spec) = setup_rec_slicers(nconfig.records,
+                                         nconfig.exrecords,
+                                         rec_count)
 
     (incl_col_slicer,
      excl_col_slicer,
      merged_col_spec,
-     valid_col_spec) = setup_col_slicers(nconfig.infiles,
-                                          nconfig.columns,
-                                          nconfig.excolumns,
-                                          nconfig.header)
+     valid_col_spec) = setup_col_slicers(nconfig.columns,
+                                         nconfig.excolumns,
+                                         nconfig.header)
+    #pp(f'--------> setup_*_slicers  duration: {time.time() - start_time}')
 
 
     output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
 
-    # If the number of recs is small, then process in memory.  Otherwise, use
-    # the rec slicers and read one rec at a time and process.
-    if (nconfig.infiles[0] == '-'
-            or valid_rec_spec is False
-            or valid_col_spec is False):
+
+    # Process the actual data now:
+
+    #start_time = time.time()
+    if (incl_rec_slicer.specs_have_negatives()
+            or excl_rec_slicer.specs_have_negatives()
+            or incl_rec_slicer.specs_are_out_of_order()
+            or excl_rec_slicer.specs_are_out_of_order()):
+
+        if not valid_rec_spec:
+            comm.abort("Specs require memory processing but can't - because space")
+        if nconfig.infiles == ['-']:
+            comm.abort("Specs require memory processing but can't - because stdin")
+
+        process_recs_in_memory(input_handler,
+                               output_handler,
+                               merged_rec_spec,
+                               merged_col_spec)
+    else:
+        # all stdin should go here
+        # all ordered, non-negative rec specs should go here
+        # all massive files should go here
+        #pp(merged_col_spec)
         process_recs_from_file(input_handler,
                                output_handler,
                                incl_rec_slicer,
                                excl_rec_slicer,
                                incl_col_slicer,
-                               excl_col_slicer)
-    else:
-        process_recs_in_memory(input_handler,
-                               output_handler,
+                               excl_col_slicer,
                                merged_rec_spec,
                                merged_col_spec)
+        #pp(f'--------> process_recs_from_file duration: {time.time() - start_time}')
+
     input_handler.close()
     output_handler.close()
 
     return 0
 
 
+def need_rec_count(records_str,
+                   exrecords_str):
+
+    records = records_str.split(',')
+    exrecords = exrecords_str.split(',') if exrecords_str else []
+
+    if slicer.spec_has_negatives(records):
+        return True
+    if slicer.spec_has_negatives(exrecords):
+        return True
+    if slicer.spec_has_unbounded_end_range(records):
+        return True
+    if slicer.spec_has_unbounded_end_range(exrecords):
+        return True
+
+    return False
 
 
-def setup_rec_slicers(infiles: List[str],
-                      dialect: csv.Dialect,
-                      config_records: str,
+
+def setup_rec_slicers(config_records: str,
                       config_exrecords: str,
-                      max_mem_recs: int) -> Tuple[slicer.SpecProcessor,
-                                                  slicer.SpecProcessor,
-                                                  List[int],
-                                                  bool]:
+                      rec_cnt: int) -> Tuple[slicer.SpecProcessor,
+                                                    slicer.SpecProcessor,
+                                                    List[int],
+                                                    bool]:
     """  Sets up the slicer objects (inclusion & exclusion) for
          recs as well as the merged_recs_specs for columns.
 
@@ -182,24 +226,18 @@ def setup_rec_slicers(infiles: List[str],
          list will be None.
     """
     # first parse the config items;
-    records   = config_records.split(',')
+    records = config_records.split(',')
     exrecords = config_exrecords.split(',') if config_exrecords else []
 
     # Set up row slicing:
-    # Note: we don't have to worry that we're going to count records for stdin
-    #       since we've already validated this.
-    # Note: Consider not counting this now, but instead let the SpecProcessor
-    #       return no expanded_specs if unbounded
-    rec_cnt = get_rec_count(infiles, dialect)
-
     incl_rec_slicer = slicer.SpecProcessor(records,
+                                           'incl_row_slicer',
                                            header=None,
-                                           infile_item_count=rec_cnt,
-                                           max_mem_recs=max_mem_recs)
+                                           infile_item_count=rec_cnt)
     excl_rec_slicer = slicer.SpecProcessor(exrecords,
+                                           'excl_row_slicer',
                                            header=None,
-                                           infile_item_count=rec_cnt,
-                                           max_mem_recs=max_mem_recs)
+                                           infile_item_count=rec_cnt)
 
     (valid_merged_spec, merged_rec_spec) = merge_expanded_specs(
                                            incl_rec_slicer.expanded_specs,
@@ -213,8 +251,7 @@ def setup_rec_slicers(infiles: List[str],
 
 
 
-def setup_col_slicers(infiles: List[str],
-                      config_columns: str,
+def setup_col_slicers(config_columns: str,
                       config_excolumns: str,
                       config_header: csvhelper.Header) -> Tuple[slicer.SpecProcessor,
                                                                 slicer.SpecProcessor,
@@ -234,9 +271,11 @@ def setup_col_slicers(infiles: List[str],
     # set up the slicers:
     col_count = len(config_header.field_names)-1
     incl_col_slicer = slicer.SpecProcessor(columns,
+                                           'incl_col_slicer',
                                            config_header,
                                            infile_item_count=col_count)
     excl_col_slicer = slicer.SpecProcessor(excolumns,
+                                           'excl_col_slicer',
                                            config_header,
                                            infile_item_count=col_count)
 
@@ -301,8 +340,9 @@ def process_recs_from_file(input_handler,
                            incl_rec_slicer: slicer.SpecProcessor,
                            excl_rec_slicer: slicer.SpecProcessor,
                            incl_col_slicer: slicer.SpecProcessor,
-                           excl_col_slicer: slicer.SpecProcessor) -> None:
-                           #merged_col_spec) -> None:
+                           excl_col_slicer: slicer.SpecProcessor,
+                           merged_rec_spec: slicer.SpecProcessor,
+                           merged_col_spec: List[int]) -> None:
     """ Reads the file one record at a time, compares against the
         specification, and then writes out qualifying records and
         columns.
@@ -311,24 +351,42 @@ def process_recs_from_file(input_handler,
             - output_handler
             - incl_rec_spec
             - excl_rec_spec
+            - merged_rec_spec: simple list of which recs to slice
             - merged_col_spec: simple list of which columns to slice
     """
+    merged_rec_sub = 0
 
     for rec in input_handler:
-        rec_number = input_handler.rec_cnt - 1
+        rec_number = input_handler.rec_cnt -1
 
-        if not incl_rec_slicer.specs_evaluator(rec_number):
-            return None
-        if excl_rec_slicer.specs_evaluator(rec_number):
-            return None
+        if merged_rec_spec:
+            if rec_number > merged_rec_spec[-1]:
+                break
+            try:
+                merged_rec_sub = merged_rec_spec.index(rec_number, max(merged_rec_sub, 0))
+            except ValueError:
+                continue
+        else:
+            if not incl_rec_slicer.specs_evaluator(rec_number):
+                continue
+            if excl_rec_slicer.specs_evaluator(rec_number):
+                continue
 
         output_rec = []
-        for col_number in range(0, len(rec)):
-            if not incl_col_slicer.specs_evaluator(col_number):
-                continue
-            if excl_col_slicer.specs_evaluator(col_number):
-                continue
-            output_rec.append(rec[col_number])
+
+        if merged_col_spec:
+            for col_number in merged_col_spec:
+                try:
+                    output_rec.append(rec[col_number])
+                except IndexError:
+                    pass # maybe a short record, or user provided a spec that exceeded cols
+        else:
+            for col_number in range(0, len(rec)):
+                if not incl_col_slicer.specs_evaluator(col_number):
+                    continue
+                if excl_col_slicer.specs_evaluator(col_number):
+                    continue
+                output_rec.append(rec[col_number])
 
         if output_rec:
             output_handler.write_rec(output_rec)
@@ -408,13 +466,12 @@ class ConfigManager(conf.Config):
 
     def validate_custom_config(self, config) -> None:
 
-        if config['infiles'] == '-':
+        if config['infiles'] == ['-']:
             if ('-' in config['columns']
                 or '-' in config['excolumns']
                 or '-' in config['records']
                 or '-' in config['exrecords']):
                 comm.abort('Error: negative values not supported with stdin')
-
 
 
 

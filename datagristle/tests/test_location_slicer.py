@@ -41,58 +41,60 @@ class TestSpecProcessor(object):
 
 
     def test_invalid_data_without_header(self):
+        name = 'incl_rec_slicer'
         header = None
         infiles = None
         infile_item_count = 80
 
         # test a starting number larger than ending:
         with pytest.raises(ValueError):
-            self.sp = mod.SpecProcessor(['5:2'], header, infile_item_count)
+            self.sp = mod.SpecProcessor(['5:2'], name, header, infile_item_count)
 
         # test invalid formats:
         with pytest.raises(ValueError):
-            self.sp = mod.SpecProcessor(['5:2:3'], header, infile_item_count)
+            self.sp = mod.SpecProcessor(['5:2:3'], name, header, infile_item_count)
 
         # missing header
         with pytest.raises(SystemExit):
-            self.sp = mod.SpecProcessor(['5 3'], header, infile_item_count)
+            self.sp = mod.SpecProcessor(['5 3'], name, header, infile_item_count)
 
         with pytest.raises(SystemExit):
-            self.sp = mod.SpecProcessor(['some_code'], header, infile_item_count)
+            self.sp = mod.SpecProcessor(['some_code'], name, header, infile_item_count)
 
 
     def test_header(self):
+        name = 'incl_col_slicer'
         header = csvhelper.Header()
         header.load_from_list(['foo', 'bar', 'baz'])
         infiles = None
         infile_item_count = 80
 
         # test a valid numeric range
-        self.sp = mod.SpecProcessor(['5:9'], header, infile_item_count)
+        self.sp = mod.SpecProcessor(['5:9'], name, header, infile_item_count)
         assert self.sp.clean_specs == [[5, 9]]
 
         # test a single header name
-        self.sp = mod.SpecProcessor(['foo'], header, infile_item_count)
-        assert self.sp.clean_specs == [[0]]
+        self.sp = mod.SpecProcessor(['foo'], name, header, infile_item_count)
+        assert self.sp.clean_specs == [[0, 1]]
 
         # test a name range
-        self.sp = mod.SpecProcessor(['foo:bar'], header, infile_item_count)
+        self.sp = mod.SpecProcessor(['foo:bar'], name, header, infile_item_count)
         assert self.sp.clean_specs == [[0, 1]]
 
         # test a name range with spaces:
-        self.sp = mod.SpecProcessor(['foo : bar'], header, infile_item_count)
+        self.sp = mod.SpecProcessor(['foo : bar'], name, header, infile_item_count)
         assert self.sp.clean_specs == [[0, 1]]
 
         # test an invalid name that isn't in the header:
         with pytest.raises(SystemExit):
-            self.sp = mod.SpecProcessor(['foo:gorilla'], header, infile_item_count)
+            self.sp = mod.SpecProcessor(['foo:gorilla'], name, header, infile_item_count)
 
 
 
 class TestSpecProcessorItemEvaluator(object):
 
     def setup_method(self, method):
-        self.sp = mod.SpecProcessor([':'], header=None, infile_item_count=80)
+        self.sp = mod.SpecProcessor([':'], name='incl_row_slicer', header=None, infile_item_count=80)
 
     def test_all_conditions(self):
         assert self.sp._spec_item_check([None, None], 10)
@@ -112,7 +114,7 @@ class TestSpecProcessorItemEvaluator(object):
 class TestSpecProcessorEvaluator(object):
 
     def simple_setup(self, spec, spec_name, infile_item_count):
-        self.sp = mod.SpecProcessor(spec, header=None, infile_item_count=infile_item_count)
+        self.sp = mod.SpecProcessor(spec, name='incl_row_slicer', header=None, infile_item_count=infile_item_count)
 
     def test_evaluate_starting_offsets(self):
 
@@ -201,7 +203,7 @@ class TestAgainstPythonSliceDocs(object):
         spec_name = 'foo'
         infile_item_count= 4     # max length - based on 0 offset
 
-        self.sp = mod.SpecProcessor(spec, header=None, infile_item_count=infile_item_count)
+        self.sp = mod.SpecProcessor(spec, name='incl_row_slicer', header=None, infile_item_count=infile_item_count)
         return self.sp.specs_evaluator(loc)
 
 
