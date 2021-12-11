@@ -136,6 +136,28 @@ class TestExamples(object):
         assert os.system(f'diff {self.out_fqfn} {self.expected_fqfn}') == 0
 
 
+    def run_example_config_for_return_code(self, example_number, return_code=0):
+        test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))
+        print('\n')
+        print('=' * 100)
+        print(test_config_fn)
+        print('=' * 100)
+
+        self.load_config(example_number)
+        self.make_command(example_number)
+        print('\n**** Execution: ****')
+        pp(self.cmd)
+        expected_success = True if return_code == 0 else False
+        executor(self.cmd, expect_success=expected_success)
+
+        self.print_files()
+
+        print('\n**** os diff of files: ****')
+        pp(f'expected_fqfn={self.expected_fqfn}')
+        pp(f'actual_fqfn={self.out_fqfn}')
+
+
+
     def load_config(self,
                     example_number):   # ex: 'example-1'
 
@@ -183,6 +205,7 @@ class TestExamples(object):
 
         print('\n**** expected: ****')
         os.system(f'cat {self.expected_fqfn}')
+
 
 
 
