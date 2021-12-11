@@ -13,3 +13,8 @@ gristle_slicer Feature Examples:
     Example-23: excludes ranges of rows and columns
     Example-24: combines inclusions and exclusions
     Example-25: uses field names from header in column specs 
+    Example-26: out of order: uses order of config instead of data
+    Example-27: slice-stepping or striding
+    Example-28: reverse-order slice-stepping
+    Example-29: slice-stepping over random numbers of items
+

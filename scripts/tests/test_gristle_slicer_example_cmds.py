@@ -71,3 +71,17 @@ class TestExamples(test_tools.TestExamples):
 
     def test_example_25_field_names(self):
         self.run_example_config('example-25')
+
+    def test_example_26_out_of_order(self):
+        self.run_example_config('example-26')
+
+    def test_example_27_slice_stepping(self):
+        self.run_example_config('example-27')
+
+    def test_example_28_reverse_slice_stepping(self):
+        self.run_example_config('example-28')
+
+    def test_example_29_random_slice_stepping(self):
+        self.run_example_config_for_return_code('example-29')
+
+

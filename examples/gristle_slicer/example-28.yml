@@ -1,0 +1,23 @@
+# Simple slicer that demonstrates the following features:
+#     * includes reverse-order stepping over records and columns
+
+infiles: [example-28_reverse_order_slice_stepping_input.csv]
+outfile: /tmp/example-28_actualout.csv
+verbosity: debug
+
+# The column spec only features inclusions - and anything outside of these 
+# inclusions is an implied exclusion.  A few more notes on negative slicing:
+#     * The start & stop values are also reversed: it starts at the bottom and works
+#       to the top & left.
+#     * The column stop of -8 is past the first column, so it just stops at the first column.
+columns: '-1:-8:-1'     # includes every column starting with the last, and moving left
+records: '9:1:-2'       # includes every other record starting with the bottom of the file and working up
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_no_header: true
+
+quotechar: null
+#doublequote: null               # bools can only be set to true
+#skipinitialspace: null          # bools can only be set to true
