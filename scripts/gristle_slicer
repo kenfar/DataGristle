@@ -589,13 +589,15 @@ class ConfigManager(conf.Config):
         self.generate_csv_dialect_config()
         self.generate_csv_header_config()
 
+
     def validate_custom_config(self, config) -> None:
 
+        # At this point infiles could be either a default string or a list:
+        assert isinstance(config['infiles'], list)
+
         if config['infiles'] == ['-']:
-            if ('-' in config['columns']
-                or '-' in config['excolumns']
-                or '-' in config['records']
-                or '-' in config['exrecords']):
+            if ('-' in config['records']
+                    or '-' in config['exrecords']):
                 comm.abort('Error: negative values not supported with stdin')
 
 

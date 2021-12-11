@@ -74,7 +74,7 @@ VALID_CONFIG_PROP_VALUES['action'] = ['store_const', 'store_true', 'store_false'
 STANDARD_CONFIGS: META_CONFIG_TYPE = {}
 # IO Config Items:
 STANDARD_CONFIGS['infiles'] = {'short_name': 'i',
-                               'default': '-',
+                               'default': ['-'],
                                'required': True,
                                'type': str,
                                'nargs': '*'}
