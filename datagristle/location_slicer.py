@@ -68,6 +68,7 @@ class SpecProcessor(object):
         self.expanded_specs = []
         self.expanded_specs_valid = False
 
+        #pp(f'{self.specs.spec_type=}')
         if specs.get_all_items():
             #pp(f'ALL_ITEMS ASSIGNED!!!!!!!!!!!!!!!!!')
             self.all_items = True
@@ -79,11 +80,11 @@ class SpecProcessor(object):
             except ItemCountException as err:
                 self.expanded_specs = []
                 self.expanded_specs_valid = False
+        #pp(f'{self.expanded_specs_valid=}')
 
-        #pp(f'SpecProcessor - {self.expanded_specs_valid}  - {self.expanded_specs}')
 
 
-    @functools.cache
+   #### @functools.cache
     def specs_evaluator(self,
                         location: int) -> bool:
         """ Evaluates a location (column number or record number) against
@@ -106,9 +107,12 @@ class SpecProcessor(object):
             - False if the spec_list is empty
         """
         if self.all_items:
+            #pp('cccccccccccccccccccccccccccc')
             return True
         elif any([self._spec_item_check(spec, location) for spec in self.specs.specs_cleaned]):
+            #pp('dddddddddddddddddddddddddddd')
             return True
+        #pp('eeeeeeeeeeeeeeeeeeeeeeee')
         return False
 
 
@@ -415,7 +419,21 @@ class Specifications:
 
 
     def get_all_items(self) -> bool:
-        return self.spec_type in ('incl_col', 'incl_row') and self.specs_strings == [':']
+        #pp('===============================================')
+        #pp(self.spec_type)
+        #pp(self.specs_strings)
+        #pp('===============================================')
+        return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings == [':']
+
+
+
+def spec_recs_are_default(rec_spec: List[str],
+                          exrec_spec: List[str]) -> bool:
+    """
+    """
+    if rec_spec == [':'] and exrec_spec == []:
+        return True
+    return False
 
 
 

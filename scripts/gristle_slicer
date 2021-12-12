@@ -157,7 +157,6 @@ def main() -> int:
         nconfig, _ = config_manager.get_config()
     except EOFError:
         return errno.ENODATA
-    pp(f'--------> config & input_handler duration: {time.time() - start_time:.2f}')
 
     slice_runner = SliceRunner(nconfig)
 
@@ -177,10 +176,6 @@ class SliceRunner:
 
     def __init__(self,
                  nconfig):
-
-        # Avoid getting a rec count unless necessary for negative specs, since
-        # it slows down processing of large files:
-        #start_time = time.time()
 
         self.nconfig = nconfig
         self.anyorder = False
@@ -228,11 +223,8 @@ class SliceRunner:
 
 
     def prep_post_count(self):
-        #pp('--------> prep_specs()')
         self.prep_specs()
-        #pp('--------> prep_slicers()')
         self.prep_slicers()
-        #pp('--------> precalculate_indexes()')
         self.precalculate_indexes()
 
 
@@ -246,15 +238,10 @@ class SliceRunner:
     def prep_slicers(self):
 
         start_time = time.time()
-        #pp('------------> rec_specs')
         self.incl_rec_slicer = slicer.SpecProcessor(self.rec_specs)
-        #pp('------------> exrec_specs')
         self.excl_rec_slicer = slicer.SpecProcessor(self.exrec_specs)
-        #pp('------------> col_specs')
         self.incl_col_slicer = slicer.SpecProcessor(self.col_specs)
-        #pp('------------> excol_specs')
         self.excl_col_slicer = slicer.SpecProcessor(self.excol_specs)
-
         pp(f'--------> prep_slicers  duration: {time.time() - start_time:.2f}')
 
 
@@ -272,9 +259,6 @@ class SliceRunner:
                 else:
                     self.merged_rec_spec.append(spec_item)
 
-        #pp(f'self.incl_rec_slicer.expanded_specs = {len(self.incl_rec_slicer.expanded_specs)=}, {slicer.get_size(self.incl_rec_slicer.expanded_specs)}')
-        #pp(f'{self.merged_rec_spec=} = {len(self.merged_rec_spec)}, {slicer.get_size(self.merged_rec_spec)}')
-
         self.merged_col_spec = []
         if (self.incl_col_slicer.expanded_specs_valid
         and self.excl_col_slicer.expanded_specs_valid):
@@ -283,7 +267,6 @@ class SliceRunner:
                     continue
                 else:
                     self.merged_col_spec.append(spec_item)
-        #pp(f'{self.merged_col_spec=} = {len(self.merged_rec_spec)}, {slicer.get_size(self.merged_col_spec)}')
 
         pp(f'--------> precalculate_indexes  duration: {time.time() - start_time:.2f}')
 
@@ -304,13 +287,11 @@ class SliceRunner:
         if (self.nconfig.infiles == ['-']
                 and (self.rec_specs.specs_have_negatives()
                      or self.exrec_specs.specs_have_negatives())):
-            pp('Must Process in memory #1!!!!!!!!!!!!!!!!!!!')
             return True
 
         if not self.anyorder:
             if (self.rec_specs.specs_are_out_of_order()
                     or self.exrec_specs.specs_are_out_of_order()):
-                pp('Must Process in memory #2!!!!!!!!!!!!!!!!!!!')
                 return True
 
         return False
@@ -323,6 +304,9 @@ class SliceRunner:
 
         records = records_str.split(',')
         exrecords = exrecords_str.split(',') if exrecords_str else []
+
+        if slicer.spec_recs_are_default(records, exrecords):
+            return False
 
         if slicer.spec_has_negatives(records):
             return True
@@ -370,8 +354,7 @@ class SliceRunner:
         rec_cnt = -1
         if files[0] == '-':
             return rec_cnt
-        #for _ in csv.reader(fileinput.input(files), dialect):
-        #    rec_cnt += 1
+
         for fn in files:
             with open(fn, 'r', newline='', encoding='utf-8') as inbuf:
                 csv_reader = csv.reader(inbuf, dialect=dialect)
@@ -395,7 +378,7 @@ class SliceRunner:
                 - merged_col_spec: simple list of which columns to slice
         """
         pp('----------------- process_recs_from_file ----------------------')
-        merged_rec_sub = 0
+        merged_rec_start= 0
         if self.merged_rec_spec:
             pp('    --------- merged_rec_spec ---- ')
             pp(self.merged_rec_spec)
@@ -407,19 +390,16 @@ class SliceRunner:
             short_circuit_stop_rec = max(self.merged_rec_spec)
 
         for rec in self.input_handler:
-            #pp('a')
             rec_number = self.input_handler.rec_cnt -1
 
             if self.merged_rec_spec:
                 if rec_number > short_circuit_stop_rec:
                     break
                 try:
-                    #pp('b')
-                    merged_rec_sub = self.merged_rec_spec.index(rec_number, max(merged_rec_sub, 0))
-                except ValueError:
+                    merged_rec_start = self.merged_rec_spec.index(rec_number, max(merged_rec_start, 0))
+                except ValueError as err: # record position not found in merged_rec_spec - must bypass
                     continue
             else:
-                #pp('c')
                 if not self.incl_rec_slicer.specs_evaluator(rec_number):
                     continue
                 elif self.excl_rec_slicer.specs_evaluator(rec_number):
@@ -462,28 +442,25 @@ class SliceRunner:
             all_rows.append(row)
             if i > 5000000:
                 break
-            if i % 1000000 == 0:
-                print('1 million')
-            if i % 100000 == 0:
-                print('.', end='')
+            #if i % 1000000 == 0:
+            #    print('1 million')
+            #if i % 100000 == 0:
+            #    print('.', end='')
         pp(f'--------> process_recs_in_mem.a duration: {time.time() - start_time:.2f}')
-        #all_rows = list(self.input_handler)
 
         # Consider getting rec count and rebuilding specs
         if self.rec_cnt == -1:
             self.rec_cnt = len(all_rows)
             self.prep_post_count()
 
-        #if self.merged_col_spec:
-            #pp('---- merged_col_spec ----')
-        #else:
-            #pp('---- eval ----')
+        if self.merged_col_spec:
+            pp('---- merged_col_spec ----')
+        else:
+            pp('---- eval ----')
 
         col_count = len(all_rows[0])
-        #pp(self.merged_rec_spec)
         assert self.merged_rec_spec
         for rec_num in self.merged_rec_spec:
-            #pp(f'{rec_num=}')
             output_rec = []
             try:
                 if self.merged_col_spec:
