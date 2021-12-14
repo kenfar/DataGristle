@@ -47,7 +47,7 @@ import random
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
-#ALL_ITEMS = 9876543210987654321
+ALL_ITEMS = 9876543210987654321
 
 
 class SpecProcessor(object):
@@ -68,9 +68,7 @@ class SpecProcessor(object):
         self.expanded_specs = []
         self.expanded_specs_valid = False
 
-        #pp(f'{self.specs.spec_type=}')
         if specs.get_all_items():
-            #pp(f'ALL_ITEMS ASSIGNED!!!!!!!!!!!!!!!!!')
             self.all_items = True
         else:
             try:
@@ -80,7 +78,6 @@ class SpecProcessor(object):
             except ItemCountException as err:
                 self.expanded_specs = []
                 self.expanded_specs_valid = False
-        #pp(f'{self.expanded_specs_valid=}')
 
 
 
@@ -107,12 +104,9 @@ class SpecProcessor(object):
             - False if the spec_list is empty
         """
         if self.all_items:
-            #pp('cccccccccccccccccccccccccccc')
             return True
         elif any([self._spec_item_check(spec, location) for spec in self.specs.specs_cleaned]):
-            #pp('dddddddddddddddddddddddddddd')
             return True
-        #pp('eeeeeeeeeeeeeeeeeeeeeeee')
         return False
 
 
@@ -229,15 +223,12 @@ class Specifications:
             return spec
 
         def transform_none_stop(spec: List[Optional[int]]) -> List[Optional[int]]:
-            # Transform none start to zero
-            #if self.name in ('incl_col_slicer') and spec[1] is None:
-            #    spec[1] = ALL_ITEMS
-            if spec[2] >= 0:
-                if spec[1] in (None, ''):
+            # if step is provided, stop is unbounded, set stop to count+1
+            if spec[1] in (None, ''):
+                if self.infile_item_count > -1:
                     spec[1] = self.infile_item_count + 1
-            else:
-                if spec[1] in (None, ''):
-                    spec[1] = 0
+                else:
+                    spec[1] = ALL_ITEMS
             return spec
 
         def validate_spec(spec: List[Optional[int]]) -> None:
@@ -307,6 +298,8 @@ class Specifications:
         START = 0
         STOP  = 1
         STEP  = 2
+        count = 0
+        max_count = 1_000_000
         #pp('-------------- _specs_range_expander: ----------------')
         #pp(f'{self.name=}')
         #pp(f'{self.clean_specs=}')
@@ -329,7 +322,6 @@ class Specifications:
             start_part = parts[START]
             stop_part = parts[STOP]
             step_part = parts[STEP]
-            #pp(f'------------- {start_part=}.{stop_part=}.{step_part=} ---------------')
 
             if self.specs_have_reverse_order():
                 adjusted_stop_part = stop_part
@@ -338,30 +330,21 @@ class Specifications:
 
             if type(step_part) == type(5):
                 for part in range(start_part, adjusted_stop_part, step_part):
-                    #pp(f'part: {part}')
-                    #if self.name in ('incl_col_slicer') and stop_part == ALL_ITEMS:
-                    #    return [] # it's derrived value that stands for "everything" 
+                    count += 1
+                    if count > max_count:
+                        raise ItemCountException
                     expanded_spec.append(part)
             else:
-                #pp('aaaaaaaaaaaaaaaaaaa')
                 multiplier = 1 if step_part > 0 else -1
                 for part in range(start_part, adjusted_stop_part, 1*multiplier):
                     result =  random.random()
-                    #pp(step_part)
-                    #pp(result)
                     if abs(step_part) > result:
-                        #pp(f' {step_part=} > {result=}')
+                        count += 1
+                        if count > max_count:
+                            raise ItemCountException
                         expanded_spec.append(part)
 
-        #pp(f'{expanded_spec=}')
-        #pp(get_size(expanded_spec))
         return expanded_spec
-
-        # todo: resolve tricky problem with ranges:
-        #   1. The stop number is 1 more than the actual number included
-        #   2. The stop number is 1 less for negatives
-        #   3. To go in reverse order down to 0 you have to stop at -1
-        #   4. But -1 is translated to the end record of the file!
 
 
 
