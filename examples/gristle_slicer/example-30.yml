@@ -1,0 +1,18 @@
+# Simple slicer that demonstrates the following features:
+#     * includes repeated rows and cols
+
+infiles: [example-30_repeated_rows_and_cols_input.csv]
+outfile: /tmp/example-30_actualout.csv
+verbosity: debug
+
+records: '5,5,5'
+columns: '2,2,2'
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_no_header: true
+
+quotechar: null
+#doublequote: null               # bools can only be set to true
+#skipinitialspace: null          # bools can only be set to true

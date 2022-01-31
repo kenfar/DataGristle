@@ -1,5 +1,5 @@
 # Simple slicer that demonstrates the following features:
-#     * includes reverse-order stepping over records and columns
+#     * includes random sampling via stepping over records
 
 infiles: [example-29_random_slice_stepping_input.csv]
 outfile: /tmp/example-29_actualout.csv
@@ -9,7 +9,8 @@ verbosity: debug
 # inclusions is an implied exclusion.  A few more notes on random steps:
 #     * The number provided must be a decimal or float
 #     * It is the probability that any given row will qualify and be included
-records: '1::0.25'       # includes about 25% of the records between the 2nd (row=1) and the end of the file
+#     * Includes about 25% of the records between the 2nd (row=1) and the end of the file
+records: '1::0.25'
 
 quoting: quote_none
 delimiter: '|'

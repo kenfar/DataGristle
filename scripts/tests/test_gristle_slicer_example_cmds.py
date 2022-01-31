@@ -81,7 +81,14 @@ class TestExamples(test_tools.TestExamples):
     def test_example_28_reverse_slice_stepping(self):
         self.run_example_config('example-28')
 
-    def test_example_29_random_slice_stepping(self):
-        self.run_example_config_for_return_code('example-29')
+    # It's random, to test this we'll need to add a ton more rows, and then look for a count of
+    # the output that's close to 25%
+    #
+    #def test_example_29_random_slice_stepping(self):
+    #    self.run_example_config_for_return_code('example-29')
 
+    def test_example_30_repeated_rows_and_cols(self):
+        self.run_example_config('example-30')
 
+    def test_example_31_unbounded_ranges(self):
+        self.run_example_config('example-31')

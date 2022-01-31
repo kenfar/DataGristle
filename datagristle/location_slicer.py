@@ -35,22 +35,22 @@
 
 import copy
 from dataclasses import dataclass
+import functools
+import more_itertools
 from pprint import pprint as pp
 import re
+import random
 import sys
 from typing import List, Dict, Tuple, Union, Any, Optional
 
-import functools
-import more_itertools
-import random
+from pydantic.dataclasses import dataclass
 
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
-ALL_ITEMS = 9876543210987654321
 
 
-class SpecProcessor(object):
+class SpecProcessor:
     """ Manages all types of specifications - inclusion or exclusion for rows & cols.
 
     That means, it translates the specs into useful structures, and supports the
@@ -63,25 +63,18 @@ class SpecProcessor(object):
         Header: Is always expected for column specs that read from files, but will just be None
                 for columns specs for stdin inputs.  Is also always None for record specs.
         """
-        self.all_items = False
         self.specs = specs
-        self.expanded_specs = []
-        self.expanded_specs_valid = False
 
-        if specs.get_all_items():
-            self.all_items = True
-        else:
-            try:
-                self.expanded_specs: List[int] \
-                    = self.specs.specs_range_expander()
-                self.expanded_specs_valid = True
-            except ItemCountException as err:
-                self.expanded_specs = []
-                self.expanded_specs_valid = False
+        self.has_exclusions = specs.has_exclusions()
+        self.has_all_inclusions = specs.has_all_inclusions()
+
+        self.indexer = Indexer(self.specs.specs_cleaned,
+                               self.specs.max_items)
+        self.indexer.builder()
+        self.index = self.indexer.index
 
 
 
-   #### @functools.cache
     def specs_evaluator(self,
                         location: int) -> bool:
         """ Evaluates a location (column number or record number) against
@@ -103,9 +96,13 @@ class SpecProcessor(object):
             - False if the number does not match one of the specs
             - False if the spec_list is empty
         """
-        if self.all_items:
+        # Note that the has_all_inclusions optimization will automatically approve all
+        # locations - so this depends on the calling code to only give valid locations (ex,
+        # those within the range of the file.
+        if self.has_all_inclusions:
             return True
-        elif any([self._spec_item_check(spec, location) for spec in self.specs.specs_cleaned]):
+
+        if any([self._spec_item_check(spec, location) for spec in self.specs.specs_cleaned]):
             return True
         return False
 
@@ -116,11 +113,11 @@ class SpecProcessor(object):
         """ evaluates a single item against a location
         Args:
             - spec: one line of the specifications, looking like:
-                - [5]
-                - [1, 10]
-                - [None, 10]
-                - [1, None]
-                - [None, None]
+                - [5, 5, 1]
+                - [1, 10, 1]
+                - [3, 10, 2]
+                - [2, 0, -1]
+                - [1, 3, 0.25]
             - location - an integer to be compared to spec
         Returns:
             - True or False
@@ -129,15 +126,27 @@ class SpecProcessor(object):
         assert spec[0] is not None
         assert spec[1] is not None
         assert spec[2] is not None
+        assert spec[2] != 0
 
         if location >= spec[0] and location < spec[1]:
-            if (location - spec[0]) % spec[2] == 0:
-                return True
+
+            if 0 < spec[2] < 1:
+                rec_num = location - spec[0]
+                r = random.random()
+                if abs(spec[2]) > r:
+                    return True
+            else:
+                if (location - spec[0]) % spec[2] == 0:
+                    return True
 
         return False
 
-#todo: add validation for step != 0
-#todo: add validation for step positive if start > stop, negative otherwise
+
+#@dataclass
+#class Spec
+#    start: int
+#    stop:  int
+#    step:  float
 
 
 class Specifications:
@@ -146,29 +155,36 @@ class Specifications:
                  spec_type: str,
                  specs_strings: List[str],
                  header: Optional[csvhelper.Header] = None,
-                 infile_item_count: Optional[int] = -1):
+                 infile_item_count: Optional[int] = -1,   #### actually max value!
+                 max_items: int=sys.maxsize):
 
         self.spec_type = spec_type
         self.specs_strings = specs_strings
         self.header = header
         self.infile_item_count = infile_item_count
-        self.specs_cleaned = self._specs_cleaner()
+        self.max_items = max_items
+        self.specs_cleaned = []
         self.reverse_order_with_neg_stop = False
 
+        assert spec_type in ['incl_rec', 'excl_rec', 'incl_col', 'excl_col']
 
-    def _specs_cleaner(self) -> List[Optional[List[Optional[int]]]]:
+        self.specs_cleaned = self.specs_cleaner()
+
+
+    def specs_cleaner(self) -> List[Optional[List[Optional[int]]]]:
         """ Returns a transformed version of the specs
 
         Args:
             Specs: these are raw specs, ex: [':5', ':', '4', '3:19']
             header: this is a csv header object - used to translate names to numbers
-            infile_item_count: this is either a row count or a column count, depending
+            infile_item_count: this is either a row max or a column max, depending
               on whether the class is used for rows or cols.  May be None if there are
               no negatives or unbounded ranges in the specs.
         Returns:
             clean_specs: ex: [[None, 5], [None, None], [4, 4], [3, 19]]
             for specs that are empty   (ex: '') returns: []
             for specs that are default (ex: ':') returns: [[0, None]]
+            NOTE: the end of the rang eis inclusive, not exclusive
         """
         def transform_none(val: Optional[str]) -> Optional[str]:
             if val is None:
@@ -194,10 +210,9 @@ class Specifications:
 
         def transform_negative_number(val: Optional[str]) -> Optional[str]:
             if val is not None and int(val) < 0:
-                #assert self.infile_item_count > -1
                 if self.infile_item_count == -1:
-                    return val
-                return str(self.infile_item_count + int(val) + 1 )
+                    raise NegativeOffsetWithoutItemCountError
+                return str(self.infile_item_count + int(val) + 1)
             else:
                 return val
 
@@ -219,16 +234,22 @@ class Specifications:
                     spec[0] = 0
             else:
                 if spec[0] is None:
-                    spec[0] = self.infile_item_count
+                    if self.infile_item_count == -1:
+                        raise NegativeStepWithoutItemCountError
+                    else:
+                        spec[0] = self.infile_item_count
             return spec
 
         def transform_none_stop(spec: List[Optional[int]]) -> List[Optional[int]]:
             # if step is provided, stop is unbounded, set stop to count+1
             if spec[1] in (None, ''):
-                if self.infile_item_count > -1:
-                    spec[1] = self.infile_item_count + 1
+                if spec[2] >= 0:
+                    if self.infile_item_count > -1:
+                        spec[1] = self.infile_item_count + 1
+                    else:
+                        spec[1] = self.max_items
                 else:
-                    spec[1] = ALL_ITEMS
+                    spec[1] = -1
             return spec
 
         def validate_spec(spec: List[Optional[int]]) -> None:
@@ -241,6 +262,15 @@ class Specifications:
             if len(spec) == 2 and spec[0] and spec[1]:
                 if spec[0] >= spec[1]:   # type: ignore
                     raise ValueError(f'spec is an invalid range: {spec}')
+            if int(spec[2]) > 0:
+                if int(spec[0]) > int(spec[1]):
+                    raise ValueError(f'spec has start ({spec[0]}) after end ({spec[1]})')
+            else:
+                if int(spec[1]) > int(spec[0]):
+                    raise ValueError(f'negative spec has end greater than start')
+            assert comm.isnumeric(spec[0])
+            assert comm.isnumeric(spec[1])
+            assert comm.isnumeric(spec[2]) and int(spec[2]) != 0
 
         clean_specs = []
 
@@ -250,39 +280,60 @@ class Specifications:
 
         for item in self.specs_strings:
             new_parts = []
-            #pp(f'cleaner: {self.spec_type}.{item}')
             for i, part in enumerate(item.split(':')):
                 orig_opt_part: Optional[str] = part.strip()
-                #pp(f'orig_opt_part: {orig_opt_part}')
+
                 opt_part = transform_none(orig_opt_part)
-                #pp(f'transform_none: {opt_part}')
+
                 if i in (0, 1):
                     opt_part = transform_name(opt_part)
-                #pp(f'transform_name: {opt_part}')
+
                 if i in (0, 1):
                     opt_part = transform_negative_number(opt_part)
-                #pp(f'transform_neg: {opt_part}')
+
                 if i in (0, 1):
                     new_parts.append(int(opt_part) if opt_part is not None else None)
-                elif '.' in opt_part:
+                elif opt_part is not None and '.' in opt_part:
                     new_parts.append(float(opt_part) if opt_part is not None else None)
                 else:
                     new_parts.append(int(opt_part) if opt_part is not None else None)
 
-            #pp(f'{new_parts=}')
             triples = transform_to_triples(new_parts)
-            #pp(f'triples: {triples}')
             triples = transform_none_start(triples)
-            #pp(f'transform_none_start: {triples}')
             triples = transform_none_stop(triples)
-            #pp(f'transform_none_stop: {triples}')
             validate_spec(triples)
             clean_specs.append(triples)
-            #pp(f'{clean_specs=}')
         return clean_specs
 
 
-    def specs_range_expander(self) -> List[int]:
+    def has_everything(self) -> bool:
+        assert self.specs_strings != []
+        return self.specs_strings == [':']
+
+
+    def has_all_inclusions(self) -> bool:
+        return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings == [':']
+
+
+    def has_exclusions(self) -> bool:
+        return self.spec_type in ('excl_col', 'excl_rec') and self.specs_cleaned != []
+
+
+
+
+class Indexer:
+
+    def __init__(self,
+                 specs,
+                 max_items) -> List[int]:
+
+        self.specs_cleaned = specs
+        self.max_items = max_items
+        self.index = []
+        self.valid = False
+
+
+    def builder(self):
         """ Explodes the specification ranges into individual positions.
 
         This function returns a list of all positions that are included within a
@@ -294,25 +345,15 @@ class Specifications:
                 This value may be -1 if the calling pgm doesn't think we need to
                 know what the last record is.
         """
+        max_items = self.max_items
+        specs_cleaned = self.specs_cleaned
         expanded_spec = []
         START = 0
         STOP  = 1
         STEP  = 2
         count = 0
-        max_count = 1_000_000
-        #pp('-------------- _specs_range_expander: ----------------')
-        #pp(f'{self.name=}')
-        #pp(f'{self.clean_specs=}')
-        #if self.name in ('incl_col_slicer') and self.clean_specs == [[0, ALL_ITEMS]]:
-        #    return []
 
-        #if self.spec_type == 'incl_rec':
-            #pp('===========================================')
-            #pp(f'expander: {self.spec_type=}')
-            #pp(f'expander: {self.specs_cleaned=}')
-            #pp('===========================================')
-
-        for parts in self.specs_cleaned:
+        for parts in specs_cleaned:
 
             assert len(parts) == 3
             assert parts[START] is not None
@@ -323,124 +364,93 @@ class Specifications:
             stop_part = parts[STOP]
             step_part = parts[STEP]
 
-            if self.specs_have_reverse_order():
-                adjusted_stop_part = stop_part
-            else:
-                adjusted_stop_part = stop_part
-
-            if type(step_part) == type(5):
-                for part in range(start_part, adjusted_stop_part, step_part):
+            if type(step_part) == type(5):  # consistent interval steps
+                if stop_part == max_items:
+                    print('********* TOOBIG-1!!!! ************')
+                    return
+                for part in range(start_part, stop_part, step_part):
                     count += 1
-                    if count > max_count:
-                        raise ItemCountException
+                    if count > max_items:
+                        print('********* TOOBIG-2!!!! ************')
+                        return
                     expanded_spec.append(part)
-            else:
+            elif step_part < 1.0:           # random interval steps
                 multiplier = 1 if step_part > 0 else -1
-                for part in range(start_part, adjusted_stop_part, 1*multiplier):
+                for part in range(start_part, stop_part, 1*multiplier):
                     result =  random.random()
                     if abs(step_part) > result:
                         count += 1
-                        if count > max_count:
-                            raise ItemCountException
+                        if count > max_items:
+                            print('********* TOOBIG-3!!!! ************')
+                            return
                         expanded_spec.append(part)
+            else:
+                 comm.abort('Error! Invalid specification step',
+                            f'step: {step_part} is invalid')
+        else:
+            self.valid = True
 
-        return expanded_spec
+        self.index = expanded_spec
 
 
+    def has_repeats(self) -> bool:
+        # Lets assume that there may be repeats if the index build failed:
+        if not self.valid:
+            return False
 
-    def specs_are_out_of_order(self) -> bool:
-        last_spec = [None, None, None]
-        for spec in self.specs_cleaned:
+        # Only works if specs_expanded has been populated!
+        if len(set(self.index)) != len(self.index):
+            return True
 
-            # combining none with actual positions for starts
-            if last_spec[0] is not None and spec[0] is None:
-                last_spec = spec
-                return True
-
-            # starts deminish in value:
-            if (last_spec[0] is not None and spec[0] is not None
-                    and last_spec[0] > spec[0]):
-                last_spec = spec
-                return True
-
-            # negative steps - or reverse sort:
-            if spec[2] < 0:
-                return True
-
-            last_spec = spec
-            #todo: what if they're both none? ie, 2 nones in a row?
         return False
 
 
-    def specs_have_unbounded_ends(self) -> bool:
-        x = [x[1] for x in self.specs_cleaned if x[1] is None]
-        if len(x) > 0:
-            return True
-        else:
-            return False
 
 
-# todo: test this - not sure how it works with 3+ elements
-    def specs_have_negatives(self) -> bool:
-        flat_specs = more_itertools.collapse(self.specs_cleaned)
-        flat_specs = [x for x in flat_specs if x is not None and x < 0]
-        if len(flat_specs) > 0:
-            return True
-        else:
-            return False
-
-
-    def specs_have_reverse_order(self) -> bool:
-        for spec in self.specs_cleaned:
-            if spec[2] < 0:
-                return True
-        return False
-
-
-    def specs_are_for_everything(self) -> bool:
-        return self.specs_strings == [':']
-
-
-    def get_all_items(self) -> bool:
-        #pp('===============================================')
-        #pp(self.spec_type)
-        #pp(self.specs_strings)
-        #pp('===============================================')
-        return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings == [':']
-
-
-
-def spec_recs_are_default(rec_spec: List[str],
-                          exrec_spec: List[str]) -> bool:
+def is_out_of_order(index) -> bool:
     """
+    Considers either mixed-order or reverse order True
     """
-    if rec_spec == [':'] and exrec_spec == []:
-        return True
+    last_val = None
+    for val in index:
+        if last_val is None:
+            last_val = val
+        elif val < last_val:
+            return True
+        elif val == last_val:
+            continue
+        else:
+            last_val = val
     return False
+
 
 
 
 def spec_has_negatives(spec: List[str]) -> bool:
-    """ Checks for negative values in a single spec
+    """ Checks for negative values in a list of specs
     """
     for item in spec:
-        if '-' in item:
-            return True
+        parts = item.split(':')
+        for i, part in enumerate(parts):
+            if i in (0,1):
+                if comm.isnumeric(part):
+                    if int(part) < 0:
+                        return True
     return False
 
 
 
-def spec_has_unbounded_end_range(spec: List[str]) -> bool:
-    """ Checks for unbounded outer range in a single spec
+def spec_has_unbounded_end(spec: List[str]) -> bool:
+    """ Checks for unbounded outer range in a list of specs
+
+        Does not consider that the first part of a single spec
+        is the stopping offset when using negative steps.
     """
-    #pp('==========================================')
-    #pp(spec)
-    #pp('==========================================')
     if spec in ([], [':'], ['::']):
         return True
     for item in spec:
         parts = item.split(':')
-        if len(parts) == 2:
+        if len(parts) in (2, 3):
             if parts[1] == '':
                 return True
         elif len(parts) == 1:
@@ -449,27 +459,34 @@ def spec_has_unbounded_end_range(spec: List[str]) -> bool:
     return False
 
 
-def get_size(obj, seen=None):
-    """Recursively finds size of objects"""
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if isinstance(obj, dict):
-        size += sum([get_size(v, seen) for v in obj.values()])
-        size += sum([get_size(k, seen) for k in obj.keys()])
-    elif hasattr(obj, '__dict__'):
-        size += get_size(obj.__dict__, seen)
-    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-        size += sum([get_size(i, seen) for i in obj])
-    return size
+
+#def get_size(obj, seen=None):
+#    """Recursively finds size of objects"""
+#    size = sys.getsizeof(obj)
+#    if seen is None:
+#        seen = set()
+#    obj_id = id(obj)
+#    if obj_id in seen:
+#        return 0
+#    # Important mark as seen *before* entering recursion to gracefully handle
+#    # self-referential objects
+#    seen.add(obj_id)
+#    if isinstance(obj, dict):
+#        size += sum([get_size(v, seen) for v in obj.values()])
+#        size += sum([get_size(k, seen) for k in obj.keys()])
+#    elif hasattr(obj, '__dict__'):
+#        size += get_size(obj.__dict__, seen)
+#    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+#        size += sum([get_size(i, seen) for i in obj])
+#    return size
+#
 
 
+class ItemCountTooBigException(Exception):
+    pass
 
-class ItemCountException(Exception):
+class NegativeOffsetWithoutItemCountError(Exception):
+    pass
+
+class NegativeStepWithoutItemCountError(Exception):
     pass

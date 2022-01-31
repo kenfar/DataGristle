@@ -6,6 +6,7 @@
 """
 import csv
 import errno
+import fileinput
 import io
 import os
 from pprint import pprint as pp
@@ -195,3 +196,55 @@ class OutputHandler(object):
     def close(self):
         if self.output_filename != '-':
             self.outfile.close()
+
+
+
+def get_file_size(files):
+    tot_size = int(sum([os.path.getsize(fn)
+                        for fn in files
+                        if fn != '-']))
+    return tot_size
+
+
+def get_approx_rec_count(files):
+    tot_size = get_file_size(files)
+    rec_size = 0
+    rec_cnt = 0
+    for fn in files:
+        if fn == '-':
+            continue
+        with open(fn, 'r') as inbuf:
+           for rec in inbuf:
+               rec_size += len(rec)
+               rec_cnt += 1
+               if rec_cnt > 1000:
+                   break
+    try:
+        avg_rec_size = rec_size / rec_cnt
+        approx_rec_cnt = tot_size / avg_rec_size
+    except ZeroDivisionError:
+        approx_rec_cnt = -1
+    return approx_rec_cnt
+
+
+def get_rec_count(files: List[str],
+                  dialect: csv.Dialect) -> int:
+    """ Get record counts for input files.
+        - Counts have an offset of 0
+    """
+    #fixme: counts should have an offset of 1?
+    rec_cnt = -1
+    if files[0] == '-':
+        return rec_cnt
+
+    for fn in files:
+        with open(fn, 'r', newline='', encoding='utf-8') as inbuf:
+            csv_reader = csv.reader(inbuf, dialect=dialect)
+            for _ in csv_reader:
+                rec_cnt += 1
+    fileinput.close()
+    return rec_cnt
+
+
+
+

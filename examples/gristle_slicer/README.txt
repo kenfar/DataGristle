@@ -17,4 +17,6 @@ gristle_slicer Feature Examples:
     Example-27: slice-stepping or striding
     Example-28: reverse-order slice-stepping
     Example-29: slice-stepping over random numbers of items
+    Example-30: repeated rows and cols
+    Example-31: unbounded ranges
 

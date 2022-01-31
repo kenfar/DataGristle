@@ -16,8 +16,10 @@ import os
 from pprint import pprint as pp
 import subprocess
 import tempfile
+import time
 
 import envoy
+import pytest
 
 import datagristle.common  as comm
 
@@ -161,7 +163,6 @@ class Test7x7File(object):
 
 
 
-
 class TestEmptyFile(object):
 
     def setup_method(self, method):
@@ -270,3 +271,139 @@ class TestStdin(object):
             out_recs.append(rec)
         fileinput.close()
         assert not out_recs
+
+
+
+@pytest.mark.slow
+class TestPerformance(object):
+
+    def setup_method(self, method):
+        self.input_count = 1_000_000
+        self.in_fqfn = self._generate_file()
+        (dummy, self.out_fqfn) = tempfile.mkstemp(prefix='TestSlice7x7Out_')
+
+
+    def teardown_method(self, method):
+        os.remove(self.in_fqfn)
+        os.remove(self.out_fqfn)
+
+
+    def _generate_file(self):
+        (fd, fqfn) = tempfile.mkstemp(prefix='TestSlicer7x7In_')
+        fp = os.fdopen(fd, "wt")
+        for count in range(self.input_count):
+            row = f'{count}-0,{count}-1,{count}-2,{count}-3,{count}-4,{count}-5,{count}-6\n'
+            fp.write(row)
+        fp.close()
+        return fqfn
+
+
+    def runner(self,
+               incl_rec_spec=None, excl_rec_spec=None,
+               incl_col_spec=None, excl_col_spec=None,
+               options=None):
+
+        in_fqfn = self.in_fqfn
+        out_fqfn = self.out_fqfn
+        irs = comm.coalesce(' ', f"{incl_rec_spec}")
+        ers = comm.coalesce(' ', f"{excl_rec_spec}")
+        ics = comm.coalesce(' ', f"{incl_col_spec}")
+        ecs = comm.coalesce(' ', f"{excl_col_spec}")
+        opt = comm.coalesce(' ', f"{options}")
+        pgm = fq_pgm  # get it local for string formatting
+
+        cmd = f'''{pgm}  -i {in_fqfn}
+                         -o {out_fqfn}
+                         {irs}
+                         {ers}
+                         {ics}
+                         {ecs}
+                         {opt}
+                         --verbosity debug
+               '''
+        r = envoy.run(cmd)
+        if r.status_code:
+            print('Status Code:  %d' % r.status_code)
+            print(r.std_out)
+            print(r.std_err)
+        print(r.std_out)
+        print(r.std_err)
+        p_recs = []
+        for rec in fileinput.input(self.out_fqfn):
+            p_recs.append(rec[:-1])
+        fileinput.close()
+
+        return r.status_code, p_recs
+
+
+    def test_select_all(self):
+
+        start_time = time.time()
+        rc, actual = self.runner(None, None,
+                     options='''--delimiter=',' --quoting=quote_none''')
+        duration = time.time() - start_time
+        pp(duration)
+        assert 12 > duration > 8
+        assert rec_cnt(self.out_fqfn) == self.input_count
+
+
+    def test_skip_every_other(self):
+
+        start_time = time.time()
+        rc, actual = self.runner(incl_rec_spec='-r=::2',
+                     options='''--delimiter=',' --quoting=quote_none''')
+        duration = time.time() - start_time
+        pp(duration)
+        assert 12 > duration > 8
+        assert rec_cnt(self.out_fqfn) == self.input_count / 2
+
+
+    def test_short_circuit(self):
+
+        start_time = time.time()
+        rc, actual = self.runner(incl_rec_spec='-r=:10',
+                     options='''--delimiter=',' --quoting=quote_none''')
+        duration = time.time() - start_time
+        pp(duration)
+        assert 1 > duration > 0.1
+        assert rec_cnt(self.out_fqfn) == 10
+
+
+    def test_select_one_col(self):
+
+        start_time = time.time()
+        rc, actual = self.runner(incl_col_spec='-c=3',
+                     options='''--delimiter=',' --quoting=quote_none''')
+        duration = time.time() - start_time
+        pp(duration)
+        assert 8 > duration > 3
+        assert rec_cnt(self.out_fqfn) == self.input_count
+
+
+    def test_reverse_file(self):
+
+        start_time = time.time()
+        rc, actual = self.runner(incl_rec_spec='-r=::-1',
+                                 incl_col_spec='-c=3',
+                     options='''--delimiter=',' --quoting=quote_none''')
+        duration = time.time() - start_time
+        pp(duration)
+        assert 8 > duration > 4
+        assert rec_cnt(self.out_fqfn) == self.input_count
+
+
+
+def rec_cnt(fqfn):
+    for rec in fileinput.input(fqfn):
+        pass
+    rec_cnt = fileinput.lineno()
+    fileinput.close()
+    pp('==============================================')
+    pp(rec_cnt)
+    pp('==============================================')
+    return rec_cnt
+
+
+
+
+
