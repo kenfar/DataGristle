@@ -92,7 +92,7 @@ class Test_is_out_of_order(object):
                                        specs_strings=specs_strings,
                                        header=None,
                                        infile_item_count=100)
-        self.indexer = mod.Indexer(self.spec.specs_cleaned,
+        self.indexer = mod.Indexer(self.spec.specs_final,
                                    self.spec.max_items)
         self.indexer.builder()
         self.index = self.indexer.index
@@ -235,28 +235,59 @@ class TestSpecificationsCleaner(object):
 
     def test_unbounded_start_and_stop(self):
         self.setup_spec(specs_strings=[':'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[0, 101, 1]]
+        #assert self.spec.specs_final == [[0, 101, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 0
+        assert self.spec.specs_final[0].stop  == 101
+        assert self.spec.specs_final[0].step  == 1
 
         self.setup_spec(specs_strings=['::'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[0, 101, 1]]
+        #assert self.spec.specs_final == [[0, 101, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 0
+        assert self.spec.specs_final[0].stop  == 101
+        assert self.spec.specs_final[0].step  == 1
 
     def test_unbounded_start(self):
         self.setup_spec(specs_strings=[':5'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[0, 5, 1]]
+        #assert self.spec.specs_final == [[0, 5, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 0
+        assert self.spec.specs_final[0].stop  == 5
+        assert self.spec.specs_final[0].step  == 1
 
     def test_unbounded_stop(self):
         self.setup_spec(specs_strings=['5:'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[5, 101, 1]]
+        #assert self.spec.specs_final == [[5, 101, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 5
+        assert self.spec.specs_final[0].stop  == 101
+        assert self.spec.specs_final[0].step  == 1
 
     def test_multiple_single_cols(self):
         self.setup_spec(specs_strings=['3', '5', '7'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[3, 4, 1], [5, 6, 1], [7, 8, 1]]
+        #assert self.spec.specs_final == [[3, 4, 1], [5, 6, 1], [7, 8, 1]]
+        assert len(self.spec.specs_final) == 3
+        assert self.spec.specs_final[0].start == 3
+        assert self.spec.specs_final[0].stop  == 4
+        assert self.spec.specs_final[0].step  == 1
+        assert self.spec.specs_final[1].start == 5
+        assert self.spec.specs_final[1].stop  == 6
+        assert self.spec.specs_final[1].step  == 1
+        assert self.spec.specs_final[2].start == 7
+        assert self.spec.specs_final[2].stop  == 8
+        assert self.spec.specs_final[2].step  == 1
+
 
     def test_name_translation(self):
         self.setup_spec(specs_strings=['account_id'],
                         spec_type='incl_rec',
                         header=['account_id', 'customer_id'])
-        assert self.spec.specs_cleaned == [[0, 1, 1]]
+        #assert self.spec.specs_final == [[0, 1, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 0
+        assert self.spec.specs_final[0].stop  == 1
+        assert self.spec.specs_final[0].step  == 1
 
     def test_invalid_name_translation(self):
         with pytest.raises(SystemExit) as excinfo:
@@ -266,44 +297,92 @@ class TestSpecificationsCleaner(object):
 
     def test_negative_translation(self):
         self.setup_spec(specs_strings=['-1'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[100, 101, 1]]
+        #assert self.spec.specs_final == [[100, 101, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 100
+        assert self.spec.specs_final[0].stop  == 101
+        assert self.spec.specs_final[0].step  == 1
 
     def test_range(self):
         self.setup_spec(specs_strings=['5:10'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[5, 10, 1]]
+        #assert self.spec.specs_final == [[5, 10, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 5
+        assert self.spec.specs_final[0].stop  == 10
+        assert self.spec.specs_final[0].step  == 1
 
     def test_multiple_ranges(self):
         self.setup_spec(specs_strings=['3:30', '4:40'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[3, 30, 1], [4, 40, 1]]
+        #assert self.spec.specs_final == [[3, 30, 1], [4, 40, 1]]
+        assert len(self.spec.specs_final) == 2
+        assert self.spec.specs_final[0].start == 3
+        assert self.spec.specs_final[0].stop  == 30
+        assert self.spec.specs_final[0].step  == 1
+        assert self.spec.specs_final[1].start == 4
+        assert self.spec.specs_final[1].stop  == 40
+        assert self.spec.specs_final[1].step  == 1
 
     def test_stepping(self):
         self.setup_spec(specs_strings=['5:10:1'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[5, 10, 1]]
+        #assert self.spec.specs_final == [[5, 10, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 5
+        assert self.spec.specs_final[0].stop  == 10
+        assert self.spec.specs_final[0].step  == 1
 
         self.setup_spec(specs_strings=['5:10:2'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[5, 10, 2]]
+        #assert self.spec.specs_final == [[5, 10, 2]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 5
+        assert self.spec.specs_final[0].stop  == 10
+        assert self.spec.specs_final[0].step  == 2
+
 
         self.setup_spec(specs_strings=['::2'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[0, 101, 2]]
+        #assert self.spec.specs_final == [[0, 101, 2]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 0
+        assert self.spec.specs_final[0].stop  == 101
+        assert self.spec.specs_final[0].step  == 2
 
     def test_negative_range(self):
         self.setup_spec(specs_strings=['-10:-2'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[91, 99, 1]]
+        #assert self.spec.specs_final == [[91, 99, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 91
+        assert self.spec.specs_final[0].stop  == 99
+        assert self.spec.specs_final[0].step  == 1
 
     def test_negative_skipping(self):
         self.setup_spec(specs_strings=['8:2:-1'], spec_type='incl_rec')
-        assert self.spec.specs_cleaned == [[8, 2, -1]]
+        #assert self.spec.specs_final == [[8, 2, -1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 8
+        assert self.spec.specs_final[0].stop  == 2
+        assert self.spec.specs_final[0].step  == -1
 
     def test_minusone_item_count_with_empty_stop(self):
         self.setup_spec(specs_strings=['2::'], item_count=-1)
-        assert self.spec.specs_cleaned == [[2, sys.maxsize, 1]]
+        #assert self.spec.specs_final == [[2, sys.maxsize, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 2
+        assert self.spec.specs_final[0].stop  == sys.maxsize
+        assert self.spec.specs_final[0].step  == 1
 
         self.setup_spec(specs_strings=['2:'], item_count=-1)
-        assert self.spec.specs_cleaned == [[2, sys.maxsize, 1]]
+        #assert self.spec.specs_final == [[2, sys.maxsize, 1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 2
+        assert self.spec.specs_final[0].stop  == sys.maxsize
+        assert self.spec.specs_final[0].step  == 1
 
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
         self.setup_spec(specs_strings=['2::-1'], item_count=-1)
-        assert self.spec.specs_cleaned == [[2, -1, -1]]
+        #assert self.spec.specs_final == [[2, -1, -1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 2
+        assert self.spec.specs_final[0].stop  == -1
+        assert self.spec.specs_final[0].step  == -1
 
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
         with pytest.raises(mod.NegativeStepWithoutItemCountError):
@@ -311,7 +390,11 @@ class TestSpecificationsCleaner(object):
 
     def test_minusone_item_count_with_empty_start_and_pos_step(self):
         self.setup_spec(specs_strings=['::-1'], item_count=100)
-        assert self.spec.specs_cleaned == [[100, -1, -1]]
+        #assert self.spec.specs_final == [[100, -1, -1]]
+        assert len(self.spec.specs_final) == 1
+        assert self.spec.specs_final[0].start == 100
+        assert self.spec.specs_final[0].stop  == -1
+        assert self.spec.specs_final[0].step  == -1
 
 
 
@@ -326,7 +409,7 @@ class TestIndexer(object):
                                        specs_strings=specs_strings,
                                        header=None,
                                        infile_item_count=100)
-        self.indexer = mod.Indexer(self.spec.specs_cleaned,
+        self.indexer = mod.Indexer(self.spec.specs_final,
                                    max_items=max_items)
         self.indexer.builder()
         self.index = self.indexer.index
@@ -429,12 +512,12 @@ class TestSpecProcessor(object):
             self.runner(['2 5'], loc=0, item_count=80)
 
         # extra colon:
-        with pytest.raises(ValueError):
+        with pytest.raises(SystemExit):
             self.runner(['2:5:1:6'], loc=0, item_count=80)
 
 
         # test a starting number larger than ending:
-        with pytest.raises(ValueError):
+        with pytest.raises(SystemExit):
             self.runner(['5:2'], loc=0, item_count=80)
             self.sp = mod.SpecProcessor(self.specs)
 
@@ -517,13 +600,16 @@ class TestSpecProcessorItemEvaluator(object):
         assert self.sp.index == [0]
 
         # Single Cols
-        assert self.sp._spec_item_check([5, 6, 1], 5)
+        specs = mod.Specifications(spec_type='incl_rec',
+                                   specs_strings=['5'])
+        assert self.sp._spec_item_check(specs.specs_final[0], 5)
 
         # Ranges:
-        assert self.sp._spec_item_check([5, 10, 1], 5)
-        assert self.sp._spec_item_check([5, 10, 1], 9)
-        assert self.sp._spec_item_check([5, 10, 1], 9) is True
-        assert self.sp._spec_item_check([5, 10, 1], 10) is False
+        specs = mod.Specifications(spec_type='incl_rec',
+                                   specs_strings=['5:10:1'])
+        assert self.sp._spec_item_check(specs.specs_final[0], 5)
+        assert self.sp._spec_item_check(specs.specs_final[0], 9)
+        assert self.sp._spec_item_check(specs.specs_final[0], 10) is False
 
 
 
@@ -540,10 +626,10 @@ class TestSpecProcessorEvaluator(object):
             specification and record length.
         """
         if header:
-           header_obj = csvhelper.Header()
-           header_obj.load_from_list(field_names=header)
+            header_obj = csvhelper.Header()
+            header_obj.load_from_list(field_names=header)
         else:
-           header_obj = None
+            header_obj = None
 
         self.specs = mod.Specifications(spec_type,
                                         specs_strings=spec_strings,

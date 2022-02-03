@@ -44,11 +44,15 @@ import sys
 from typing import List, Dict, Tuple, Union, Any, Optional
 
 from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, ValidationError, validator, root_validator
 
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
 
+START = 0
+STOP = 1
+STEP = 2
 
 class SpecProcessor:
     """ Manages all types of specifications - inclusion or exclusion for rows & cols.
@@ -68,7 +72,7 @@ class SpecProcessor:
         self.has_exclusions = specs.has_exclusions()
         self.has_all_inclusions = specs.has_all_inclusions()
 
-        self.indexer = Indexer(self.specs.specs_cleaned,
+        self.indexer = Indexer(self.specs.specs_final,
                                self.specs.max_items)
         self.indexer.builder()
         self.index = self.indexer.index
@@ -102,7 +106,7 @@ class SpecProcessor:
         if self.has_all_inclusions:
             return True
 
-        if any([self._spec_item_check(spec, location) for spec in self.specs.specs_cleaned]):
+        if any([self._spec_item_check(spec, location) for spec in self.specs.specs_final]):
             return True
         return False
 
@@ -122,31 +126,52 @@ class SpecProcessor:
         Returns:
             - True or False
         """
-        assert len(spec) == 3
-        assert spec[0] is not None
-        assert spec[1] is not None
-        assert spec[2] is not None
-        assert spec[2] != 0
+        if location >= spec.start and location < spec.stop:
 
-        if location >= spec[0] and location < spec[1]:
-
-            if 0 < spec[2] < 1:
-                rec_num = location - spec[0]
+            if 0 < spec.step < 1:
+                rec_num = location - spec.start
                 r = random.random()
-                if abs(spec[2]) > r:
+                if abs(spec.step) > r:
                     return True
             else:
-                if (location - spec[0]) % spec[2] == 0:
+                if (location - spec.start) % spec.step == 0:
                     return True
 
         return False
 
 
-#@dataclass
-#class Spec
-#    start: int
-#    stop:  int
-#    step:  float
+class SpecRecord(BaseModel):
+    start:      int
+    stop:       int
+    step:       float
+
+    @validator('step')
+    def step_must_be_nonzero(cls, val) -> float:
+        if val == 0:
+            comm.abort('step must be non-zero')
+        return val
+
+    @validator('step')
+    def step_precision(cls, val) -> float:
+        if val < 0 or val >= 1:
+            if val != int(val):
+                comm.abort('steps less than zero or greater than 1 cannot have decimal precision')
+        return val
+
+    @root_validator()
+    def start_stop_relationship(cls, values: Dict) -> Dict:
+        start = values.get('start')
+        stop = values.get('stop')
+        step = values.get('step')
+        if step > 0:
+            if start > stop:
+                comm.abort(f'spec has start ({start}) after stop ({stop})')
+        if step < 0:
+            if start < stop:
+                comm.abort(f'negative spec has start ({start}) before stop ({stop})',
+                           'negative specs require the start (start:stop:step) to be AFTER the stop')
+        return values
+
 
 
 class Specifications:
@@ -163,12 +188,10 @@ class Specifications:
         self.header = header
         self.infile_item_count = infile_item_count
         self.max_items = max_items
-        self.specs_cleaned = []
-        self.reverse_order_with_neg_stop = False
 
         assert spec_type in ['incl_rec', 'excl_rec', 'incl_col', 'excl_col']
 
-        self.specs_cleaned = self.specs_cleaner()
+        self.specs_final: List[SpecRecord] = self.specs_cleaner()
 
 
     def specs_cleaner(self) -> List[Optional[List[Optional[int]]]]:
@@ -219,60 +242,48 @@ class Specifications:
         def transform_to_triples(spec: List[Optional[int]]) -> List[Optional[int]]:
             # Ensures that even a single col spec gets turned into a range: [val, val+1]
             if len(spec) == 1:
-                return [spec[0], spec[0]+1, 1]
+                return [spec[START], spec[START]+1, 1]
             elif len(spec) == 2:
-                return [spec[0], spec[1], 1]
+                return [spec[START], spec[STOP], 1]
             elif len(spec) == 3 and spec[2] is None:
-                return [spec[0], spec[1], 1]
+                return [spec[START], spec[STOP], 1]
             else:
                 return spec
 
         def transform_none_start(spec: List[Optional[int]]) -> List[Optional[int]]:
             # Transform none start to zero
-            if spec[2] >= 0:
-                if spec[0] is None:
-                    spec[0] = 0
+            if spec[STEP] >= 0:
+                if spec[START] is None:
+                    spec[START] = 0
             else:
-                if spec[0] is None:
+                if spec[START] is None:
                     if self.infile_item_count == -1:
                         raise NegativeStepWithoutItemCountError
                     else:
-                        spec[0] = self.infile_item_count
+                        spec[START] = self.infile_item_count
             return spec
 
         def transform_none_stop(spec: List[Optional[int]]) -> List[Optional[int]]:
             # if step is provided, stop is unbounded, set stop to count+1
-            if spec[1] in (None, ''):
-                if spec[2] >= 0:
+            if spec[STOP] in (None, ''):
+                if spec[STEP] >= 0:
                     if self.infile_item_count > -1:
-                        spec[1] = self.infile_item_count + 1
+                        spec[STOP] = self.infile_item_count + 1
                     else:
-                        spec[1] = self.max_items
+                        spec[STOP] = self.max_items
                 else:
-                    spec[1] = -1
+                    spec[STOP] = -1
             return spec
 
-        def validate_spec(spec: List[Optional[int]]) -> None:
+        def pre_validate_spec_structure(spec: List[Optional[int]]) -> None:
             if len(spec) == 0:
-                raise ValueError(f'spec is empty')
+                comm.abort(f'spec is empty')
             if len(spec) == 1:
-                raise ValueError(f'spec is only has a single value')
+                comm.abort(f'spec is only has a single value')
             if len(spec) > 3:
-                raise ValueError(f'spec has too many parts: {spec}')
-            if len(spec) == 2 and spec[0] and spec[1]:
-                if spec[0] >= spec[1]:   # type: ignore
-                    raise ValueError(f'spec is an invalid range: {spec}')
-            if int(spec[2]) > 0:
-                if int(spec[0]) > int(spec[1]):
-                    raise ValueError(f'spec has start ({spec[0]}) after end ({spec[1]})')
-            else:
-                if int(spec[1]) > int(spec[0]):
-                    raise ValueError(f'negative spec has end greater than start')
-            assert comm.isnumeric(spec[0])
-            assert comm.isnumeric(spec[1])
-            assert comm.isnumeric(spec[2]) and int(spec[2]) != 0
+                comm.abort(f'spec has too many parts: {spec}')
 
-        clean_specs = []
+        final_specs = []
 
         if len(self.specs_strings) == 1:
             if self.specs_strings[0].strip() == '':
@@ -285,25 +296,32 @@ class Specifications:
 
                 opt_part = transform_none(orig_opt_part)
 
-                if i in (0, 1):
+                if i in (START, STOP):
                     opt_part = transform_name(opt_part)
-
-                if i in (0, 1):
                     opt_part = transform_negative_number(opt_part)
 
-                if i in (0, 1):
+                if len(part) > 0 and not comm.isnumeric(opt_part):
+                    comm.abort(f'Invalid spec has item ({item}) with a non-numeric part: {opt_part}')
+
+                if i in (START, STOP):
                     new_parts.append(int(opt_part) if opt_part is not None else None)
-                elif opt_part is not None and '.' in opt_part:
-                    new_parts.append(float(opt_part) if opt_part is not None else None)
-                else:
-                    new_parts.append(int(opt_part) if opt_part is not None else None)
+
+                if i in (STEP):
+					if opt_part is not None and '.' in opt_part:
+						new_parts.append(float(opt_part) if opt_part is not None else None)
+					else:
+						new_parts.append(int(opt_part) if opt_part is not None else None)
 
             triples = transform_to_triples(new_parts)
             triples = transform_none_start(triples)
             triples = transform_none_stop(triples)
-            validate_spec(triples)
-            clean_specs.append(triples)
-        return clean_specs
+            pre_validate_spec_structure(triples)
+            try:
+                final_rec = SpecRecord(start=triples[0], stop=triples[1], step=triples[2])
+            except ValidationError as err:
+                comm.abort('Error: invalid specification',  f'{triples[0]}:{triples[1]}:{triples[2]}')
+            final_specs.append(final_rec)
+        return final_specs
 
 
     def has_everything(self) -> bool:
@@ -316,7 +334,7 @@ class Specifications:
 
 
     def has_exclusions(self) -> bool:
-        return self.spec_type in ('excl_col', 'excl_rec') and self.specs_cleaned != []
+        return self.spec_type in ('excl_col', 'excl_rec') and self.specs_final != []
 
 
 
@@ -327,7 +345,7 @@ class Indexer:
                  specs,
                  max_items) -> List[int]:
 
-        self.specs_cleaned = specs
+        self.specs = specs
         self.max_items = max_items
         self.index = []
         self.valid = False
@@ -346,29 +364,21 @@ class Indexer:
                 know what the last record is.
         """
         max_items = self.max_items
-        specs_cleaned = self.specs_cleaned
+        specs = self.specs # lets make this a local ref for speed
         expanded_spec = []
-        START = 0
-        STOP  = 1
-        STEP  = 2
         count = 0
 
-        for parts in specs_cleaned:
+        for rec in specs_cleaned:
 
-            assert len(parts) == 3
-            assert parts[START] is not None
-            assert parts[STOP] is not None
-            assert parts[STEP] is not None
+            start_part = rec.start
+            stop_part = rec.stop
+            step_part = rec.step
 
-            start_part = parts[START]
-            stop_part = parts[STOP]
-            step_part = parts[STEP]
-
-            if type(step_part) == type(5):  # consistent interval steps
+            if step_part == int(step_part):  # consistent interval steps
                 if stop_part == max_items:
                     print('********* TOOBIG-1!!!! ************')
                     return
-                for part in range(start_part, stop_part, step_part):
+                for part in range(start_part, stop_part, int(step_part)):
                     count += 1
                     if count > max_items:
                         print('********* TOOBIG-2!!!! ************')
