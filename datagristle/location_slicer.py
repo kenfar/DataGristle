@@ -280,18 +280,20 @@ class Specifications:
                 comm.abort(f'spec is empty')
             if len(spec) == 1:
                 comm.abort(f'spec is only has a single value')
-            if len(spec) > 3:
-                comm.abort(f'spec has too many parts: {spec}')
 
-        final_specs = []
 
         if len(self.specs_strings) == 1:
             if self.specs_strings[0].strip() == '':
                 self.specs_strings[0] = ':'
 
+        final_specs = []
         for item in self.specs_strings:
             new_parts = []
+            if item.count(':') > 2:
+                comm.abort(f'spec has too many parts: {item}')
+
             for i, part in enumerate(item.split(':')):
+
                 orig_opt_part: Optional[str] = part.strip()
 
                 opt_part = transform_none(orig_opt_part)
@@ -306,11 +308,11 @@ class Specifications:
                 if i in (START, STOP):
                     new_parts.append(int(opt_part) if opt_part is not None else None)
 
-                if i in (STEP):
-					if opt_part is not None and '.' in opt_part:
-						new_parts.append(float(opt_part) if opt_part is not None else None)
-					else:
-						new_parts.append(int(opt_part) if opt_part is not None else None)
+                if i in (STEP,):
+                    if opt_part is not None and '.' in opt_part:
+                        new_parts.append(float(opt_part) if opt_part is not None else None)
+                    else:
+                        new_parts.append(int(opt_part) if opt_part is not None else None)
 
             triples = transform_to_triples(new_parts)
             triples = transform_none_start(triples)
@@ -365,10 +367,10 @@ class Indexer:
         """
         max_items = self.max_items
         specs = self.specs # lets make this a local ref for speed
-        expanded_spec = []
+        index = []
         count = 0
 
-        for rec in specs_cleaned:
+        for rec in specs:
 
             start_part = rec.start
             stop_part = rec.stop
@@ -376,14 +378,12 @@ class Indexer:
 
             if step_part == int(step_part):  # consistent interval steps
                 if stop_part == max_items:
-                    print('********* TOOBIG-1!!!! ************')
-                    return
+                    return  # quit & leave valid=False
                 for part in range(start_part, stop_part, int(step_part)):
                     count += 1
                     if count > max_items:
-                        print('********* TOOBIG-2!!!! ************')
-                        return
-                    expanded_spec.append(part)
+                        return  # quit & leave valid=False
+                    index.append(part)
             elif step_part < 1.0:           # random interval steps
                 multiplier = 1 if step_part > 0 else -1
                 for part in range(start_part, stop_part, 1*multiplier):
@@ -391,16 +391,15 @@ class Indexer:
                     if abs(step_part) > result:
                         count += 1
                         if count > max_items:
-                            print('********* TOOBIG-3!!!! ************')
-                            return
-                        expanded_spec.append(part)
+                            return  # quit & leave valid=False
+                        index.append(part)
             else:
                  comm.abort('Error! Invalid specification step',
                             f'step: {step_part} is invalid')
         else:
             self.valid = True
 
-        self.index = expanded_spec
+        self.index = index
 
 
     def has_repeats(self) -> bool:

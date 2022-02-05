@@ -144,7 +144,7 @@ NAME = basename(__file__)
 LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 comm.validate_python_version()
-MAX_MEM_REC_CNT = 5000000
+MAX_MEM_REC_CNT = 5_000_000
 
 
 
@@ -199,25 +199,23 @@ class SliceRunner:
 
     def setup_stage1(self):
         self._setup_files()
-        #self._setup_specs()
         self._setup_counts()
 
 
     def setup_stage2(self):
-        # Gets run twice:
-        #    1. initially, right after setup_stage1
-        #    2. later, in memory process, if record counts are needed
         self._setup_specs()
         self._setup_slicers()
         self._setup_index_optimization()
 
-        if self.nconfig.verbosity == 'debug':
-            print(f'is_optimized_for_all_recs: {self.is_optimized_for_all_recs()}')
-            print(f'is_optimized_with_rec_index: {self.is_optimized_with_rec_index}')
-            print(f'is_optimized_for_all_cols: {self.is_optimized_for_all_cols()}')
-            print(f'is_optimized_with_col_index: {self.is_optimized_with_col_index}')
-            print(f'rec_index_optimization_stop_rec: {self.rec_index_optimization_stop_rec}')
+        self._pp(f'is_optimized_for_all_recs: {self.is_optimized_for_all_recs()}')
+        self._pp(f'is_optimized_with_rec_index: {self.is_optimized_with_rec_index}')
+        self._pp(f'is_optimized_for_all_cols: {self.is_optimized_for_all_cols()}')
+        self._pp(f'is_optimized_with_col_index: {self.is_optimized_with_col_index}')
+        self._pp(f'rec_index_optimization_stop_rec: {self.rec_index_optimization_stop_rec}')
 
+    def _pp(self, val):
+        if self.nconfig.verbosity == 'debug':
+            pp(val)
 
 
     def shutdown(self):
@@ -242,7 +240,8 @@ class SliceRunner:
             self.rec_cnt = -1
 
         self.col_cnt = len(self.nconfig.header.field_names)-1
-        #pp(f'--------> setup_counts  duration: {time.time() - start_time:.2f}')
+        if self.nconfig.verbosity == 'debug':
+            pp(f'--------> setup_counts  duration: {time.time() - start_time:.2f}')
 
     def _is_rec_count_needed(self):
         """ We want to avoid getting a rec-count if we can avoid it, since it adds a lot of time
@@ -313,35 +312,22 @@ class SliceRunner:
 
 
     def _setup_slicers(self):
-
-        start_time = time.time()
         self.incl_rec_slicer = slicer.SpecProcessor(self.rec_specs)
         self.excl_rec_slicer = slicer.SpecProcessor(self.exrec_specs)
         self.incl_col_slicer = slicer.SpecProcessor(self.col_specs)
         self.excl_col_slicer = slicer.SpecProcessor(self.excol_specs)
-        #pp(f'--------> setup_slicers  duration: {time.time() - start_time:.2f}')
 
 
     def is_optimized_for_all_recs(self):
-        if (self.incl_rec_slicer.has_all_inclusions is True
-                and self.excl_rec_slicer.has_exclusions is False):
-            return True
-        else:
-            return False
+        return bool(self.incl_rec_slicer.has_all_inclusions is True
+                    and self.excl_rec_slicer.has_exclusions is False)
 
     def is_optimized_for_all_cols(self):
-        if (self.incl_col_slicer.has_all_inclusions is True
-                and self.excl_col_slicer.has_exclusions is False):
-            return True
-        else:
-            return False
+        return bool(self.incl_col_slicer.has_all_inclusions is True
+                    and self.excl_col_slicer.has_exclusions is False)
 
 
     def _setup_index_optimization(self):
-
-        #fixme: redundant magic numbers
-        # this validity check should probably be a method in the module:
-        # maybe should also ensure that expanded specs are empty in this case?
 
         start_time = time.time()
 
@@ -349,7 +335,7 @@ class SliceRunner:
         if (self.incl_rec_slicer.indexer.valid
         and self.excl_rec_slicer.indexer.valid
         and self.is_optimized_for_all_recs() is False
-        and len(self.excl_rec_slicer.index) <= 10000):
+        and len(self.excl_rec_slicer.index) <= 10_000):
             for spec_item in self.incl_rec_slicer.index:
                 if spec_item in self.excl_rec_slicer.index:
                     continue
@@ -378,19 +364,15 @@ class SliceRunner:
                 self.is_optimized_with_col_index = True
 
 
-        #print(f'{self.incl_rec_slicer.has_all_inclusions=}')
-        #print(f'{self.incl_rec_slicer.expanded_specs_valid=}')
-        #print(f'{len(self.incl_rec_slicer.expanded_specs)=}')
-        #print()
-        #print(f'{self.excl_rec_slicer.has_all_inclusions=}')
-        #print(f'{self.excl_rec_slicer.expanded_specs_valid=}')
-        #print(f'{len(self.excl_rec_slicer.expanded_specs)=}')
-        #print()
-        print(f'{self.incl_col_slicer.indexer.valid=}')
-        print(f'{self.excl_col_slicer.indexer.valid=}')
-
-        #print(f'--------> setup_index_optimization  duration: {time.time() - start_time:.2f}')
-        #print('======================================================')
+        self._pp(f'{self.incl_rec_slicer.has_all_inclusions=}')
+        self._pp(f'{self.incl_rec_slicer.indexer.valid=}')
+        self._pp(f'{len(self.incl_rec_slicer.index)=}')
+        self._pp(f'{self.excl_rec_slicer.has_all_inclusions=}')
+        self._pp(f'{self.excl_rec_slicer.indexer.valid=}')
+        self._pp(f'{len(self.excl_rec_slicer.index)=}')
+        self._pp(f'{self.incl_col_slicer.indexer.valid=}')
+        self._pp(f'{self.excl_col_slicer.indexer.valid=}')
+        self._pp(f'--------> setup_index_optimization  duration: {time.time() - start_time:.2f}')
 
 
     def process_data(self):
@@ -399,7 +381,7 @@ class SliceRunner:
             self.process_recs_in_memory()
         else:
             self.process_recs_from_file()
-        #pp(f'--------> process_data duration: {time.time() - start_time:.2f}')
+        self._pp(f'--------> process_data duration: {time.time() - start_time:.2f}')
 
 
     def must_process_in_memory(self):
@@ -435,7 +417,7 @@ class SliceRunner:
                 - merged_rec_spec: simple list of which recs to slice
                 - merged_col_spec: simple list of which columns to slice
         """
-        pp('----------------- process_recs_from_file ----------------------')
+        self._pp(f'process_recs_from_file')
         index_rec_start= 0
 
         for rec_number, rec in enumerate(self.input_handler):
@@ -463,7 +445,6 @@ class SliceRunner:
             output_rec = []
 
             if self.is_optimized_for_all_cols():
-                #todo: Consider enhancing file_io.py to allow us to handle pre-csv parsed rec
                 output_rec = rec
             elif self.is_optimized_with_col_index:
                 output_rec = self.get_cols_from_index(rec,
@@ -480,22 +461,18 @@ class SliceRunner:
 
 
     def process_recs_in_memory(self) -> None:
-
         """ Reads the entire file into memory, then processes one record
             at a time, compares against the specification, and then writes
             out qualifying records and columns.
         """
+        self._pp(f'process_recs_in_memory')
+
         if self.incl_rec_slicer.indexer.valid is False:
             comm.abort('Unable to process in memory', 'incl_rec.indexe.invalid')
         if self.excl_rec_slicer.indexer.valid is False:
             comm.abort('Unable to process in memory', 'excl_rec.indexer.invalid')
 
-        if (self.incl_col_slicer.indexer.valid is False
-                or self.excl_col_slicer.indexer.valid is False):
-            print('!!! warning: bad spec index!!!')
-
         self.verify_data_size()
-        pp('--------------------- process_recs_in_memory -----------------------------')
         all_rows = []
 
         start_time = time.time()
@@ -503,30 +480,26 @@ class SliceRunner:
             if self.rec_cnt > -1 and rec_number > self.rec_index_optimization_stop_rec:
                 continue
             all_rows.append(rec)
-            if rec_number > 5_000_000:
-                break
-                #fixme: should raise exception here
+            if rec_number > MAX_MEM_REC_CNT:
+                comm.abort('ERROR:  too many rows to fit into memory',
+                           'Change options to either process_by_file or process in steps')
 
         # if we originally couldn't get rec counts or col counts because of stdin,
-        # retry now that we have it all loaded into a list:
+        # update now that we have it all loaded into a list:
         if self.col_cnt == -1:
             self.col_cnt = len(all_rows[0]) - 1
-
 
         assert self.rec_index
         for rec_num in self.rec_index:
             output_rec = []
             try:
                 if self.is_optimized_for_all_cols():
-                    #todo: Consider enhancing file_io.py to handle pre-csv parsed rec
                     output_rec = all_rows[rec_num]
                 elif self.is_optimized_with_col_index:
                     output_rec = self.get_cols_from_index(all_rows[rec_num],
                                                           self.col_index)
                 else:
-                    # This option should not ever get run for memory-processing,
-                    # but leaving it in for now - in case we find limits with our
-                    # ability to rerun setup_post_count()
+                    # The slower fallback eval solution:
                     output_rec = self.get_cols_from_eval(all_rows[rec_num],
                                                          self.col_cnt,
                                                          self.incl_col_slicer,
@@ -549,7 +522,6 @@ class SliceRunner:
                        'But in-mem is required due to out of order recs'
                        ' or negative offsets.  Consider removing negative offsets '
                        ' or providing the --anyorder option')
-
 
 
 
