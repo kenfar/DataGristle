@@ -7,8 +7,8 @@ verbosity: debug
 
 # The column spec only features inclusions - and anything outside of these 
 # inclusions is an implied exclusion.
-columns: ':5, -10, 0:'              # includes the first four, the first, and the first again
-records: '9, 0, 0, 8, 1, 3:8'       # includes some first, last, first, last, first then a range of middle rows
+columns: ':5, -10, -3, 0:'       # includes the first four, skips -10, includes the 4th, and all but the first again
+records: '9, 0, 0, 8, 1, 3:8'    # includes some first, last, first, last, first then a range of middle rows
 
 quoting: quote_none
 delimiter: '|'

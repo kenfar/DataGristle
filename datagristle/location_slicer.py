@@ -34,7 +34,6 @@
 """
 
 import copy
-from dataclasses import dataclass
 import functools
 import more_itertools
 from pprint import pprint as pp
@@ -53,6 +52,68 @@ import datagristle.csvhelper as csvhelper
 START = 0
 STOP = 1
 STEP = 2
+
+
+class SpecRecord(BaseModel):
+    start:      int
+    stop:       int
+    step:       float
+    spec_type:  str
+
+    @validator('step')
+    def step_must_be_nonzero(cls, val) -> float:
+        if val == 0:
+            comm.abort('step must be non-zero')
+        return val
+
+    @root_validator()
+    def start_stop_relationship(cls, values: Dict) -> Dict:
+        start = values['start']
+        stop = values['stop']
+        step = values['step']
+        if step > 0:
+            if start > stop:
+                comm.abort(f'spec has start ({start}) after stop ({stop})')
+        if step < 0:
+            if start < stop:
+                comm.abort(f'negative spec has start ({start}) before stop ({stop})',
+                           'negative specs require the start (start:stop:step) to be AFTER the stop')
+        return values
+
+    @root_validator()
+    def limit_offsets_to_inclusions(cls, values: Dict) -> Dict:
+        spec_type = values.get('spec_type')
+        step = values.get('step')
+        if spec_type not in ('incl_rec', 'incl_col'):
+            if step != 1.0:
+                comm.abort(f'Error: exclusion spec is not allowed to have steps: {step}')
+        return values
+
+    def is_full_step(self):
+        if self.step == int(self.step):
+            return True
+        return False
+
+    def is_negative_step(self):
+        if self.step < 0:
+            return True
+        return False
+
+    def is_random_step(self):
+        if -1 < self.step < 1:
+            return True
+        return False
+
+    def is_sysmaxsize_stop(self):
+        if self.stop == sys.maxsize:
+            return True
+        return False
+
+
+
+
+
+
 
 class SpecProcessor:
     """ Manages all types of specifications - inclusion or exclusion for rows & cols.
@@ -76,6 +137,12 @@ class SpecProcessor:
                                self.specs.max_items)
         self.indexer.builder()
         self.index = self.indexer.index
+
+        # out of order: will include any reverse-order specs:
+        self.includes_out_of_order = self.indexer.includes_out_of_order
+        # repeats won't catch out of order repeats
+        self.includes_repeats = self.indexer.includes_repeats
+        self.includes_reverse = self.indexer.includes_reverse
 
 
 
@@ -112,7 +179,7 @@ class SpecProcessor:
 
 
     def _spec_item_check(self,
-                         spec: List[Optional[int]],
+                         spec: type[SpecRecord],
                          location: int) -> bool:
         """ evaluates a single item against a location
         Args:
@@ -140,39 +207,6 @@ class SpecProcessor:
         return False
 
 
-class SpecRecord(BaseModel):
-    start:      int
-    stop:       int
-    step:       float
-
-    @validator('step')
-    def step_must_be_nonzero(cls, val) -> float:
-        if val == 0:
-            comm.abort('step must be non-zero')
-        return val
-
-    @validator('step')
-    def step_precision(cls, val) -> float:
-        if val < 0 or val >= 1:
-            if val != int(val):
-                comm.abort('steps less than zero or greater than 1 cannot have decimal precision')
-        return val
-
-    @root_validator()
-    def start_stop_relationship(cls, values: Dict) -> Dict:
-        start = values.get('start')
-        stop = values.get('stop')
-        step = values.get('step')
-        if step > 0:
-            if start > stop:
-                comm.abort(f'spec has start ({start}) after stop ({stop})')
-        if step < 0:
-            if start < stop:
-                comm.abort(f'negative spec has start ({start}) before stop ({stop})',
-                           'negative specs require the start (start:stop:step) to be AFTER the stop')
-        return values
-
-
 
 class Specifications:
 
@@ -180,8 +214,9 @@ class Specifications:
                  spec_type: str,
                  specs_strings: List[str],
                  header: Optional[csvhelper.Header] = None,
-                 infile_item_count: Optional[int] = -1,   #### actually max value!
+                 infile_item_count: int = -1,   #### actually max value!
                  max_items: int=sys.maxsize):
+
 
         self.spec_type = spec_type
         self.specs_strings = specs_strings
@@ -189,12 +224,14 @@ class Specifications:
         self.infile_item_count = infile_item_count
         self.max_items = max_items
 
+        pp('')
+        pp(f'{infile_item_count=}')
         assert spec_type in ['incl_rec', 'excl_rec', 'incl_col', 'excl_col']
 
         self.specs_final: List[SpecRecord] = self.specs_cleaner()
 
 
-    def specs_cleaner(self) -> List[Optional[List[Optional[int]]]]:
+    def specs_cleaner(self) -> List[SpecRecord]:
         """ Returns a transformed version of the specs
 
         Args:
@@ -208,78 +245,24 @@ class Specifications:
             for specs that are empty   (ex: '') returns: []
             for specs that are default (ex: ':') returns: [[0, None]]
             NOTE: the end of the rang eis inclusive, not exclusive
+
+        Example inputs:
+            - [':']
+            - ['::']
+            - ['3']
+            - ['-3']
+            - ['3', '1']
+            - ['::']
+            - ['::-1']
+            - ['3::-1']
+            - [':9:-1']
+            - ['2:9:-1']
+            - ['2:9:2']
+            - ['2:9:0.5']
+            - ['account:customer']
+        Weird Example inputs:
+            - [':', '1']
         """
-        def transform_none(val: Optional[str]) -> Optional[str]:
-            if val is None:
-                return None
-            elif val.strip() == '':
-                return None
-            else:
-                return val
-
-        def transform_name(val: Optional[str]) -> Optional[str]:
-            if val is None:
-                return None
-            if comm.isnumeric(val):
-                return val
-            if self.header is None:
-                comm.abort(f'Error: non-numeric specs without a header to translate')
-            try:
-                position = str(self.header.get_field_position(val))
-            except KeyError:
-                comm.abort(f'Error: Invalid string in spec: {part}',
-                           f'Not in header list: {self.header.field_names}')
-            return position
-
-        def transform_negative_number(val: Optional[str]) -> Optional[str]:
-            if val is not None and int(val) < 0:
-                if self.infile_item_count == -1:
-                    raise NegativeOffsetWithoutItemCountError
-                return str(self.infile_item_count + int(val) + 1)
-            else:
-                return val
-
-        def transform_to_triples(spec: List[Optional[int]]) -> List[Optional[int]]:
-            # Ensures that even a single col spec gets turned into a range: [val, val+1]
-            if len(spec) == 1:
-                return [spec[START], spec[START]+1, 1]
-            elif len(spec) == 2:
-                return [spec[START], spec[STOP], 1]
-            elif len(spec) == 3 and spec[2] is None:
-                return [spec[START], spec[STOP], 1]
-            else:
-                return spec
-
-        def transform_none_start(spec: List[Optional[int]]) -> List[Optional[int]]:
-            # Transform none start to zero
-            if spec[STEP] >= 0:
-                if spec[START] is None:
-                    spec[START] = 0
-            else:
-                if spec[START] is None:
-                    if self.infile_item_count == -1:
-                        raise NegativeStepWithoutItemCountError
-                    else:
-                        spec[START] = self.infile_item_count
-            return spec
-
-        def transform_none_stop(spec: List[Optional[int]]) -> List[Optional[int]]:
-            # if step is provided, stop is unbounded, set stop to count+1
-            if spec[STOP] in (None, ''):
-                if spec[STEP] >= 0:
-                    if self.infile_item_count > -1:
-                        spec[STOP] = self.infile_item_count + 1
-                    else:
-                        spec[STOP] = self.max_items
-                else:
-                    spec[STOP] = -1
-            return spec
-
-        def pre_validate_spec_structure(spec: List[Optional[int]]) -> None:
-            if len(spec) == 0:
-                comm.abort(f'spec is empty')
-            if len(spec) == 1:
-                comm.abort(f'spec is only has a single value')
 
 
         if len(self.specs_strings) == 1:
@@ -288,42 +271,246 @@ class Specifications:
 
         final_specs = []
         for item in self.specs_strings:
-            new_parts = []
-            if item.count(':') > 2:
-                comm.abort(f'spec has too many parts: {item}')
 
-            for i, part in enumerate(item.split(':')):
-
-                orig_opt_part: Optional[str] = part.strip()
-
-                opt_part = transform_none(orig_opt_part)
-
-                if i in (START, STOP):
-                    opt_part = transform_name(opt_part)
-                    opt_part = transform_negative_number(opt_part)
-
-                if len(part) > 0 and not comm.isnumeric(opt_part):
-                    comm.abort(f'Invalid spec has item ({item}) with a non-numeric part: {opt_part}')
-
-                if i in (START, STOP):
-                    new_parts.append(int(opt_part) if opt_part is not None else None)
-
-                if i in (STEP,):
-                    if opt_part is not None and '.' in opt_part:
-                        new_parts.append(float(opt_part) if opt_part is not None else None)
-                    else:
-                        new_parts.append(int(opt_part) if opt_part is not None else None)
-
-            triples = transform_to_triples(new_parts)
-            triples = transform_none_start(triples)
-            triples = transform_none_stop(triples)
-            pre_validate_spec_structure(triples)
             try:
-                final_rec = SpecRecord(start=triples[0], stop=triples[1], step=triples[2])
-            except ValidationError as err:
-                comm.abort('Error: invalid specification',  f'{triples[0]}:{triples[1]}:{triples[2]}')
-            final_specs.append(final_rec)
+                pp('')
+                start, stop, step, is_range = self.phase_one__item_parsing(item)
+                pp(f'phase one results: {start}, {stop}, {step}, {is_range}')
+
+                int_start, int_stop, float_step = self.phase_two__translate_item_parts(start, stop, step, is_range)
+                pp(f'phase two results: {int_start}, {int_stop}, {float_step}, {is_range}')
+
+                int_start, int_stop, float_step = self.phase_three__resolve_dependencies(int_start, int_stop, float_step, is_range)
+                pp(f'phase three results: {int_start}, {int_stop}, {float_step}, {is_range}')
+                try:
+                    final_rec = SpecRecord(start=int_start, stop=int_stop, step=float_step, spec_type=self.spec_type)
+                except ValidationError as err:
+                    comm.abort('Error: invalid specification',  f'{self.spec_type}: {start}:{stop}:{step}')
+                final_specs.append(final_rec)
+            except NegativeOffsetWithoutItemCountError:
+                pass
+            except OutOfRangeError:
+                pass
         return final_specs
+
+
+    def phase_one__item_parsing(self, item: str) -> Tuple[Optional[str], Optional[str], str, bool]:
+        """ Split a specification item string into separate parts
+        """
+        parts = item.split(':')
+        if len(parts) > 3:
+            comm.abort(f'Error: spec item has too many parts: {item}')
+
+        is_range = True if len(parts) > 1 else False
+
+        start = parts[0]
+        stop = parts[1] if len(parts) > 1 else None
+        step = parts[2] if len(parts) > 2 else '1'
+
+        return start, stop, step, is_range
+
+
+    def phase_two__translate_item_parts(self,
+                                        orig_start: Optional[str],
+                                        orig_stop: Optional[str],
+                                        orig_step: str,
+                                        is_range: bool) -> Tuple[Optional[int], Optional[int], float]:
+        """ Translate the specification item parts into numeric forms
+        """
+
+        # translate the start:
+        start = Specifications.transform_empty_string(orig_start)
+        pp(f'after-empty={start=}')
+        start = self.transform_name(start)
+        pp(f'after-name={start=}')
+        pp(f'{is_range=}')
+        pp(f'{self.infile_item_count=}')
+        start = self.transform_negative_number(start, is_range)
+        #try:
+        #    start = self.transform_negative_number(start, is_range)
+        #    #start = self.validate_positive_number(start, is_range)
+        #except OutOfRangeError:
+        #    return
+        #    comm.abort(f'Invalid spec has item outside valid range',
+        #               f'Spec is: {orig_start}:{orig_stop}:{orig_step}, and valid range is 0 to {self.infile_item_count}')
+        pp(f'after-negative={start=}')
+        if start is not None and not comm.isnumeric(start):
+            comm.abort(f'Invalid spec has item with a non-numeric part that could not be translated: {start}')
+        int_start = int(start) if start is not None else None
+        pp(f'{int_start=}')
+
+        # translate the stop:
+        stop = self.transform_empty_string(orig_stop)
+        stop = self.transform_name(stop)
+        stop = self.transform_negative_number(stop, is_range)
+        stop = self.validate_positive_number(stop, is_range)
+        if stop is not None and not comm.isnumeric(stop):
+            comm.abort(f'Invalid spec has item with a non-numeric part that could not be translated: {stop}')
+        int_stop = int(stop) if stop is not None else None
+
+        # translate the step:
+        step = self.transform_empty_string(orig_step)
+        if step is not None and not comm.isnumeric(step):
+            comm.abort(f'Invalid spec has item with a non-numeric part that could not be translated: {step}')
+        float_step = float(step) if step is not None else 1.0
+        #if float_step < 0 and self.infile_item_count < 0:
+        #    comm.abort('Error: negative step but unable to count recs')
+
+        return int_start, int_stop, float_step
+
+
+    def phase_three__resolve_dependencies(self,
+                                          start: Optional[int],
+                                          stop: Optional[int],
+                                          step: float,
+                                          is_range: bool):
+        """Resolve any transformations that depend on multiple parts
+        """
+        int_start = self.transform_none_start(start, step)
+        int_stop = self.transform_none_stop(int_start, stop, step, is_range)
+        return int_start, int_stop, step
+
+
+    @staticmethod
+    def transform_empty_string(val: Optional[str]) -> Optional[str]:
+        if val is None:
+            return None
+        elif val.strip() == '':
+            return None
+        else:
+            return val
+
+
+    def transform_name(self,
+                       val: Optional[str]) -> Optional[str]:
+        if val is None:
+            return None
+        if comm.isnumeric(val):
+            return val
+        if self.header is None:
+            comm.abort(f'Error: non-numeric specs without a header to translate: {val}')
+        try:
+            position = str(self.header.get_field_position(val.strip()))
+        except KeyError:
+            comm.abort(f'Error: Invalid string in spec: {val}',
+                        f'Not in header list: {self.header.field_names}')
+        return position
+
+
+    def transform_negative_number(self,
+                                  val: Optional[str],
+                                  is_range: bool) -> Optional[str]:
+
+        if val is None or int(val) >= 0:
+            return val
+
+        int_val = int(val)
+
+        if self.infile_item_count == -1:
+            raise NegativeOffsetWithoutItemCountError
+
+        adjusted_val = self.infile_item_count + int_val + 1
+        if adjusted_val < 0:
+            if is_range:
+                result = max(adjusted_val, 0)
+            else:
+                raise OutOfRangeError
+        else:
+            result = adjusted_val
+        return str(result)
+
+
+    def validate_positive_number(self,
+                          val: Optional[str],
+                          is_range: bool) -> Optional[str]:
+
+        pp('|------------------- validate_positive_number --------------------|')
+        pp(f'{val=}')
+        if val is None:
+            return val
+        elif int(val) <= 0:
+            return val
+        elif self.infile_item_count == -1:
+            return val
+
+        if int(val)  > self.infile_item_count:
+            if is_range:
+                pp('#######################################')
+                pp('#######################################')
+                pp('#######################################')
+                pp('#######################################')
+                pp('#######################################')
+                pp('#######################################')
+                return val
+            else:
+                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                pp(self.infile_item_count)
+                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                raise OutOfRangeError
+        else:
+            return val
+
+
+    def transform_none_start(self,
+                             start: Union[int, None],
+                             step: float) -> int:
+        """
+        Example Sources:
+            - -r 1
+            - -r 3:
+            - -r 3:4
+            - -r :3
+            - -r '::'
+            - -r '::2'
+        """
+        assert start is None or comm.isnumeric(start)
+        if comm.isnumeric(start):
+            assert(isinstance(start, int))
+            return start
+
+        # Start=None - which is *always* a range (unlike stop)
+        if step >= 0:
+            int_start = 0
+        else:
+            if self.infile_item_count == -1:
+                raise NegativeStepWithoutItemCountError
+            else:
+                int_start = self.infile_item_count
+
+        return int_start
+
+
+    def transform_none_stop(self,
+                            start: int,
+                            stop: Optional[int],
+                            step: float,
+                            is_range: bool) -> int:
+
+        assert stop is None or comm.isnumeric(stop)
+        if comm.isnumeric(stop):
+            assert(isinstance(stop, int))
+            return stop
+
+        if is_range:
+            if step >= 0:
+                if self.infile_item_count > -1:
+                    int_stop = self.infile_item_count + 1
+                else:
+                    int_stop = self.max_items
+            else:
+                int_stop = -1
+        else:
+            if step >= 0:
+                int_stop = start + 1
+            else:
+                int_stop = start -1
+
+        return int_stop
+
 
 
     def has_everything(self) -> bool:
@@ -332,7 +519,7 @@ class Specifications:
 
 
     def has_all_inclusions(self) -> bool:
-        return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings == [':']
+        return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings in ([':'], ['::1'], ['::-1'])
 
 
     def has_exclusions(self) -> bool:
@@ -343,82 +530,192 @@ class Specifications:
 
 class Indexer:
 
-    def __init__(self,
-                 specs,
-                 max_items) -> List[int]:
+   def __init__(self,
+                specs,
+                max_items):
 
-        self.specs = specs
-        self.max_items = max_items
-        self.index = []
-        self.valid = False
+       self.specs = specs
+       self.max_items = max_items
+       self.index = []
+       self.valid = True
+
+       self.nop = False
+       self.includes_reverse = False
+       self.includes_repeats = False
+       self.includes_out_of_order = False
+       self.index_count = 0
+       self.prior_max = -1
 
 
-    def builder(self):
-        """ Explodes the specification ranges into individual positions.
 
-        This function returns a list of all positions that are included within a
-        specification - whether they're directly references, or they fall within
-        a range.
+   def builder(self):
+       """ Explodes the specification ranges into individual positions.
 
-        Args:
-            infile_item_count: the number of rows in the file or cols in the row.
-                This value may be -1 if the calling pgm doesn't think we need to
-                know what the last record is.
-        """
+       This function returns a list of all positions that are included within a
+       specification - whether they're directly references, or they fall within
+       a range.
+
+       Args:
+           infile_item_count: the number of rows in the file or cols in the row.
+               This value may be -1 if the calling pgm doesn't think we need to
+               know what the last record is.
+       """
+       specs = self.specs # lets make this a local ref for speed
+       index = []
+
+       for rec in specs:
+
+           print('\n********************************************************')
+           pp(f'{self.specs}')
+           pp(f'{self.max_items=}')
+           pp(f'{rec=}')
+
+           if rec.is_full_step():
+               range_index = self._expand_one_fullstep_range(rec)
+               index += range_index
+           elif rec.is_random_step():
+               range_index = self._expand_one_random_range(rec)
+               index += range_index
+           else:
+                comm.abort('Error! Invalid specification step',
+                           f'step: {step_part} is invalid')
+
+       self.index = index
+       if self.nop:
+           self.valid = False
+           self.index = []
+
+       #pp(f'{self.index=}')
+       pp(f'{self.includes_out_of_order=}')
+       pp(f'{self.includes_repeats=}')
+       pp(f'{self.includes_reverse=}')
+       pp(f'{self.valid=}')
+       print('\n********************************************************')
+
+
+   def _expand_one_fullstep_range(self,
+                                  rec) -> List[int]:
+
+        nop = self.nop
+        reverse = self.includes_reverse
+        repeats = self.includes_repeats
+        out_of_order = self.includes_out_of_order
         max_items = self.max_items
-        specs = self.specs # lets make this a local ref for speed
+        count = self.index_count
+        prior_max = self.prior_max
         index = []
-        count = 0
 
-        for rec in specs:
+        if rec.step < 0:
+            reverse = True
+        if rec.is_sysmaxsize_stop():
+            nop = True
+        if nop and (out_of_order or repeats or reverse):
+            pass
+        else:
+            for part in range(rec.start, rec.stop, int(rec.step)):
+                assert part > -1
 
-            start_part = rec.start
-            stop_part = rec.stop
-            step_part = rec.step
+                if abs(part) < prior_max:
+                    out_of_order = True
+                elif abs(part) == prior_max:
+                    repeats = True
+                prior_max = abs(part)
 
-            if step_part == int(step_part):  # consistent interval steps
-                if stop_part == max_items:
-                    return  # quit & leave valid=False
-                for part in range(start_part, stop_part, int(step_part)):
+                count += 1
+                if count > max_items:
+                    nop = True
+                if not nop:
+                    index.append(part)
+
+        self.nop = nop
+        self.includes_reverse = reverse
+        self.includes_repeats = repeats
+        self.includes_out_of_order = out_of_order
+        self.index_count = count
+        self.prior_max = prior_max
+
+        return index
+
+
+   def _expand_one_random_range(self,
+                                  rec) -> List[int]:
+
+        nop = self.nop
+        reverse = self.includes_reverse
+        repeats = self.includes_repeats
+        out_of_order = self.includes_out_of_order
+        max_items = self.max_items
+        count = self.index_count
+        prior_max = self.prior_max
+        index = []
+
+        if rec.step < 0:
+            reverse = True
+        if rec.is_sysmaxsize_stop():
+            nop = True
+        if nop and (out_of_order or repeats or reverse):
+            pass
+        else:
+            multiplier = 1 if rec.step > 0 else -1
+            for part in range(rec.start, rec.stop, 1*multiplier):
+                assert part > -1
+
+                result = random.random()
+                if abs(rec.step) > result:
+                    if abs(part) < prior_max:
+                        out_of_order = True
+                    elif abs(part) == prior_max:
+                        repeats = True
+                    prior_max = abs(part)
+
                     count += 1
                     if count > max_items:
-                        return  # quit & leave valid=False
-                    index.append(part)
-            elif step_part < 1.0:           # random interval steps
-                multiplier = 1 if step_part > 0 else -1
-                for part in range(start_part, stop_part, 1*multiplier):
-                    result =  random.random()
-                    if abs(step_part) > result:
-                        count += 1
-                        if count > max_items:
-                            return  # quit & leave valid=False
+                        nop = True
+                    if not nop:
                         index.append(part)
-            else:
-                 comm.abort('Error! Invalid specification step',
-                            f'step: {step_part} is invalid')
-        else:
-            self.valid = True
 
-        self.index = index
+        self.nop = nop
+        self.includes_reverse = reverse
+        self.includes_repeats = repeats
+        self.includes_out_of_order = out_of_order
+        self.index_count = count
+        self.prior_max = prior_max
 
-
-    def has_repeats(self) -> bool:
-        # Lets assume that there may be repeats if the index build failed:
-        if not self.valid:
-            return False
-
-        # Only works if specs_expanded has been populated!
-        if len(set(self.index)) != len(self.index):
-            return True
-
-        return False
+        return index
 
 
 
 
-def is_out_of_order(index) -> bool:
+
+
+   def has_repeats(self) -> bool:
+       # Lets assume that there may be repeats if the index build failed:
+       if not self.valid:
+           return False
+
+       # Only works if specs_expanded has been populated!
+       if len(set(self.index)) != len(self.index):
+           return True
+
+       return False
+
+
+
+def includes_all_or_none(specs) -> bool:
+    """
+    """
+    if len(specs) == 0:
+        return True
+    elif len(specs) == 1 and specs[0].strip() in ('', ':', '::-1', '::1'):
+        return True
+    return False
+
+
+
+def is_index_out_of_order(index) -> bool:
     """
     Considers either mixed-order or reverse order True
+    Note: if the index is empty - because its build failed (too big?) this will return True!
     """
     last_val = None
     for val in index:
@@ -469,28 +766,6 @@ def spec_has_unbounded_end(spec: List[str]) -> bool:
 
 
 
-#def get_size(obj, seen=None):
-#    """Recursively finds size of objects"""
-#    size = sys.getsizeof(obj)
-#    if seen is None:
-#        seen = set()
-#    obj_id = id(obj)
-#    if obj_id in seen:
-#        return 0
-#    # Important mark as seen *before* entering recursion to gracefully handle
-#    # self-referential objects
-#    seen.add(obj_id)
-#    if isinstance(obj, dict):
-#        size += sum([get_size(v, seen) for v in obj.values()])
-#        size += sum([get_size(k, seen) for k in obj.keys()])
-#    elif hasattr(obj, '__dict__'):
-#        size += get_size(obj.__dict__, seen)
-#    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-#        size += sum([get_size(i, seen) for i in obj])
-#    return size
-#
-
-
 class ItemCountTooBigException(Exception):
     pass
 
@@ -498,4 +773,7 @@ class NegativeOffsetWithoutItemCountError(Exception):
     pass
 
 class NegativeStepWithoutItemCountError(Exception):
+    pass
+
+class OutOfRangeError(Exception):
     pass

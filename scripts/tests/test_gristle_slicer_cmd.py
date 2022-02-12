@@ -55,7 +55,8 @@ class Test7x7File(object):
         return fqfn
 
 
-    def runner(self, incl_rec_spec=None, excl_rec_spec=None,
+    def runner(self,
+               incl_rec_spec=None, excl_rec_spec=None,
                incl_col_spec=None, excl_col_spec=None,
                options=None):
 
@@ -214,11 +215,12 @@ class TestEmptyFile(object):
         """
         cmd = f"""cat %s | {fq_pgm}
                            -d ',' -q quote_none --has-no-header
-                           -o {self.out_fqfn} -r '-10: ' """
+                           -o {self.out_fqfn} -r ' -10: ' """
         r = envoy.run(cmd)
         print(r.std_out)
         print(r.std_err)
-        assert r.status_code == 1
+        assert r.status_code == errno.ENODATA
+        #assert r.status_code == 1
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
@@ -252,7 +254,7 @@ class TestStdin(object):
 
 
     def test_negative_offset(self):
-        """ Should return error since stdin can't have negative offsets
+        """ Should treat out of range single offspec specs as false rather than error.
 
         Using subprocess rather than envoy after fighting with an envoy bug too long.
         """
@@ -264,7 +266,7 @@ class TestStdin(object):
                                      '-o', self.out_fqfn, '-r-1'), stdin=ps.stdout)
         except subprocess.CalledProcessError as err:
             rc = err.returncode
-        assert rc == 1
+        assert rc == 0
 
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):

@@ -8,6 +8,7 @@ import csv
 import errno
 import fileinput
 import io
+import itertools
 import os
 from pprint import pprint as pp
 import random
@@ -102,7 +103,7 @@ class InputHandler(object):
                 self._open_next_input_file()  # will raise StopIteration if out of files
 
 
-    def _read_next_rec(self):
+    def _read_next_rec(self) -> List[str]:
 
         rec = self.csv_reader.__next__()
         self.rec_cnt += 1
@@ -110,7 +111,7 @@ class InputHandler(object):
         return rec
 
 
-    def close(self):
+    def close(self) -> None:
         if self.files[0] != '-' and self.infile:
             self.infile.close()
 
@@ -204,6 +205,35 @@ def get_file_size(files):
                         for fn in files
                         if fn != '-']))
     return tot_size
+
+
+
+def get_file_avg_rec_size(files, dialect):
+    if files[0] == '-':
+        return None
+
+    rec_sizes = []
+    rec_cnt = 0
+    for fn in files:
+        with open(fn, 'r', newline='', encoding='utf-8') as inbuf:
+            csv_reader = csv.reader(inbuf, dialect=dialect)
+            for rec in csv_reader:
+                rec_sizes.append(get_rec_memory_size_mb(rec))
+                rec_cnt += 1
+                if rec_cnt > 1000:
+                    break
+            if rec_cnt > 1000:
+                break
+    fileinput.close()
+    if rec_cnt == 0:
+        return 0
+    return int(sum([size for size in rec_sizes])/rec_cnt)
+
+
+
+def get_rec_memory_size_mb(rec):
+    return sum([sys.getsizeof(field) for field in rec])
+
 
 
 def get_approx_rec_count(files):
