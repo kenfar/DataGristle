@@ -13,7 +13,7 @@ import os
 from pprint import pprint as pp
 import random
 import sys
-from typing import List
+from typing import List, Optional
 
 import datagristle.csvhelper as csvhelper
 
@@ -258,14 +258,14 @@ def get_approx_rec_count(files):
 
 
 def get_rec_count(files: List[str],
-                  dialect: csv.Dialect) -> int:
+                  dialect: csv.Dialect) -> Optional[int]:
     """ Get record counts for input files.
         - Counts have an offset of 0
     """
     #fixme: counts should have an offset of 1?
     rec_cnt = -1
     if files[0] == '-':
-        return rec_cnt
+        return None
 
     for fn in files:
         with open(fn, 'r', newline='', encoding='utf-8') as inbuf:

@@ -268,11 +268,23 @@ class TestStdin(object):
             rc = err.returncode
         assert rc == 0
 
-        out_recs = []
-        for rec in fileinput.input(self.out_fqfn):
-            out_recs.append(rec)
-        fileinput.close()
-        assert not out_recs
+        actual = load_file(self.out_fqfn)
+
+        valid = []
+        valid.append('6-0,6-1,6-2,6-3,6-4,6-5,6-6\n')
+
+        actual = load_file(self.out_fqfn)
+        assert valid == actual
+
+
+def load_file(fn: str) -> list[str]:
+    out_recs = []
+    for rec in fileinput.input(fn):
+        out_recs.append(rec)
+    fileinput.close()
+    return out_recs
+
+
 
 
 

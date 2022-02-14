@@ -164,11 +164,13 @@ class Config(object):
     def __init__(self,
                  app_name: str,
                  short_help: str,
-                 long_help: str) -> None:
+                 long_help: str,
+                 validate_dialect: bool=True) -> None:
 
         self.app_name = splitext(basename(app_name))[0]
         self.short_help = short_help
         self.long_help = long_help
+        self.validate_dialect = validate_dialect
         self.obsolete_options: Dict[str, Any] = {}
         self._app_metadata: META_CONFIG_TYPE = {}
         self.config: Dict = {}
@@ -201,12 +203,13 @@ class Config(object):
         pass
 
 
-    def get_config(self) -> Tuple[Any, Dict[Any, Any]]:
+    def get_config(self,
+                   override_filename: Optional[str]=None) -> Tuple[Any, Dict[Any, Any]]:
         self.define_user_config()
         self.define_obsolete_config()
         self.process_configs()
 
-        self.extend_config()
+        self.extend_config(override_filename)
 
         if self.nconfig.verbosity == 'debug':
             self.print_config(key='dialect')
@@ -359,14 +362,20 @@ class Config(object):
         self.replace_configs(new_config)
 
 
-    def generate_csv_dialect_config(self):
+    def generate_csv_dialect_config(self,
+                                    override_filename: Optional[str]):
         """ Adds the csv dialect to the config.
 
             Added by calling programs within the extend_config method.
         """
+        if override_filename:
+            filenames = [override_filename]
+        else:
+            filenames = self.config['infiles']
         md = self._app_metadata
         try:
-            autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
+            #autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
+            autodetected = csvhelper.get_dialect(filenames,
                                                  verbosity=self.config['verbosity'])
         except FileNotFoundError:
             comm.abort('Error: File not found',
@@ -398,16 +407,20 @@ class Config(object):
         self.update_config('dialect', defaulted)
 
 
-    def generate_csv_header_config(self):
+    def generate_csv_header_config(self,
+                                   override_filename):
         """ Adds the csv header to the config.
 
             Added by calling programs within the extend_config method.
         """
+        if override_filename:
+            filenames = [override_filename]
+        else:
+            filenames = self.config['infiles']
         header = csvhelper.Header()
-        if self.config['infiles'][0] != '-':
-            header.load_from_files(self.config['infiles'], self.config['dialect'])
+        if filenames[0] != '-':
+            header.load_from_files(filenames, self.config['dialect'])
         self.update_config('header', header)
-
 
 
     def _validate_config_metadata(self):
@@ -565,7 +578,10 @@ class Config(object):
 
 
     def _validate_dialect_with_stdin(self, config) -> None:
-        if config.get('infiles', '') == '-':
+        if self.validate_dialect is False:
+            return
+
+        if config.get('infiles', '') == ['-']:
             if config['delimiter'] is None:
                 comm.abort('Error: csv dialect delimiter is required when piping data via stdin')
             if config['quoting'] is None:

@@ -127,6 +127,7 @@ from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
+import tempfile
 import time
 from typing import List, Tuple, Dict, Any, Optional, IO, Hashable
 
@@ -153,12 +154,16 @@ comm.validate_python_version()
 def main() -> int:
 
     try:
-        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        config_manager = ConfigManager(NAME,
+                                       SHORT_HELP,
+                                       LONG_HELP,
+                                       validate_dialect=False)
         nconfig, _ = config_manager.get_config()
     except EOFError:
         return errno.ENODATA
 
     slice_runner = SliceRunner(nconfig)
+    slice_runner.config_manager = config_manager
     slice_runner.setup_stage1()
     slice_runner.setup_stage2()
     slice_runner.process_data()
@@ -177,10 +182,11 @@ class SliceRunner:
         self.anyorder = False
         self.input_handler: file_io.InputHandler
         self.output_handler: file_io.OutputHandler
+        self.temp_fn = None
 
-        self.estimated_rec_cnt = -1
-        self.rec_cnt = -1
-        self.col_cnt = -1
+        #self.estimated_rec_cnt = None
+        self.rec_cnt = None
+        self.col_cnt = None
         self.rec_specs: slicer.Specifications
         self.exrec_specs: slicer.Specifications
         self.col_specs: slicer.Specifications
@@ -200,25 +206,59 @@ class SliceRunner:
 
     def setup_stage1(self) -> None:
         self._setup_files()
-        self._setup_counts()
 
 
     def setup_stage2(self) -> None:
-        self._setup_specs()
+        try:
+            self._setup_specs()
+        except (slicer.NegativeOffsetWithoutItemCountError,
+                slicer.NegativeStepWithoutItemCountError,
+                slicer.UnboundedStopWithoutItemCountError):
+            if self.is_infiles_from_stdin():
+                self._write_stdin_to_file()
+                self.nconfig, _ = self.config_manager.get_config(self.temp_fn)
+            self._setup_counts()
+            try:
+                self._setup_specs()
+            except (slicer.NegativeOffsetWithoutItemCountError,
+                    slicer.NegativeStepWithoutItemCountError,
+                    slicer.UnboundedStopWithoutItemCountError):
+                comm.abort('Error: unable to count rows in file to resolve config references!',
+                        f'Record count: {self.rec_cnt}, Column count: {self.col_cnt}',
+                        verbosity='debug')
+
         self._setup_slicers()
         self._setup_index_optimization()
 
-        self._pp(f'is_optimized_for_all_recs: {self.is_optimized_for_all_recs()}')
-        self._pp(f'is_optimized_with_rec_index: {self.is_optimized_with_rec_index}')
-        self._pp(f'is_optimized_for_all_cols: {self.is_optimized_for_all_cols()}')
-        self._pp(f'is_optimized_with_col_index: {self.is_optimized_with_col_index}')
-        self._pp(f'rec_index_optimization_stop_rec: {self.rec_index_optimization_stop_rec}')
+        self._pp(' ')
+        self._pp('Stage2 Optimizations: ')
+        self._pp(f'    is_optimized_for_all_recs: {self.is_optimized_for_all_recs()}')
+        self._pp(f'    is_optimized_with_rec_index: {self.is_optimized_with_rec_index}')
+        self._pp(f'    is_optimized_for_all_cols: {self.is_optimized_for_all_cols()}')
+        self._pp(f'    is_optimized_with_col_index: {self.is_optimized_with_col_index}')
+        self._pp(f'    rec_index_optimization_stop_rec: {self.rec_index_optimization_stop_rec}')
         assert isinstance(self.rec_index_optimization_stop_rec, int)
+
+
+    def _write_stdin_to_file(self):
+        start_time = time.time()
+
+        assert self.nconfig.infiles[0] == '-'
+        os_handle, self.temp_fn = tempfile.mkstemp()
+        with open(self.temp_fn, 'w', newline='') as outbuf:
+            writer = csv.writer(outbuf)
+            writer.writerows(self.input_handler)
+        self.input_handler = file_io.InputHandler([self.temp_fn],
+                                                  self.nconfig.dialect,
+                                                  return_header=True)
+
+        self._pp(f'--------> write_stdin_to_file duration: {time.time() - start_time:.2f}')
+
 
     def _pp(self,
             val: Any) -> None:
         if self.nconfig.verbosity == 'debug':
-            pp(val)
+            print(val)
 
 
     def shutdown(self) -> None:
@@ -236,13 +276,18 @@ class SliceRunner:
 
     def _setup_counts(self) -> None:
         start_time = time.time()
-        self.estimated_rec_cnt = file_io.get_approx_rec_count(self.nconfig.infiles)
+        #self.estimated_rec_cnt = file_io.get_approx_rec_count(self.nconfig.infiles)
         if self._is_rec_count_needed():
-            self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
+            if self.temp_fn:
+                self.rec_cnt = file_io.get_rec_count([self.temp_fn], self.input_handler.dialect)
+            else:
+                self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
         else:
-            self.rec_cnt = -1
+            self.rec_cnt = None
 
         self.col_cnt = len(self.nconfig.header.field_names)-1
+        if self.col_cnt < 0:
+            self.col_cnt = None
         if self.nconfig.verbosity == 'debug':
             pp(f'--------> setup_counts  duration: {time.time() - start_time:.2f}')
 
@@ -254,17 +299,18 @@ class SliceRunner:
             Also, if we're just going to later on load into memory, then we can do it much faster
             then and rebuild our specs if necessary.
         """
-        records = self.nconfig.records.split(',')
-        exrecords = self.nconfig.exrecords.split(',') if self.nconfig.exrecords else []
+        return True
+        #records = self.nconfig.records.split(',')
+        #exrecords = self.nconfig.exrecords.split(',') if self.nconfig.exrecords else []
 
         #if slicer.includes_all_or_none(records) and slicer.includes_all_or_none(exrecords):
         #    pp('------------------1111111111111111')
         #    return False
 
         # Negatives need a count to be translated to positives for the indexes
-        if (slicer.spec_has_negatives(records)
-                or slicer.spec_has_negatives(exrecords)):
-            return True
+        #if (slicer.spec_has_negatives(records)
+        #        or slicer.spec_has_negatives(exrecords)):
+        #    return True
 
         # Unbounded ends need a count to be translated to actual offsets for the indexes
         # fixme: there's some cases where we probably don't need counts:
@@ -272,11 +318,11 @@ class SliceRunner:
         #   2. if we have incl specs and our excl specs has an unbounded range - beyond the incl spec
         #      - in this case we could just ignore the excl range beyond the incl last item
         #   3. if we can count after we load into memory
-        if (slicer.spec_has_unbounded_end(records)
-                or exrecords and slicer.spec_has_unbounded_end(exrecords)):
-            return True
+        #if (slicer.spec_has_unbounded_end(records)
+        #        or exrecords and slicer.spec_has_unbounded_end(exrecords)):
+        #    return True
 
-        return False
+        #return False
 
 
     def _setup_specs(self) -> None:
@@ -286,39 +332,28 @@ class SliceRunner:
         # record specs:
         records = self.nconfig.records.split(',')
         exrecords = self.nconfig.exrecords.split(',') if self.nconfig.exrecords else []
-        try:
-            self.rec_specs = slicer.Specifications('incl_rec',
-                                                   records,
-                                                   infile_item_count=self.rec_cnt,
-                                                   max_items=MAX_MEM_REC_CNT)
-            self.exrec_specs = slicer.Specifications('excl_rec',
-                                                     exrecords,
-                                                     infile_item_count=self.rec_cnt,
-                                                     max_items=MAX_MEM_REC_CNT)
-        except slicer.NegativeOffsetWithoutItemCountError:
-            comm.abort('Record Negative Offset - Not supported in this case')
-        except slicer.NegativeStepWithoutItemCountError:
-            comm.abort('Record Negative Step Not supported - Not supported in this case')
-
+        self.rec_specs = slicer.Specifications('incl_rec',
+                                                records,
+                                                infile_item_count=self.rec_cnt,
+                                                item_max=MAX_MEM_REC_CNT)
+        self.exrec_specs = slicer.Specifications('excl_rec',
+                                                 exrecords,
+                                                 infile_item_count=self.rec_cnt,
+                                                 item_max=MAX_MEM_REC_CNT)
 
         # col specs:
         records = self.nconfig.columns.split(',')
         exrecords = self.nconfig.excolumns.split(',') if self.nconfig.excolumns else []
-        try:
-            self.col_specs = slicer.Specifications('incl_col',
-                                                   records,
-                                                   infile_item_count=self.col_cnt,
-                                                   header=self.nconfig.header,
-                                                   max_items=10_000)
-            self.excol_specs = slicer.Specifications('excl_col',
-                                                     exrecords,
-                                                     infile_item_count=self.col_cnt,
-                                                     header=self.nconfig.header,
-                                                     max_items=10_000)
-        except slicer.NegativeOffsetWithoutItemCountError:
-            comm.abort('Col NegativeOffset Not supported!')
-        except slicer.NegativeStepWithoutItemCountError:
-            comm.abort('Record Negative Step Not supported - Not supported in this case')
+        self.col_specs = slicer.Specifications('incl_col',
+                                                records,
+                                                infile_item_count=self.col_cnt,
+                                                header=self.nconfig.header,
+                                                item_max=10_000)
+        self.excol_specs = slicer.Specifications('excl_col',
+                                                 exrecords,
+                                                 infile_item_count=self.col_cnt,
+                                                 header=self.nconfig.header,
+                                                 item_max=10_000)
 
 
     def _setup_slicers(self) -> None:
@@ -344,8 +379,9 @@ class SliceRunner:
         self.rec_index: List[int] = []
         if (self.incl_rec_slicer.indexer.valid
         and self.excl_rec_slicer.indexer.valid
-        and self.is_optimized_for_all_recs() is False
         and len(self.excl_rec_slicer.index) <= 10_000):
+        # Pulling this out until we can figure out how to process in mem in reverse order without index
+        #and self.is_optimized_for_all_recs() is False
             for spec_item in self.incl_rec_slicer.index:
                 if spec_item in self.excl_rec_slicer.index:
                     continue
@@ -357,6 +393,11 @@ class SliceRunner:
             else:
                 self.rec_index_optimization_stop_rec = max(self.rec_index, default=sys.maxsize)
                 self.is_optimized_with_rec_index = True
+        #else:
+        #    pp(f'{self.incl_rec_slicer.indexer.valid=}')
+        #    pp(f'{self.excl_rec_slicer.indexer.valid=}')
+        #    pp(f'{self.is_optimized_for_all_recs()=}')
+        #    pp(f'{len(self.excl_rec_slicer.index)=}')
 
         self.col_index: List[int] = []
         if (self.incl_col_slicer.indexer.valid
@@ -374,21 +415,21 @@ class SliceRunner:
                 self.is_optimized_with_col_index = True
 
 
-        self._pp(f'{self.incl_rec_slicer.has_all_inclusions=}')
-        self._pp(f'{self.incl_rec_slicer.indexer.valid=}')
-        self._pp(f'{len(self.incl_rec_slicer.index)=}')
-        self._pp(f'{self.incl_rec_slicer.includes_out_of_order=}')
-        self._pp(f'{self.incl_rec_slicer.includes_repeats=}')
-        self._pp(f'{self.incl_rec_slicer.includes_reverse=}')
-
-
         self._pp(' ')
-        self._pp(f'{self.excl_rec_slicer.has_all_inclusions=}')
-        self._pp(f'{self.excl_rec_slicer.indexer.valid=}')
-        self._pp(f'{len(self.excl_rec_slicer.index)=}')
+        self._pp('Index Optimizations: ')
+        self._pp(f'    {self.incl_rec_slicer.has_all_inclusions=}')
+        self._pp(f'    {self.incl_rec_slicer.indexer.valid=}')
+        self._pp(f'    {len(self.incl_rec_slicer.index)=}')
+        self._pp(f'    {self.incl_rec_slicer.includes_out_of_order=}')
+        self._pp(f'    {self.incl_rec_slicer.includes_repeats=}')
+        self._pp(f'    {self.incl_rec_slicer.includes_reverse=}')
         self._pp(' ')
-        self._pp(f'{self.incl_col_slicer.indexer.valid=}')
-        self._pp(f'{self.excl_col_slicer.indexer.valid=}')
+        self._pp(f'    {self.excl_rec_slicer.has_all_inclusions=}')
+        self._pp(f'    {self.excl_rec_slicer.indexer.valid=}')
+        self._pp(f'    {len(self.excl_rec_slicer.index)=}')
+        self._pp(' ')
+        self._pp(f'    {self.incl_col_slicer.indexer.valid=}')
+        self._pp(f'    {self.excl_col_slicer.indexer.valid=}')
         self._pp(f'--------> setup_index_optimization  duration: {time.time() - start_time:.2f}')
 
 
@@ -409,8 +450,11 @@ class SliceRunner:
                 or self.incl_rec_slicer.includes_reverse):
             if self.is_optimized_with_rec_index:
                 return True
+            elif self.is_optimized_for_all_recs():
+                return True
             else:
-                comm.abort('Error: There are out of order, reverse, or repeating rec specs but cannot fit into memory!')
+                comm.abort('Error: There are out of order, reverse, or repeating rec specs but cannot fit into memory!',
+                verbosity='debug')
 
         return False
 
@@ -428,7 +472,7 @@ class SliceRunner:
                 - merged_rec_spec: simple list of which recs to slice
                 - merged_col_spec: simple list of which columns to slice
         """
-        self._pp(f'process_recs_from_file')
+        self._pp(f'process: process_recs_from_file')
         index_rec_start= 0
 
         for rec_number, rec in enumerate(self.input_handler):
@@ -484,10 +528,10 @@ class SliceRunner:
             at a time, compares against the specification, and then writes
             out qualifying records and columns.
         """
-        self._pp(f'process_recs_in_memory')
+        self._pp(f'process: process_recs_in_memory')
 
         if self.incl_rec_slicer.indexer.valid is False:
-            comm.abort('Unable to process in memory', 'incl_rec.indexe.invalid')
+            comm.abort('Unable to process in memory', 'incl_rec.indexer.invalid')
         if self.excl_rec_slicer.indexer.valid is False:
             comm.abort('Unable to process in memory', 'excl_rec.indexer.invalid')
 
@@ -510,8 +554,10 @@ class SliceRunner:
 
         # if we originally couldn't get col counts because of stdin,
         # update now that we have it all loaded into a list:
-        if self.col_cnt == -1:
+        if self.col_cnt in (None, -1):
             self.col_cnt = len(all_rows[0]) - 1
+        #self._pp(f'{self.col_cnt=}')
+        assert self.col_cnt > -1
 
         for rec_num in self.rec_index:
             output_rec = []
@@ -549,15 +595,16 @@ class SliceRunner:
             part_file_mem_required_mb = avg_rec_size * self.rec_index_optimization_stop_rec/1024/1024
             actual_mem_required_mb = min(full_file_mem_required_mb, part_file_mem_required_mb)
 
-        pp('^^^^^^^^^^^^^^^^^^^^^^^^^^')
-        pp(total_mem_mb)
-        pp(file_size_mb)
-        pp(f'{self.rec_index_optimization_stop_rec=}')
-        pp(f'{avg_rec_size=}')
-        pp(f'{full_file_mem_required_mb=}')
-        pp(f'{part_file_mem_required_mb=}')
-        pp(f'{available_mem_mb=}')
-        pp('^^^^^^^^^^^^^^^^^^^^^^^^^^')
+        self._pp(' ')
+        self._pp('^^^^ Memory Metrics: ^^^^^^^^^^^^^^^^^^^^^^')
+        self._pp(f'    {total_mem_mb=}')
+        self._pp(f'    {file_size_mb=}')
+        self._pp(f'    {self.rec_index_optimization_stop_rec=}')
+        self._pp(f'    {avg_rec_size=}')
+        self._pp(f'    {full_file_mem_required_mb=}')
+        self._pp(f'    {part_file_mem_required_mb=}')
+        self._pp(f'    {int(available_mem_mb)=}')
+        self._pp('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
 
         msg = ('File is too large for in-memory processing (> 600 MB)'
                'But in-mem is required due to out of order recs'
@@ -658,10 +705,11 @@ class ConfigManager(conf.Config):
         self.add_all_help_configs()
 
 
-    def extend_config(self) -> None:
+    def extend_config(self,
+                      override_filename=None) -> None:
 
-        self.generate_csv_dialect_config()
-        self.generate_csv_header_config()
+        self.generate_csv_dialect_config(override_filename)
+        self.generate_csv_header_config(override_filename)
 
 
     def validate_custom_config(self, config) -> None:

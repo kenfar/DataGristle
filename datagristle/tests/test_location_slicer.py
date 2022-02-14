@@ -92,8 +92,7 @@ class Test_is_index_out_of_order(object):
                                        specs_strings=specs_strings,
                                        header=None,
                                        infile_item_count=100)
-        self.indexer = mod.Indexer(self.spec.specs_final,
-                                   self.spec.max_items)
+        self.indexer = mod.Indexer(self.spec.specs_final)
         self.indexer.builder()
         self.index = self.indexer.index
 
@@ -219,7 +218,6 @@ class TestSpecificationsCleaner(object):
                    spec_type='incl_rec',
                    header: List[str] = None,
                    item_count=100):
-                   #run_expander=True):
 
 
         if header:
@@ -338,7 +336,7 @@ class TestSpecificationsCleaner(object):
 
 
     def test_out_of_range_negative_skipping(self):
-        self.setup_spec(specs_strings=['20:10:-1'], item_count=-1)
+        self.setup_spec(specs_strings=['20:10:-1'], item_count=None)
         assert self.flatten_spec(0) == (20, 10, -1)
 
     def test_negative_skipping(self):
@@ -348,33 +346,32 @@ class TestSpecificationsCleaner(object):
 
 
     def test_minusone_item_count_with_empty_stop(self):
-        self.setup_spec(specs_strings=['2::'], item_count=-1)
+        #with pytest.raises(mod.UnboundedStopWithoutItemCountError):
+        self.setup_spec(specs_strings=['2::'], item_count=None)
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (2, sys.maxsize, 1.0)
+        #assert self.flatten_spec(0) == (2, sys.maxsize, 1.0)
+        assert self.flatten_spec(0) == (2, 999, 1.0)
 
-
-        self.setup_spec(specs_strings=['2:'], item_count=-1)
-        assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (2, sys.maxsize, 1)
 
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
         #with pytest.raises(SystemExit):
-        self.setup_spec(specs_strings=['2::-1'], item_count=-1)
+        self.setup_spec(specs_strings=['2::-1'], item_count=None)
         assert self.flatten_spec(0) == (2, -1,  -1.0)
         #assert len(self.spec.specs_final) == 1
         #assert self.flatten_spec(0) == (2, -1, -1)
 
 
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
-        #with pytest.raises(mod.NegativeStepWithoutItemCountError):
-        with pytest.raises(SystemExit):
-            self.setup_spec(specs_strings=['::-1'], item_count=-1)
+        with pytest.raises(mod.NegativeStepWithoutItemCountError):
+        #with pytest.raises(SystemExit):
+            self.setup_spec(specs_strings=['::-1'], item_count=None)
 
 
     def test_minusone_item_count_with_empty_start_and_pos_step(self):
-        self.setup_spec(specs_strings=['::1'], item_count=-1)
+        #with pytest.raises(mod.UnboundedStopWithoutItemCountError):
+        self.setup_spec(specs_strings=['::1'], item_count=None)
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (0, sys.maxsize, 1)
+        assert self.flatten_spec(0) == (0, 999, 1)
 
 
     def test_good_item_count_with_empty_start_and_pos_step(self):
@@ -389,24 +386,51 @@ class TestIndexer(object):
     def setup_spec(self,
                    specs_strings,
                    spec_type='incl_rec',
-                   max_items=sys.maxsize):
+                   item_count=sys.maxsize,
+                   item_max=mod.MAX_INDEX_REC_CNT):
+
+        item_count = 100
 
         self.spec = mod.Specifications(spec_type=spec_type,
                                        specs_strings=specs_strings,
                                        header=None,
-                                       infile_item_count=100)
+                                       infile_item_count=item_count)
+
         self.indexer = mod.Indexer(self.spec.specs_final,
-                                   max_items=max_items)
+                                   item_count=item_count)
+        self.indexer.item_max = item_max
         self.indexer.builder()
+        self.indexer.item_max = item_max
         self.index = self.indexer.index
+
+
+    def test_index_too_big(self):
+        self.setup_spec(['1', '2', '3', '4', '5', '6', '7'], item_max=3)
+        assert self.indexer.index == []
+        assert self.indexer.valid is False
+
+        self.setup_spec(['1', '2', '3'], item_max=3)
+        assert self.indexer.index == [1, 2, 3]
+        assert self.indexer.valid is True
+
+        self.setup_spec(['1', '2', '3'], item_max=2)
+        assert self.indexer.index == []
+        assert self.indexer.valid is False
+
+        self.setup_spec(['1:999'], item_max=5)
+        assert self.index == []
+        assert self.indexer.valid is False
+
 
     def test_singles(self):
         self.setup_spec(['1', '2', '3'])
         assert self.index == [1, 2, 3]
 
+
     def test_ranges(self):
         self.setup_spec(['1:3', '20:23', '30:33'])
         assert self.index == [1, 2, 20, 21, 22, 30, 31, 32]
+
 
     def test_out_of_order_singles(self):
         self.setup_spec(['1', '3', '2'])
@@ -421,6 +445,7 @@ class TestIndexer(object):
     def test_stepping(self):
         self.setup_spec(['1:8:2'])
         assert self.index == [1, 3, 5, 7]
+
 
     def test_negative_stepping(self):
         self.setup_spec(['8:1:-1'])
@@ -438,11 +463,6 @@ class TestIndexer(object):
         self.setup_spec([])
         assert self.index == []
 
-
-    def test_too_much(self):
-        self.setup_spec(['1:999'], max_items=5)
-        assert self.indexer.valid is False
-        assert self.index == []
 
 
     def test_repeats(self):
@@ -472,8 +492,7 @@ class TestSpecProcessor(object):
                       loc,
                       spec_type='incl_rec',
                       item_count=4,
-                      header=None,
-                      max_items=sys.maxsize):
+                      header=None):
         """ Creates the Spec Processor object with default settings for the
             specification and record length.
         """
@@ -487,14 +506,13 @@ class TestSpecProcessor(object):
         self.specs = mod.Specifications(spec_type,
                                         specs_strings=spec_strings,
                                         header=header_obj,
-                                        infile_item_count=item_count,
-                                        max_items=max_items)
+                                        infile_item_count=item_count)
 
 
     def test_invalid_data_without_header(self):
 
         # missing colon:
-        with pytest.raises(SystemExit):
+        with pytest.raises(mod.UnidentifiableNonNumericSpec):
             self.runner(['2 5'], loc=0, item_count=80)
 
         # extra colon:
@@ -508,19 +526,19 @@ class TestSpecProcessor(object):
             self.sp = mod.SpecProcessor(self.specs)
 
         # column names, but no header:
-        with pytest.raises(SystemExit):
+        with pytest.raises(mod.UnidentifiableNonNumericSpec):
             self.runner(['account_id'], loc=0, item_count=80)
 
 
     def test_header_with_name_but_no_header(self):
-        with pytest.raises(SystemExit):
+        with pytest.raises(mod.UnidentifiableNonNumericSpec):
             self.runner(['account_id'], loc=0, item_count=80)
 
     def test_header_with_a_name(self):
         self.runner(['account_id'],
-                           loc=0,
-                           item_count=80,
-                           header=['account_id', 'cust_id', 'zip'])
+                    loc=0,
+                    item_count=80,
+                    header=['account_id', 'cust_id', 'zip'])
         self.sp = mod.SpecProcessor(self.specs)
         assert self.sp.index == [0]
 
@@ -558,8 +576,7 @@ class TestSpecProcessorItemEvaluator(object):
                loc,
                spec_type='incl_rec',
                item_count=80,
-               header=None,
-               max_items=sys.maxsize):
+               header=None):
         """ Creates the Spec Processor object with default settings for the
             specification and record length.
         """
@@ -572,8 +589,7 @@ class TestSpecProcessorItemEvaluator(object):
         self.specs = mod.Specifications(spec_type,
                                         specs_strings=spec_strings,
                                         header=header_obj,
-                                        infile_item_count=item_count,
-                                        max_items=max_items)
+                                        infile_item_count=item_count)
 
 
     def test_all_conditions(self):
@@ -607,8 +623,7 @@ class TestSpecProcessorEvaluator(object):
                spec_strings,
                spec_type='incl_rec',
                item_count=80,
-               header=None,
-               max_items=sys.maxsize):
+               header=None):
         """ Creates the Spec Processor object with default settings for the
             specification and record length.
         """
@@ -621,8 +636,7 @@ class TestSpecProcessorEvaluator(object):
         self.specs = mod.Specifications(spec_type,
                                         specs_strings=spec_strings,
                                         header=header_obj,
-                                        infile_item_count=item_count,
-                                        max_items=max_items)
+                                        infile_item_count=item_count)
 
 
 #    def simple_setup(self, spec, spec_name, infile_item_count):
@@ -718,16 +732,14 @@ class TestAgainstPythonSliceDocs(object):
                       loc,
                       spec_type='incl_rec',
                       item_count=4,
-                      header=None,
-                      max_items=sys.maxsize):
+                      header=None):
         """ Creates the Spec Processor object with default settings for the
             specification and record length.
         """
         specifications = mod.Specifications(spec_type,
                                             specs_strings=spec_strings,
                                             header=header,
-                                            infile_item_count=item_count,
-                                            max_items=max_items)
+                                            infile_item_count=item_count)
         self.sp = mod.SpecProcessor(specifications)
         return self.sp.specs_evaluator(loc)
 
@@ -851,16 +863,14 @@ class TestAgainstPythonSliceDocs(object):
         # >>> a = 'abcde'
         # >>> a[-100]       # out of range references == Exception!
         # IndexError
-        # GristleSlicer returns SystemExit
-        #with pytest.raises(SystemExit):
+        # Here GristleSlicer is different than Python - and returns a false
+        # rather than an exception
+        # It's different because we don't want to pay the cost of counting
+        # all the rows all the time
         assert self.simple_runner(['-100'], loc=0) is False
-        #with pytest.raises(SystemExit):
         assert self.simple_runner(['-100'], loc=1) is False
-        #with pytest.raises(SystemExit):
         assert self.simple_runner(['-100'], loc=2) is False
-        #with pytest.raises(SystemExit):
         assert self.simple_runner(['-100'], loc=3) is False
-        #with pytest.raises(SystemExit):
         assert self.simple_runner(['-100'], loc=4) is False
 
     def test_evaluate_python_doc_example_12(self):

@@ -128,6 +128,10 @@ def abort(summary: str,
             print(f'{text[line_start:line_end]:<75}', end='', file=sys.stderr)
             print(' =', file=sys.stderr)
 
+    if verbosity == 'debug':
+        print(' ', file=sys.stderr)
+        traceback.print_stack(file=sys.stderr)
+
     print('', file=sys.stderr)
     print_solid_line()
 
@@ -147,10 +151,6 @@ def abort(summary: str,
     print_text_line('Provide option --help or --long-help for usage information')
     print_empty_line()
     print_solid_line()
-
-    if verbosity == 'debug':
-        print(' ', file=sys.stderr)
-        traceback.print_stack(file=sys.stderr)
 
     try:
         logger.critical(summary)      # type: ignore

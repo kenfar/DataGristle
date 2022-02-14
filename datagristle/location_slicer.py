@@ -48,6 +48,8 @@ from pydantic import BaseModel, ValidationError, validator, root_validator
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
+MAX_INDEX_REC_CNT = 1_000_001
+
 
 START = 0
 STOP = 1
@@ -133,8 +135,7 @@ class SpecProcessor:
         self.has_exclusions = specs.has_exclusions()
         self.has_all_inclusions = specs.has_all_inclusions()
 
-        self.indexer = Indexer(self.specs.specs_final,
-                               self.specs.max_items)
+        self.indexer = Indexer(self.specs.specs_final)
         self.indexer.builder()
         self.index = self.indexer.index
 
@@ -214,18 +215,15 @@ class Specifications:
                  spec_type: str,
                  specs_strings: List[str],
                  header: Optional[csvhelper.Header] = None,
-                 infile_item_count: int = -1,   #### actually max value!
-                 max_items: int=sys.maxsize):
-
+                 infile_item_count: int = None,
+                 item_max: int=sys.maxsize):
 
         self.spec_type = spec_type
         self.specs_strings = specs_strings
         self.header = header
         self.infile_item_count = infile_item_count
-        self.max_items = max_items
+        self.item_max = item_max
 
-        pp('')
-        pp(f'{infile_item_count=}')
         assert spec_type in ['incl_rec', 'excl_rec', 'incl_col', 'excl_col']
 
         self.specs_final: List[SpecRecord] = self.specs_cleaner()
@@ -273,24 +271,24 @@ class Specifications:
         for item in self.specs_strings:
 
             try:
-                pp('')
+                #pp('')
                 start, stop, step, is_range = self.phase_one__item_parsing(item)
-                pp(f'phase one results: {start}, {stop}, {step}, {is_range}')
+                #pp(f'phase one results: {start}, {stop}, {step}, {is_range}')
 
                 int_start, int_stop, float_step = self.phase_two__translate_item_parts(start, stop, step, is_range)
-                pp(f'phase two results: {int_start}, {int_stop}, {float_step}, {is_range}')
+                #pp(f'phase two results: {int_start}, {int_stop}, {float_step}, {is_range}')
 
                 int_start, int_stop, float_step = self.phase_three__resolve_dependencies(int_start, int_stop, float_step, is_range)
-                pp(f'phase three results: {int_start}, {int_stop}, {float_step}, {is_range}')
+                #pp(f'phase three results: {int_start}, {int_stop}, {float_step}, {is_range}')
                 try:
                     final_rec = SpecRecord(start=int_start, stop=int_stop, step=float_step, spec_type=self.spec_type)
                 except ValidationError as err:
                     comm.abort('Error: invalid specification',  f'{self.spec_type}: {start}:{stop}:{step}')
                 final_specs.append(final_rec)
-            except NegativeOffsetWithoutItemCountError:
-                pass
             except OutOfRangeError:
-                pass
+                # fixme: confirm that we still want to do this!
+                # Just drop & ignore OutOfRangeError
+                continue
         return final_specs
 
 
@@ -320,41 +318,27 @@ class Specifications:
 
         # translate the start:
         start = Specifications.transform_empty_string(orig_start)
-        pp(f'after-empty={start=}')
         start = self.transform_name(start)
-        pp(f'after-name={start=}')
-        pp(f'{is_range=}')
-        pp(f'{self.infile_item_count=}')
         start = self.transform_negative_number(start, is_range)
-        #try:
-        #    start = self.transform_negative_number(start, is_range)
-        #    #start = self.validate_positive_number(start, is_range)
-        #except OutOfRangeError:
-        #    return
-        #    comm.abort(f'Invalid spec has item outside valid range',
-        #               f'Spec is: {orig_start}:{orig_stop}:{orig_step}, and valid range is 0 to {self.infile_item_count}')
-        pp(f'after-negative={start=}')
         if start is not None and not comm.isnumeric(start):
-            comm.abort(f'Invalid spec has item with a non-numeric part that could not be translated: {start}')
+            raise UnidentifiableNonNumericSpec(f'Do not know how to interpret: {start}')
         int_start = int(start) if start is not None else None
-        pp(f'{int_start=}')
+        #pp(f'{int_start=}')
 
         # translate the stop:
         stop = self.transform_empty_string(orig_stop)
         stop = self.transform_name(stop)
-        stop = self.transform_negative_number(stop, is_range)
+        stop = self.transform_negative_stop_number(stop, is_range)
         stop = self.validate_positive_number(stop, is_range)
         if stop is not None and not comm.isnumeric(stop):
-            comm.abort(f'Invalid spec has item with a non-numeric part that could not be translated: {stop}')
+            raise UnidentifiableNonNumericSpec(f'Do not know how to interpret: {stop}')
         int_stop = int(stop) if stop is not None else None
 
         # translate the step:
         step = self.transform_empty_string(orig_step)
         if step is not None and not comm.isnumeric(step):
-            comm.abort(f'Invalid spec has item with a non-numeric part that could not be translated: {step}')
+            raise UnidentifiableNonNumericSpec(f'Do not know how to interpret: {step}')
         float_step = float(step) if step is not None else 1.0
-        #if float_step < 0 and self.infile_item_count < 0:
-        #    comm.abort('Error: negative step but unable to count recs')
 
         return int_start, int_stop, float_step
 
@@ -388,7 +372,7 @@ class Specifications:
         if comm.isnumeric(val):
             return val
         if self.header is None:
-            comm.abort(f'Error: non-numeric specs without a header to translate: {val}')
+            raise UnidentifiableNonNumericSpec(f'Do not know how to interpret: {val}')
         try:
             position = str(self.header.get_field_position(val.strip()))
         except KeyError:
@@ -406,7 +390,7 @@ class Specifications:
 
         int_val = int(val)
 
-        if self.infile_item_count == -1:
+        if self.infile_item_count is None:
             raise NegativeOffsetWithoutItemCountError
 
         adjusted_val = self.infile_item_count + int_val + 1
@@ -420,36 +404,50 @@ class Specifications:
         return str(result)
 
 
+    def transform_negative_stop_number(self,
+                                       val: Optional[str],
+                                       is_range: bool) -> Optional[str]:
+
+        if val is None or int(val) >= 0:
+            return val
+
+        int_val = int(val)
+
+        if self.infile_item_count is None:
+            raise NegativeOffsetWithoutItemCountError
+
+        adjusted_val = self.infile_item_count + int_val + 1
+        if adjusted_val < 0:
+            if is_range:
+                result = max(adjusted_val, -1)
+            else:
+                raise OutOfRangeError
+        else:
+            result = adjusted_val
+        return str(result)
+
+
+
+
     def validate_positive_number(self,
                           val: Optional[str],
                           is_range: bool) -> Optional[str]:
 
-        pp('|------------------- validate_positive_number --------------------|')
-        pp(f'{val=}')
+        #pp('|------------------- validate_positive_number --------------------|')
+        #pp(f'{val=}')
         if val is None:
             return val
         elif int(val) <= 0:
             return val
-        elif self.infile_item_count == -1:
+        elif self.infile_item_count is None:
+            return val
+        elif self.infile_item_count is None:
             return val
 
         if int(val)  > self.infile_item_count:
             if is_range:
-                pp('#######################################')
-                pp('#######################################')
-                pp('#######################################')
-                pp('#######################################')
-                pp('#######################################')
-                pp('#######################################')
                 return val
             else:
-                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-                pp(self.infile_item_count)
-                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-                pp('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
                 raise OutOfRangeError
         else:
             return val
@@ -476,7 +474,7 @@ class Specifications:
         if step >= 0:
             int_start = 0
         else:
-            if self.infile_item_count == -1:
+            if self.infile_item_count is None:
                 raise NegativeStepWithoutItemCountError
             else:
                 int_start = self.infile_item_count
@@ -497,10 +495,13 @@ class Specifications:
 
         if is_range:
             if step >= 0:
-                if self.infile_item_count > -1:
-                    int_stop = self.infile_item_count + 1
+                if self.infile_item_count is None:
+                    # fixme: determine impacts of this (extra big indexes?)
+                    int_stop = 999
+                    #int_stop = None # experiment!
+                    #raise UnboundedStopWithoutItemCountError
                 else:
-                    int_stop = self.max_items
+                    int_stop = self.infile_item_count + 1
             else:
                 int_stop = -1
         else:
@@ -532,12 +533,17 @@ class Indexer:
 
    def __init__(self,
                 specs,
-                max_items):
+                item_count: Optional[int]=None):
+
+       assert item_count is None or item_count > -1
 
        self.specs = specs
-       self.max_items = max_items
+       self.item_max = MAX_INDEX_REC_CNT
+       self.item_count = item_count
        self.index = []
        self.valid = True
+
+       assert self.item_max is not None and self.item_max > -1
 
        self.nop = False
        self.includes_reverse = False
@@ -565,11 +571,6 @@ class Indexer:
 
        for rec in specs:
 
-           print('\n********************************************************')
-           pp(f'{self.specs}')
-           pp(f'{self.max_items=}')
-           pp(f'{rec=}')
-
            if rec.is_full_step():
                range_index = self._expand_one_fullstep_range(rec)
                index += range_index
@@ -585,12 +586,12 @@ class Indexer:
            self.valid = False
            self.index = []
 
+       #pp(f'{self.includes_out_of_order=}')
+       #pp(f'{self.includes_repeats=}')
+       #pp(f'{self.includes_reverse=}')
+       #pp(f'{self.valid=}')
        #pp(f'{self.index=}')
-       pp(f'{self.includes_out_of_order=}')
-       pp(f'{self.includes_repeats=}')
-       pp(f'{self.includes_reverse=}')
-       pp(f'{self.valid=}')
-       print('\n********************************************************')
+       #print('\n********************************************************')
 
 
    def _expand_one_fullstep_range(self,
@@ -600,7 +601,7 @@ class Indexer:
         reverse = self.includes_reverse
         repeats = self.includes_repeats
         out_of_order = self.includes_out_of_order
-        max_items = self.max_items
+        item_max = self.item_max
         count = self.index_count
         prior_max = self.prior_max
         index = []
@@ -622,9 +623,9 @@ class Indexer:
                 prior_max = abs(part)
 
                 count += 1
-                if count > max_items:
+                if count > item_max:      # limits index to max mem size
                     nop = True
-                if not nop:
+                elif not nop:
                     index.append(part)
 
         self.nop = nop
@@ -644,7 +645,7 @@ class Indexer:
         reverse = self.includes_reverse
         repeats = self.includes_repeats
         out_of_order = self.includes_out_of_order
-        max_items = self.max_items
+        item_max = self.item_max
         count = self.index_count
         prior_max = self.prior_max
         index = []
@@ -669,9 +670,9 @@ class Indexer:
                     prior_max = abs(part)
 
                     count += 1
-                    if count > max_items:
+                    if count > item_max:
                         nop = True
-                    if not nop:
+                    elif not nop:
                         index.append(part)
 
         self.nop = nop
@@ -776,4 +777,10 @@ class NegativeStepWithoutItemCountError(Exception):
     pass
 
 class OutOfRangeError(Exception):
+    pass
+
+class UnidentifiableNonNumericSpec(Exception):
+    pass
+
+class UnboundedStopWithoutItemCountError(Exception):
     pass
