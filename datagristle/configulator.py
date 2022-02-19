@@ -177,7 +177,8 @@ class Config(object):
         self.nconfig = self.NConfig
 
 
-    def extend_config(self):
+    def extend_config(self,
+                      override_filename=None):
         """ Provide calling programs function placeholder for add-ons
 
         This function exists so that additional attributes beyond what were picked up from
@@ -363,7 +364,7 @@ class Config(object):
 
 
     def generate_csv_dialect_config(self,
-                                    override_filename: Optional[str]):
+                                    override_filename: Optional[str]=None):
         """ Adds the csv dialect to the config.
 
             Added by calling programs within the extend_config method.
@@ -408,7 +409,7 @@ class Config(object):
 
 
     def generate_csv_header_config(self,
-                                   override_filename):
+                                   override_filename=None):
         """ Adds the csv header to the config.
 
             Added by calling programs within the extend_config method.

@@ -271,14 +271,15 @@ class ConfigManager(configulator.Config):
                       'sampling_rate must be provided if sampling_method == "interval"')
 
 
-    def extend_config(self):
+    def extend_config(self,
+                      override_filename=None):
         """ Add derrived or extended elements to config.
             Note: csvhelper.get_dialect could raise EOFError
         """
         self.generate_csv_dialect_config()
 
         # add col_names to config:
-        self.generate_csv_header_config()
+        self.generate_csv_header_config(override_filename=None)
 
         # add col_positions to config:
         try:

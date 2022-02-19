@@ -12,6 +12,7 @@ from os.path import basename, join as pjoin
 from pprint import pprint as pp
 import random
 import shutil
+import subprocess
 import sys
 import tempfile
 import types
@@ -114,7 +115,12 @@ class TestExamples(object):
         shutil.rmtree(self.temp_dir)
 
 
-    def run_example_config(self, example_number, return_code=0):
+    def run_example_config(self,
+                           example_number,
+                           return_code=0,
+                           mode='file'):
+
+        assert mode in ('file', 'stdin')
         test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))
         print('\n')
         print('=' * 100)
@@ -122,11 +128,11 @@ class TestExamples(object):
         print('=' * 100)
 
         self.load_config(example_number)
-        self.make_command(example_number)
+        self.make_command(example_number, mode)
         print('\n**** Execution: ****')
         pp(self.cmd)
         expected_success = True if return_code == 0 else False
-        executor(self.cmd, expect_success=expected_success)
+        executor(self.cmd, expect_success=expected_success, mode=mode, infile=self.in_fqfn)
 
         self.print_files()
 
@@ -136,7 +142,12 @@ class TestExamples(object):
         assert os.system(f'diff {self.out_fqfn} {self.expected_fqfn}') == 0
 
 
-    def run_example_config_for_return_code(self, example_number, return_code=0):
+    def run_example_config_for_return_code(self,
+                                           example_number,
+                                           return_code=0,
+                                           mode='file'):
+
+        assert mode in ('file', 'stdin')
         test_config_fn = glob.glob(pjoin(self.example_dir, f'{example_number}.yml'))
         print('\n')
         print('=' * 100)
@@ -144,11 +155,11 @@ class TestExamples(object):
         print('=' * 100)
 
         self.load_config(example_number)
-        self.make_command(example_number)
+        self.make_command(example_number, mode)
         print('\n**** Execution: ****')
         pp(self.cmd)
         expected_success = True if return_code == 0 else False
-        executor(self.cmd, expect_success=expected_success)
+        executor(self.cmd, expect_success=expected_success, mode=mode, infile=self.in_fqfn)
 
         self.print_files()
 
@@ -179,18 +190,27 @@ class TestExamples(object):
 
 
     def make_command(self,
-                     example_number):   # ex: 'example-1'
+                     example_number, # ex: 'example-1'
+                     mode):
 
         self.config_fn = pjoin(self.example_dir, f'{example_number}.yml')
         self.in_fqfn = glob.glob(pjoin(self.example_dir, f'{example_number}_*_input.csv'))[0]
         self.expected_fqfn = glob.glob(pjoin(self.example_dir, f'{example_number}_*_output.csv'))[0]
-        self.out_fqfn = pjoin(self.temp_dir, f'{example_number}_actualout.csv')
+        #fixme:
+        #self.out_fqfn = pjoin(self.temp_dir, f'{example_number}_actualout.csv')
+        self.out_fqfn = pjoin('/tmp', f'{example_number}_actualout.csv')
+        if mode == 'file':
+            self.cmd = f''' {pjoin(self.script_dir, self.pgm)}   \
+                            -o {self.out_fqfn}
+                            --verbosity debug
+                            --config-fn {self.config_fn}
+                        '''
+        else:
+            self.cmd = [pjoin(self.script_dir, self.pgm),
+                        f'-o {self.out_fqfn.strip()} ',
+                         '--verbosity=debug',
+                        f'--config-fn={self.config_fn}']
 
-        self.cmd = f''' {pjoin(self.script_dir, self.pgm)}   \
-                        -o {self.out_fqfn}
-                        --verbosity debug
-                        --config-fn {self.config_fn}
-                    '''
 
     def print_files(self):
 
@@ -211,19 +231,40 @@ class TestExamples(object):
 
 def executor(cmd,
              expect_success=True,
-             output='stdout'):
+             output='stdout',
+             mode='file',
+             infile=None):
 
-    runner = envoy.run(cmd)
-    status_code = runner.status_code
+    assert mode in ('file', 'stdin')
 
-    print(runner.std_out)
-    print(runner.std_err)
-    if output != 'stdout':
-        with open(output, 'w') as outbuf:
-            for rec in runner.std_out:
-                outbuf.write(rec)
-            for rec in runner.std_err:
-                outbuf.write(rec)
+    if mode == 'file':
+        #assert infile is None
+        runner = envoy.run(cmd)
+        status_code = runner.status_code
+
+        print(runner.std_out)
+        print(runner.std_err)
+        if output != 'stdout':
+            with open(output, 'w') as outbuf:
+                for rec in runner.std_out:
+                    outbuf.write(rec)
+                for rec in runner.std_err:
+                    outbuf.write(rec)
+    else:
+        assert infile
+        ps = subprocess.Popen(('cat', infile), stdout=subprocess.PIPE)
+        try:
+            subprocess.check_output(cmd, stdin=ps.stdout)
+        except subprocess.CalledProcessError as err:
+            status_code = err.returncode
+        else:
+            status_code = 0
+        #if output != 'stdout':
+        #    with open(output, 'w') as outbuf:
+        #        for rec in runner.std_out:
+        #            outbuf.write(rec)
+        #        for rec in runner.std_err:
+        #            outbuf.write(rec)
 
     if expect_success:
         assert status_code == 0

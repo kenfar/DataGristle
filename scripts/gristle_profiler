@@ -648,7 +648,8 @@ class ConfigManager(configulator.Config):
             abort("ERROR: metadata requires schema_id and collection_id")
 
 
-    def extend_config(self) -> None:
+    def extend_config(self,
+                      override_filename=None) -> None:
         self.generate_csv_dialect_config()
 
         # turn off verbose if parsable output is going to stdout
@@ -675,7 +676,7 @@ class ConfigManager(configulator.Config):
         self.replace_configs(self.config)
 
         # add col_name to config:
-        self.generate_csv_header_config()
+        self.generate_csv_header_config(override_filename=None)
 
         # validate column offsets against header:
         if self.config['column'] is not None and comm.isnumeric(self.config['column']):  # type: ignore

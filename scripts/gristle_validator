@@ -223,7 +223,8 @@ class ConfigManager(conf.Config):
             comm.abort('Valid values for random_out are from 0.0 to 1.0')
 
 
-    def extend_config(self):
+    def extend_config(self,
+                      override_filename=None):
         self.generate_csv_dialect_config()
         self.generate_csv_header_config()
         schema_path = []

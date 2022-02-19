@@ -135,7 +135,7 @@ class OutputHandler(object):
         assert default_output in (sys.stdout, sys.stderr), "invalid default_output: {}".format(default_output)
         assert 0.0 <= random_out <= 1.0
 
-        self.output_filename = output_filename
+        self.output_filename = output_filename.strip()
         self.dry_run = dry_run
         self.random_out = random_out
         self.dialect = dialect
@@ -143,7 +143,7 @@ class OutputHandler(object):
         if self.output_filename == '-':
             self.outfile = default_output
         else:
-            self.outfile = open(output_filename, mode, encoding='utf-8', newline='')
+            self.outfile = open(self.output_filename, mode, encoding='utf-8', newline='')
         if dialect:
             self.writer = csv.writer(self.outfile, dialect=dialect)
         else:
