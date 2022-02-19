@@ -15,6 +15,8 @@ import os
 from os.path import dirname, join as pjoin
 import tempfile
 
+import pytest
+
 import datagristle.csvhelper as csvhelper
 import datagristle.test_tools as test_tools
 
@@ -35,39 +37,51 @@ class TestExamples(test_tools.TestExamples):
         self.script_dir = SCRIPT_DIR
         self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
 
-    def test_example_01(self):
-        self.run_example_config('example-01')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_01(self, mode):
+        self.run_example_config('example-01', mode=mode)
 
-    def test_example_02(self):
-        self.run_example_config('example-02')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_02(self, mode):
+        self.run_example_config('example-02', mode=mode)
 
-    def test_example_03(self):
-        self.run_example_config('example-03')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_03(self, mode):
+        self.run_example_config('example-03', mode=mode)
 
-    def test_example_04(self):
-        self.run_example_config('example-04')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_04(self, mode):
+        self.run_example_config('example-04', mode=mode)
 
-    def test_example_05(self):
-        self.run_example_config('example-05')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_05(self, mode):
+        self.run_example_config('example-05', mode=mode)
 
-    def test_example_06(self):
-        self.run_example_config('example-06')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_06(self, mode):
+        self.run_example_config('example-06', mode=mode)
 
-    def test_example_07(self):
-        self.run_example_config('example-07')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_07(self, mode):
+        self.run_example_config('example-07', mode=mode)
 
 
-    def test_example_21_field_count_inconsistent(self):
-        self.run_example_config('example-21', return_code=74)
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_21_field_count_inconsistent(self, mode):
+        self.run_example_config('example-21', return_code=74, mode=mode)
 
-    def test_example_22_field_count_inconsistent_with_option(self):
-        self.run_example_config('example-22', return_code=74)
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_22_field_count_inconsistent_with_option(self, mode):
+        self.run_example_config('example-22', return_code=74, mode=mode)
 
-    def test_example_23_valid_schema(self):
-        self.run_example_config('example-23')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_23_valid_schema(self, mode):
+        self.run_example_config('example-23', mode=mode)
 
-    def notest_example_24_err_out_fields(self):
-        self.run_example_config('example-24')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def notest_example_24_err_out_fields(self, mode):
+        self.run_example_config('example-24', mode=mode)
 
-    def notest_example_25_err_out_text(self):
-        self.run_example_config('example-25')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def notest_example_25_err_out_text(self, mode):
+        self.run_example_config('example-25', mode=mode)
