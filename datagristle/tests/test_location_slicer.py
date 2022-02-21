@@ -12,129 +12,129 @@ import datagristle.location_slicer  as mod
 import datagristle.csvhelper as csvhelper
 
 
-class Test_spec_has_negatives(object):
-
-    def test_has_negatives_simple_inputs(self):
-        assert mod.spec_has_negatives(['1']) is False
-        assert mod.spec_has_negatives(['1', '1']) is False
-        assert mod.spec_has_negatives(['-1', '1', '2', '-12'])
-        assert mod.spec_has_negatives(['0', '1', '2', '3']) is False
-
-    def test_has_negatives_complex_inputs(self):
-        assert mod.spec_has_negatives(['1', '2']) is False
-        assert mod.spec_has_negatives([':', '1', '2']) is False
-        assert mod.spec_has_negatives(['1:', '1', '2']) is False
-        assert mod.spec_has_negatives([':1', '1', '2']) is False
-        assert mod.spec_has_negatives(['1:1', '1', '2']) is False
-        assert mod.spec_has_negatives(['1', '1:', '2']) is False
-        assert mod.spec_has_negatives(['-1:', '2'])
-        assert mod.spec_has_negatives([':-1', '2'])
-        assert mod.spec_has_negatives(['-1:-1', '2'])
-        assert mod.spec_has_negatives(['-1:-1', '3:9'])
-
-    def test_has_negatives_none_values(self):
-        assert mod.spec_has_negatives([]) is False
-
-    def test_positive_steps(self):
-        assert mod.spec_has_negatives(['::1']) is False
-        assert mod.spec_has_negatives(['1:1:1']) is False
-        assert mod.spec_has_negatives(['-1:1:1']) is True
-        assert mod.spec_has_negatives(['1:-1:1']) is True
-
-    def test_negative_steps(self):
-        assert mod.spec_has_negatives(['::-1']) is False
-
-    def test_random_steps(self):
-        assert mod.spec_has_negatives(['::0.25']) is False
-        assert mod.spec_has_negatives(['-1::0.25']) is True
-        assert mod.spec_has_negatives([':-1:0.25']) is True
-
-    def test_with_strings(self):
-        assert mod.spec_has_negatives(['account-number:20:1']) is False
-        assert mod.spec_has_negatives(['accountnumber:20:1']) is False
-        assert mod.spec_has_negatives(['accountnumber:20']) is False
-        assert mod.spec_has_negatives(['accountnumber']) is False
-
-
-
-class Test_spec_has_unbounded_end(object):
-
-    def test_bounded(self):
-        assert mod.spec_has_unbounded_end(['1']) is False
-        assert mod.spec_has_unbounded_end(['1', '2', '3']) is False
-        assert mod.spec_has_unbounded_end(['1:10']) is False
-        assert mod.spec_has_unbounded_end(['1:10', '20:30']) is False
-        assert mod.spec_has_unbounded_end(['1:10:1']) is False
-        assert mod.spec_has_unbounded_end(['1:10:-1']) is False
-        assert mod.spec_has_unbounded_end(['account:name']) is False
-
-    def test_unbounded(self):
-        assert mod.spec_has_unbounded_end([':']) is True
-        assert mod.spec_has_unbounded_end(['::']) is True
-        assert mod.spec_has_unbounded_end(['1:']) is True
-        assert mod.spec_has_unbounded_end(['1::2']) is True
-
-    def test_empty(self):
-        assert mod.spec_has_unbounded_end([]) is True
-
-    def test_negative_step(self):
-        assert mod.spec_has_unbounded_end([':50:-1']) is False
+#class Test_spec_has_negatives(object):
+#
+#    def test_has_negatives_simple_inputs(self):
+#        assert mod.spec_has_negatives(['1']) is False
+#        assert mod.spec_has_negatives(['1', '1']) is False
+#        assert mod.spec_has_negatives(['-1', '1', '2', '-12'])
+#        assert mod.spec_has_negatives(['0', '1', '2', '3']) is False
+#
+#    def test_has_negatives_complex_inputs(self):
+#        assert mod.spec_has_negatives(['1', '2']) is False
+#        assert mod.spec_has_negatives([':', '1', '2']) is False
+#        assert mod.spec_has_negatives(['1:', '1', '2']) is False
+#        assert mod.spec_has_negatives([':1', '1', '2']) is False
+#        assert mod.spec_has_negatives(['1:1', '1', '2']) is False
+#        assert mod.spec_has_negatives(['1', '1:', '2']) is False
+#        assert mod.spec_has_negatives(['-1:', '2'])
+#        assert mod.spec_has_negatives([':-1', '2'])
+#        assert mod.spec_has_negatives(['-1:-1', '2'])
+#        assert mod.spec_has_negatives(['-1:-1', '3:9'])
+#
+#    def test_has_negatives_none_values(self):
+#        assert mod.spec_has_negatives([]) is False
+#
+#    def test_positive_steps(self):
+#        assert mod.spec_has_negatives(['::1']) is False
+#        assert mod.spec_has_negatives(['1:1:1']) is False
+#        assert mod.spec_has_negatives(['-1:1:1']) is True
+#        assert mod.spec_has_negatives(['1:-1:1']) is True
+#
+#    def test_negative_steps(self):
+#        assert mod.spec_has_negatives(['::-1']) is False
+#
+#    def test_random_steps(self):
+#        assert mod.spec_has_negatives(['::0.25']) is False
+#        assert mod.spec_has_negatives(['-1::0.25']) is True
+#        assert mod.spec_has_negatives([':-1:0.25']) is True
+#
+#    def test_with_strings(self):
+#        assert mod.spec_has_negatives(['account-number:20:1']) is False
+#        assert mod.spec_has_negatives(['accountnumber:20:1']) is False
+#        assert mod.spec_has_negatives(['accountnumber:20']) is False
+#        assert mod.spec_has_negatives(['accountnumber']) is False
 
 
 
-class Test_is_index_out_of_order(object):
-
-    def setup_spec(self,
-                   specs_strings,
-                   spec_type='incl_rec'):
-
-        self.spec = mod.Specifications(spec_type=spec_type,
-                                       specs_strings=specs_strings,
-                                       header=None,
-                                       infile_item_count=100)
-        self.indexer = mod.Indexer(self.spec.specs_final)
-        self.indexer.builder()
-        self.index = self.indexer.index
-
-
-    def test_in_order(self):
-        self.setup_spec(['1'])
-        assert mod.is_index_out_of_order(self.index) is False
-
-        self.setup_spec(['1', '2', '3'])
-        assert mod.is_index_out_of_order(self.index) is False
-
-        self.setup_spec(['1:10', '20:30', '40:50'])
-        assert mod.is_index_out_of_order(self.index) is False
-
-        self.setup_spec(['-50', '-5'])
-        assert mod.is_index_out_of_order(self.index) is False
+#class Test_spec_has_unbounded_end(object):
+#
+#    def test_bounded(self):
+#        assert mod.spec_has_unbounded_end(['1']) is False
+#        assert mod.spec_has_unbounded_end(['1', '2', '3']) is False
+#        assert mod.spec_has_unbounded_end(['1:10']) is False
+#        assert mod.spec_has_unbounded_end(['1:10', '20:30']) is False
+#        assert mod.spec_has_unbounded_end(['1:10:1']) is False
+#        assert mod.spec_has_unbounded_end(['1:10:-1']) is False
+#        assert mod.spec_has_unbounded_end(['account:name']) is False
+#
+#    def test_unbounded(self):
+#        assert mod.spec_has_unbounded_end([':']) is True
+#        assert mod.spec_has_unbounded_end(['::']) is True
+#        assert mod.spec_has_unbounded_end(['1:']) is True
+#        assert mod.spec_has_unbounded_end(['1::2']) is True
+#
+#    def test_empty(self):
+#        assert mod.spec_has_unbounded_end([]) is True
+#
+#    def test_negative_step(self):
+#        assert mod.spec_has_unbounded_end([':50:-1']) is False
+#
 
 
-    def test_empty(self):
-        self.setup_spec([])
-        assert mod.is_index_out_of_order(self.index) is False
-
-
-    def test_reverse_order(self):
-
-        self.setup_spec(['3', '2', '1'])
-        assert mod.is_index_out_of_order(self.index) is True
-
-        self.setup_spec(['30:40', '10:20'])
-        assert mod.is_index_out_of_order(self.index) is True
-
-        self.setup_spec(['-5', '-50'])
-        assert mod.is_index_out_of_order(self.index) is True
-
-
-    def test_mixed_order(self):
-        self.setup_spec(['1', '3', '2'])
-        assert mod.is_index_out_of_order(self.index) is True
-
-        self.setup_spec(['1:10', '30:40', '20:29'])
-        assert mod.is_index_out_of_order(self.index) is True
-
+#class Test_is_index_out_of_order(object):
+#
+#    def setup_spec(self,
+#                   specs_strings,
+#                   spec_type='incl_rec'):
+#
+#        self.spec = mod.Specifications(spec_type=spec_type,
+#                                       specs_strings=specs_strings,
+#                                       header=None,
+#                                       infile_item_count=100)
+#        self.indexer = mod.Indexer(self.spec.specs_final)
+#        self.indexer.builder()
+#        self.index = self.indexer.index
+#
+#
+#    def test_in_order(self):
+#        self.setup_spec(['1'])
+#        assert mod.is_index_out_of_order(self.index) is False
+#
+#        self.setup_spec(['1', '2', '3'])
+#        assert mod.is_index_out_of_order(self.index) is False
+#
+#        self.setup_spec(['1:10', '20:30', '40:50'])
+#        assert mod.is_index_out_of_order(self.index) is False
+#
+#        self.setup_spec(['-50', '-5'])
+#        assert mod.is_index_out_of_order(self.index) is False
+#
+#
+#    def test_empty(self):
+#        self.setup_spec([])
+#        assert mod.is_index_out_of_order(self.index) is False
+#
+#
+#    def test_reverse_order(self):
+#
+#        self.setup_spec(['3', '2', '1'])
+#        assert mod.is_index_out_of_order(self.index) is True
+#
+#        self.setup_spec(['30:40', '10:20'])
+#        assert mod.is_index_out_of_order(self.index) is True
+#
+#        self.setup_spec(['-5', '-50'])
+#        assert mod.is_index_out_of_order(self.index) is True
+#
+#
+#    def test_mixed_order(self):
+#        self.setup_spec(['1', '3', '2'])
+#        assert mod.is_index_out_of_order(self.index) is True
+#
+#        self.setup_spec(['1:10', '30:40', '20:29'])
+#        assert mod.is_index_out_of_order(self.index) is True
+#
 
 
 class TestSpecificationsHelpers(object):
@@ -148,15 +148,15 @@ class TestSpecificationsHelpers(object):
                                        header=None,
                                        infile_item_count=100)
 
-    def test_has_everything(self):
-        specs_strings = [':']
-        self.setup_spec(specs_strings)
-        assert self.spec.has_everything() is True
-
-        specs_strings = ['3']
-        self.setup_spec(specs_strings)
-        assert self.spec.has_everything() is False
-
+#    def test_has_everything(self):
+#        specs_strings = [':']
+#        self.setup_spec(specs_strings)
+#        assert self.spec.has_everything() is True
+#
+#        specs_strings = ['3']
+#        self.setup_spec(specs_strings)
+#        assert self.spec.has_everything() is False
+#
 
     def test_has_all_inclusions(self):
         self.setup_spec(specs_strings=[':'], spec_type='incl_rec')
@@ -345,33 +345,35 @@ class TestSpecificationsCleaner(object):
         assert self.flatten_spec(0) == (8, 2, -1)
 
 
+#fixme:
     def test_minusone_item_count_with_empty_stop(self):
-        #with pytest.raises(mod.UnboundedStopWithoutItemCountError):
-        self.setup_spec(specs_strings=['2::'], item_count=None)
-        assert len(self.spec.specs_final) == 1
+        with pytest.raises(mod.UnboundedStopWithoutItemCountError):
+            self.setup_spec(specs_strings=['2::'], item_count=None)
+        #assert len(self.spec.specs_final) == 1
         #assert self.flatten_spec(0) == (2, sys.maxsize, 1.0)
-        assert self.flatten_spec(0) == (2, 999, 1.0)
+        #assert self.flatten_spec(0) == (2, 999, 1.0)
 
 
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
-        #with pytest.raises(SystemExit):
         self.setup_spec(specs_strings=['2::-1'], item_count=None)
         assert self.flatten_spec(0) == (2, -1,  -1.0)
-        #assert len(self.spec.specs_final) == 1
-        #assert self.flatten_spec(0) == (2, -1, -1)
+        assert len(self.spec.specs_final) == 1
+        assert self.flatten_spec(0) == (2, -1, -1)
 
 
+#fixme:
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
         with pytest.raises(mod.NegativeStepWithoutItemCountError):
         #with pytest.raises(SystemExit):
             self.setup_spec(specs_strings=['::-1'], item_count=None)
 
 
+#fixme:
     def test_minusone_item_count_with_empty_start_and_pos_step(self):
-        #with pytest.raises(mod.UnboundedStopWithoutItemCountError):
-        self.setup_spec(specs_strings=['::1'], item_count=None)
-        assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (0, 999, 1)
+        with pytest.raises(mod.UnboundedStopWithoutItemCountError):
+            self.setup_spec(specs_strings=['::1'], item_count=None)
+        #assert len(self.spec.specs_final) == 1
+        #assert self.flatten_spec(0) == (0, 999, 1)
 
 
     def test_good_item_count_with_empty_start_and_pos_step(self):
@@ -470,18 +472,18 @@ class TestIndexer(object):
         assert self.index == [1, 2, 2]
 
 
-    def test_has_repeats(self):
-        self.setup_spec(['1', '2', '2'])
-        assert self.index == [1, 2, 2]
-        assert self.indexer.has_repeats() is True
-
-        self.setup_spec(['1', '2'])
-        assert self.index == [1, 2]
-        assert self.indexer.has_repeats() is False
-
-        self.setup_spec([])
-        assert self.index == []
-        assert self.indexer.has_repeats() is False
+#    def test_has_repeats(self):
+#        self.setup_spec(['1', '2', '2'])
+#        assert self.index == [1, 2, 2]
+#        assert self.indexer.has_repeats() is True
+#
+#        self.setup_spec(['1', '2'])
+#        assert self.index == [1, 2]
+#        assert self.indexer.has_repeats() is False
+#
+#        self.setup_spec([])
+#        assert self.index == []
+#        assert self.indexer.has_repeats() is False
 
 
 

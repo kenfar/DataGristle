@@ -120,7 +120,6 @@ Licensing and Further Info:
 """
 import csv
 import errno
-import fileinput
 import functools
 import os
 from os.path import basename
@@ -146,7 +145,8 @@ LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 MAX_MEM_REC_CNT = 1_000_000
-MAX_MEM_FILE_SIZE_MB = 600
+MAX_MEM_INDEX_CNT = 10_000
+#MAX_MEM_FILE_SIZE_MB = 600
 
 comm.validate_python_version()
 
@@ -191,6 +191,7 @@ class SliceRunner:
         self.exrec_specs: slicer.Specifications
         self.col_specs: slicer.Specifications
         self.excol_specs: slicer.Specifications
+        self.col_default_range = False
 
         self.incl_rec_slicer: slicer.SpecProcessor
         self.excl_rec_slicer: slicer.SpecProcessor
@@ -213,7 +214,10 @@ class SliceRunner:
             self._setup_specs()
         except (slicer.NegativeOffsetWithoutItemCountError,
                 slicer.NegativeStepWithoutItemCountError,
-                slicer.UnboundedStopWithoutItemCountError):
+                slicer.UnboundedStopWithoutItemCountError) as err:
+            pp('==================================================')
+            pp(err)
+            pp('==================================================')
             if self.is_infiles_from_stdin():
                 self._write_stdin_to_file()
                 self.nconfig, _ = self.config_manager.get_config(self.temp_fn)
@@ -244,7 +248,7 @@ class SliceRunner:
         start_time = time.time()
 
         assert self.nconfig.infiles[0] == '-'
-        os_handle, self.temp_fn = tempfile.mkstemp()
+        os_handle, self.temp_fn = tempfile.mkstemp(prefix='gristle_slicer_stdin_temp_')
         with open(self.temp_fn, 'w', newline='') as outbuf:
             writer = csv.writer(outbuf)
             writer.writerows(self.input_handler)
@@ -265,6 +269,9 @@ class SliceRunner:
         self.input_handler.close()
         self.output_handler.close()
 
+        if self.temp_fn:
+            os.remove(self.temp_fn)
+
 
     def _setup_files(self) -> None:
         self.input_handler = file_io.InputHandler(self.nconfig.infiles,
@@ -277,52 +284,17 @@ class SliceRunner:
     def _setup_counts(self) -> None:
         start_time = time.time()
         #self.estimated_rec_cnt = file_io.get_approx_rec_count(self.nconfig.infiles)
-        if self._is_rec_count_needed():
-            if self.temp_fn:
-                self.rec_cnt = file_io.get_rec_count([self.temp_fn], self.input_handler.dialect)
-            else:
-                self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
+        if self.temp_fn:
+            self.rec_cnt = file_io.get_rec_count([self.temp_fn], self.input_handler.dialect)
         else:
-            self.rec_cnt = None
+            self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
 
         self.col_cnt = len(self.nconfig.header.field_names)-1
         if self.col_cnt < 0:
             self.col_cnt = None
         if self.nconfig.verbosity == 'debug':
-            pp(f'--------> setup_counts  duration: {time.time() - start_time:.2f}')
+            print(f'--------> setup_counts  duration: {time.time() - start_time:.2f}')
 
-
-    def _is_rec_count_needed(self) -> bool:
-        """ We want to avoid getting a rec-count if we can avoid it, since it adds a lot of time
-            for large files - due to having to perform csv parsing on each row.
-
-            Also, if we're just going to later on load into memory, then we can do it much faster
-            then and rebuild our specs if necessary.
-        """
-        return True
-        #records = self.nconfig.records.split(',')
-        #exrecords = self.nconfig.exrecords.split(',') if self.nconfig.exrecords else []
-
-        #if slicer.includes_all_or_none(records) and slicer.includes_all_or_none(exrecords):
-        #    pp('------------------1111111111111111')
-        #    return False
-
-        # Negatives need a count to be translated to positives for the indexes
-        #if (slicer.spec_has_negatives(records)
-        #        or slicer.spec_has_negatives(exrecords)):
-        #    return True
-
-        # Unbounded ends need a count to be translated to actual offsets for the indexes
-        # fixme: there's some cases where we probably don't need counts:
-        #   1. if we decide to use eval instead of index
-        #   2. if we have incl specs and our excl specs has an unbounded range - beyond the incl spec
-        #      - in this case we could just ignore the excl range beyond the incl last item
-        #   3. if we can count after we load into memory
-        #if (slicer.spec_has_unbounded_end(records)
-        #        or exrecords and slicer.spec_has_unbounded_end(exrecords)):
-        #    return True
-
-        #return False
 
 
     def _setup_specs(self) -> None:
@@ -386,7 +358,7 @@ class SliceRunner:
                 if spec_item in self.excl_rec_slicer.index:
                     continue
                 else:
-                    if len(self.rec_index) > 1_000_000:
+                    if len(self.rec_index) > MAX_MEM_REC_CNT:
                         self.rec_index = []
                         break
                     self.rec_index.append(spec_item)
@@ -407,12 +379,13 @@ class SliceRunner:
                 if spec_item in self.excl_col_slicer.index:
                     continue
                 else:
-                    if len(self.col_index) > 10_000:
+                    if len(self.col_index) > MAX_MEM_INDEX_CNT:
                         self.col_index = []
                         break
                     self.col_index.append(spec_item)
             else:
                 self.is_optimized_with_col_index = True
+        self.col_default_range = self.incl_col_slicer.indexer.col_default_range
 
 
         self._pp(' ')
@@ -433,6 +406,14 @@ class SliceRunner:
         self._pp(f'--------> setup_index_optimization  duration: {time.time() - start_time:.2f}')
 
 
+    def prune_col_index(self,
+                        actual_col_cnt: int):
+        new_index = []
+        new_index = [x for x in self.col_index if x <= actual_col_cnt]
+        self.col_index = new_index
+        self.col_default_range = False
+
+
     def process_data(self) -> None:
         start_time = time.time()
         if self.must_process_in_memory():
@@ -448,6 +429,7 @@ class SliceRunner:
         if (self.incl_rec_slicer.includes_out_of_order
                 or self.incl_rec_slicer.includes_repeats
                 or self.incl_rec_slicer.includes_reverse):
+
             if self.is_optimized_with_rec_index:
                 return True
             elif self.is_optimized_for_all_recs():
@@ -512,6 +494,8 @@ class SliceRunner:
             elif self.is_optimized_with_col_index:
                 output_rec = self.get_cols_from_index(rec,
                                                       self.col_index)
+                if self.col_default_range:
+                    self.prune_col_index(actual_col_length=len(rec))
             else:
                 output_rec = self.get_cols_from_eval(rec,
                                                      len(rec),
@@ -716,11 +700,6 @@ class ConfigManager(conf.Config):
 
         # At this point infiles could be either a default string or a list:
         assert isinstance(config['infiles'], list)
-
-        #if config['infiles'] == ['-']:
-        #    if ('-' in config['records']
-        #            or '-' in config['exrecords']):
-        #        comm.abort('Error: negative values not supported with stdin')
 
 
 

@@ -27,10 +27,20 @@
             - '20:' is from 20 to end of record
         - negative values are adjusted to their positive values
 
+    Contents:
+		- SpecRecord
+			- desc: a pydantic data class that defines a single spec record
+        - Specifications
+			- creates a list of SpecRecords
+		- SpecProcessor
+			- runs the Indexer
+        - Indexer
+			- reads a list of SpecRecords
+
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 
 import copy
@@ -48,12 +58,9 @@ from pydantic import BaseModel, ValidationError, validator, root_validator
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
-MAX_INDEX_REC_CNT = 1_000_001
+MAX_INDEX_REC_CNT = 10_000_000
+DEFAULT_COL_RANGE_STOP = 5_000
 
-
-START = 0
-STOP = 1
-STEP = 2
 
 
 class SpecRecord(BaseModel):
@@ -61,6 +68,7 @@ class SpecRecord(BaseModel):
     stop:       int
     step:       float
     spec_type:  str
+    col_default_range: bool
 
     @validator('step')
     def step_must_be_nonzero(cls, val) -> float:
@@ -90,6 +98,9 @@ class SpecRecord(BaseModel):
             if step != 1.0:
                 comm.abort(f'Error: exclusion spec is not allowed to have steps: {step}')
         return values
+
+    #fixme: add validation to prevent col_default_range from being applied to rows
+
 
     def is_full_step(self):
         if self.step == int(self.step):
@@ -278,10 +289,16 @@ class Specifications:
                 int_start, int_stop, float_step = self.phase_two__translate_item_parts(start, stop, step, is_range)
                 #pp(f'phase two results: {int_start}, {int_stop}, {float_step}, {is_range}')
 
-                int_start, int_stop, float_step = self.phase_three__resolve_dependencies(int_start, int_stop, float_step, is_range)
+                (int_start,
+                 int_stop,
+                 float_step,
+                 col_default_range) = self.phase_three__resolve_dependencies(int_start,
+                                                                             int_stop,
+                                                                             float_step,
+                                                                             is_range)
                 #pp(f'phase three results: {int_start}, {int_stop}, {float_step}, {is_range}')
                 try:
-                    final_rec = SpecRecord(start=int_start, stop=int_stop, step=float_step, spec_type=self.spec_type)
+                    final_rec = SpecRecord(start=int_start, stop=int_stop, step=float_step, spec_type=self.spec_type, col_default_range=col_default_range)
                 except ValidationError as err:
                     comm.abort('Error: invalid specification',  f'{self.spec_type}: {start}:{stop}:{step}')
                 final_specs.append(final_rec)
@@ -351,8 +368,8 @@ class Specifications:
         """Resolve any transformations that depend on multiple parts
         """
         int_start = self.transform_none_start(start, step)
-        int_stop = self.transform_none_stop(int_start, stop, step, is_range)
-        return int_start, int_stop, step
+        int_stop, col_default_range = self.transform_none_stop(int_start, stop, step, is_range)
+        return int_start, int_stop, step, col_default_range
 
 
     @staticmethod
@@ -433,8 +450,6 @@ class Specifications:
                           val: Optional[str],
                           is_range: bool) -> Optional[str]:
 
-        #pp('|------------------- validate_positive_number --------------------|')
-        #pp(f'{val=}')
         if val is None:
             return val
         elif int(val) <= 0:
@@ -489,17 +504,22 @@ class Specifications:
                             is_range: bool) -> int:
 
         assert stop is None or comm.isnumeric(stop)
-        if comm.isnumeric(stop):
-            assert(isinstance(stop, int))
-            return stop
+        col_default_range = False
 
+        if comm.isnumeric(stop):
+            pp('---- returning cause isnumeric! ----')
+            assert(isinstance(stop, int))
+            return stop, col_default_range
+
+        pp('---- going thru some logics cause not numeric! ----')
         if is_range:
             if step >= 0:
                 if self.infile_item_count is None:
-                    # fixme: determine impacts of this (extra big indexes?)
-                    int_stop = 999
-                    #int_stop = None # experiment!
-                    #raise UnboundedStopWithoutItemCountError
+                    if self.spec_type in ('incl_rec', 'excl_rec'):
+                        raise UnboundedStopWithoutItemCountError
+                    else:
+                        int_stop = DEFAULT_COL_RANGE_STOP
+                        col_default_range = True
                 else:
                     int_stop = self.infile_item_count + 1
             else:
@@ -510,14 +530,13 @@ class Specifications:
             else:
                 int_stop = start -1
 
-        return int_stop
+        return int_stop, col_default_range
 
 
-
-    def has_everything(self) -> bool:
-        assert self.specs_strings != []
-        return self.specs_strings == [':']
-
+#    def has_everything(self) -> bool:
+#        assert self.specs_strings != []
+#        return self.specs_strings == [':']
+#
 
     def has_all_inclusions(self) -> bool:
         return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings in ([':'], ['::1'], ['::-1'])
@@ -551,6 +570,7 @@ class Indexer:
        self.includes_out_of_order = False
        self.index_count = 0
        self.prior_max = -1
+       self.col_default_range = False
 
 
 
@@ -574,6 +594,8 @@ class Indexer:
            if rec.is_full_step():
                range_index = self._expand_one_fullstep_range(rec)
                index += range_index
+               if rec.col_default_range:
+                   self.col_default_range = True
            elif rec.is_random_step():
                range_index = self._expand_one_random_range(rec)
                index += range_index
@@ -586,12 +608,6 @@ class Indexer:
            self.valid = False
            self.index = []
 
-       #pp(f'{self.includes_out_of_order=}')
-       #pp(f'{self.includes_repeats=}')
-       #pp(f'{self.includes_reverse=}')
-       #pp(f'{self.valid=}')
-       #pp(f'{self.index=}')
-       #print('\n********************************************************')
 
 
    def _expand_one_fullstep_range(self,
@@ -623,7 +639,7 @@ class Indexer:
                 prior_max = abs(part)
 
                 count += 1
-                if count > item_max:      # limits index to max mem size
+                if count > item_max:
                     nop = True
                 elif not nop:
                     index.append(part)
@@ -686,87 +702,6 @@ class Indexer:
 
 
 
-
-
-
-   def has_repeats(self) -> bool:
-       # Lets assume that there may be repeats if the index build failed:
-       if not self.valid:
-           return False
-
-       # Only works if specs_expanded has been populated!
-       if len(set(self.index)) != len(self.index):
-           return True
-
-       return False
-
-
-
-def includes_all_or_none(specs) -> bool:
-    """
-    """
-    if len(specs) == 0:
-        return True
-    elif len(specs) == 1 and specs[0].strip() in ('', ':', '::-1', '::1'):
-        return True
-    return False
-
-
-
-def is_index_out_of_order(index) -> bool:
-    """
-    Considers either mixed-order or reverse order True
-    Note: if the index is empty - because its build failed (too big?) this will return True!
-    """
-    last_val = None
-    for val in index:
-        if last_val is None:
-            last_val = val
-        elif val < last_val:
-            return True
-        elif val == last_val:
-            continue
-        else:
-            last_val = val
-    return False
-
-
-
-
-def spec_has_negatives(spec: List[str]) -> bool:
-    """ Checks for negative values in a list of specs
-    """
-    for item in spec:
-        parts = item.split(':')
-        for i, part in enumerate(parts):
-            if i in (0,1):
-                if comm.isnumeric(part):
-                    if int(part) < 0:
-                        return True
-    return False
-
-
-
-def spec_has_unbounded_end(spec: List[str]) -> bool:
-    """ Checks for unbounded outer range in a list of specs
-
-        Does not consider that the first part of a single spec
-        is the stopping offset when using negative steps.
-    """
-    if spec in ([], [':'], ['::']):
-        return True
-    for item in spec:
-        parts = item.split(':')
-        if len(parts) in (2, 3):
-            if parts[1] == '':
-                return True
-        elif len(parts) == 1:
-            if parts[0].strip() == '':
-                return True
-    return False
-
-
-
 class ItemCountTooBigException(Exception):
     pass
 
@@ -784,3 +719,4 @@ class UnidentifiableNonNumericSpec(Exception):
 
 class UnboundedStopWithoutItemCountError(Exception):
     pass
+
