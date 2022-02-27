@@ -18,6 +18,8 @@ import sys
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Union, NoReturn
 
+import psutil
+
 from datagristle._version import __version__
 
 
@@ -250,3 +252,47 @@ def validate_python_version():
               'Minimum version is 3.8 but this is being run on '
               f'{sys.version_info.major}.{sys.version_info.minor}')
 
+
+
+class MemoryLimiter:
+
+    def __init__(self,
+                 max_mem_percent: float = None,
+                 max_mem_gbytes: float = None):
+
+        assert not (max_mem_percent and max_mem_gbytes)
+        if max_mem_percent:
+            assert 0 < max_mem_percent <= 1.0
+        elif max_mem_gbytes:
+            assert max_mem_gbytes < 128
+        else:
+            max_mem_percent = 0.5
+
+        total_mem = psutil.virtual_memory().total
+
+        if max_mem_percent:
+            self.max_memory_bytes = total_mem * max_mem_percent
+        else:
+            self.max_memory_bytes = max_mem_gbytes * 1024 * 1024 * 1024
+
+        self.rec_sizes = []
+        self.max_rec_number: int = None
+        self.call_count = 0
+
+    def check_record(self,
+                     record: list[Any],
+                     record_number: int=None):
+
+        self.call_count += 1
+
+        if self.call_count < 100:
+            self.rec_sizes.append(sum([sys.getsizeof(x) for x in record]))
+        elif self.call_count == 100:
+            avg_rec_size = sum(self.rec_sizes) / 100
+            self.max_rec_number = self.max_memory_bytes / avg_rec_size
+            print(f'*****************{self.max_memory_bytes=}')
+            print(f'*****************{avg_rec_size=}')
+            print(f'*****************{self.max_rec_number=}')
+        else:
+            if record_number > self.max_rec_number:
+                raise MemoryError

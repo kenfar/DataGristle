@@ -58,7 +58,7 @@ from pydantic import BaseModel, ValidationError, validator, root_validator
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
 
-MAX_INDEX_REC_CNT = 10_000_000
+MAX_INDEX_REC_CNT = 20_000_000
 DEFAULT_COL_RANGE_STOP = 5_000
 
 
@@ -91,7 +91,7 @@ class SpecRecord(BaseModel):
         return values
 
     @root_validator()
-    def limit_offsets_to_inclusions(cls, values: Dict) -> Dict:
+    def limit_steps_to_inclusions(cls, values: Dict) -> Dict:
         spec_type = values.get('spec_type')
         step = values.get('step')
         if spec_type not in ('incl_rec', 'incl_col'):
@@ -226,14 +226,12 @@ class Specifications:
                  spec_type: str,
                  specs_strings: List[str],
                  header: Optional[csvhelper.Header] = None,
-                 infile_item_count: int = None,
-                 item_max: int=sys.maxsize):
+                 infile_item_count: int = None):
 
         self.spec_type = spec_type
         self.specs_strings = specs_strings
         self.header = header
         self.infile_item_count = infile_item_count
-        self.item_max = item_max
 
         assert spec_type in ['incl_rec', 'excl_rec', 'incl_col', 'excl_col']
 
@@ -511,7 +509,7 @@ class Specifications:
             assert(isinstance(stop, int))
             return stop, col_default_range
 
-        pp('---- going thru some logics cause not numeric! ----')
+        #pp('---- going thru some logics cause not numeric! ----')
         if is_range:
             if step >= 0:
                 if self.infile_item_count is None:

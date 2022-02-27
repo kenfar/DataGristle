@@ -211,8 +211,6 @@ class Test7x7File:
         valid.append('1-0,1-1,1-2,1-3,1-4,1-5,1-6')
 
         rc, actual = self.runner(incl_rec_spec='-r 0:2', incl_col_spec='-c 0:999', mode=mode)
-        #fixme: should be non-zero rc?
-        #assert rc == 0
         assert valid == actual
 
 
@@ -222,8 +220,7 @@ class Test7x7File:
         valid = []
 
         rc, actual = self.runner(incl_rec_spec='-r 0', incl_col_spec='-c 999', mode=mode)
-        #fixme: should be non-zero rc?
-        #assert rc == 1
+        assert rc == 0
         assert valid == actual
 
 
@@ -284,7 +281,6 @@ class TestEmptyFile:
         print(r.std_out)
         print(r.std_err)
         assert r.status_code == errno.ENODATA
-        #assert r.status_code == 1
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
@@ -341,14 +337,13 @@ class TestStdin(object):
         assert valid == actual
 
 
+
 def load_file(fn: str) -> list[str]:
     out_recs = []
     for rec in fileinput.input(fn):
         out_recs.append(rec)
     fileinput.close()
     return out_recs
-
-
 
 
 
@@ -399,6 +394,11 @@ class TestPerformance(object):
                          {opt}
                          --verbosity debug
                '''
+        pp('================================================')
+        pp('================================================')
+        pp(cmd)
+        pp('================================================')
+        pp('================================================')
         r = envoy.run(cmd)
         if r.status_code:
             print('Status Code:  %d' % r.status_code)
@@ -421,7 +421,7 @@ class TestPerformance(object):
                      options='''--delimiter=',' --quoting=quote_none''')
         duration = time.time() - start_time
         pp(duration)
-        assert 12 > duration > 8
+        assert duration < 15
         assert rec_cnt(self.out_fqfn) == self.input_count
 
 
@@ -432,7 +432,7 @@ class TestPerformance(object):
                      options='''--delimiter=',' --quoting=quote_none''')
         duration = time.time() - start_time
         pp(duration)
-        assert 12 > duration > 8
+        assert duration < 12
         assert rec_cnt(self.out_fqfn) == self.input_count / 2
 
 
@@ -443,7 +443,7 @@ class TestPerformance(object):
                      options='''--delimiter=',' --quoting=quote_none''')
         duration = time.time() - start_time
         pp(duration)
-        assert 1 > duration > 0.1
+        assert duration < 1
         assert rec_cnt(self.out_fqfn) == 10
 
 
@@ -454,7 +454,7 @@ class TestPerformance(object):
                      options='''--delimiter=',' --quoting=quote_none''')
         duration = time.time() - start_time
         pp(duration)
-        assert 8 > duration > 3
+        assert duration < 8
         assert rec_cnt(self.out_fqfn) == self.input_count
 
 
@@ -466,7 +466,7 @@ class TestPerformance(object):
                      options='''--delimiter=',' --quoting=quote_none''')
         duration = time.time() - start_time
         pp(duration)
-        assert 8 > duration > 4
+        assert duration < 10
         assert rec_cnt(self.out_fqfn) == self.input_count
 
 

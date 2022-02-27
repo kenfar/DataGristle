@@ -12,129 +12,43 @@ import datagristle.location_slicer  as mod
 import datagristle.csvhelper as csvhelper
 
 
-#class Test_spec_has_negatives(object):
-#
-#    def test_has_negatives_simple_inputs(self):
-#        assert mod.spec_has_negatives(['1']) is False
-#        assert mod.spec_has_negatives(['1', '1']) is False
-#        assert mod.spec_has_negatives(['-1', '1', '2', '-12'])
-#        assert mod.spec_has_negatives(['0', '1', '2', '3']) is False
-#
-#    def test_has_negatives_complex_inputs(self):
-#        assert mod.spec_has_negatives(['1', '2']) is False
-#        assert mod.spec_has_negatives([':', '1', '2']) is False
-#        assert mod.spec_has_negatives(['1:', '1', '2']) is False
-#        assert mod.spec_has_negatives([':1', '1', '2']) is False
-#        assert mod.spec_has_negatives(['1:1', '1', '2']) is False
-#        assert mod.spec_has_negatives(['1', '1:', '2']) is False
-#        assert mod.spec_has_negatives(['-1:', '2'])
-#        assert mod.spec_has_negatives([':-1', '2'])
-#        assert mod.spec_has_negatives(['-1:-1', '2'])
-#        assert mod.spec_has_negatives(['-1:-1', '3:9'])
-#
-#    def test_has_negatives_none_values(self):
-#        assert mod.spec_has_negatives([]) is False
-#
-#    def test_positive_steps(self):
-#        assert mod.spec_has_negatives(['::1']) is False
-#        assert mod.spec_has_negatives(['1:1:1']) is False
-#        assert mod.spec_has_negatives(['-1:1:1']) is True
-#        assert mod.spec_has_negatives(['1:-1:1']) is True
-#
-#    def test_negative_steps(self):
-#        assert mod.spec_has_negatives(['::-1']) is False
-#
-#    def test_random_steps(self):
-#        assert mod.spec_has_negatives(['::0.25']) is False
-#        assert mod.spec_has_negatives(['-1::0.25']) is True
-#        assert mod.spec_has_negatives([':-1:0.25']) is True
-#
-#    def test_with_strings(self):
-#        assert mod.spec_has_negatives(['account-number:20:1']) is False
-#        assert mod.spec_has_negatives(['accountnumber:20:1']) is False
-#        assert mod.spec_has_negatives(['accountnumber:20']) is False
-#        assert mod.spec_has_negatives(['accountnumber']) is False
 
 
+class TestSpecRecord:
 
-#class Test_spec_has_unbounded_end(object):
-#
-#    def test_bounded(self):
-#        assert mod.spec_has_unbounded_end(['1']) is False
-#        assert mod.spec_has_unbounded_end(['1', '2', '3']) is False
-#        assert mod.spec_has_unbounded_end(['1:10']) is False
-#        assert mod.spec_has_unbounded_end(['1:10', '20:30']) is False
-#        assert mod.spec_has_unbounded_end(['1:10:1']) is False
-#        assert mod.spec_has_unbounded_end(['1:10:-1']) is False
-#        assert mod.spec_has_unbounded_end(['account:name']) is False
-#
-#    def test_unbounded(self):
-#        assert mod.spec_has_unbounded_end([':']) is True
-#        assert mod.spec_has_unbounded_end(['::']) is True
-#        assert mod.spec_has_unbounded_end(['1:']) is True
-#        assert mod.spec_has_unbounded_end(['1::2']) is True
-#
-#    def test_empty(self):
-#        assert mod.spec_has_unbounded_end([]) is True
-#
-#    def test_negative_step(self):
-#        assert mod.spec_has_unbounded_end([':50:-1']) is False
-#
+    def test_normal_happypath(self):
+        spec_record = mod.SpecRecord(start=0, stop=3, step=1, spec_type='incl_rec', col_default_range=False)
+        spec_record = mod.SpecRecord(start=10, stop=20, step=2, spec_type='incl_col', col_default_range=True)
 
+    def test_invalid_spec_type(self):
+        with pytest.raises(SystemExit):
+            spec_record = mod.SpecRecord(start=10, stop=20, step=2, spec_type='blahblahblah', col_default_range=True)
 
-#class Test_is_index_out_of_order(object):
-#
-#    def setup_spec(self,
-#                   specs_strings,
-#                   spec_type='incl_rec'):
-#
-#        self.spec = mod.Specifications(spec_type=spec_type,
-#                                       specs_strings=specs_strings,
-#                                       header=None,
-#                                       infile_item_count=100)
-#        self.indexer = mod.Indexer(self.spec.specs_final)
-#        self.indexer.builder()
-#        self.index = self.indexer.index
-#
-#
-#    def test_in_order(self):
-#        self.setup_spec(['1'])
-#        assert mod.is_index_out_of_order(self.index) is False
-#
-#        self.setup_spec(['1', '2', '3'])
-#        assert mod.is_index_out_of_order(self.index) is False
-#
-#        self.setup_spec(['1:10', '20:30', '40:50'])
-#        assert mod.is_index_out_of_order(self.index) is False
-#
-#        self.setup_spec(['-50', '-5'])
-#        assert mod.is_index_out_of_order(self.index) is False
-#
-#
-#    def test_empty(self):
-#        self.setup_spec([])
-#        assert mod.is_index_out_of_order(self.index) is False
-#
-#
-#    def test_reverse_order(self):
-#
-#        self.setup_spec(['3', '2', '1'])
-#        assert mod.is_index_out_of_order(self.index) is True
-#
-#        self.setup_spec(['30:40', '10:20'])
-#        assert mod.is_index_out_of_order(self.index) is True
-#
-#        self.setup_spec(['-5', '-50'])
-#        assert mod.is_index_out_of_order(self.index) is True
-#
-#
-#    def test_mixed_order(self):
-#        self.setup_spec(['1', '3', '2'])
-#        assert mod.is_index_out_of_order(self.index) is True
-#
-#        self.setup_spec(['1:10', '30:40', '20:29'])
-#        assert mod.is_index_out_of_order(self.index) is True
-#
+    def test_invalid_start_stop(self):
+        with pytest.raises(SystemExit):
+            spec_record = mod.SpecRecord(start=8, stop=1, step=1, spec_type='incl_rec', col_default_range=True)
+
+        with pytest.raises(SystemExit):
+            spec_record = mod.SpecRecord(start=1, stop=8, step=-1, spec_type='incl_rec', col_default_range=True)
+
+    def test_zero_step(self):
+        with pytest.raises(SystemExit):
+            spec_record = mod.SpecRecord(start=1, stop=3, step=0, spec_type='incl_rec', col_default_range=False)
+
+    def test_steps_on_exclusions(self):
+        with pytest.raises(SystemExit):
+            spec_record = mod.SpecRecord(start=1, stop=3, step=2, spec_type='excl_rec', col_default_range=False)
+
+    def test_is_full_step(self):
+        spec_record = mod.SpecRecord(start=1, stop=3, step=2, spec_type='incl_rec', col_default_range=False)
+        assert spec_record.is_full_step()
+
+        spec_record = mod.SpecRecord(start=3, stop=1, step=-1, spec_type='incl_rec', col_default_range=False)
+        assert spec_record.is_full_step()
+
+        spec_record = mod.SpecRecord(start=1, stop=3, step=0.25, spec_type='incl_rec', col_default_range=False)
+        assert spec_record.is_full_step() is False
+
 
 
 class TestSpecificationsHelpers(object):
@@ -148,65 +62,43 @@ class TestSpecificationsHelpers(object):
                                        header=None,
                                        infile_item_count=100)
 
-#    def test_has_everything(self):
-#        specs_strings = [':']
-#        self.setup_spec(specs_strings)
-#        assert self.spec.has_everything() is True
-#
-#        specs_strings = ['3']
-#        self.setup_spec(specs_strings)
-#        assert self.spec.has_everything() is False
-#
+    @pytest.mark.parametrize("spec_type", [("incl_rec"),  ("incl_col")])
+    def test_has_all_inclusions_with_inclusions(self, spec_type):
 
-    def test_has_all_inclusions(self):
-        self.setup_spec(specs_strings=[':'], spec_type='incl_rec')
+        self.setup_spec(specs_strings=[':'], spec_type=spec_type)
         assert self.spec.has_all_inclusions() is True
 
-        self.setup_spec(specs_strings=[':'], spec_type='incl_col')
-        assert self.spec.has_all_inclusions() is True
-
-        self.setup_spec(specs_strings=[':'], spec_type='excl_rec')
-        assert self.spec.has_all_inclusions() is False
-
-        self.setup_spec(specs_strings=[':'], spec_type='excl_col')
-        assert self.spec.has_all_inclusions() is False
-
-        self.setup_spec(specs_strings=['1'], spec_type='incl_rec')
-        assert self.spec.has_all_inclusions() is False
-
-        self.setup_spec(specs_strings=['1'], spec_type='incl_col')
-        assert self.spec.has_all_inclusions() is False
-
-        self.setup_spec(specs_strings=['1'], spec_type='excl_rec')
-        assert self.spec.has_all_inclusions() is False
-
-        self.setup_spec(specs_strings=['1'], spec_type='excl_col')
+        self.setup_spec(specs_strings=['1'], spec_type=spec_type)
         assert self.spec.has_all_inclusions() is False
 
 
-    def test_has_exclusions(self):
-        self.setup_spec(specs_strings=[':'], spec_type='incl_rec')
+    @pytest.mark.parametrize("spec_type", [("excl_rec"), ("excl_col")])
+    def test_has_all_inclusions_with_exclusions(self, spec_type):
+
+        self.setup_spec(specs_strings=[':'], spec_type=spec_type)
+        assert self.spec.has_all_inclusions() is False
+
+        self.setup_spec(specs_strings=['1'], spec_type=spec_type)
+        assert self.spec.has_all_inclusions() is False
+
+
+    @pytest.mark.parametrize("spec_type", [("incl_rec"),  ("incl_col")])
+    def test_has_exclusions_on_inclusions(self, spec_type):
+
+        self.setup_spec(specs_strings=[':'], spec_type=spec_type)
         assert self.spec.has_exclusions() is False
 
-        self.setup_spec(specs_strings=[':'], spec_type='incl_col')
+        self.setup_spec(specs_strings=[], spec_type=spec_type)
         assert self.spec.has_exclusions() is False
 
-        self.setup_spec(specs_strings=['1'], spec_type='excl_rec')
+
+    @pytest.mark.parametrize("spec_type", [("excl_rec"), ("excl_col")])
+    def test_has_exclusions_on_exclusions(self, spec_type):
+
+        self.setup_spec(specs_strings=['1'], spec_type=spec_type)
         assert self.spec.has_exclusions() is True
 
-        self.setup_spec(specs_strings=['1'], spec_type='excl_col')
-        assert self.spec.has_exclusions() is True
-
-        self.setup_spec(specs_strings=['1'], spec_type='incl_rec')
-        assert self.spec.has_exclusions() is False
-
-        self.setup_spec(specs_strings=['1'], spec_type='incl_col')
-        assert self.spec.has_exclusions() is False
-
-        self.setup_spec(specs_strings=[], spec_type='excl_rec')
-        assert self.spec.has_exclusions() is False
-
-        self.setup_spec(specs_strings=[], spec_type='excl_col')
+        self.setup_spec(specs_strings=[], spec_type=spec_type)
         assert self.spec.has_exclusions() is False
 
 
@@ -221,10 +113,10 @@ class TestSpecificationsCleaner(object):
 
 
         if header:
-           header_obj = csvhelper.Header()
-           header_obj.load_from_list(field_names=header)
+            header_obj = csvhelper.Header()
+            header_obj.load_from_list(field_names=header)
         else:
-           header_obj = None
+            header_obj = None
 
         self.spec = mod.Specifications(spec_type=spec_type,
                                        specs_strings=specs_strings,
@@ -266,6 +158,7 @@ class TestSpecificationsCleaner(object):
         self.setup_spec(specs_strings=['5::'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
         assert self.flatten_spec(0) == (5, 101, 1)
+
 
     def test_too_many_colons(self):
         with pytest.raises(SystemExit) as excinfo:
@@ -319,11 +212,9 @@ class TestSpecificationsCleaner(object):
         assert len(self.spec.specs_final) == 1
         assert self.flatten_spec(0) == (5, 10, 1)
 
-
         self.setup_spec(specs_strings=['5:10:2'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
         assert self.flatten_spec(0) == (5, 10, 2)
-
 
         self.setup_spec(specs_strings=['::2'], spec_type='incl_rec')
         assert self.flatten_spec(0) == (0, 101, 2)
@@ -339,19 +230,16 @@ class TestSpecificationsCleaner(object):
         self.setup_spec(specs_strings=['20:10:-1'], item_count=None)
         assert self.flatten_spec(0) == (20, 10, -1)
 
+
     def test_negative_skipping(self):
         self.setup_spec(specs_strings=['8:2:-1'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
         assert self.flatten_spec(0) == (8, 2, -1)
 
 
-#fixme:
     def test_minusone_item_count_with_empty_stop(self):
         with pytest.raises(mod.UnboundedStopWithoutItemCountError):
             self.setup_spec(specs_strings=['2::'], item_count=None)
-        #assert len(self.spec.specs_final) == 1
-        #assert self.flatten_spec(0) == (2, sys.maxsize, 1.0)
-        #assert self.flatten_spec(0) == (2, 999, 1.0)
 
 
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
@@ -361,19 +249,14 @@ class TestSpecificationsCleaner(object):
         assert self.flatten_spec(0) == (2, -1, -1)
 
 
-#fixme:
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
         with pytest.raises(mod.NegativeStepWithoutItemCountError):
-        #with pytest.raises(SystemExit):
             self.setup_spec(specs_strings=['::-1'], item_count=None)
 
 
-#fixme:
     def test_minusone_item_count_with_empty_start_and_pos_step(self):
         with pytest.raises(mod.UnboundedStopWithoutItemCountError):
             self.setup_spec(specs_strings=['::1'], item_count=None)
-        #assert len(self.spec.specs_final) == 1
-        #assert self.flatten_spec(0) == (0, 999, 1)
 
 
     def test_good_item_count_with_empty_start_and_pos_step(self):
@@ -461,29 +344,16 @@ class TestIndexer(object):
         self.setup_spec([':5'])
         assert self.index == [0, 1, 2, 3, 4]
 
+
     def test_empty(self):
         self.setup_spec([])
         assert self.index == []
-
 
 
     def test_repeats(self):
         self.setup_spec(['1', '2', '2'])
         assert self.index == [1, 2, 2]
 
-
-#    def test_has_repeats(self):
-#        self.setup_spec(['1', '2', '2'])
-#        assert self.index == [1, 2, 2]
-#        assert self.indexer.has_repeats() is True
-#
-#        self.setup_spec(['1', '2'])
-#        assert self.index == [1, 2]
-#        assert self.indexer.has_repeats() is False
-#
-#        self.setup_spec([])
-#        assert self.index == []
-#        assert self.indexer.has_repeats() is False
 
 
 
@@ -640,15 +510,6 @@ class TestSpecProcessorEvaluator(object):
                                         header=header_obj,
                                         infile_item_count=item_count)
 
-
-#    def simple_setup(self, spec, spec_name, infile_item_count):
-#        self.sp = mod.SpecProcessor(spec, name='incl_row_slicer', header=None, infile_item_count=infile_item_count)
-#
-#    def test_evaluate_starting_offsets(self):
-#
-#        self.simple_setup(['0'], 'rec_incl_spec', 80)
-#        assert self.sp.specs_evaluator(0)
-#        assert self.sp.specs_evaluator(1) is False
 
     def test_evaluate_positive_specs(self):
 

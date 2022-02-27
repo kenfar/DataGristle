@@ -116,7 +116,7 @@ Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 import csv
 import errno
@@ -135,7 +135,6 @@ import datagristle.configulator as conf
 from datagristle import file_io
 from datagristle import helpdoc
 import datagristle.location_slicer as slicer
-import psutil
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -144,9 +143,7 @@ NAME = basename(__file__)
 LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
-MAX_MEM_REC_CNT = 1_000_000
-MAX_MEM_INDEX_CNT = 10_000
-#MAX_MEM_FILE_SIZE_MB = 600
+MAX_MEM_INDEX_CNT = 20_000_000
 
 comm.validate_python_version()
 
@@ -184,7 +181,6 @@ class SliceRunner:
         self.output_handler: file_io.OutputHandler
         self.temp_fn = None
 
-        #self.estimated_rec_cnt = None
         self.rec_cnt = None
         self.col_cnt = None
         self.rec_specs: slicer.Specifications
@@ -202,7 +198,10 @@ class SliceRunner:
 
         self.is_optimized_with_rec_index = False
         self.is_optimized_with_col_index = False
-        self.rec_index_optimization_stop_rec = sys.maxsize
+        self.rec_index_optimization_stop_rec = 0
+
+        self.verify_data_recs = []
+        self.mem_limiter = comm.MemoryLimiter(max_mem_gbytes=nconfig.max_mem_gbytes)
 
 
     def setup_stage1(self) -> None:
@@ -215,9 +214,6 @@ class SliceRunner:
         except (slicer.NegativeOffsetWithoutItemCountError,
                 slicer.NegativeStepWithoutItemCountError,
                 slicer.UnboundedStopWithoutItemCountError) as err:
-            pp('==================================================')
-            pp(err)
-            pp('==================================================')
             if self.is_infiles_from_stdin():
                 self._write_stdin_to_file()
                 self.nconfig, _ = self.config_manager.get_config(self.temp_fn)
@@ -241,15 +237,14 @@ class SliceRunner:
         self._pp(f'    is_optimized_for_all_cols: {self.is_optimized_for_all_cols()}')
         self._pp(f'    is_optimized_with_col_index: {self.is_optimized_with_col_index}')
         self._pp(f'    rec_index_optimization_stop_rec: {self.rec_index_optimization_stop_rec}')
-        assert isinstance(self.rec_index_optimization_stop_rec, int)
 
 
     def _write_stdin_to_file(self):
         start_time = time.time()
 
         assert self.nconfig.infiles[0] == '-'
-        os_handle, self.temp_fn = tempfile.mkstemp(prefix='gristle_slicer_stdin_temp_')
-        with open(self.temp_fn, 'w', newline='') as outbuf:
+        _, self.temp_fn = tempfile.mkstemp(prefix='gristle_slicer_stdin_temp_')
+        with open(self.temp_fn, 'w', newline='', encoding='utf-8') as outbuf:
             writer = csv.writer(outbuf)
             writer.writerows(self.input_handler)
         self.input_handler = file_io.InputHandler([self.temp_fn],
@@ -306,12 +301,10 @@ class SliceRunner:
         exrecords = self.nconfig.exrecords.split(',') if self.nconfig.exrecords else []
         self.rec_specs = slicer.Specifications('incl_rec',
                                                 records,
-                                                infile_item_count=self.rec_cnt,
-                                                item_max=MAX_MEM_REC_CNT)
+                                                infile_item_count=self.rec_cnt)
         self.exrec_specs = slicer.Specifications('excl_rec',
                                                  exrecords,
-                                                 infile_item_count=self.rec_cnt,
-                                                 item_max=MAX_MEM_REC_CNT)
+                                                 infile_item_count=self.rec_cnt)
 
         # col specs:
         records = self.nconfig.columns.split(',')
@@ -319,13 +312,11 @@ class SliceRunner:
         self.col_specs = slicer.Specifications('incl_col',
                                                 records,
                                                 infile_item_count=self.col_cnt,
-                                                header=self.nconfig.header,
-                                                item_max=10_000)
+                                                header=self.nconfig.header)
         self.excol_specs = slicer.Specifications('excl_col',
                                                  exrecords,
                                                  infile_item_count=self.col_cnt,
-                                                 header=self.nconfig.header,
-                                                 item_max=10_000)
+                                                 header=self.nconfig.header)
 
 
     def _setup_slicers(self) -> None:
@@ -358,18 +349,13 @@ class SliceRunner:
                 if spec_item in self.excl_rec_slicer.index:
                     continue
                 else:
-                    if len(self.rec_index) > MAX_MEM_REC_CNT:
+                    if len(self.rec_index) > MAX_MEM_INDEX_CNT:
                         self.rec_index = []
                         break
                     self.rec_index.append(spec_item)
             else:
-                self.rec_index_optimization_stop_rec = max(self.rec_index, default=sys.maxsize)
+                self.rec_index_optimization_stop_rec = max(self.rec_index, default=0)
                 self.is_optimized_with_rec_index = True
-        #else:
-        #    pp(f'{self.incl_rec_slicer.indexer.valid=}')
-        #    pp(f'{self.excl_rec_slicer.indexer.valid=}')
-        #    pp(f'{self.is_optimized_for_all_recs()=}')
-        #    pp(f'{len(self.excl_rec_slicer.index)=}')
 
         self.col_index: List[int] = []
         if (self.incl_col_slicer.indexer.valid
@@ -455,33 +441,41 @@ class SliceRunner:
                 - merged_col_spec: simple list of which columns to slice
         """
         self._pp(f'process: process_recs_from_file')
-        index_rec_start= 0
+        next_index_sub = 0
 
         for rec_number, rec in enumerate(self.input_handler):
 
+            #if rec_number % 1000 == 0:
+            #    self._pp(rec_number)
             if self.is_optimized_for_all_recs():
                 pass
             elif self.is_optimized_with_rec_index:
                 if rec_number > self.rec_index_optimization_stop_rec:
                     if self.is_infiles_from_stdin():
-                        # spin thru the rest of the recs as quickly as possible, doing it all right
-                        # here is about 20% faster than going thru the main loop:
-                        for rec in self.input_handler:
+                        # Need to finish reading from file rather than break so that we don't
+                        # break pipe for pgm piping data to us.  We'll spin thru the rest of 
+                        # the recs as quickly as possible, doing it all right here is about 20%
+                        # faster than going thru the main loop:
+                        break
+                        for _ in self.input_handler:
                             pass
                         break
                     else:
                         break
-                try:
-                    # This only works here because:
-                    #  1. the rec spec must not be out of order - it's a requirement of process_recs_from_file
-                    #  2. the rec spec must not be reverse order
-                    #  3. or the anyorder option was provided
-                    #index_rec_start = self.rec_index.index(rec_number, max(index_rec_start, 0))
-                    index_rec_start = self.rec_index.index(rec_number, index_rec_start)
-                except ValueError as err: # record position not found in merged_rec_spec - must bypass
+
+                # This only works here because:
+                #  1. the rec spec must not be out of order - it's a requirement of process_recs_from_file
+                #  2. the rec spec must not be reverse order
+                #  3. or the anyorder option was provided
+                #if rec_number % 10000 == 0:
+                #    self._pp(f'index lookup: {rec_number=}, {next_index_sub=}')
+
+                if rec_number == self.rec_index[next_index_sub]:
+                    next_index_sub += 1
+                else:
                     continue
+
             else:
-                # fixme: should we also have some kind of stop optimization here?
                 if not self.incl_rec_slicer.specs_evaluator(rec_number):
                     continue
                 elif self.excl_rec_slicer.specs_evaluator(rec_number):
@@ -495,7 +489,7 @@ class SliceRunner:
                 output_rec = self.get_cols_from_index(rec,
                                                       self.col_index)
                 if self.col_default_range:
-                    self.prune_col_index(actual_col_length=len(rec))
+                    self.prune_col_index(actual_col_cnt=len(rec))
             else:
                 output_rec = self.get_cols_from_eval(rec,
                                                      len(rec),
@@ -519,28 +513,28 @@ class SliceRunner:
         if self.excl_rec_slicer.indexer.valid is False:
             comm.abort('Unable to process in memory', 'excl_rec.indexer.invalid')
 
-        self.verify_data_size()
         all_rows = []
 
         rec: List[str] = []
         for rec_number, rec in enumerate(self.input_handler):
             if rec_number > self.rec_index_optimization_stop_rec:
                 if self.is_infiles_from_stdin():
-                    for rec in self.input_handler:
+                    for _ in self.input_handler:
                         pass
                     break
                 else:
                     break
             all_rows.append(rec)
-            if rec_number > MAX_MEM_REC_CNT:
-                comm.abort('ERROR:  too many rows to fit into memory',
-                           'Change options to either process_by_file or process in steps')
+            try:
+                self.mem_limiter.check_record(rec, rec_number)
+            except MemoryError:
+                comm.abort('ERROR: too many rows to fit into memory',
+                            'Change options to either process_by_file or break the process into multiple steps')
 
         # if we originally couldn't get col counts because of stdin,
         # update now that we have it all loaded into a list:
         if self.col_cnt in (None, -1):
             self.col_cnt = len(all_rows[0]) - 1
-        #self._pp(f'{self.col_cnt=}')
         assert self.col_cnt > -1
 
         for rec_num in self.rec_index:
@@ -561,42 +555,6 @@ class SliceRunner:
                 pass
             if output_rec:
                 self.output_handler.write_rec(record=output_rec)
-
-
-    def verify_data_size(self) -> None:
-
-        total_mem_mb = psutil.virtual_memory().total/1024/1024
-        file_size_mb = int(file_io.get_file_size(self.nconfig.infiles)/1024/1024)
-        full_file_mem_required_mb = file_size_mb * 20
-        available_mem_mb = total_mem_mb * 0.67
-        avg_rec_size = file_io.get_file_avg_rec_size(self.nconfig.infiles,
-                                                     self.nconfig.dialect)
-
-        if avg_rec_size is None:
-            part_file_mem_required_mb = None
-            actual_mem_required_mb = None
-        else:
-            part_file_mem_required_mb = avg_rec_size * self.rec_index_optimization_stop_rec/1024/1024
-            actual_mem_required_mb = min(full_file_mem_required_mb, part_file_mem_required_mb)
-
-        self._pp(' ')
-        self._pp('^^^^ Memory Metrics: ^^^^^^^^^^^^^^^^^^^^^^')
-        self._pp(f'    {total_mem_mb=}')
-        self._pp(f'    {file_size_mb=}')
-        self._pp(f'    {self.rec_index_optimization_stop_rec=}')
-        self._pp(f'    {avg_rec_size=}')
-        self._pp(f'    {full_file_mem_required_mb=}')
-        self._pp(f'    {part_file_mem_required_mb=}')
-        self._pp(f'    {int(available_mem_mb)=}')
-        self._pp('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
-
-        msg = ('File is too large for in-memory processing (> 600 MB)'
-               'But in-mem is required due to out of order recs'
-               ' or negative offsets.  Consider removing negative offsets '
-               ' or providing the --anyorder option')
-
-        if actual_mem_required_mb is not None and actual_mem_required_mb > available_mem_mb:
-            comm.abort(msg)
 
 
 
@@ -679,9 +637,8 @@ class ConfigManager(conf.Config):
                                  short_name='R',
                                  default='',
                                  type=str)
-        self.add_custom_metadata(name='max_mem_recs',
-                                 default=10000,
-                                 type=int)
+        self.add_custom_metadata(name='max_mem_gbytes',
+                                 type=float)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
