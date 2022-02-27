@@ -5,11 +5,8 @@
     Copyright 2011-2021 Ken Farmer
 """
 import argparse
-import errno
-import logging
 import csv
 import inspect
-import logging
 import math
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
@@ -255,6 +252,14 @@ def validate_python_version():
 
 
 class MemoryLimiter:
+    """ Prevents us from filling up memory.
+
+    Args:
+        max_mem_percent - a float like 0.5 to represent 50%, defaults to 50%
+        max_mem_gbytes - a float like 2.0 to represent 2 gbytes
+
+    Note that only one of the two memory limits can be provided.
+    """
 
     def __init__(self,
                  max_mem_percent: float = None,
@@ -279,9 +284,20 @@ class MemoryLimiter:
         self.max_rec_number: int = None
         self.call_count = 0
 
+
     def check_record(self,
                      record: list[Any],
                      record_number: int=None):
+        """ Checks memory consumption as records are added into memory.
+
+        Args:
+            record: a list of fields
+            record_number: the number of the record being put into memory
+        Raises:
+            MemoryError is the number of records stored in memory exceeds
+            the estimatd limit - based on the average size of the first 100
+            records, and the limits provided to the class.
+        """
 
         self.call_count += 1
 
@@ -290,9 +306,9 @@ class MemoryLimiter:
         elif self.call_count == 100:
             avg_rec_size = sum(self.rec_sizes) / 100
             self.max_rec_number = self.max_memory_bytes / avg_rec_size
-            print(f'*****************{self.max_memory_bytes=}')
-            print(f'*****************{avg_rec_size=}')
-            print(f'*****************{self.max_rec_number=}')
+            #print(f'*****************{self.max_memory_bytes=}')
+            #print(f'*****************{avg_rec_size=}')
+            #print(f'*****************{self.max_rec_number=}')
         else:
             if record_number > self.max_rec_number:
                 raise MemoryError

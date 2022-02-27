@@ -28,14 +28,14 @@
         - negative values are adjusted to their positive values
 
     Contents:
-		- SpecRecord
-			- desc: a pydantic data class that defines a single spec record
+        - SpecRecord
+            - desc: a pydantic data class that defines a single spec record
         - Specifications
-			- creates a list of SpecRecords
-		- SpecProcessor
-			- runs the Indexer
+            - creates a list of SpecRecords
+        - SpecProcessor
+            - runs the Indexer
         - Indexer
-			- reads a list of SpecRecords
+            - reads a list of SpecRecords
 
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
@@ -64,11 +64,35 @@ DEFAULT_COL_RANGE_STOP = 5_000
 
 
 class SpecRecord(BaseModel):
+    """ Defines a single specification record.
+
+    A run of the program may have multiple spec records in a list.
+
+    Args:
+        start: an integer from 0-n
+        stop:  an integer from 0-n, normally > than start, but must be < start if the step is < 0$a
+        step:  a float: can be positive, negative, or a decimal.  Cannot be 0.
+        spec_type: one of ('incl_rec', 'excl_rec', 'incl_col', 'excl_col')
+    """
+
+
     start:      int
     stop:       int
     step:       float
     spec_type:  str
     col_default_range: bool
+
+    @validator('start')
+    def start_must_be_positive(cls, val) -> int:
+        if val < 0:
+            comm.abort('start must be >= 0')
+        return val
+
+    @validator('stop')
+    def stop_must_be_positive(cls, val) -> int:
+        if val < -1:
+            comm.abort(f'stop must be >= 0, is {val}')
+        return val
 
     @validator('step')
     def step_must_be_nonzero(cls, val) -> float:
@@ -99,7 +123,14 @@ class SpecRecord(BaseModel):
                 comm.abort(f'Error: exclusion spec is not allowed to have steps: {step}')
         return values
 
-    #fixme: add validation to prevent col_default_range from being applied to rows
+    @root_validator()
+    def limit_col_default_range_to_cols(cls, values: Dict) -> Dict:
+        spec_type = values.get('spec_type')
+        col_default_range = values.get('col_default_range')
+
+        if col_default_range and spec_type not in ('incl_col', 'excl_col'):
+             comm.abort(f'Error: col_default_range set for a record spec')
+        return values
 
 
     def is_full_step(self):
@@ -124,22 +155,25 @@ class SpecRecord(BaseModel):
 
 
 
-
-
-
-
 class SpecProcessor:
-    """ Manages all types of specifications - inclusion or exclusion for rows & cols.
+    """ Manages the evaluation of record numbers against spec for a single spec_type
 
-    That means, it translates the specs into useful structures, and supports the
-    evaluation of col or row numbers aginst the specs.
+    It uses the Specification List[SpecRecord] structure as input and supports the
+    evaluation of col or row numbers aginst these specs.
     """
 
     def __init__(self,
-                 specs) -> None:
+                 specs: List[SpecRecord]) -> None:
         """
-        Header: Is always expected for column specs that read from files, but will just be None
-                for columns specs for stdin inputs.  Is also always None for record specs.
+        Args:
+            specs: a List of SpecRecords
+
+        Public Methods:
+            specs_evaluator: evaluates an offset against the list of specs
+
+        Notes:
+            Automatically generates self.index - which is a list of offsets. This
+            supports a fast alternative method of evaluating cols & recs.
         """
         self.specs = specs
 
@@ -149,10 +183,7 @@ class SpecProcessor:
         self.indexer = Indexer(self.specs.specs_final)
         self.indexer.builder()
         self.index = self.indexer.index
-
-        # out of order: will include any reverse-order specs:
         self.includes_out_of_order = self.indexer.includes_out_of_order
-        # repeats won't catch out of order repeats
         self.includes_repeats = self.indexer.includes_repeats
         self.includes_reverse = self.indexer.includes_reverse
 
@@ -160,18 +191,10 @@ class SpecProcessor:
 
     def specs_evaluator(self,
                         location: int) -> bool:
-        """ Evaluates a location (column number or record number) against
-        a specifications list.  Description:
-            - uses the python string slicing formats to specify valid ranges
+        """ Evaluates a location offset against a spec list.
+
+        Uses the python string slicing formats to specify valid ranges
             (all offset from 0):
-            - [4]      = location 4
-            - [1,3]    = location 1 & 2 (end - 1)
-            - [5,None] = location 5 to the end
-            - [None,5] = location 0 to 4 (end - 1)
-            - [None,None] = all locations
-            - template:  spec, spec, spec:spec, spec, spec:spec
-            - example:   [4] , [8] , [10,14]  , [21], [48,55]
-            - The above example is stored in a five-element spec-list
         Args:
             - location:  a column or record number
         Returns:
@@ -195,12 +218,7 @@ class SpecProcessor:
                          location: int) -> bool:
         """ evaluates a single item against a location
         Args:
-            - spec: one line of the specifications, looking like:
-                - [5, 5, 1]
-                - [1, 10, 1]
-                - [3, 10, 2]
-                - [2, 0, -1]
-                - [1, 3, 0.25]
+            - spec: a single SpecRecord
             - location - an integer to be compared to spec
         Returns:
             - True or False
@@ -221,6 +239,22 @@ class SpecProcessor:
 
 
 class Specifications:
+    """ Translates user spec strings into a List of SpecRecords
+
+    For a single spec_type (ex: incl_rec), it will parse a string of specs
+    into a list, translate this and store it as a List of SpecRecords in
+    self.specs_final.
+
+    Args:
+        spec_type - one of ('incl_rec', 'excl_rec', 'incl_col', 'excl_col')
+        specs_strings - big ex '3,6,15,22:28,30:35:2,40:50:-1'
+        header - header object
+        infile_item_count - count of cols or recs, needed for unbound ranges,
+            etc
+
+    Public attributes
+        self.specs_final - List[SpecRecord] automatically generated by init
+    """
 
     def __init__(self,
                  spec_type: str,
@@ -241,36 +275,11 @@ class Specifications:
     def specs_cleaner(self) -> List[SpecRecord]:
         """ Returns a transformed version of the specs
 
-        Args:
-            Specs: these are raw specs, ex: [':5', ':', '4', '3:19']
-            header: this is a csv header object - used to translate names to numbers
-            infile_item_count: this is either a row max or a column max, depending
-              on whether the class is used for rows or cols.  May be None if there are
-              no negatives or unbounded ranges in the specs.
         Returns:
-            clean_specs: ex: [[None, 5], [None, None], [4, 4], [3, 19]]
+            final_specs: List[SpecRecord]
             for specs that are empty   (ex: '') returns: []
-            for specs that are default (ex: ':') returns: [[0, None]]
-            NOTE: the end of the rang eis inclusive, not exclusive
-
-        Example inputs:
-            - [':']
-            - ['::']
-            - ['3']
-            - ['-3']
-            - ['3', '1']
-            - ['::']
-            - ['::-1']
-            - ['3::-1']
-            - [':9:-1']
-            - ['2:9:-1']
-            - ['2:9:2']
-            - ['2:9:0.5']
-            - ['account:customer']
-        Weird Example inputs:
-            - [':', '1']
+            for specs that are default (ex: ':') returns: [SpecRecord]
         """
-
 
         if len(self.specs_strings) == 1:
             if self.specs_strings[0].strip() == '':
@@ -280,34 +289,29 @@ class Specifications:
         for item in self.specs_strings:
 
             try:
-                #pp('')
-                start, stop, step, is_range = self.phase_one__item_parsing(item)
-                #pp(f'phase one results: {start}, {stop}, {step}, {is_range}')
+                start, stop, step, is_range = self.phase1__item_parsing(item)
 
-                int_start, int_stop, float_step = self.phase_two__translate_item_parts(start, stop, step, is_range)
-                #pp(f'phase two results: {int_start}, {int_stop}, {float_step}, {is_range}')
+                int_start, int_stop, float_step = self.phase2__translate_item_parts(start, stop, step, is_range)
 
-                (int_start,
-                 int_stop,
-                 float_step,
-                 col_default_range) = self.phase_three__resolve_dependencies(int_start,
-                                                                             int_stop,
-                                                                             float_step,
-                                                                             is_range)
-                #pp(f'phase three results: {int_start}, {int_stop}, {float_step}, {is_range}')
+                (int_start, int_stop, float_step, col_default_range) = self.phase3__resolve_deps(int_start,
+                                                                                                 int_stop,
+                                                                                                 float_step,
+                                                                                                 is_range)
                 try:
-                    final_rec = SpecRecord(start=int_start, stop=int_stop, step=float_step, spec_type=self.spec_type, col_default_range=col_default_range)
+                    final_rec = SpecRecord(start=int_start,
+                                           stop=int_stop,
+                                           step=float_step,
+                                           spec_type=self.spec_type,
+                                           col_default_range=col_default_range)
                 except ValidationError as err:
                     comm.abort('Error: invalid specification',  f'{self.spec_type}: {start}:{stop}:{step}')
                 final_specs.append(final_rec)
             except OutOfRangeError:
-                # fixme: confirm that we still want to do this!
-                # Just drop & ignore OutOfRangeError
                 continue
         return final_specs
 
 
-    def phase_one__item_parsing(self, item: str) -> Tuple[Optional[str], Optional[str], str, bool]:
+    def phase1__item_parsing(self, item: str) -> Tuple[Optional[str], Optional[str], str, bool]:
         """ Split a specification item string into separate parts
         """
         parts = item.split(':')
@@ -323,11 +327,11 @@ class Specifications:
         return start, stop, step, is_range
 
 
-    def phase_two__translate_item_parts(self,
-                                        orig_start: Optional[str],
-                                        orig_stop: Optional[str],
-                                        orig_step: str,
-                                        is_range: bool) -> Tuple[Optional[int], Optional[int], float]:
+    def phase2__translate_item_parts(self,
+                                     orig_start: Optional[str],
+                                     orig_stop: Optional[str],
+                                     orig_step: str,
+                                     is_range: bool) -> Tuple[Optional[int], Optional[int], float]:
         """ Translate the specification item parts into numeric forms
         """
 
@@ -358,11 +362,11 @@ class Specifications:
         return int_start, int_stop, float_step
 
 
-    def phase_three__resolve_dependencies(self,
-                                          start: Optional[int],
-                                          stop: Optional[int],
-                                          step: float,
-                                          is_range: bool):
+    def phase3__resolve_deps(self,
+                             start: Optional[int],
+                             stop: Optional[int],
+                             step: float,
+                             is_range: bool):
         """Resolve any transformations that depend on multiple parts
         """
         int_start = self.transform_none_start(start, step)
@@ -505,11 +509,9 @@ class Specifications:
         col_default_range = False
 
         if comm.isnumeric(stop):
-            pp('---- returning cause isnumeric! ----')
             assert(isinstance(stop, int))
             return stop, col_default_range
 
-        #pp('---- going thru some logics cause not numeric! ----')
         if is_range:
             if step >= 0:
                 if self.infile_item_count is None:
@@ -531,11 +533,6 @@ class Specifications:
         return int_stop, col_default_range
 
 
-#    def has_everything(self) -> bool:
-#        assert self.specs_strings != []
-#        return self.specs_strings == [':']
-#
-
     def has_all_inclusions(self) -> bool:
         return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings in ([':'], ['::1'], ['::-1'])
 
@@ -547,77 +544,86 @@ class Specifications:
 
 
 class Indexer:
+    """ Explodes the specification ranges into individual offsets.
 
-   def __init__(self,
-                specs,
-                item_count: Optional[int]=None):
+    This function returns a list of all positions that are included within a
+    specification - whether they're directly references, or they fall within
+    a range.
 
-       assert item_count is None or item_count > -1
+    Args:
+        item_count: the number of rows in the file or cols in the row.
+            This value may be None if the calling pgm doesn't think we need to
+            know what the last record is.
 
-       self.specs = specs
-       self.item_max = MAX_INDEX_REC_CNT
-       self.item_count = item_count
-       self.index = []
+    Public Attributes:
+        - self.index - List[int] - has the expanded specs, is empty if too large
+        - self.valid - bool - is False if index is too large for mem
+        - self.includes_reverse - bool
+        - self.includes_repeats - bool
+        - self.includes_out_of_order - bool
+        - self.col_default_range - bool
+
+    Notes:
+        - If the index is too large for memory it will set self.index to [] and self.valid to False
+    Raises:
+        AssertionError - item-count is negative
+    """
+
+    def __init__(self,
+                 specs):
+
+       self._specs = specs
+       self._item_max = MAX_INDEX_REC_CNT
+       self._prior_max = -1
+       self._nop = False
+       self._index_count = 0
+
+       self.index: List[int] = []
        self.valid = True
-
-       assert self.item_max is not None and self.item_max > -1
-
-       self.nop = False
        self.includes_reverse = False
        self.includes_repeats = False
        self.includes_out_of_order = False
-       self.index_count = 0
-       self.prior_max = -1
        self.col_default_range = False
 
 
+    def builder(self):
+        specs = self._specs # lets make this a local ref for speed
+        index = []
 
-   def builder(self):
-       """ Explodes the specification ranges into individual positions.
+        for rec in specs:
 
-       This function returns a list of all positions that are included within a
-       specification - whether they're directly references, or they fall within
-       a range.
+           index += self._expand_one_range(rec)
+           if rec.col_default_range:
+               self.col_default_range = True
 
-       Args:
-           infile_item_count: the number of rows in the file or cols in the row.
-               This value may be -1 if the calling pgm doesn't think we need to
-               know what the last record is.
-       """
-       specs = self.specs # lets make this a local ref for speed
-       index = []
-
-       for rec in specs:
-
-           if rec.is_full_step():
-               range_index = self._expand_one_fullstep_range(rec)
-               index += range_index
-               if rec.col_default_range:
-                   self.col_default_range = True
-           elif rec.is_random_step():
-               range_index = self._expand_one_random_range(rec)
-               index += range_index
-           else:
-                comm.abort('Error! Invalid specification step',
-                           f'step: {step_part} is invalid')
-
-       self.index = index
-       if self.nop:
-           self.valid = False
-           self.index = []
+        self.index = index
+        if self._nop:
+            self.valid = False
+            self.index = []
 
 
+    def _expand_one_range(self,
+                          rec) -> List[int]:
+        """
+        Note:
+        - If too many rows are encountered it will enter a NOP mode, in which
+          it keeps checking for data characteristics like repeating & out of order,
+          but stops appending.  It does this because the index is unusable, which
+          doesn't prevent processing - as long as there are no repeats, reverse, or
+          out of order conditions.
+        - We're copying some object variables into the function & then back again
+          because it saves a ton of time on very large indexes.  A 10m row range takes
+          9.5 seconds on my laptop this way vs 12.5 if we accessed them directly thru
+          self.
+        """
 
-   def _expand_one_fullstep_range(self,
-                                  rec) -> List[int]:
-
-        nop = self.nop
+        nop = self._nop
         reverse = self.includes_reverse
         repeats = self.includes_repeats
         out_of_order = self.includes_out_of_order
-        item_max = self.item_max
-        count = self.index_count
-        prior_max = self.prior_max
+        item_max = self._item_max
+        count = self._index_count
+        prior_max = self._prior_max
         index = []
 
         if rec.step < 0:
@@ -625,10 +631,22 @@ class Indexer:
         if rec.is_sysmaxsize_stop():
             nop = True
         if nop and (out_of_order or repeats or reverse):
+            # no need to go further at this point - since we determined that we
+            # can't complete the index and we also require one.
             pass
         else:
-            for part in range(rec.start, rec.stop, int(rec.step)):
+            if rec.is_full_step():
+                range_step = int(rec.step)
+            else:
+                range_step = 1 * (1 if rec.step > 0 else -1)
+
+            for part in range(rec.start, rec.stop, range_step):
                 assert part > -1
+
+                if rec.is_random_step():
+                    result = random.random()
+                    if abs(rec.step) < result:
+                        continue
 
                 if abs(part) < prior_max:
                     out_of_order = True
@@ -642,66 +660,17 @@ class Indexer:
                 elif not nop:
                     index.append(part)
 
-        self.nop = nop
+        self._nop = nop
+        self._index_count = count
+        self._prior_max = prior_max
         self.includes_reverse = reverse
         self.includes_repeats = repeats
         self.includes_out_of_order = out_of_order
-        self.index_count = count
-        self.prior_max = prior_max
-
-        return index
-
-
-   def _expand_one_random_range(self,
-                                  rec) -> List[int]:
-
-        nop = self.nop
-        reverse = self.includes_reverse
-        repeats = self.includes_repeats
-        out_of_order = self.includes_out_of_order
-        item_max = self.item_max
-        count = self.index_count
-        prior_max = self.prior_max
-        index = []
-
-        if rec.step < 0:
-            reverse = True
-        if rec.is_sysmaxsize_stop():
-            nop = True
-        if nop and (out_of_order or repeats or reverse):
-            pass
-        else:
-            multiplier = 1 if rec.step > 0 else -1
-            for part in range(rec.start, rec.stop, 1*multiplier):
-                assert part > -1
-
-                result = random.random()
-                if abs(rec.step) > result:
-                    if abs(part) < prior_max:
-                        out_of_order = True
-                    elif abs(part) == prior_max:
-                        repeats = True
-                    prior_max = abs(part)
-
-                    count += 1
-                    if count > item_max:
-                        nop = True
-                    elif not nop:
-                        index.append(part)
-
-        self.nop = nop
-        self.includes_reverse = reverse
-        self.includes_repeats = repeats
-        self.includes_out_of_order = out_of_order
-        self.index_count = count
-        self.prior_max = prior_max
 
         return index
 
 
 
-class ItemCountTooBigException(Exception):
-    pass
 
 class NegativeOffsetWithoutItemCountError(Exception):
     pass

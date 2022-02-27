@@ -281,11 +281,10 @@ class TestIndexer(object):
                                        header=None,
                                        infile_item_count=item_count)
 
-        self.indexer = mod.Indexer(self.spec.specs_final,
-                                   item_count=item_count)
-        self.indexer.item_max = item_max
+        self.indexer = mod.Indexer(self.spec.specs_final)
+        #                           item_count=item_count)
+        self.indexer._item_max = item_max
         self.indexer.builder()
-        self.indexer.item_max = item_max
         self.index = self.indexer.index
 
 
