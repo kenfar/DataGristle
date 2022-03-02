@@ -2,17 +2,19 @@
 """ Contains standard io reading & writing code
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2017-2021 Ken Farmer
+    Copyright 2017-2022 Ken Farmer
 """
 import csv
 import errno
 import fileinput
 import io
-import itertools
 import os
+from os.path import join as pjoin
 from pprint import pprint as pp
 import random
 import sys
+import tempfile
+import time
 from typing import List, Optional
 
 import datagristle.csvhelper as csvhelper
@@ -244,11 +246,11 @@ def get_approx_rec_count(files):
         if fn == '-':
             continue
         with open(fn, 'r') as inbuf:
-           for rec in inbuf:
-               rec_size += len(rec)
-               rec_cnt += 1
-               if rec_cnt > 1000:
-                   break
+            for rec in inbuf:
+                rec_size += len(rec)
+                rec_cnt += 1
+                if rec_cnt > 1000:
+                    break
     try:
         avg_rec_size = rec_size / rec_cnt
         approx_rec_cnt = tot_size / avg_rec_size
@@ -257,13 +259,13 @@ def get_approx_rec_count(files):
     return approx_rec_cnt
 
 
+
 def get_rec_count(files: List[str],
                   dialect: csv.Dialect) -> Optional[int]:
     """ Get record counts for input files.
         - Counts have an offset of 0
     """
-    #fixme: counts should have an offset of 1?
-    rec_cnt = -1
+    rec_cnt = 0
     if files[0] == '-':
         return None
 
@@ -274,6 +276,21 @@ def get_rec_count(files: List[str],
                 rec_cnt += 1
     fileinput.close()
     return rec_cnt
+
+
+
+def remove_all_temp_files(prefix: str,
+                          min_age_hours: int) -> None:
+
+    tmpdir = tempfile.gettempdir()
+
+    for fn in os.listdir(tmpdir):
+        if not fn.startswith(prefix):
+            continue
+        seconds = time.time() - os.path.getmtime(pjoin(tmpdir, fn))
+        hours = int(seconds)/60/60
+        if hours >= min_age_hours:
+            os.remove(pjoin(tmpdir, fn))
 
 
 

@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-import datagristle.location_slicer  as mod
+import datagristle.slice_specs as mod
 import datagristle.csvhelper as csvhelper
 
 
@@ -133,11 +133,11 @@ class TestSpecificationsCleaner(object):
     def test_unbounded_start_and_stop(self):
         self.setup_spec(specs_strings=[':'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (0, 101, 1)
+        assert self.flatten_spec(0) == (0, 100, 1)
 
         self.setup_spec(specs_strings=['::'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (0, 101, 1)
+        assert self.flatten_spec(0) == (0, 100, 1)
 
 
     def test_unbounded_start(self):
@@ -153,11 +153,11 @@ class TestSpecificationsCleaner(object):
     def test_unbounded_stop(self):
         self.setup_spec(specs_strings=['5:'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (5, 101, 1)
+        assert self.flatten_spec(0) == (5, 100, 1)
 
         self.setup_spec(specs_strings=['5::'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (5, 101, 1)
+        assert self.flatten_spec(0) == (5, 100, 1)
 
 
     def test_too_many_colons(self):
@@ -191,7 +191,7 @@ class TestSpecificationsCleaner(object):
     def test_negative_translation(self):
         self.setup_spec(specs_strings=['-1'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (100, 101, 1)
+        assert self.flatten_spec(0) == (99, 100, 1)
 
 
     def test_range(self):
@@ -217,13 +217,13 @@ class TestSpecificationsCleaner(object):
         assert self.flatten_spec(0) == (5, 10, 2)
 
         self.setup_spec(specs_strings=['::2'], spec_type='incl_rec')
-        assert self.flatten_spec(0) == (0, 101, 2)
+        assert self.flatten_spec(0) == (0, 100, 2)
 
 
     def test_negative_range(self):
         self.setup_spec(specs_strings=['-10:-2'], spec_type='incl_rec')
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (91, 99, 1)
+        assert self.flatten_spec(0) == (90, 98, 1)
 
 
     def test_out_of_range_negative_skipping(self):
@@ -244,9 +244,8 @@ class TestSpecificationsCleaner(object):
 
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
         self.setup_spec(specs_strings=['2::-1'], item_count=None)
-        assert self.flatten_spec(0) == (2, -1,  -1.0)
+        assert self.flatten_spec(0) == (2, 0,  -1.0)
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (2, -1, -1)
 
 
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
@@ -262,7 +261,7 @@ class TestSpecificationsCleaner(object):
     def test_good_item_count_with_empty_start_and_pos_step(self):
         self.setup_spec(specs_strings=['::-1'], item_count=100)
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (100, -1, -1)
+        assert self.flatten_spec(0) == (100, 0, -1)
 
 
 
@@ -282,7 +281,6 @@ class TestIndexer(object):
                                        infile_item_count=item_count)
 
         self.indexer = mod.Indexer(self.spec.specs_final)
-        #                           item_count=item_count)
         self.indexer._item_max = item_max
         self.indexer.builder()
         self.index = self.indexer.index
@@ -323,7 +321,7 @@ class TestIndexer(object):
 
     def test_with_negatives(self):
         self.setup_spec(['1', '-3', '2'])
-        assert self.index == [1, 98, 2]
+        assert self.index == [1, 97, 2]
 
 
     def test_stepping(self):
@@ -338,7 +336,7 @@ class TestIndexer(object):
 
     def test_unbounded_ends(self):
         self.setup_spec(['95:'])
-        assert self.index == [95, 96, 97, 98, 99, 100]
+        assert self.index == [95, 96, 97, 98, 99]
 
         self.setup_spec([':5'])
         assert self.index == [0, 1, 2, 3, 4]
@@ -567,7 +565,7 @@ class TestSpecProcessorEvaluator(object):
         assert self.sp.specs_evaluator(5) is False
         assert self.sp.specs_evaluator(10)
         assert self.sp.specs_evaluator(78)
-        assert self.sp.specs_evaluator(79)
+        assert self.sp.specs_evaluator(79) is False
         assert self.sp.specs_evaluator(80) is False
 
 
@@ -626,7 +624,7 @@ class TestAgainstPythonSliceDocs(object):
         assert self.simple_runner(['2:'], loc=1) is False
         assert self.simple_runner(['2:'], loc=2)
         assert self.simple_runner(['2:'], loc=3)
-        assert self.simple_runner(['2:'], loc=4)
+        assert self.simple_runner(['2:'], loc=4) is False
 
     def test_evaluate_python_doc_example_3(self):
         # a[:end]      # items from the beginning through end-1
@@ -658,8 +656,8 @@ class TestAgainstPythonSliceDocs(object):
         assert self.simple_runner(['-1'], loc=0) is False
         assert self.simple_runner(['-1'], loc=1) is False
         assert self.simple_runner(['-1'], loc=2) is False
-        assert self.simple_runner(['-1'], loc=3) is False
-        assert self.simple_runner(['-1'], loc=4)
+        assert self.simple_runner(['-1'], loc=3)
+        assert self.simple_runner(['-1'], loc=4) is False
 
     def test_evaluate_python_doc_example_6(self):
         # a[-2:]   # last two items in the array
@@ -668,9 +666,9 @@ class TestAgainstPythonSliceDocs(object):
         # 'de'
         assert self.simple_runner(['-2:'], loc=0) is False
         assert self.simple_runner(['-2:'], loc=1) is False
-        assert self.simple_runner(['-2:'], loc=2) is False
+        assert self.simple_runner(['-2:'], loc=2)
         assert self.simple_runner(['-2:'], loc=3)
-        assert self.simple_runner(['-2:'], loc=4)
+        assert self.simple_runner(['-2:'], loc=4) is False
 
     def test_evaluate_python_doc_example_7(self):
         # a[:-2]   # everything except the last two items
@@ -679,7 +677,7 @@ class TestAgainstPythonSliceDocs(object):
         # 'abc'
         assert self.simple_runner([':-2'], loc=0)
         assert self.simple_runner([':-2'], loc=1)
-        assert self.simple_runner([':-2'], loc=2)
+        assert self.simple_runner([':-2'], loc=2) is False
         assert self.simple_runner([':-2'], loc=3) is False
         assert self.simple_runner([':-2'], loc=4) is False
 
@@ -719,7 +717,7 @@ class TestAgainstPythonSliceDocs(object):
         assert self.simple_runner(['-100:'], loc=1)
         assert self.simple_runner(['-100:'], loc=2)
         assert self.simple_runner(['-100:'], loc=3)
-        assert self.simple_runner(['-100:'], loc=4)
+        assert self.simple_runner(['-100:'], loc=4) is False
 
     def test_evaluate_python_doc_example_11(self):
         # >>> a = 'abcde'

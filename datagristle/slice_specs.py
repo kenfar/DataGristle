@@ -73,6 +73,7 @@ class SpecRecord(BaseModel):
         stop:  an integer from 0-n, normally > than start, but must be < start if the step is < 0$a
         step:  a float: can be positive, negative, or a decimal.  Cannot be 0.
         spec_type: one of ('incl_rec', 'excl_rec', 'incl_col', 'excl_col')
+        col_default_range: True or False
     """
 
 
@@ -205,6 +206,7 @@ class SpecProcessor:
         # Note that the has_all_inclusions optimization will automatically approve all
         # locations - so this depends on the calling code to only give valid locations (ex,
         # those within the range of the file.
+
         if self.has_all_inclusions:
             return True
 
@@ -338,11 +340,10 @@ class Specifications:
         # translate the start:
         start = Specifications.transform_empty_string(orig_start)
         start = self.transform_name(start)
-        start = self.transform_negative_number(start, is_range)
+        start = self.transform_negative_start_number(start, is_range)
         if start is not None and not comm.isnumeric(start):
             raise UnidentifiableNonNumericSpec(f'Do not know how to interpret: {start}')
         int_start = int(start) if start is not None else None
-        #pp(f'{int_start=}')
 
         # translate the stop:
         stop = self.transform_empty_string(orig_stop)
@@ -400,9 +401,9 @@ class Specifications:
         return position
 
 
-    def transform_negative_number(self,
-                                  val: Optional[str],
-                                  is_range: bool) -> Optional[str]:
+    def transform_negative_start_number(self,
+                                        val: Optional[str],
+                                        is_range: bool) -> Optional[str]:
 
         if val is None or int(val) >= 0:
             return val
@@ -412,7 +413,7 @@ class Specifications:
         if self.infile_item_count is None:
             raise NegativeOffsetWithoutItemCountError
 
-        adjusted_val = self.infile_item_count + int_val + 1
+        adjusted_val = self.infile_item_count + int_val
         if adjusted_val < 0:
             if is_range:
                 result = max(adjusted_val, 0)
@@ -435,7 +436,7 @@ class Specifications:
         if self.infile_item_count is None:
             raise NegativeOffsetWithoutItemCountError
 
-        adjusted_val = self.infile_item_count + int_val + 1
+        adjusted_val = self.infile_item_count + int_val
         if adjusted_val < 0:
             if is_range:
                 result = max(adjusted_val, -1)
@@ -461,7 +462,7 @@ class Specifications:
         elif self.infile_item_count is None:
             return val
 
-        if int(val)  > self.infile_item_count:
+        if int(val)  >= self.infile_item_count:
             if is_range:
                 return val
             else:
@@ -521,9 +522,9 @@ class Specifications:
                         int_stop = DEFAULT_COL_RANGE_STOP
                         col_default_range = True
                 else:
-                    int_stop = self.infile_item_count + 1
+                    int_stop = self.infile_item_count
             else:
-                int_stop = -1
+                int_stop = 0
         else:
             if step >= 0:
                 int_stop = start + 1

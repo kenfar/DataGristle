@@ -165,7 +165,7 @@ import datagristle.common as comm
 import datagristle.configulator as conf
 from datagristle import file_io
 from datagristle import helpdoc
-import datagristle.location_slicer as slicer
+import datagristle.slice_specs as slicer
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -298,6 +298,8 @@ class SliceRunner:
         if self.temp_fn:
             os.remove(self.temp_fn)
 
+        file_io.remove_all_temp_files(prefix='gristle_slicer_stdin_temp', min_age_hours=1)
+
 
     def _setup_files(self) -> None:
         self.input_handler = file_io.InputHandler(self.nconfig.infiles,
@@ -314,7 +316,7 @@ class SliceRunner:
         else:
             self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
 
-        self.col_cnt = len(self.nconfig.header.field_names)-1
+        self.col_cnt = len(self.nconfig.header.field_names)
         if self.col_cnt < 0:
             self.col_cnt = None
         if self.nconfig.verbosity == 'debug':
@@ -402,7 +404,6 @@ class SliceRunner:
             else:
                 self.is_optimized_with_col_index = True
         self.col_default_range = self.incl_col_slicer.indexer.col_default_range
-
 
         self._pp(' ')
         self._pp('Index Optimizations: ')
