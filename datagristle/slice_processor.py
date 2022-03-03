@@ -20,21 +20,23 @@ MAX_MEM_INDEX_CNT = 20_000_000
 class SliceRunner:
 
     def __init__(self,
+                 config_manager,
                  nconfig) -> None:
 
+        self.config_manager = config_manager
         self.nconfig = nconfig
-        self.anyorder = False
+
         self.input_handler: file_io.InputHandler
         self.output_handler: file_io.OutputHandler
         self.temp_fn = None
 
         self.rec_cnt = None
         self.col_cnt = None
+
         self.rec_specs: slicer.Specifications
         self.exrec_specs: slicer.Specifications
         self.col_specs: slicer.Specifications
         self.excol_specs: slicer.Specifications
-        self.col_default_range = False
 
         self.incl_rec_slicer: slicer.SpecProcessor
         self.excl_rec_slicer: slicer.SpecProcessor
@@ -43,11 +45,9 @@ class SliceRunner:
         self.valid_rec_spec = None
         self.valid_col_spec = None
 
-        self.is_optimized_with_rec_index = False
-        self.is_optimized_with_col_index = False
-        self.rec_index_optimization_stop_rec = 0
+        self.rec_index = None
+        self.col_index = None
 
-        self.verify_data_recs = []
         self.mem_limiter = comm.MemoryLimiter(max_mem_gbytes=nconfig.max_mem_gbytes)
 
 
@@ -75,15 +75,22 @@ class SliceRunner:
                         verbosity='debug')
 
         self._setup_slicers()
-        self._setup_index_optimization()
+        self.rec_index = RecIndexOptimization(self.incl_rec_slicer,
+                                              self.excl_rec_slicer,
+                                              self.nconfig.verbosity)
+        self.col_index = ColIndexOptimization(self.incl_col_slicer,
+                                              self.excl_col_slicer,
+                                              self.is_optimized_for_all_cols(),
+                                              self.nconfig.verbosity)
 
         self._pp(' ')
         self._pp('Stage2 Optimizations: ')
         self._pp(f'    is_optimized_for_all_recs: {self.is_optimized_for_all_recs()}')
-        self._pp(f'    is_optimized_with_rec_index: {self.is_optimized_with_rec_index}')
+        self._pp(f'    is_optimized_with_rec_index: {self.rec_index.is_valid}')
+        self._pp(f'    rec_index_optimization_stop_rec: {self.rec_index.stop_rec}')
+
         self._pp(f'    is_optimized_for_all_cols: {self.is_optimized_for_all_cols()}')
-        self._pp(f'    is_optimized_with_col_index: {self.is_optimized_with_col_index}')
-        self._pp(f'    rec_index_optimization_stop_rec: {self.rec_index_optimization_stop_rec}')
+        self._pp(f'    is_optimized_with_col_index: {self.col_index.is_valid}')
 
 
     def _write_stdin_to_file(self):
@@ -183,70 +190,6 @@ class SliceRunner:
                     and self.excl_col_slicer.has_exclusions is False)
 
 
-    def _setup_index_optimization(self) -> None:
-
-        start_time = time.time()
-
-        self.rec_index: List[int] = []
-        if (self.incl_rec_slicer.indexer.valid
-        and self.excl_rec_slicer.indexer.valid
-        and len(self.excl_rec_slicer.index) <= 10_000):
-        # Pulling this out until we can figure out how to process in mem in reverse order without index
-        #and self.is_optimized_for_all_recs() is False
-            for spec_item in self.incl_rec_slicer.index:
-                if spec_item in self.excl_rec_slicer.index:
-                    continue
-                else:
-                    if len(self.rec_index) > MAX_MEM_INDEX_CNT:
-                        self.rec_index = []
-                        break
-                    self.rec_index.append(spec_item)
-            else:
-                self.rec_index_optimization_stop_rec = max(self.rec_index, default=0)
-                self.is_optimized_with_rec_index = True
-
-        self.col_index: List[int] = []
-        if (self.incl_col_slicer.indexer.valid
-        and self.excl_col_slicer.indexer.valid
-        and self.is_optimized_for_all_cols() is False):
-            for spec_item in self.incl_col_slicer.index:
-                if spec_item in self.excl_col_slicer.index:
-                    continue
-                else:
-                    if len(self.col_index) > MAX_MEM_INDEX_CNT:
-                        self.col_index = []
-                        break
-                    self.col_index.append(spec_item)
-            else:
-                self.is_optimized_with_col_index = True
-        self.col_default_range = self.incl_col_slicer.indexer.col_default_range
-
-        self._pp(' ')
-        self._pp('Index Optimizations: ')
-        self._pp(f'    {self.incl_rec_slicer.has_all_inclusions=}')
-        self._pp(f'    {self.incl_rec_slicer.indexer.valid=}')
-        self._pp(f'    {len(self.incl_rec_slicer.index)=}')
-        self._pp(f'    {self.incl_rec_slicer.includes_out_of_order=}')
-        self._pp(f'    {self.incl_rec_slicer.includes_repeats=}')
-        self._pp(f'    {self.incl_rec_slicer.includes_reverse=}')
-        self._pp(' ')
-        self._pp(f'    {self.excl_rec_slicer.has_all_inclusions=}')
-        self._pp(f'    {self.excl_rec_slicer.indexer.valid=}')
-        self._pp(f'    {len(self.excl_rec_slicer.index)=}')
-        self._pp(' ')
-        self._pp(f'    {self.incl_col_slicer.indexer.valid=}')
-        self._pp(f'    {self.excl_col_slicer.indexer.valid=}')
-        self._pp(f'--------> setup_index_optimization  duration: {time.time() - start_time:.2f}')
-
-
-    def prune_col_index(self,
-                        actual_col_cnt: int):
-        new_index = []
-        new_index = [x for x in self.col_index if x <= actual_col_cnt]
-        self.col_index = new_index
-        self.col_default_range = False
-
-
     def process_data(self) -> None:
         start_time = time.time()
         if self.must_process_in_memory():
@@ -262,7 +205,7 @@ class SliceRunner:
                 or self.incl_rec_slicer.includes_repeats
                 or self.incl_rec_slicer.includes_reverse):
 
-            if self.is_optimized_with_rec_index:
+            if self.rec_index.is_valid:
                 return True
             elif self.is_optimized_for_all_recs():
                 return True
@@ -293,8 +236,8 @@ class SliceRunner:
 
             if self.is_optimized_for_all_recs():
                 pass
-            elif self.is_optimized_with_rec_index:
-                if rec_number > self.rec_index_optimization_stop_rec:
+            elif self.rec_index.is_valid:
+                if rec_number > self.rec_index.stop_rec:
                     if self.are_infiles_from_stdin():
                         # Need to finish reading from file rather than break so that we don't
                         # break pipe for pgm piping data to us.  We'll spin thru the rest of 
@@ -308,7 +251,7 @@ class SliceRunner:
                         break
 
                 try:
-                    if rec_number == self.rec_index[next_index_sub]:
+                    if rec_number == self.rec_index.index[next_index_sub]:
                         next_index_sub += 1
                     else:
                         continue
@@ -325,11 +268,11 @@ class SliceRunner:
 
             if self.is_optimized_for_all_cols():
                 output_rec = rec
-            elif self.is_optimized_with_col_index:
+            elif self.col_index.is_valid:
                 output_rec = self.get_cols_from_index(rec,
-                                                      self.col_index)
-                if self.col_default_range:
-                    self.prune_col_index(actual_col_cnt=len(rec))
+                                                      self.col_index.index)
+                if self.col_index.col_default_range:
+                    self.col_index.prune_index(actual_col_cnt=len(rec))
             else:
                 output_rec = self.get_cols_from_eval(rec,
                                                      len(rec),
@@ -357,7 +300,7 @@ class SliceRunner:
 
         rec: List[str] = []
         for rec_number, rec in enumerate(self.input_handler):
-            if rec_number > self.rec_index_optimization_stop_rec:
+            if rec_number > self.rec_index.stop_rec:
                 if self.are_infiles_from_stdin():
                     for _ in self.input_handler:
                         pass
@@ -377,14 +320,14 @@ class SliceRunner:
             self.col_cnt = len(all_rows[0]) - 1
         assert self.col_cnt > -1
 
-        for rec_num in self.rec_index:
+        for rec_num in self.rec_index.index:
             output_rec = []
             try:
                 if self.is_optimized_for_all_cols():
                     output_rec = all_rows[rec_num]
-                elif self.is_optimized_with_col_index:
+                elif self.col_index.is_valid:
                     output_rec = self.get_cols_from_index(all_rows[rec_num],
-                                                          self.col_index)
+                                                          self.col_index.index)
                 else:
                     # The slower fallback eval solution:
                     output_rec = self.get_cols_from_eval(all_rows[rec_num],
@@ -447,6 +390,127 @@ class SliceRunner:
     def are_infiles_from_stdin(self) -> bool:
         return bool(self.nconfig.infiles == ['-'])
 
+
+
+class RecIndexOptimization:
+
+    def __init__(self,
+                 incl_rec_slicer,
+                 excl_rec_slicer,
+                 verbosity):
+
+        self.incl_rec_slicer = incl_rec_slicer
+        self.excl_rec_slicer = excl_rec_slicer
+        self.verbosity = verbosity
+
+        self.index: List[int] = []
+        self.stop_rec: int = 0
+        self.is_valid = False
+
+        start_time = time.time()
+        self.build_index()
+        self.duration = time.time() - start_time
+
+        if verbosity == 'debug':
+            self.print_stats()
+
+
+    def build_index(self):
+
+        if (self.incl_rec_slicer.indexer.valid
+        and self.excl_rec_slicer.indexer.valid
+        and len(self.excl_rec_slicer.index) <= 10_000):
+        # Pulling this out until we can figure out how to process in mem in reverse order without index
+        #and self.is_optimized_for_all_recs() is False
+            for spec_item in self.incl_rec_slicer.index:
+                if spec_item in self.excl_rec_slicer.index:
+                    continue
+                else:
+                    if len(self.index) > MAX_MEM_INDEX_CNT:
+                        self.index = []
+                        break
+                    self.index.append(spec_item)
+            else:
+                self.stop_rec = max(self.index, default=0)
+                self.is_valid = True
+
+
+    def print_stats(self):
+
+        print(' ')
+        print('Column-Index Optimizations: ')
+        print(f'    {self.incl_rec_slicer.has_all_inclusions=}')
+        print(f'    {self.incl_rec_slicer.indexer.valid=}')
+        print(f'    {len(self.incl_rec_slicer.index)=}')
+        print(f'    {self.incl_rec_slicer.includes_out_of_order=}')
+        print(f'    {self.incl_rec_slicer.includes_repeats=}')
+        print(f'    {self.incl_rec_slicer.includes_reverse=}')
+        print(' ')
+        print(f'    {self.excl_rec_slicer.has_all_inclusions=}')
+        print(f'    {self.excl_rec_slicer.indexer.valid=}')
+        print(f'    {len(self.excl_rec_slicer.index)=}')
+        print(' ')
+        print(f'--------> setup_index_optimization  duration: {self.duration:.2f}')
+
+
+
+class ColIndexOptimization:
+
+    def __init__(self,
+                 incl_col_slicer,
+                 excl_col_slicer,
+                 is_optimized_for_all_cols,
+                 verbosity):
+
+        self.incl_col_slicer = incl_col_slicer
+        self.excl_col_slicer = excl_col_slicer
+        self.verbosity = verbosity
+
+        self.index: List[int] = []
+        self.is_valid = False
+        self.col_default_range: bool
+
+        start_time = time.time()
+        self.build_index(is_optimized_for_all_cols)
+        self.duration = time.time() - start_time
+
+        if verbosity == 'debug':
+            self.print_stats()
+
+
+    def build_index(self,
+                    is_optimized_for_all_cols):
+
+        if (self.incl_col_slicer.indexer.valid
+        and self.excl_col_slicer.indexer.valid
+        and is_optimized_for_all_cols is False):
+            for spec_item in self.incl_col_slicer.index:
+                if spec_item in self.excl_col_slicer.index:
+                    continue
+                else:
+                    if len(self.index) > MAX_MEM_INDEX_CNT:
+                        self.index = []
+                        break
+                    self.index.append(spec_item)
+            else:
+                self.is_valid = True
+        self.col_default_range = self.incl_col_slicer.indexer.col_default_range
+
+
+    def print_stats(self):
+
+        print(' ')
+        print('Column-Index Optimizations: ')
+        print(f'    {self.incl_col_slicer.indexer.valid=}')
+        print(f'    {self.excl_col_slicer.indexer.valid=}')
+        print(f'--------> setup_index_optimization  duration: {self.duration:.2f}')
+
+    def prune_index(self,
+                    actual_col_cnt: int):
+        new_index = []
+        new_index = [x for x in self.index if x <= actual_col_cnt]
+        self.index = new_index
+        self.col_default_range = False
 
 
 
