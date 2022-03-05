@@ -183,13 +183,11 @@ def main() -> int:
     except EOFError:
         return errno.ENODATA
 
-    slice_runner = processor.SliceRunner(config_manager, nconfig)
+    slice_runner = processor.SliceRunner(config_manager)
     slice_runner.setup_stage1()
     slice_runner.setup_stage2()
     slice_runner.process_data()
     slice_runner.shutdown()
-
-    return 0
 
 
 

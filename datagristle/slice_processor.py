@@ -8,7 +8,6 @@ import time
 from typing import List, Tuple, Dict, Any, Optional, IO, Hashable
 
 import datagristle.common as comm
-import datagristle.configulator as conf
 from datagristle import file_io
 import datagristle.slice_specs as slicer
 
@@ -20,11 +19,10 @@ MAX_MEM_INDEX_CNT = 20_000_000
 class SliceRunner:
 
     def __init__(self,
-                 config_manager,
-                 nconfig) -> None:
+                 config_manager) -> None:
 
         self.config_manager = config_manager
-        self.nconfig = nconfig
+        self.nconfig = config_manager.nconfig
 
         self.input_handler: file_io.InputHandler
         self.output_handler: file_io.OutputHandler
@@ -42,13 +40,11 @@ class SliceRunner:
         self.excl_rec_slicer: slicer.SpecProcessor
         self.incl_col_slicer: slicer.SpecProcessor
         self.excl_col_slicer: slicer.SpecProcessor
-        self.valid_rec_spec = None
-        self.valid_col_spec = None
 
         self.rec_index = None
         self.col_index = None
 
-        self.mem_limiter = comm.MemoryLimiter(max_mem_gbytes=nconfig.max_mem_gbytes)
+        self.mem_limiter = comm.MemoryLimiter(max_mem_gbytes=self.nconfig.max_mem_gbytes)
 
 
     def setup_stage1(self) -> None:
@@ -71,8 +67,8 @@ class SliceRunner:
                     slicer.NegativeStepWithoutItemCountError,
                     slicer.UnboundedStopWithoutItemCountError):
                 comm.abort('Error: unable to count rows in file to resolve config references!',
-                        f'Record count: {self.rec_cnt}, Column count: {self.col_cnt}',
-                        verbosity='debug')
+                          f'Record count: {self.rec_cnt}, Column count: {self.col_cnt}',
+                          verbosity='debug')
 
         self._setup_slicers()
         self.rec_index = RecIndexOptimization(self.incl_rec_slicer,
@@ -181,21 +177,35 @@ class SliceRunner:
         self.excl_col_slicer = slicer.SpecProcessor(self.excol_specs)
 
 
-    def is_optimized_for_all_recs(self) -> bool:
-        return bool(self.incl_rec_slicer.has_all_inclusions is True
-                    and self.excl_rec_slicer.has_exclusions is False)
-
-    def is_optimized_for_all_cols(self) -> bool:
-        return bool(self.incl_col_slicer.has_all_inclusions is True
-                    and self.excl_col_slicer.has_exclusions is False)
-
-
     def process_data(self) -> None:
         start_time = time.time()
         if self.must_process_in_memory():
-            self.process_recs_in_memory()
+            processor = MemProcessor(self.nconfig.verbosity,
+                                     self.input_handler,
+                                     self.output_handler,
+                                     self.incl_rec_slicer,
+                                     self.excl_rec_slicer,
+                                     self.incl_col_slicer,
+                                     self.excl_col_slicer,
+                                     self.rec_index,
+                                     self.col_index,
+                                     self.col_cnt,
+                                     self.mem_limiter)
+            processor.process()
+
         else:
-            self.process_recs_from_file()
+            processor = FileProcessor(self.nconfig.verbosity,
+                                      self.input_handler,
+                                      self.output_handler,
+                                      self.incl_rec_slicer,
+                                      self.excl_rec_slicer,
+                                      self.incl_col_slicer,
+                                      self.excl_col_slicer,
+                                      self.rec_index,
+                                      self.col_index,
+                                      self.col_cnt,
+                                      self.mem_limiter)
+            processor.process()
         self._pp(f'--------> process_data duration: {time.time() - start_time:.2f}')
 
 
@@ -216,8 +226,125 @@ class SliceRunner:
         return False
 
 
+    def is_optimized_for_all_cols(self) -> bool:
+        return bool(self.incl_col_slicer.has_all_inclusions is True
+                    and self.excl_col_slicer.has_exclusions is False)
 
-    def process_recs_from_file(self) -> None:
+
+    def is_optimized_for_all_recs(self) -> bool:
+        return bool(self.incl_rec_slicer.has_all_inclusions is True
+                    and self.excl_rec_slicer.has_exclusions is False)
+
+
+    def are_infiles_from_stdin(self) -> bool:
+        return bool(self.input_handler.files == ['-'])
+
+
+
+
+
+
+
+class Processor:
+
+    def __init__(self,
+                 verbosity,
+                 input_handler,
+                 output_handler,
+                 incl_rec_slicer,
+                 excl_rec_slicer,
+                 incl_col_slicer,
+                 excl_col_slicer,
+                 rec_index,
+                 col_index,
+                 col_cnt,
+                 mem_limiter):
+
+        self.input_handler = input_handler
+        self.output_handler = output_handler
+        self.incl_rec_slicer = incl_rec_slicer
+        self.excl_rec_slicer = excl_rec_slicer
+        self.incl_col_slicer = incl_col_slicer
+        self.excl_col_slicer = excl_col_slicer
+        self.rec_index = rec_index
+        self.col_index = col_index
+        self.verbosity = verbosity
+        self.stop_rec = rec_index.stop_rec
+        self.col_cnt = col_cnt
+        self.mem_limiter = mem_limiter
+
+
+    def is_optimized_for_all_recs(self) -> bool:
+        return bool(self.incl_rec_slicer.has_all_inclusions is True
+                    and self.excl_rec_slicer.has_exclusions is False)
+
+
+    def is_optimized_for_all_cols(self) -> bool:
+        return bool(self.incl_col_slicer.has_all_inclusions is True
+                    and self.excl_col_slicer.has_exclusions is False)
+
+
+    def are_infiles_from_stdin(self) -> bool:
+        return bool(self.input_handler.infile == ['-'])
+
+
+    def _pp(self,
+            val: Any) -> None:
+        if self.verbosity == 'debug':
+            print(val)
+
+
+    def get_cols_from_index(self,
+                            input_rec: List[str],
+                            col_index: List[int]) -> List[str]:
+        """ Slightly faster solution (about 20% faster) than evals, but requires
+            more memory.
+        """
+        output_rec = []
+        for col_number in col_index:
+            try:
+                output_rec.append(input_rec[col_number])
+            except IndexError:
+                pass # maybe a short record, or user provided a spec that exceeded cols
+        return output_rec
+
+
+    def get_cols_from_eval(self,
+                           input_rec: List[str],
+                           col_count: int,
+                           incl_col_slicer: slicer.SpecProcessor,
+                           excl_col_slicer: slicer.SpecProcessor) -> List[str]:
+        """ Primarily used for unbounded col ranges with stdin
+            About 20% slower than get_cols_from_index()
+            WARNING: is this actually safe?  does it process in the right order?
+        """
+        #fixme: do we need to ensure that this is only used with cols in order?!?!?!?!
+        output_rec = []
+        for col_number in range(0, col_count):
+            if self.cached_col_eval(col_number, incl_col_slicer, excl_col_slicer):
+                output_rec.append(input_rec[col_number])
+        return output_rec
+
+
+    @functools.lru_cache
+    def cached_col_eval(self,
+                        col_number: int,
+                        incl_col_slicer,
+                        excl_col_slicer) -> bool:
+        """ The caching on this eval speeds it up 50-75% on large files
+            with many columns
+        """
+        if incl_col_slicer.specs_evaluator(location=col_number):
+            if not excl_col_slicer.specs_evaluator(location=col_number):
+                return True
+        return False
+
+
+
+class FileProcessor(Processor):
+
+
+    def process(self) -> None:
         """ Reads the file one record at a time, compares against the
             specification, and then writes out qualifying records and
             columns.
@@ -233,11 +360,10 @@ class SliceRunner:
         next_index_sub = 0
 
         for rec_number, rec in enumerate(self.input_handler):
-
             if self.is_optimized_for_all_recs():
                 pass
             elif self.rec_index.is_valid:
-                if rec_number > self.rec_index.stop_rec:
+                if rec_number > self.stop_rec:
                     if self.are_infiles_from_stdin():
                         # Need to finish reading from file rather than break so that we don't
                         # break pipe for pgm piping data to us.  We'll spin thru the rest of 
@@ -284,7 +410,10 @@ class SliceRunner:
 
 
 
-    def process_recs_in_memory(self) -> None:
+class MemProcessor(Processor):
+
+
+    def process(self) -> None:
         """ Reads the entire file into memory, then processes one record
             at a time, compares against the specification, and then writes
             out qualifying records and columns.
@@ -338,57 +467,6 @@ class SliceRunner:
                 pass
             if output_rec:
                 self.output_handler.write_rec(record=output_rec)
-
-
-
-    def get_cols_from_index(self,
-                            input_rec: List[str],
-                            col_index: List[int]) -> List[str]:
-        """ Slightly faster solution (about 20% faster) than evals, but requires
-            more memory.
-        """
-        output_rec = []
-        for col_number in col_index:
-            try:
-                output_rec.append(input_rec[col_number])
-            except IndexError:
-                pass # maybe a short record, or user provided a spec that exceeded cols
-        return output_rec
-
-
-    def get_cols_from_eval(self,
-                           input_rec: List[str],
-                           col_count: int,
-                           incl_col_slicer: slicer.SpecProcessor,
-                           excl_col_slicer: slicer.SpecProcessor) -> List[str]:
-        """ Primarily used for unbounded col ranges with stdin
-            About 20% slower than get_cols_from_index()
-            WARNING: is this actually safe?  does it process in the right order?
-        """
-        #fixme: do we need to ensure that this is only used with cols in order?!?!?!?!
-        output_rec = []
-        for col_number in range(0, col_count):
-            if self.cached_col_eval(col_number, incl_col_slicer, excl_col_slicer):
-                output_rec.append(input_rec[col_number])
-        return output_rec
-
-
-    @functools.lru_cache
-    def cached_col_eval(self,
-                        col_number: int,
-                        incl_col_slicer,
-                        excl_col_slicer) -> bool:
-        """ The caching on this eval speeds it up 50-75% on large files
-            with many columns
-        """
-        if incl_col_slicer.specs_evaluator(location=col_number):
-            if not excl_col_slicer.specs_evaluator(location=col_number):
-                return True
-        return False
-
-
-    def are_infiles_from_stdin(self) -> bool:
-        return bool(self.nconfig.infiles == ['-'])
 
 
 
@@ -487,11 +565,10 @@ class ColIndexOptimization:
             for spec_item in self.incl_col_slicer.index:
                 if spec_item in self.excl_col_slicer.index:
                     continue
-                else:
-                    if len(self.index) > MAX_MEM_INDEX_CNT:
-                        self.index = []
-                        break
-                    self.index.append(spec_item)
+                if len(self.index) > MAX_MEM_INDEX_CNT:
+                    self.index = []
+                    break
+                self.index.append(spec_item)
             else:
                 self.is_valid = True
         self.col_default_range = self.incl_col_slicer.indexer.col_default_range
