@@ -26,6 +26,7 @@ Dependencies
 
 -  Python 3.8
 -  or Python 3.9
+-  or Python 3.10
 
 CSV Utilities provided in this release:
 =======================================
@@ -59,7 +60,10 @@ CSV Utilities provided in this release:
 
 -  gristle_slicer
 
-   -  Used to extract a subset of columns and rows out of an input file.
+   -  Used to extract a subset of columns and/or rows out of an input
+      file.
+   -  Uses python slicing notation to specific items or ranges of items
+      to extract.
 
 -  gristle_sorter
 
@@ -105,8 +109,12 @@ gristle_slicer
                    with the header field 'dept' for all records
       $ gristle_slicer -i sample.csv -C:-1
                    Prints all columns except for the last for all records
-      $ gristle_slicer -i sample.csv -c:5 -r-100
-                   Prints columns 0-4 for the last 100 records
+      $ gristle_slicer -i sample.csv -c:5 -r 100:1:-1
+                   Prints records 1 to 100 in reverse order
+      $ gristle_slicer -i sample.csv -c:5 -r :100:3
+                   Prints every third record from 0 to 99
+      $ gristle_slicer -i sample.csv -c:5 -r :100:0.25
+                   Prints a random 25% of the records from 0 to 99
       $ gristle_slicer -i sample.csv -c:5 -r-100 -d'|' --quoting=quote_all
                    Prints columns 0-4 for the last 100 records, csv
                    dialect info (delimiter, quoting) provided manually)

@@ -55,8 +55,7 @@ class SliceRunner:
         try:
             self._setup_specs()
         except (slicer.NegativeOffsetWithoutItemCountError,
-                slicer.NegativeStepWithoutItemCountError,
-                slicer.UnboundedStopWithoutItemCountError) as err:
+                slicer.NegativeStepWithoutItemCountError) as err:
             if self.are_infiles_from_stdin():
                 self._write_stdin_to_file()
                 self.nconfig, _ = self.config_manager.get_config(self.temp_fn)
@@ -64,8 +63,7 @@ class SliceRunner:
             try:
                 self._setup_specs()
             except (slicer.NegativeOffsetWithoutItemCountError,
-                    slicer.NegativeStepWithoutItemCountError,
-                    slicer.UnboundedStopWithoutItemCountError):
+                    slicer.NegativeStepWithoutItemCountError):
                 comm.abort('Error: unable to count rows in file to resolve config references!',
                           f'Record count: {self.rec_cnt}, Column count: {self.col_cnt}',
                           verbosity='debug')

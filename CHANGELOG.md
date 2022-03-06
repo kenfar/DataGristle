@@ -1,4 +1,6 @@
 # Current, will become V0.2.3
+   * Improvement: gristle_slicer - add support for writing data out in the config order
+     rather than the data order, as well as negative, positive and random stepping.
    * BREAKING CHANGE: refactored gristle_validator: 
       - added examples
       - improved error reporting

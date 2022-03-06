@@ -60,6 +60,8 @@ import datagristle.csvhelper as csvhelper
 
 MAX_INDEX_REC_CNT = 20_000_000
 DEFAULT_COL_RANGE_STOP = 5_000
+DEFAULT_REC_RANGE_STOP = sys.maxsize
+
 
 
 
@@ -82,6 +84,7 @@ class SpecRecord(BaseModel):
     step:       float
     spec_type:  str
     col_default_range: bool
+    rec_default_range: bool
 
     @validator('start')
     def start_must_be_positive(cls, val) -> int:
@@ -132,6 +135,16 @@ class SpecRecord(BaseModel):
         if col_default_range and spec_type not in ('incl_col', 'excl_col'):
              comm.abort(f'Error: col_default_range set for a record spec')
         return values
+
+    @root_validator()
+    def limit_rec_default_range_to_recs(cls, values: Dict) -> Dict:
+        spec_type = values.get('spec_type')
+        rec_default_range = values.get('rec_default_range')
+
+        if rec_default_range and spec_type not in ('incl_rec', 'excl_rec'):
+             comm.abort(f'Error: rec_default_range set for a column spec')
+        return values
+
 
 
     def is_full_step(self):
@@ -295,16 +308,17 @@ class Specifications:
 
                 int_start, int_stop, float_step = self.phase2__translate_item_parts(start, stop, step, is_range)
 
-                (int_start, int_stop, float_step, col_default_range) = self.phase3__resolve_deps(int_start,
-                                                                                                 int_stop,
-                                                                                                 float_step,
-                                                                                                 is_range)
+                (int_start, int_stop, float_step, col_default_range, rec_default_range) = self.phase3__resolve_deps(int_start,
+                                                                                                                    int_stop,
+                                                                                                                    float_step,
+                                                                                                                    is_range)
                 try:
                     final_rec = SpecRecord(start=int_start,
                                            stop=int_stop,
                                            step=float_step,
                                            spec_type=self.spec_type,
-                                           col_default_range=col_default_range)
+                                           col_default_range=col_default_range,
+                                           rec_default_range=rec_default_range)
                 except ValidationError as err:
                     comm.abort('Error: invalid specification',  f'{self.spec_type}: {start}:{stop}:{step}')
                 final_specs.append(final_rec)
@@ -371,8 +385,8 @@ class Specifications:
         """Resolve any transformations that depend on multiple parts
         """
         int_start = self.transform_none_start(start, step)
-        int_stop, col_default_range = self.transform_none_stop(int_start, stop, step, is_range)
-        return int_start, int_stop, step, col_default_range
+        int_stop, col_default_range, rec_default_range = self.transform_none_stop(int_start, stop, step, is_range)
+        return int_start, int_stop, step, col_default_range, rec_default_range
 
 
     @staticmethod
@@ -504,20 +518,22 @@ class Specifications:
                             start: int,
                             stop: Optional[int],
                             step: float,
-                            is_range: bool) -> int:
+                            is_range: bool) -> (int, bool, bool):
 
         assert stop is None or comm.isnumeric(stop)
         col_default_range = False
+        rec_default_range = False
 
         if comm.isnumeric(stop):
             assert(isinstance(stop, int))
-            return stop, col_default_range
+            return stop, col_default_range, rec_default_range
 
         if is_range:
             if step >= 0:
                 if self.infile_item_count is None:
                     if self.spec_type in ('incl_rec', 'excl_rec'):
-                        raise UnboundedStopWithoutItemCountError
+                        int_stop = DEFAULT_REC_RANGE_STOP
+                        rec_default_range = True
                     else:
                         int_stop = DEFAULT_COL_RANGE_STOP
                         col_default_range = True
@@ -531,7 +547,7 @@ class Specifications:
             else:
                 int_stop = start -1
 
-        return int_stop, col_default_range
+        return int_stop, col_default_range, rec_default_range
 
 
     def has_all_inclusions(self) -> bool:
@@ -573,18 +589,19 @@ class Indexer:
     def __init__(self,
                  specs):
 
-       self._specs = specs
-       self._item_max = MAX_INDEX_REC_CNT
-       self._prior_max = -1
-       self._nop = False
-       self._index_count = 0
+        self._specs = specs
+        self._item_max = MAX_INDEX_REC_CNT
+        self._prior_max = -1
+        self._nop = False
+        self._index_count = 0
 
-       self.index: List[int] = []
-       self.valid = True
-       self.includes_reverse = False
-       self.includes_repeats = False
-       self.includes_out_of_order = False
-       self.col_default_range = False
+        self.index: List[int] = []
+        self.valid = True
+        self.includes_reverse = False
+        self.includes_repeats = False
+        self.includes_out_of_order = False
+        self.col_default_range = False
+        self.rec_default_range = False
 
 
     def builder(self):
@@ -593,9 +610,14 @@ class Indexer:
 
         for rec in specs:
 
-           index += self._expand_one_range(rec)
-           if rec.col_default_range:
-               self.col_default_range = True
+            if rec.rec_default_range:
+                self.rec_default_range = True
+                self.valid = False
+                self.index = []
+                return
+            if rec.col_default_range:
+                self.col_default_range = True
+            index += self._expand_one_range(rec)
 
         self.index = index
         if self._nop:

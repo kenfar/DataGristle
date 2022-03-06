@@ -51,6 +51,7 @@ class InputHandler(object):
         self.rec_cnt = 0                # does not count header records
         self.curr_file_rec_cnt = 0      # does not count header records
         self.infile = None
+        self.eof = False
 
         # If dialect.has_header==True then it will try to read the header.  If the file is empty
         # we could get a stop iteration here.  Instead lets just leave self.header empty and let 
@@ -102,7 +103,11 @@ class InputHandler(object):
                 if self.files[0] == '-' and self.files_read == 1 and self.curr_file_rec_cnt == 0:
                     sys.exit(errno.ENODATA)
                 self.infile.close()
-                self._open_next_input_file()  # will raise StopIteration if out of files
+                try:
+                    self._open_next_input_file()  # will raise StopIteration if out of files
+                except StopIteration:
+                    self.eof = True
+                    raise
 
 
     def _read_next_rec(self) -> List[str]:
@@ -116,6 +121,26 @@ class InputHandler(object):
     def close(self) -> None:
         if self.files[0] != '-' and self.infile:
             self.infile.close()
+
+
+    def reset(self) -> None:
+        """ Resets the Handler back at the start of the first file.
+
+        Is used when processing files multiple times, for example, when
+        first reading to get a file count for the slicer specs, and then
+        to read again.
+        """
+        self.close()
+        self.files_read = 0
+        self.rec_cnt = 0                # does not count header records
+        self.curr_file_rec_cnt = 0      # does not count header records
+        try:
+            self._open_next_input_file()
+        except StopIteration:
+            pass
+
+
+
 
 
 
@@ -274,7 +299,6 @@ def get_rec_count(files: List[str],
             csv_reader = csv.reader(inbuf, dialect=dialect)
             for _ in csv_reader:
                 rec_cnt += 1
-    fileinput.close()
     return rec_cnt
 
 
