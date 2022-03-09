@@ -17,36 +17,46 @@ import datagristle.csvhelper as csvhelper
 class TestSpecRecord:
 
     def test_normal_happypath(self):
-        spec_record = mod.SpecRecord(start=0, stop=3, step=1, spec_type='incl_rec', col_default_range=False)
-        spec_record = mod.SpecRecord(start=10, stop=20, step=2, spec_type='incl_col', col_default_range=True)
+        spec_record = mod.SpecRecord(start=0, stop=3, step=1, spec_type='incl_rec',
+                                     col_default_range=False, rec_default_range=False)
+        spec_record = mod.SpecRecord(start=10, stop=20, step=2, spec_type='incl_col',
+                                     col_default_range=True, rec_default_range=False)
 
     def test_invalid_spec_type(self):
         with pytest.raises(SystemExit):
-            spec_record = mod.SpecRecord(start=10, stop=20, step=2, spec_type='blahblahblah', col_default_range=True)
+            spec_record = mod.SpecRecord(start=10, stop=20, step=2, spec_type='blahblahblah',
+                                        col_default_range=True, rec_default_range=False)
 
     def test_invalid_start_stop(self):
         with pytest.raises(SystemExit):
-            spec_record = mod.SpecRecord(start=8, stop=1, step=1, spec_type='incl_rec', col_default_range=True)
+            spec_record = mod.SpecRecord(start=8, stop=1, step=1, spec_type='incl_rec',
+                                         col_default_range=True, rec_default_range=False)
 
         with pytest.raises(SystemExit):
-            spec_record = mod.SpecRecord(start=1, stop=8, step=-1, spec_type='incl_rec', col_default_range=True)
+            spec_record = mod.SpecRecord(start=1, stop=8, step=-1, spec_type='incl_rec',
+                                         col_default_range=True, rec_default_range=False)
 
     def test_zero_step(self):
         with pytest.raises(SystemExit):
-            spec_record = mod.SpecRecord(start=1, stop=3, step=0, spec_type='incl_rec', col_default_range=False)
+            spec_record = mod.SpecRecord(start=1, stop=3, step=0, spec_type='incl_rec',
+                                         col_default_range=True, rec_default_range=False)
 
     def test_steps_on_exclusions(self):
         with pytest.raises(SystemExit):
-            spec_record = mod.SpecRecord(start=1, stop=3, step=2, spec_type='excl_rec', col_default_range=False)
+            spec_record = mod.SpecRecord(start=1, stop=3, step=2, spec_type='excl_rec',
+                                         col_default_range=True, rec_default_range=False)
 
     def test_is_full_step(self):
-        spec_record = mod.SpecRecord(start=1, stop=3, step=2, spec_type='incl_rec', col_default_range=False)
+        spec_record = mod.SpecRecord(start=1, stop=3, step=2, spec_type='incl_rec',
+                                     col_default_range=False, rec_default_range=False)
         assert spec_record.is_full_step()
 
-        spec_record = mod.SpecRecord(start=3, stop=1, step=-1, spec_type='incl_rec', col_default_range=False)
+        spec_record = mod.SpecRecord(start=3, stop=1, step=-1, spec_type='incl_rec',
+                                     col_default_range=False, rec_default_range=False)
         assert spec_record.is_full_step()
 
-        spec_record = mod.SpecRecord(start=1, stop=3, step=0.25, spec_type='incl_rec', col_default_range=False)
+        spec_record = mod.SpecRecord(start=1, stop=3, step=0.25, spec_type='incl_rec',
+                                     col_default_range=False, rec_default_range=False)
         assert spec_record.is_full_step() is False
 
 
@@ -238,14 +248,15 @@ class TestSpecificationsCleaner(object):
 
 
     def test_minusone_item_count_with_empty_stop(self):
-        with pytest.raises(mod.UnboundedStopWithoutItemCountError):
-            self.setup_spec(specs_strings=['2::'], item_count=None)
+        self.setup_spec(specs_strings=['2::'], item_count=None)
+        assert len(self.spec.specs_final) == 1
+        assert self.flatten_spec(0) == (2, sys.maxsize, 1)
 
 
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
         self.setup_spec(specs_strings=['2::-1'], item_count=None)
-        assert self.flatten_spec(0) == (2, 0,  -1.0)
         assert len(self.spec.specs_final) == 1
+        assert self.flatten_spec(0) == (2, 0,  -1.0)
 
 
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
@@ -254,9 +265,9 @@ class TestSpecificationsCleaner(object):
 
 
     def test_minusone_item_count_with_empty_start_and_pos_step(self):
-        with pytest.raises(mod.UnboundedStopWithoutItemCountError):
-            self.setup_spec(specs_strings=['::1'], item_count=None)
-
+        self.setup_spec(specs_strings=['::1'], item_count=None)
+        assert len(self.spec.specs_final) == 1
+        assert self.flatten_spec(0) == (0, sys.maxsize, 1)
 
     def test_good_item_count_with_empty_start_and_pos_step(self):
         self.setup_spec(specs_strings=['::-1'], item_count=100)

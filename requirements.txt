@@ -3,7 +3,7 @@ colorama    == 0.4.4
 envoy       == 0.0.3
 Flask       == 1.1.2
 Jinja2      == 3.0.3
-jsonschema  == 4.4.0
+jsonschema  == 3.2.0
 more-itertools == 8.12.0
 pre-commit  == 2.12.0
 pydantic    == 1.9.0
