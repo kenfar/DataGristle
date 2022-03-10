@@ -214,6 +214,8 @@ def get_min(value_type: str, values: common.FreqType) -> Any:
         minimum = str(min([transform(x[0]) for x in values if not typer.is_unknown(x[0])]))
     except ValueError:
         return None
+    except TypeError:
+        return None
     else:
         return minimum
 
@@ -249,6 +251,8 @@ def get_max(value_type: str, values: common.FreqType) -> Optional[Any]:
     try:
         maximum = str(max([transform(x[0]) for x in values if not typer.is_unknown(x[0])]))
     except ValueError:
+        return None
+    except TypeError:
         return None
     else:
         return maximum
