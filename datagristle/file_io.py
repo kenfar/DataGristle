@@ -2,16 +2,20 @@
 """ Contains standard io reading & writing code
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2017-2021 Ken Farmer
+    Copyright 2017-2022 Ken Farmer
 """
 import csv
 import errno
+import fileinput
 import io
 import os
+from os.path import join as pjoin
 from pprint import pprint as pp
 import random
 import sys
-from typing import List
+import tempfile
+import time
+from typing import List, Optional
 
 import datagristle.csvhelper as csvhelper
 
@@ -47,6 +51,7 @@ class InputHandler(object):
         self.rec_cnt = 0                # does not count header records
         self.curr_file_rec_cnt = 0      # does not count header records
         self.infile = None
+        self.eof = False
 
         # If dialect.has_header==True then it will try to read the header.  If the file is empty
         # we could get a stop iteration here.  Instead lets just leave self.header empty and let 
@@ -56,13 +61,6 @@ class InputHandler(object):
         except StopIteration:
             pass
 
-#    No longer used - probably because seeking around a csv doesn't work well - because
-#    of newlines.  But lets keep it here for a bit, because we may be adding other file types soon.
-#    self.input_stream = None
-#    def seek(self, offset):
-#        return self.input_stream.seek(offset)
-#    def tell(self):
-#        return self.input_stream.tell()
 
     def _open_next_input_file(self):
 
@@ -105,10 +103,14 @@ class InputHandler(object):
                 if self.files[0] == '-' and self.files_read == 1 and self.curr_file_rec_cnt == 0:
                     sys.exit(errno.ENODATA)
                 self.infile.close()
-                self._open_next_input_file()  # will raise StopIteration if out of files
+                try:
+                    self._open_next_input_file()  # will raise StopIteration if out of files
+                except StopIteration:
+                    self.eof = True
+                    raise
 
 
-    def _read_next_rec(self):
+    def _read_next_rec(self) -> List[str]:
 
         rec = self.csv_reader.__next__()
         self.rec_cnt += 1
@@ -116,9 +118,29 @@ class InputHandler(object):
         return rec
 
 
-    def close(self):
+    def close(self) -> None:
         if self.files[0] != '-' and self.infile:
             self.infile.close()
+
+
+    def reset(self) -> None:
+        """ Resets the Handler back at the start of the first file.
+
+        Is used when processing files multiple times, for example, when
+        first reading to get a file count for the slicer specs, and then
+        to read again.
+        """
+        self.close()
+        self.files_read = 0
+        self.rec_cnt = 0                # does not count header records
+        self.curr_file_rec_cnt = 0      # does not count header records
+        try:
+            self._open_next_input_file()
+        except StopIteration:
+            pass
+
+
+
 
 
 
@@ -140,7 +162,7 @@ class OutputHandler(object):
         assert default_output in (sys.stdout, sys.stderr), "invalid default_output: {}".format(default_output)
         assert 0.0 <= random_out <= 1.0
 
-        self.output_filename = output_filename
+        self.output_filename = output_filename.strip()
         self.dry_run = dry_run
         self.random_out = random_out
         self.dialect = dialect
@@ -148,7 +170,7 @@ class OutputHandler(object):
         if self.output_filename == '-':
             self.outfile = default_output
         else:
-            self.outfile = open(output_filename, mode, encoding='utf-8', newline='')
+            self.outfile = open(self.output_filename, mode, encoding='utf-8', newline='')
         if dialect:
             self.writer = csv.writer(self.outfile, dialect=dialect)
         else:
@@ -202,3 +224,98 @@ class OutputHandler(object):
     def close(self):
         if self.output_filename != '-':
             self.outfile.close()
+
+
+
+def get_file_size(files):
+    tot_size = int(sum([os.path.getsize(fn)
+                        for fn in files
+                        if fn != '-']))
+    return tot_size
+
+
+
+def get_file_avg_rec_size(files, dialect):
+    if files[0] == '-':
+        return None
+
+    rec_sizes = []
+    rec_cnt = 0
+    for fn in files:
+        with open(fn, 'r', newline='', encoding='utf-8') as inbuf:
+            csv_reader = csv.reader(inbuf, dialect=dialect)
+            for rec in csv_reader:
+                rec_sizes.append(get_rec_memory_size_mb(rec))
+                rec_cnt += 1
+                if rec_cnt > 1000:
+                    break
+            if rec_cnt > 1000:
+                break
+    fileinput.close()
+    if rec_cnt == 0:
+        return 0
+    return int(sum([size for size in rec_sizes])/rec_cnt)
+
+
+
+def get_rec_memory_size_mb(rec):
+    return sum([sys.getsizeof(field) for field in rec])
+
+
+
+def get_approx_rec_count(files):
+    tot_size = get_file_size(files)
+    rec_size = 0
+    rec_cnt = 0
+    for fn in files:
+        if fn == '-':
+            continue
+        with open(fn, 'r') as inbuf:
+            for rec in inbuf:
+                rec_size += len(rec)
+                rec_cnt += 1
+                if rec_cnt > 1000:
+                    break
+    try:
+        avg_rec_size = rec_size / rec_cnt
+        approx_rec_cnt = tot_size / avg_rec_size
+    except ZeroDivisionError:
+        approx_rec_cnt = -1
+    return approx_rec_cnt
+
+
+
+def get_rec_count(files: List[str],
+                  dialect: csv.Dialect) -> Optional[int]:
+    """ Get record counts for input files.
+        - Counts have an offset of 0
+    """
+    rec_cnt = 0
+    if files[0] == '-':
+        return None
+
+    for fn in files:
+        with open(fn, 'r', newline='', encoding='utf-8') as inbuf:
+            csv_reader = csv.reader(inbuf, dialect=dialect)
+            for _ in csv_reader:
+                rec_cnt += 1
+    return rec_cnt
+
+
+
+def remove_all_temp_files(prefix: str,
+                          min_age_hours: int) -> None:
+
+    tmpdir = tempfile.gettempdir()
+
+    for fn in os.listdir(tmpdir):
+        if not fn.startswith(prefix):
+            continue
+        seconds = time.time() - os.path.getmtime(pjoin(tmpdir, fn))
+        hours = int(seconds)/60/60
+        if hours >= min_age_hours:
+            os.remove(pjoin(tmpdir, fn))
+
+
+
+

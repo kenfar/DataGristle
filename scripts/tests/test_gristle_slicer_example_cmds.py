@@ -15,6 +15,8 @@ import os
 from os.path import dirname, join as pjoin
 import tempfile
 
+import pytest
+
 import datagristle.csvhelper as csvhelper
 import datagristle.test_tools as test_tools
 
@@ -35,39 +37,75 @@ class TestExamples(test_tools.TestExamples):
         self.script_dir = SCRIPT_DIR
         self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
 
-    def test_example_01(self):
-        self.run_example_config('example-01')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_01(self, mode):
+        self.run_example_config('example-01', mode=mode)
 
-    def test_example_02(self):
-        self.run_example_config('example-02')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_02(self, mode):
+        self.run_example_config('example-02', mode=mode)
 
-    def test_example_03(self):
-        self.run_example_config('example-03')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_03(self, mode):
+        self.run_example_config('example-03', mode=mode)
 
-    def test_example_04(self):
-        self.run_example_config('example-04')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_04(self, mode):
+        self.run_example_config('example-04', mode=mode)
 
-    def test_example_05(self):
-        self.run_example_config('example-05')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_05(self, mode):
+        self.run_example_config('example-05', mode=mode)
 
-    def test_example_06(self):
-        self.run_example_config('example-06')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_06(self, mode):
+        self.run_example_config('example-06', mode=mode)
 
-    def test_example_07(self):
-        self.run_example_config('example-07')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_07(self, mode):
+        self.run_example_config('example-07', mode=mode)
 
 
-    def test_example_21_indiv_rows_and_cols(self):
-        self.run_example_config('example-21')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_21_indiv_rows_and_cols(self, mode):
+        self.run_example_config('example-21', mode=mode)
 
-    def test_example_22_ranges(self):
-        self.run_example_config('example-22')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_22_ranges(self, mode):
+        self.run_example_config('example-22', mode=mode)
 
-    def test_example_23_exclusions(self):
-        self.run_example_config('example-23')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_23_exclusions(self, mode):
+        self.run_example_config('example-23', mode=mode)
 
-    def test_example_24_inclusions_and_exclusions(self):
-        self.run_example_config('example-24')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_24_inclusions_and_exclusions(self, mode):
+        self.run_example_config('example-24', mode=mode)
 
-    def test_example_25_field_names(self):
-        self.run_example_config('example-25')
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_25_field_names(self, mode):
+        self.run_example_config('example-25', mode=mode)
+
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_26_out_of_order(self, mode):
+        self.run_example_config('example-26', mode=mode)
+
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_27_slice_stepping(self, mode):
+        self.run_example_config('example-27', mode=mode)
+
+    @pytest.mark.parametrize("mode", [("file"), ("stdin")])
+    def test_example_28_reverse_slice_stepping(self, mode):
+        self.run_example_config('example-28', mode=mode)
+
+    # It's random, to test this we'll need to add a ton more rows, and then look for a count of
+    # the output that's close to 25%
+    #
+    #def test_example_29_random_slice_stepping(self):
+    #    self.run_example_config_for_return_code('example-29')
+
+    def test_example_30_repeated_rows_and_cols(self):
+        self.run_example_config('example-30')
+
+    def test_example_31_unbounded_ranges(self):
+        self.run_example_config('example-31')

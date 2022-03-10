@@ -1,0 +1,18 @@
+# Simple slicer that demonstrates the following features:
+#     * includes unbounded ranges
+
+infiles: [example-31_unbounded_ranges_input.csv]
+outfile: /tmp/example-31_actualout.csv
+verbosity: debug
+
+records: ':4, 8:'
+columns: ':3, 4:'
+
+quoting: quote_none
+delimiter: '|'
+escapechar: \
+has_no_header: true
+
+quotechar: null
+#doublequote: null               # bools can only be set to true
+#skipinitialspace: null          # bools can only be set to true

@@ -173,7 +173,8 @@ class ConfigManager(conf.Config):
 
 
 
-    def extend_config(self) -> None:
+    def extend_config(self,
+                      override_filename=None) -> None:
         """ Add derrived attributes to our config so they're all in one place.
         """
         self.generate_csv_dialect_config()

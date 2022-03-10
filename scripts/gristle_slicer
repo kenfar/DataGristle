@@ -19,25 +19,98 @@ Main Options:
     -o, --outfile OUTFILE
                         The output file.  The default of '-' is stdout.
     -c, --columns SPEC  The column inclusion specification.
-                        Default is ':' which includes all columns.
+                        Default is '::1' which includes all columns.
     -C, --excolumns SPEC
                         The column exclusion specification.
                         Default is None which excludes nothing.
     -r, --records SPEC  The record inclusion specification.
-                        Default is ':' which includes all records.
+                        Default is '::1' which includes all records.
     -R, --exrecords SPEC
                         The record exclusion specification.
                         Default is None which excludes nothing.
+    --max-mem-gbytes GBYTES
+                        The total number of gbytes to use if we process-in-mem.  This is
+                        used whenever we have specs with reverse steps, out of order recs,
+                        or repeat recs. The default is to use up to 50% of your total
+                        memory.
 
-Notes:
+How inclusion (-r, -c) and exclusion (-R, -C) specs are applied:
+    * Gristle_slicer first applies the inclusion specs, and if none are provided
+      by the user then it defaults to all data.  Then it applies the exclusions.
+    * For example -r 10:90, -R 30:40 would first include records 10 thru 89 (based
+      on a zero offset), and then it would remove  records 30 thru 39.
+
+How specs (-r, -R, -c, -C) are combined:
+    * Gristle_slicer uses the python slicing syntax for the specs.  But that syntax
+      only applies to a single spec.  The gristle_slicer options permit multiple
+      specs, for example:
+         * -r '3,7,8,30:90,-10:' - includes 5 specs: 3 individual offsets, and two ranges
+
+On the ordering of Specs:
+    * Gristle_slicer writes the data in the order of the specs.  So, a spec of
+      '5,9,2' will output the records or columns in that order.
+    * Out of order records or repeating records (ex: -r 5,5,5) require gristle_slicer
+      to first read the data into memory before processing.
+
+How individual specs work:
     Supported slicing specification - for columns (-c, -C) and rows (-r, -R):
-        'NumberN, StartOffset:StopOffset'
-    This specification is either a comma-delimited list of individual offsets or ranges.
-    Offsets are based on zero, and if negative are measured from the end of the record
-    or file with -1 being the final item.  There can be N number of individual offsets.
-    Ranges are a pair of offsets separated by a colon.  The first number indicates the
-    starting offset, and the second number indicates the stop offset +1.
+        'NumberN, StartOffset:StopOffset:Step'
 
+    Basically, offsets are based on zero, and if negative are measured from the end of
+    the record or file with -1 being the final item.  There can be N number of
+    individual offsets or ranges.  Ranges are a pair of offsets separated by a colon.
+    The first number indicates the starting offset, and the second number indicates
+    the stop offset +1.
+
+    Steps allow you to skip records or columns: the default step is 1 - which includes
+    every record or column.  A step of 2 will include every other one.  A fractional
+    step is treated as a probability in order to randomly include records or columns.
+
+    The only departures from python syntax are the inclusion of fractional steps,
+    and that a reference to a non-existing record or column won't raise an exception,
+    it will just not return any corresponding data for those offsets.
+
+    The specifications are a comma-delimited list of individual offsets or ranges -
+    and almost perfectly comply with python's slicing notation, documented here:
+        - https://www.pythontutorial.net/advanced-python/python-slicing/
+        - https://www.digitalocean.com/community/tutorials/how-to-index-and-slice-strings-in-python-3
+
+
+Python's indexing rules for a single offset and how gristle_slicer differs:
+    * The offset is based on 0
+    * Negative offsets are based on the end of the list
+    * Difference: A positive offset greater than the length of the list will
+      be ignored
+    * Difference: A negative offset that references beyond the front of the list
+      will be ignored
+
+Python's slicing rules for a range and how gristle_slicer differs:
+    * The first number is the inclusive start, the second the exclusive end
+    * The ending offset defaults to length of the list
+    * The starting offset defaults to 0
+    * The ending offset can be longer than the list length - but the difference
+      is ignored
+    * When using reverse steps the start position of the range should be larger
+       than the stop, for example:  4:2:-1 would write record 2 and then 3.
+
+Python's range step rules and how gristle_slicer differs:
+    * The range step defaults to 1 - which will include every record or colum
+    * Only inclusion specs (record or column may have range steps other than 1
+    * Negative range steps cause the data to be written in reverse order
+    * Range steps less than -1 or greater than 1 cause records or cols to be skipped
+    * Fractional range steps (ex: 0.25) result in a sampling of items within the
+       range - for example 0.75 would include approximately 75% of the items.
+
+Known issues and other considerations:
+    * Python's argparsing module can be thrown off by a leading dash with a following
+      colon, ex: -r -3: is a valid spec.  To get around this just quote it and leave
+      a leading space, ex: -r ' -3:'
+    * Very large files that have repeating, out of order, or reverse records can
+      require a lot of memory.  If gristle_slicer runs out of memory consider allowing
+      it more (see: --max_mem_gybes), eliminating these features if unnecessary, or
+      splitting the work into multiple steps - to first reduce the size of the file.
+    * Streaming from stdin may require the data to be first written to a temp file,
+      and then read from the file - if the specifications include negative offsets.
 
 {see: helpdoc.CSV_SECTION}
 
@@ -61,6 +134,11 @@ Examples:
     $ cat sample.csv | gristle_slicer -c:5 -r-100 -d'|' --quoting=quote_all:
                             Prints columns 0-4 for the last 100 records, csv
                             dialect info (delimiter, quoting) provided manually)
+    $ gristle_slicer -i sample.csv -r '-20 : -1'
+                            Prints a negative range - note that it must be quoted
+                            AND there must be spaces around the colon - otherwise
+                            the argument parsing will produce the error:
+                            "expected one argument"
     Many more examples can be found here:
         https://github.com/kenfar/DataGristle/tree/master/examples/gristle_slicer
 
@@ -69,23 +147,19 @@ Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
        http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
-import csv
 import errno
-import fileinput
 from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import List, Tuple, Dict, Any, Optional, IO
+from typing import List, Tuple, Dict, Any, Optional, IO, Hashable
 
 import datagristle.common as comm
 import datagristle.configulator as conf
-import datagristle.csvhelper as csvhelper
-import datagristle.file_io as file_io
-import datagristle.helpdoc as helpdoc
-import datagristle.location_slicer as slicer
+from datagristle import helpdoc
+import datagristle.slice_processor as processor
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -93,6 +167,7 @@ signal(SIGPIPE, SIG_DFL)
 NAME = basename(__file__)
 LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
+
 comm.validate_python_version()
 
 
@@ -100,149 +175,20 @@ comm.validate_python_version()
 def main() -> int:
 
     try:
-        config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
+        config_manager = ConfigManager(NAME,
+                                       SHORT_HELP,
+                                       LONG_HELP,
+                                       validate_dialect=False)
         nconfig, _ = config_manager.get_config()
     except EOFError:
         return errno.ENODATA
 
-    input_handler = file_io.InputHandler(nconfig.infiles,
-                                         nconfig.dialect,
-                                         return_header=True)
+    slice_runner = processor.SliceRunner(config_manager)
+    slice_runner.setup_stage1()
+    slice_runner.setup_stage2()
+    slice_runner.process_data()
+    slice_runner.shutdown()
 
-    (incl_rec_slicer,
-     excl_rec_slicer,
-     incl_col_slicer,
-     excl_col_slicer) = setup_slicers(nconfig.infiles,
-                                      input_handler.dialect,
-                                      nconfig.records,
-                                      nconfig.exrecords,
-                                      nconfig.columns,
-                                      nconfig.excolumns,
-                                      nconfig.header )
-
-    output_handler = file_io.OutputHandler(nconfig.outfile, input_handler.dialect)
-
-    for rec in input_handler:
-        new_rec = process_rec(input_handler.rec_cnt - 1,
-                              incl_rec_slicer,
-                              excl_rec_slicer,
-                              rec,
-                              incl_col_slicer,
-                              excl_col_slicer)
-        if new_rec:
-            output_handler.write_rec(new_rec)
-
-    input_handler.close()
-    output_handler.close()
-
-    return 0
-
-
-
-def setup_slicers(infiles: List[str],
-                  dialect: csv.Dialect,
-                  config_records: str,
-                  config_exrecords: str,
-                  config_columns: str,
-                  config_excolumns: str,
-                  config_header: csvhelper.Header) -> Tuple[slicer.SpecProcessor,
-                                                            slicer.SpecProcessor,
-                                                            slicer.SpecProcessor,
-                                                            slicer.SpecProcessor]:
-    """  Sets up the 4 slicer objects: inclusion & exclusion for
-         rec and column.
-
-         Then counts records and columns if negative slice references
-         exist and calls the spec adjuster.
-    """
-
-    # first parse the config items;
-    columns   = config_columns.split(',')
-    excolumns = config_excolumns.split(',') if config_excolumns else []
-    records   = config_records.split(',')
-    exrecords = config_exrecords.split(',') if config_exrecords else []
-
-    incl_rec_slicer = slicer.SpecProcessor(records,   'incl_rec_spec')
-    excl_rec_slicer = slicer.SpecProcessor(exrecords, 'excl_rec_spec')
-    incl_col_slicer = slicer.SpecProcessor(columns,   'incl_col_spec', config_header)
-    excl_col_slicer = slicer.SpecProcessor(excolumns, 'excl_col_spec', config_header)
-
-    rec_cnt = None
-    if incl_rec_slicer.has_negatives() or excl_rec_slicer.has_negatives():
-        if infiles == '-':
-            comm.abort('ERROR: negative record slicing with stdin')
-        rec_cnt = get_rec_count(infiles, dialect)
-    incl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
-    excl_rec_slicer.spec_adjuster(loc_max=rec_cnt)
-
-    col_count = len(config_header.field_names)-1
-    if incl_col_slicer.has_negatives() or excl_col_slicer.has_negatives():
-        if infiles == '-':
-            comm.abort('negative column slicing with stdin')
-    incl_col_slicer.spec_adjuster(loc_max=col_count)
-    excl_col_slicer.spec_adjuster(loc_max=col_count)
-
-    return incl_rec_slicer, excl_rec_slicer, incl_col_slicer, excl_col_slicer
-
-
-
-def get_rec_count(files: List[str],
-                  dialect: csv.Dialect) -> int:
-    """ Gets record counts for input files.
-        - Counts have an offset of 0
-    """
-    rec_cnt = -1
-    for _ in csv.reader(fileinput.input(files), dialect):
-        rec_cnt += 1
-    fileinput.close()
-    return rec_cnt
-
-
-
-def process_rec(rec_number: int,
-                incl_rec_slicer: slicer.SpecProcessor,
-                excl_rec_slicer: slicer.SpecProcessor,
-                rec: List[str],
-                incl_col_slicer: slicer.SpecProcessor,
-                excl_col_slicer: slicer.SpecProcessor) -> Optional[List[str]]:
-    """ Evaluates all the specifications against a single record
-        from the input file.  First it applies inclusion & exclusion
-        specifications against the record, then it applies inclusion
-        & exclusion specifications against each column.
-        Input:
-            - rec_number:      used for rec specs
-            - incl_rec_spec
-            - excl_rec_spec
-            - rec:             a list of all columns from the record
-            - incl_col_spec:   which columns to include
-            - excl_col_spec:   which columns to exclude
-        Output:
-            - if the rec_number fails:  None
-            - if the rec_number passes: a list of the columns that qualified
-    """
-    # minimal validation
-    assert int(rec_number) >= 0
-
-    # reject record if it isn't in the inclusion spec
-    if not incl_rec_slicer.spec_evaluator(rec_number):
-        return None
-
-    # reject record if it is in the exclusion spec
-    if excl_rec_slicer.spec_evaluator(rec_number):
-        return None
-
-    output_rec = []
-    for col_number in range(len(rec)):
-        if not incl_col_slicer.spec_evaluator(col_number):
-            continue
-        if excl_col_slicer.spec_evaluator(col_number):
-            continue
-        output_rec.append(rec[col_number])
-
-    if output_rec:
-        return output_rec
-    else:
-        return None  # don't return empty list
 
 
 
@@ -273,6 +219,8 @@ class ConfigManager(conf.Config):
                                  short_name='R',
                                  default='',
                                  type=str)
+        self.add_custom_metadata(name='max_mem_gbytes',
+                                 type=float)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()
@@ -280,10 +228,18 @@ class ConfigManager(conf.Config):
         self.add_all_help_configs()
 
 
-    def extend_config(self) -> None:
+    def extend_config(self,
+                      override_filename=None) -> None:
 
-        self.generate_csv_dialect_config()
-        self.generate_csv_header_config()
+        self.generate_csv_dialect_config(override_filename)
+        self.generate_csv_header_config(override_filename)
+
+
+    def validate_custom_config(self, config) -> None:
+
+        # At this point infiles could be either a default string or a list:
+        assert isinstance(config['infiles'], list)
+
 
 
 

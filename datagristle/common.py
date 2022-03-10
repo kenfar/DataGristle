@@ -5,11 +5,8 @@
     Copyright 2011-2021 Ken Farmer
 """
 import argparse
-import errno
-import logging
 import csv
 import inspect
-import logging
 import math
 from os.path import isdir, isfile, exists
 from os.path import join as pjoin
@@ -17,6 +14,8 @@ from pprint import pprint as pp
 import sys
 import traceback
 from typing import List, Dict, Any, Optional, Tuple, Union, NoReturn
+
+import psutil
 
 from datagristle._version import __version__
 
@@ -41,20 +40,21 @@ def isnumeric(number: Any) -> bool:
 
 
 def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float]:
-    """  Provides the most common key in a dictionary as well as its frequency
-         expressed as a percentage.  For example:
-         cd = ['car':    7
+    """  Provides the most common key in a frequency distribution dictionary,
+         as well as its frequency expressed as a percentage.  For example:
+         cd = {'car':    7
                'boat':  30
                'truck':  8
-               'plane':  5
-         print most_common_key(cd)
+               'plane':  5}
+         print(most_common_key(cd))
          >>> boat, 60
     """
-    sorted_keys  = (sorted(count_dict, key=count_dict.get))
-    total_values = sum(count_dict.values())
-    most_common_key       = sorted_keys[-1]
-    most_common_key_value = count_dict[sorted_keys[-1]]
-    most_common_pct       = most_common_key_value / total_values  # type: ignore
+    count_items = count_dict.items()
+    total_values = sum([x[1] for x in count_items])
+    sorted_items = sorted(count_items, key=lambda x: x[1], reverse=True)
+    most_common_key = sorted_items[0][0]
+    most_common_key_value = sorted_items[0][1]
+    most_common_pct = most_common_key_value / total_values  # type: ignore
     return most_common_key, most_common_pct
 
 
@@ -127,6 +127,10 @@ def abort(summary: str,
             print(f'{text[line_start:line_end]:<75}', end='', file=sys.stderr)
             print(' =', file=sys.stderr)
 
+    if verbosity == 'debug':
+        print(' ', file=sys.stderr)
+        traceback.print_stack(file=sys.stderr)
+
     print('', file=sys.stderr)
     print_solid_line()
 
@@ -146,10 +150,6 @@ def abort(summary: str,
     print_text_line('Provide option --help or --long-help for usage information')
     print_empty_line()
     print_solid_line()
-
-    if verbosity == 'debug':
-        print(' ', file=sys.stderr)
-        traceback.print_stack(file=sys.stderr)
 
     try:
         logger.critical(summary)      # type: ignore
@@ -232,7 +232,7 @@ def get_best_col_names(config: Dict[str, Any],
 
 
 def get_col_names_from_header(file1_fqfn: str,
-                              dialect: csv.Dialect) -> List[str]:
+                              dialect: csv.Dialect) -> Optional[List[str]]:
     try:
         with open(file1_fqfn, newline='') as f:
             reader = csv.reader(f, dialect=dialect)
@@ -249,3 +249,66 @@ def validate_python_version():
               'Minimum version is 3.8 but this is being run on '
               f'{sys.version_info.major}.{sys.version_info.minor}')
 
+
+
+class MemoryLimiter:
+    """ Prevents us from filling up memory.
+
+    Args:
+        max_mem_percent - a float like 0.5 to represent 50%, defaults to 50%
+        max_mem_gbytes - a float like 2.0 to represent 2 gbytes
+
+    Note that only one of the two memory limits can be provided.
+    """
+
+    def __init__(self,
+                 max_mem_percent: float = None,
+                 max_mem_gbytes: float = None):
+
+        assert not (max_mem_percent and max_mem_gbytes)
+        if max_mem_percent:
+            assert 0 < max_mem_percent <= 1.0
+        elif max_mem_gbytes:
+            assert max_mem_gbytes < 128
+        else:
+            max_mem_percent = 0.5
+
+        total_mem = psutil.virtual_memory().total
+
+        if max_mem_percent:
+            self.max_memory_bytes = total_mem * max_mem_percent
+        else:
+            self.max_memory_bytes = max_mem_gbytes * 1024 * 1024 * 1024
+
+        self.rec_sizes = []
+        self.max_rec_number: int = None
+        self.call_count = 0
+
+
+    def check_record(self,
+                     record: list[Any],
+                     record_number: int=None):
+        """ Checks memory consumption as records are added into memory.
+
+        Args:
+            record: a list of fields
+            record_number: the number of the record being put into memory
+        Raises:
+            MemoryError is the number of records stored in memory exceeds
+            the estimatd limit - based on the average size of the first 100
+            records, and the limits provided to the class.
+        """
+
+        self.call_count += 1
+
+        if self.call_count < 100:
+            self.rec_sizes.append(sum([sys.getsizeof(x) for x in record]))
+        elif self.call_count == 100:
+            avg_rec_size = sum(self.rec_sizes) / 100
+            self.max_rec_number = self.max_memory_bytes / avg_rec_size
+            #print(f'*****************{self.max_memory_bytes=}')
+            #print(f'*****************{avg_rec_size=}')
+            #print(f'*****************{self.max_rec_number=}')
+        else:
+            if record_number > self.max_rec_number:
+                raise MemoryError

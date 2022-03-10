@@ -13,15 +13,18 @@
 import csv
 import os
 from os.path import dirname, join as pjoin
-import pytest
+from pprint import pprint as pp
 import random
 import sys
 import tempfile
+
+import pytest
 
 import datagristle.csvhelper as csvhelper
 import datagristle.file_freaker as mod
 import datagristle.file_io as file_io
 import datagristle.test_tools as test_tools
+
 
 
 
@@ -236,6 +239,52 @@ class TestColumnLengthTracker(object):
 
 
 
+
+@pytest.mark.slow
+class Test_build_freq_slow(object):
+
+    def setup_method(self, method):
+        pass
+
+    def teardown_method(self, method):
+        test_tools.temp_file_remover(os.path.join(tempfile.gettempdir(), 'FreakerTest'))
+
+    def test_multicol(self):
+
+        dialect = csv.Dialect
+        dialect.delimiter = '|'
+        dialect.quoting = csv.QUOTE_MINIMAL
+        dialect.quotechar = '"'
+        dialect.has_header = False
+        dialect.lineterminator = '\n'
+        columns = [1, 2]
+        files = []
+        files.append(generate_test_file(dialect.delimiter, 10_000_000))
+        (fd, outfile) = tempfile.mkstemp(prefix='FreakerTestOut_')
+        input_handler = file_io.InputHandler(files,
+                                             dialect)
+        output_handler = file_io.OutputHandler(outfile,
+                                               input_handler.dialect)
+
+        col_freak = mod.ColSetFreaker(input_handler,
+                                      output_handler,
+                                      col_type='specified',
+                                      number=20_000_000,
+                                      sampling_method='non',
+                                      sampling_rate=None,
+                                      sort_order='reverse',
+                                      sort_col=1,
+                                      max_key_len=50)
+        col_freak.build_freq(columns)
+        assert not col_freak.truncated
+        pp(col_freak.field_freq)
+        assert sum(col_freak.field_freq.values()) == 10_000_000
+        for key in col_freak.field_freq.keys():
+            assert key[0] in ['A1', 'A2', 'A3', 'A4']
+            assert key[1] in ['B1', 'B2']
+
+
+
 def generate_col_freaker_dependencies():
     dialect = csv.Dialect
     dialect.delimiter = '|'
@@ -253,6 +302,7 @@ def generate_col_freaker_dependencies():
     number = 4
     max_key_len = 50
     return files, dialect, col_type, number, sampling_method, sampling_rate, columns, max_key_len
+
 
 
 def generate_test_file(delim, record_cnt):

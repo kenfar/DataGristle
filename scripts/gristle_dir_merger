@@ -678,7 +678,8 @@ class ConfigManager(conf.Config):
         self.add_all_help_configs()
 
 
-    def extend_config(self) -> None:
+    def extend_config(self,
+                      override_filename=None) -> None:
         if self.config['match_on'] == 'name_only':
             if self.config['on_partial_match'] is not None:
                 comm.abort("on-partial-match must not be provided when match-on is 'name_only'")

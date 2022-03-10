@@ -201,7 +201,8 @@ class ConfigManager(conf.Config):
         self.add_all_help_configs()
 
 
-    def extend_config(self) -> None:
+    def extend_config(self,
+                      override_filename=None) -> None:
         self.generate_csv_dialect_config()
         self.generate_csv_header_config()
 
