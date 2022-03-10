@@ -3,9 +3,7 @@
     that number meets the specifications or not.
 
     Typical Usage:
-        >>> sp = location_slicer.SpecProcessor(raw_specs=['1','5','10:20','70:-1'],
-        >>>                                    header=None,
-        >>>                                    infile_item_count=80)
+        >>> sp = location_slicer.SpecProcessor(specs=['1','5','10:20','70:-1'])
         >>> sp.specs_evaluator(5)
         True
         >>> sp.specs_evaluator(0)

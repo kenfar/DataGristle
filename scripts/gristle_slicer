@@ -40,7 +40,7 @@ How inclusion (-r, -c) and exclusion (-R, -C) specs are applied:
     * For example -r 10:90, -R 30:40 would first include records 10 thru 89 (based
       on a zero offset), and then it would remove  records 30 thru 39.
 
-How specs (-r, -R, -c, -C) are packaged:
+How specs (-r, -R, -c, -C) are combined:
     * Gristle_slicer uses the python slicing syntax for the specs.  But that syntax
       only applies to a single spec.  The gristle_slicer options permit multiple
       specs, for example:
@@ -77,28 +77,28 @@ How individual specs work:
 
 
 Python's indexing rules for a single offset and how gristle_slicer differs:
-    1. The offset is based on 0
-    2. Negative offsets are based on the end of the list
-    3. Difference: A positive offset greater than the length of the list will
-       be ignored
-    4. Difference: A negative offset that references beyond the front of the list
-       will be ignored
+    * The offset is based on 0
+    * Negative offsets are based on the end of the list
+    * Difference: A positive offset greater than the length of the list will
+      be ignored
+    * Difference: A negative offset that references beyond the front of the list
+      will be ignored
 
 Python's slicing rules for a range and how gristle_slicer differs:
-    1. The first number is the inclusive start, the second the exclusive end
-    2. The ending offset defaults to length of the list
-    3. The starting offset defaults to 0
-    4. The ending offset can be longer than the list length - but the difference
-       is ignored
-    5. When using reverse steps the start position of the range should be larger
+    * The first number is the inclusive start, the second the exclusive end
+    * The ending offset defaults to length of the list
+    * The starting offset defaults to 0
+    * The ending offset can be longer than the list length - but the difference
+      is ignored
+    * When using reverse steps the start position of the range should be larger
        than the stop, for example:  4:2:-1 would write record 2 and then 3.
 
 Python's range step rules and how gristle_slicer differs:
-    1. The range step defaults to 1 - which will include every record or colum
-    2. Only inclusion specs (record or column may have range steps other than 1
-    3. Negative range steps cause the data to be written in reverse order
-    4. Range steps less than -1 or greater than 1 cause records or cols to be skipped
-    5. Fractional range steps (ex: 0.25) result in a sampling of items within the
+    * The range step defaults to 1 - which will include every record or colum
+    * Only inclusion specs (record or column may have range steps other than 1
+    * Negative range steps cause the data to be written in reverse order
+    * Range steps less than -1 or greater than 1 cause records or cols to be skipped
+    * Fractional range steps (ex: 0.25) result in a sampling of items within the
        range - for example 0.75 would include approximately 75% of the items.
 
 Known issues and other considerations:

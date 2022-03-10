@@ -98,7 +98,6 @@ class SliceRunner:
         self.input_handler = file_io.InputHandler([self.temp_fn],
                                                   self.nconfig.dialect,
                                                   return_header=True)
-
         self._pp(f'--------> write_stdin_to_file duration: {time.time() - start_time:.2f}')
 
 
@@ -469,6 +468,8 @@ class MemProcessor(Processor):
 
 
 class RecIndexOptimization:
+    """ Consolidates incl_rec & excl_rec indexes into a single index
+    """
 
     def __init__(self,
                  incl_rec_slicer,
@@ -531,6 +532,8 @@ class RecIndexOptimization:
 
 
 class ColIndexOptimization:
+    """ Consolidates incl_col & excl_col indexes into a single index
+    """
 
     def __init__(self,
                  incl_col_slicer,
