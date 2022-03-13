@@ -262,32 +262,22 @@ class MemoryLimiter:
     """
 
     def __init__(self,
-                 max_mem_percent: float = None,
-                 max_mem_gbytes: float = None):
+                 max_mem_gbytes: Optional[int] = None):
 
-        assert not (max_mem_percent and max_mem_gbytes)
-        if max_mem_percent:
-            assert 0 < max_mem_percent <= 1.0
-        elif max_mem_gbytes:
-            assert max_mem_gbytes < 128
-        else:
-            max_mem_percent = 0.5
-
-        total_mem = psutil.virtual_memory().total
-
-        if max_mem_percent:
-            self.max_memory_bytes = total_mem * max_mem_percent
+        if max_mem_gbytes is None:
+            total_mem = psutil.virtual_memory().total
+            self.max_memory_bytes = total_mem * 0.5
         else:
             self.max_memory_bytes = max_mem_gbytes * 1024 * 1024 * 1024
 
-        self.rec_sizes = []
-        self.max_rec_number: int = None
+        self.rec_sizes: List[int] = []
+        self.max_rec_number: int
         self.call_count = 0
 
 
     def check_record(self,
-                     record: list[Any],
-                     record_number: int=None):
+                     record: List[Any],
+                     record_number: int):
         """ Checks memory consumption as records are added into memory.
 
         Args:
@@ -312,3 +302,4 @@ class MemoryLimiter:
         else:
             if record_number > self.max_rec_number:
                 raise MemoryError
+

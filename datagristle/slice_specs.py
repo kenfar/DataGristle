@@ -48,7 +48,7 @@ from pprint import pprint as pp
 import re
 import random
 import sys
-from typing import List, Dict, Tuple, Union, Any, Optional
+from typing import List, Dict, Tuple, Union, Any, Optional, Type
 
 from pydantic.dataclasses import dataclass
 from pydantic import BaseModel, ValidationError, validator, root_validator
@@ -175,7 +175,7 @@ class SpecProcessor:
     """
 
     def __init__(self,
-                 specs: List[SpecRecord]) -> None:
+                 specs) -> None:
         """
         Args:
             specs: a List of SpecRecords
@@ -227,7 +227,7 @@ class SpecProcessor:
 
 
     def _spec_item_check(self,
-                         spec: type[SpecRecord],
+                         spec: Type[SpecRecord],
                          location: int) -> bool:
         """ evaluates a single item against a location
         Args:
@@ -516,7 +516,7 @@ class Specifications:
                             start: int,
                             stop: Optional[int],
                             step: float,
-                            is_range: bool) -> (int, bool, bool):
+                            is_range: bool) -> Tuple[int, bool, bool]:
 
         assert stop is None or comm.isnumeric(stop)
         col_default_range = False
@@ -538,7 +538,7 @@ class Specifications:
                 else:
                     int_stop = self.infile_item_count
             else:
-                int_stop = 0
+                int_stop = -1
         else:
             if step >= 0:
                 int_stop = start + 1
@@ -549,11 +549,11 @@ class Specifications:
 
 
     def has_all_inclusions(self) -> bool:
-        return self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings in ([':'], ['::1'], ['::-1'])
+        return bool(self.spec_type in ('incl_col', 'incl_rec') and self.specs_strings in ([':'], ['::1'], ['::-1']))
 
 
     def has_exclusions(self) -> bool:
-        return self.spec_type in ('excl_col', 'excl_rec') and self.specs_final != []
+        return bool(self.spec_type in ('excl_col', 'excl_rec') and self.specs_final)
 
 
 
@@ -659,7 +659,7 @@ class Indexer:
             if rec.is_full_step():
                 range_step = int(rec.step)
             else:
-                range_step = 1 * (1 if rec.step > 0 else -1)
+                range_step = 1 if rec.step > 0 else -1
 
             for part in range(rec.start, rec.stop, range_step):
                 assert part > -1

@@ -33,6 +33,8 @@ Main Options:
                         used whenever we have specs with reverse steps, out of order recs,
                         or repeat recs. The default is to use up to 50% of your total
                         memory.
+    --any-order         Eliminates ordering requirements on rows - which can avoid in-mem
+                        processing in some cases.
 
 How inclusion (-r, -c) and exclusion (-R, -C) specs are applied:
     * Gristle_slicer first applies the inclusion specs, and if none are provided
@@ -189,6 +191,8 @@ def main() -> int:
     slice_runner.process_data()
     slice_runner.shutdown()
 
+    return 0
+
 
 
 
@@ -221,6 +225,11 @@ class ConfigManager(conf.Config):
                                  type=str)
         self.add_custom_metadata(name='max_mem_gbytes',
                                  type=float)
+        self.add_custom_metadata(name='any_order',
+                                 type=bool,
+                                 default=False,
+                                 action="store_const",
+                                 const=True)
 
         self.add_standard_metadata('verbosity')
         self.add_all_config_configs()

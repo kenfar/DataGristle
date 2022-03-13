@@ -28,8 +28,8 @@ class SliceRunner:
         self.output_handler: file_io.OutputHandler
         self.temp_fn = None
 
-        self.rec_cnt = None
-        self.col_cnt = None
+        self.rec_cnt: Optional[int] = None
+        self.col_cnt: Optional[int] = None
 
         self.rec_specs: slicer.Specifications
         self.exrec_specs: slicer.Specifications
@@ -41,10 +41,10 @@ class SliceRunner:
         self.incl_col_slicer: slicer.SpecProcessor
         self.excl_col_slicer: slicer.SpecProcessor
 
-        self.rec_index = None
-        self.col_index = None
+        self.rec_index: RecIndexOptimization
+        self.col_index: ColIndexOptimization
 
-        self.mem_limiter = comm.MemoryLimiter(max_mem_gbytes=self.nconfig.max_mem_gbytes)
+        self.mem_limiter = comm.MemoryLimiter(self.nconfig.max_mem_gbytes)
 
 
     def setup_stage1(self) -> None:
@@ -187,7 +187,8 @@ class SliceRunner:
                                      self.rec_index,
                                      self.col_index,
                                      self.col_cnt,
-                                     self.mem_limiter)
+                                     self.mem_limiter,
+                                     self.nconfig.any_order)
             processor.process()
 
         else:
@@ -201,14 +202,16 @@ class SliceRunner:
                                       self.rec_index,
                                       self.col_index,
                                       self.col_cnt,
-                                      self.mem_limiter)
+                                      self.mem_limiter,
+                                      self.nconfig.any_order)
             processor.process()
         self._pp(f'--------> process_data duration: {time.time() - start_time:.2f}')
 
 
     def must_process_in_memory(self) -> bool:
 
-        if (self.incl_rec_slicer.includes_out_of_order
+        if ((self.incl_rec_slicer.includes_out_of_order
+                and self.nconfig.any_order is False)
                 or self.incl_rec_slicer.includes_repeats
                 or self.incl_rec_slicer.includes_reverse):
 
@@ -255,7 +258,8 @@ class Processor:
                  rec_index,
                  col_index,
                  col_cnt,
-                 mem_limiter):
+                 mem_limiter,
+                 any_order):
 
         self.input_handler = input_handler
         self.output_handler = output_handler
@@ -269,6 +273,7 @@ class Processor:
         self.stop_rec = rec_index.stop_rec
         self.col_cnt = col_cnt
         self.mem_limiter = mem_limiter
+        self.any_order = any_order
 
 
     def is_optimized_for_all_recs(self) -> bool:
@@ -359,7 +364,7 @@ class FileProcessor(Processor):
         for rec_number, rec in enumerate(self.input_handler):
             if self.is_optimized_for_all_recs():
                 pass
-            elif self.rec_index.is_valid:
+            elif self.rec_index.is_valid and not self.any_order:
                 if rec_number > self.stop_rec:
                     if self.are_infiles_from_stdin():
                         # Need to finish reading from file rather than break so that we don't
