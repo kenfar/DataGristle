@@ -114,7 +114,6 @@ class TestExamples(object):
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
 
-
     def run_example_config(self,
                            example_number,
                            return_code=0,
