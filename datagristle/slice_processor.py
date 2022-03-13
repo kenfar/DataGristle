@@ -90,8 +90,11 @@ class SliceRunner:
     def _write_stdin_to_file(self):
         start_time = time.time()
 
-        assert self.nconfig.infiles[0] == '-'
-        _, self.temp_fn = tempfile.mkstemp(prefix='gristle_slicer_stdin_temp_')
+        assert self.nconfig.infiles == ['-']
+        ####_, self.temp_fn = tempfile.mkstemp(prefix='gristle_slicer_stdin_temp_')
+
+        tf = tempfile.NamedTemporaryFile(prefix='gristle_slicer_stdin_temp_', delete=False)
+        self.temp_fn = tf.name
         with open(self.temp_fn, 'w', newline='', encoding='utf-8') as outbuf:
             writer = csv.writer(outbuf)
             writer.writerows(self.input_handler)
@@ -110,11 +113,18 @@ class SliceRunner:
     def shutdown(self) -> None:
         self.input_handler.close()
         self.output_handler.close()
+        self.shutdown_bare_minimum()
+        file_io.remove_all_temp_files(prefix='gristle_slicer_stdin_temp', min_age_hours=0.1)
 
+    def shutdown_bare_minimum(self) -> None:
+        """ Performs shutdown activity that we'll do - even if we have a terminal exception
+            raised.
+        """
         if self.temp_fn:
-            os.remove(self.temp_fn)
-
-        file_io.remove_all_temp_files(prefix='gristle_slicer_stdin_temp', min_age_hours=1)
+            try:
+                os.remove(self.temp_fn)
+            except FileNotFoundError:
+                pass
 
 
     def _setup_files(self) -> None:
@@ -176,35 +186,41 @@ class SliceRunner:
 
     def process_data(self) -> None:
         start_time = time.time()
-        if self.must_process_in_memory():
-            processor = MemProcessor(self.nconfig.verbosity,
-                                     self.input_handler,
-                                     self.output_handler,
-                                     self.incl_rec_slicer,
-                                     self.excl_rec_slicer,
-                                     self.incl_col_slicer,
-                                     self.excl_col_slicer,
-                                     self.rec_index,
-                                     self.col_index,
-                                     self.col_cnt,
-                                     self.mem_limiter,
-                                     self.nconfig.any_order)
-            processor.process()
+        try:
+            if self.must_process_in_memory():
+                processor = MemProcessor(self.nconfig.verbosity,
+                                        self.input_handler,
+                                        self.output_handler,
+                                        self.incl_rec_slicer,
+                                        self.excl_rec_slicer,
+                                        self.incl_col_slicer,
+                                        self.excl_col_slicer,
+                                        self.rec_index,
+                                        self.col_index,
+                                        self.col_cnt,
+                                        self.mem_limiter,
+                                        self.nconfig.any_order)
+                processor.process()
 
-        else:
-            processor = FileProcessor(self.nconfig.verbosity,
-                                      self.input_handler,
-                                      self.output_handler,
-                                      self.incl_rec_slicer,
-                                      self.excl_rec_slicer,
-                                      self.incl_col_slicer,
-                                      self.excl_col_slicer,
-                                      self.rec_index,
-                                      self.col_index,
-                                      self.col_cnt,
-                                      self.mem_limiter,
-                                      self.nconfig.any_order)
-            processor.process()
+            else:
+                processor = FileProcessor(self.nconfig.verbosity,
+                                        self.input_handler,
+                                        self.output_handler,
+                                        self.incl_rec_slicer,
+                                        self.excl_rec_slicer,
+                                        self.incl_col_slicer,
+                                        self.excl_col_slicer,
+                                        self.rec_index,
+                                        self.col_index,
+                                        self.col_cnt,
+                                        self.mem_limiter,
+                                        self.nconfig.any_order)
+                processor.process()
+        except:
+            # Run shutdown just in case we've redirected stdin into a named
+            # temp file - that will require manual deletion.
+            self.shutdown_bare_minimum()
+            raise
         self._pp(f'--------> process_data duration: {time.time() - start_time:.2f}')
 
 
@@ -368,9 +384,7 @@ class FileProcessor(Processor):
                 if rec_number > self.stop_rec:
                     if self.are_infiles_from_stdin():
                         # Need to finish reading from file rather than break so that we don't
-                        # break pipe for pgm piping data to us.  We'll spin thru the rest of 
-                        # the recs as quickly as possible, doing it all right here is about 20%
-                        # faster than going thru the main loop:
+                        # break pipe for pgm piping data to us.
                         break
                         for _ in self.input_handler:
                             pass
@@ -454,6 +468,7 @@ class MemProcessor(Processor):
         for rec_num in self.rec_index.index:
             output_rec = []
             try:
+                assert not self.col_index.col_default_range
                 if self.is_optimized_for_all_cols():
                     output_rec = all_rows[rec_num]
                 elif self.col_index.is_valid:

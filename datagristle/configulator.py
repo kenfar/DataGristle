@@ -375,11 +375,10 @@ class Config(object):
             filenames = self.config['infiles']
         md = self._app_metadata
         try:
-            #autodetected = csvhelper.get_dialect(infiles=self.config['infiles'],
             autodetected = csvhelper.get_dialect(filenames,
                                                  verbosity=self.config['verbosity'])
         except FileNotFoundError:
-            comm.abort('Error: File not found',
+            comm.abort('Error: File not found when generating csv dialect config',
                        f"One of these files was not found: {','.join(self.config['infiles'])}")
 
         # First override auto-detected dialect with any explicit options

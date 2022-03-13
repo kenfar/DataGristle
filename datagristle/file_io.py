@@ -304,16 +304,16 @@ def get_rec_count(files: List[str],
 
 
 def remove_all_temp_files(prefix: str,
-                          min_age_hours: int) -> None:
+                          min_age_hours: float) -> None:
 
     tmpdir = tempfile.gettempdir()
+    min_age_seconds = min_age_hours * 60 * 60
 
     for fn in os.listdir(tmpdir):
         if not fn.startswith(prefix):
             continue
         seconds = time.time() - os.path.getmtime(pjoin(tmpdir, fn))
-        hours = int(seconds)/60/60
-        if hours >= min_age_hours:
+        if seconds >= min_age_seconds:
             os.remove(pjoin(tmpdir, fn))
 
 
