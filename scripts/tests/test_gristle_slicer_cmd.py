@@ -20,6 +20,7 @@ import time
 
 import envoy
 import pytest
+from typing import List
 
 import datagristle.common  as comm
 
@@ -338,7 +339,7 @@ class TestStdin(object):
 
 
 
-def load_file(fn: str) -> list[str]:
+def load_file(fn: str) -> List[str]:
     out_recs = []
     for rec in fileinput.input(fn):
         out_recs.append(rec)
@@ -421,7 +422,7 @@ class TestPerformance(object):
                      options='''--delimiter=',' --quoting=quote_none''')
         duration = time.time() - start_time
         pp(duration)
-        assert duration < 15
+        assert duration < 18
         assert rec_cnt(self.out_fqfn) == self.input_count
 
 
@@ -463,11 +464,23 @@ class TestPerformance(object):
         start_time = time.time()
         rc, actual = self.runner(incl_rec_spec='-r=::-1',
                                  incl_col_spec='-c=3',
-                     options='''--delimiter=',' --quoting=quote_none''')
+                     options='''--delimiter=',' --quoting=quote_none ''')
         duration = time.time() - start_time
         pp(duration)
-        assert duration < 10
+        assert duration < 18
         assert rec_cnt(self.out_fqfn) == self.input_count
+
+
+    def test_any_order_and_max_gbytes(self):
+
+        start_time = time.time()
+        rc, actual = self.runner(incl_rec_spec='-r=1,-1,2,-2',
+                                 incl_col_spec='-c=3',
+                     options='''--delimiter=',' --quoting=quote_none --max-mem-gbytes 1 --any-order''')
+        duration = time.time() - start_time
+        assert rec_cnt(self.out_fqfn) == 4
+
+
 
 
 
@@ -476,12 +489,13 @@ def rec_cnt(fqfn):
         pass
     rec_cnt = fileinput.lineno()
     fileinput.close()
-    pp('==============================================')
-    pp(rec_cnt)
-    pp('==============================================')
     return rec_cnt
 
 
+def get_recs(fqfn):
+    with open(fqfn, 'r') as inbuf:
+        recs = inbuf.readlines()
+    return recs
 
 
 

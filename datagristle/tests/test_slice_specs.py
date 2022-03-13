@@ -256,7 +256,7 @@ class TestSpecificationsCleaner(object):
     def test_minusone_item_count_with_empty_stop_and_neg_step(self):
         self.setup_spec(specs_strings=['2::-1'], item_count=None)
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (2, 0,  -1.0)
+        assert self.flatten_spec(0) == (2, -1,  -1.0)
 
 
     def test_minusone_item_count_with_empty_start_and_neg_step(self):
@@ -272,7 +272,7 @@ class TestSpecificationsCleaner(object):
     def test_good_item_count_with_empty_start_and_pos_step(self):
         self.setup_spec(specs_strings=['::-1'], item_count=100)
         assert len(self.spec.specs_final) == 1
-        assert self.flatten_spec(0) == (100, 0, -1)
+        assert self.flatten_spec(0) == (100, -1, -1)
 
 
 
