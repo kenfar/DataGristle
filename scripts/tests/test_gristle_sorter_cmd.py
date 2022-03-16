@@ -11,6 +11,7 @@
 #pylint: disable=empty-docstring
 
 import csv
+import errno
 from pprint  import pprint as pp
 import os
 from os.path import dirname
@@ -143,7 +144,7 @@ class TestEmptyFile(object):
                     -o {out_fqfn}
                     -k 0sf
               '''
-        assert executor(cmd, expect_success=False) == 61
+        assert executor(cmd, expect_success=False) == errno.ENODATA
 
 
 

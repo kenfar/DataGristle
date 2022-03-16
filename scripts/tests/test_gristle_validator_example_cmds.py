@@ -13,6 +13,7 @@
 from pprint  import pprint as pp
 import os
 from os.path import dirname, join as pjoin
+import shutil
 import tempfile
 
 import pytest
@@ -36,6 +37,9 @@ class TestExamples(test_tools.TestExamples):
         self.example_dir = EXAMPLE_DIR
         self.script_dir = SCRIPT_DIR
         self.temp_dir = tempfile.mkdtemp(prefix=self.pgm)
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.temp_dir)
 
     @pytest.mark.parametrize("mode", [("file"), ("stdin")])
     def test_example_01(self, mode):

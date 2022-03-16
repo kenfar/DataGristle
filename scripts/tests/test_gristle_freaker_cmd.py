@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """ See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 #adjust pylint for pytest oddities:
 #pylint: disable=missing-docstring
@@ -10,12 +10,13 @@
 #pylint: disable=no-self-use
 #pylint: disable=empty-docstring
 
-import tempfile
+import errno
 import fileinput
-import subprocess
-from pprint import pprint as pp
 import os
 from os.path import dirname, join as pjoin
+from pprint import pprint as pp
+import subprocess
+import tempfile
 
 import envoy
 
@@ -78,7 +79,7 @@ class TestCommandLine(object):
         r = envoy.run(cmd)
         print(r.std_out)
         print(r.std_err)
-        assert r.status_code == 61
+        assert r.status_code == errno.ENODATA
         out_recs = []
         for rec in fileinput.input(self.out_fqfn):
             out_recs.append(rec)
