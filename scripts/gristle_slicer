@@ -161,6 +161,7 @@ from typing import List, Tuple, Dict, Any, Optional, IO, Hashable
 import datagristle.common as comm
 import datagristle.configulator as conf
 from datagristle import helpdoc
+import datagristle.metadata as metadata
 import datagristle.slice_processor as processor
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
@@ -185,7 +186,9 @@ def main() -> int:
     except EOFError:
         return errno.ENODATA
 
-    slice_runner = processor.SliceRunner(config_manager)
+    md = metadata.GristleMetaData()
+
+    slice_runner = processor.SliceRunner(config_manager, md)
     slice_runner.setup_stage1()
     slice_runner.setup_stage2()
     slice_runner.process_data()
