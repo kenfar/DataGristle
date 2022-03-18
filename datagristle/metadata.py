@@ -32,19 +32,24 @@
        - rpt_collection_analysis_v
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 
-import appdirs
+import datetime
+import hashlib
+import logging
 import os
-from sqlalchemy import (Table, Column, Boolean, Integer, String, Float,
+from pprint import pprint as pp
+import time
+from typing import Tuple, List, Dict
+
+import appdirs
+from sqlalchemy import (Table, Column, Boolean, Integer, String, Float, Index,
                         MetaData, DATETIME,
                         UniqueConstraint, ForeignKeyConstraint, CheckConstraint,
                         event, text, create_engine)
 from sqlalchemy import exc
-import datetime
-from pprint import pprint as pp
-import logging
+
 import datagristle.simplesql as simplesql
 
 
@@ -154,6 +159,9 @@ class GristleMetaData(object):
 
         self.field_analysis_value_tools = FieldAnalysisValueTools(self.metadata, self.engine)
         self.field_analysis_value = self.field_analysis_value_tools.table_create()
+
+        self.file_index_tools = FileIndexTools(self.metadata, self.engine)
+        self.file_index = self.file_index_tools.table_create()
 
         self.metadata.create_all()
 
@@ -1088,6 +1096,153 @@ class FieldAnalysisValueTools(simplesql.TableTools):
         self._table = self.field_analysis_value
         self._table_name = 'field_analysis_value'
         return self._table
+
+
+
+class FileIndexTools(simplesql.TableTools):
+    """ Includes all methods for the 'file_index' table.
+    """
+
+    def table_create(self):
+        """ Creates the 'file_index' table.
+        """
+        self.file_index = Table('file_index',
+                                self.metadata,
+                                Column('file_hash',
+                                        String(256),
+                                        nullable=False,
+                                        primary_key=True),
+                                Column('record_count',
+                                        Integer,
+                                        nullable=True),
+                                Column('column_count',
+                                        Integer,
+                                        nullable=True),
+                                Column('last_update_epoch',
+                                        Float,
+                                        index=True,
+                                        nullable=False),
+                                UniqueConstraint('file_hash',
+                                                 name='file_index_uk1'),
+                                extend_existing=True)
+
+        self._table = self.file_index
+        self._table_name = 'file_index'
+        self.instance = None # assigned in InstanceTools
+        return self._table
+
+
+    def _hash_file_index(self, filename, mod_datetime, file_bytes):
+        string = bytes(filename + mod_datetime.isoformat() + str(file_bytes), 'utf-8')
+        hash_object = hashlib.sha1(string)
+        hex_digest = hash_object.hexdigest()
+        return hex_digest
+
+
+    def get_file_index_rec_count(self,
+                                 filename,
+                                 mod_datetime,
+                                 file_bytes) -> int:
+        """ Return the record count or -1 if there's no record count
+        """
+
+        file_hash = self._hash_file_index(filename, mod_datetime, file_bytes)
+        sql = """ SELECT record_count
+                  FROM file_index
+                  WHERE file_hash = :file_hash
+              """
+        select_sql = text(sql)
+        result = self.engine.execute(select_sql, file_hash=file_hash)
+        rows = result.fetchall()
+        self.update(filename, mod_datetime, file_bytes)
+        try:
+            return rows[0].record_count
+        except IndexError:  # No rows found
+            return -1
+
+
+    def set_file_index_counts(self,
+                              filename,
+                              mod_datetime,
+                              file_bytes,
+                              rec_count,
+                              col_count) -> Tuple[int, int]:
+        """ Write file_index counts
+        """
+
+        file_hash = self._hash_file_index(filename, mod_datetime, file_bytes)
+        raw_sql = """ INSERT INTO file_index
+                          (file_hash,
+                           record_count,
+                           column_count,
+                           last_update_epoch)
+                      Values(:file_hash,
+                             :rec_count,
+                             :col_count,
+                             :epoch
+                             )
+                  """
+        sql = text(raw_sql)
+        curr_epoch = time.time()
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        file_hash=file_hash,
+                                        rec_count=rec_count,
+                                        col_count=col_count,
+                                        epoch=curr_epoch)
+        except exc.IntegrityError as e:
+            raise ValueError('Insert failed. %s' % e.message)
+        else:
+            self.prune()
+            return (result.lastrowid,
+                    result.rowcount)
+
+
+    def update(self,
+               filename,
+               mod_datetime,
+               file_bytes) -> int:
+        """ Updates the last_update_epoch
+        """
+
+        file_hash = self._hash_file_index(filename, mod_datetime, file_bytes)
+        raw_sql = """ UPDATE file_index
+                      SET last_update_epoch = :epoch
+                      WHERE file_hash = :file_hash
+                  """
+        sql = text(raw_sql)
+        curr_epoch = time.time()
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        file_hash=file_hash,
+                                        epoch=curr_epoch)
+        except exc.IntegrityError as e:
+            raise ValueError('Update failed. %s' % e.message)
+        else:
+            return (result.lastrowid,
+                    result.rowcount)
+
+
+    def prune(self) -> int:
+        """ Deletes any entries more than a year old
+        """
+
+        min_epoch = time.time() - (86400 * 365)
+        raw_sql = """ DELETE FROM file_index
+                      WHERE last_update_epoch < :epoch
+                  """
+        sql = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        epoch=min_epoch)
+        except exc.IntegrityError as e:
+            raise ValueError('Delete failed. %s' % e.message)
+        else:
+            return result.rowcount
+
 
 
 

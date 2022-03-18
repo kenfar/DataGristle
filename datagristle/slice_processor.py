@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import csv
+import datetime as dt
 import functools
 import os
 from pprint import pprint as pp
@@ -19,10 +20,12 @@ MAX_MEM_INDEX_CNT = 20_000_000
 class SliceRunner:
 
     def __init__(self,
-                 config_manager) -> None:
+                 config_manager,
+                 metadata) -> None:
 
         self.config_manager = config_manager
         self.nconfig = config_manager.nconfig
+        self.metadata = metadata
 
         self.input_handler: file_io.InputHandler
         self.output_handler: file_io.OutputHandler
@@ -89,9 +92,7 @@ class SliceRunner:
 
     def _write_stdin_to_file(self):
         start_time = time.time()
-
         assert self.nconfig.infiles == ['-']
-        ####_, self.temp_fn = tempfile.mkstemp(prefix='gristle_slicer_stdin_temp_')
 
         tf = tempfile.NamedTemporaryFile(prefix='gristle_slicer_stdin_temp_', delete=False)
         self.temp_fn = tf.name
@@ -135,16 +136,37 @@ class SliceRunner:
                                                     self.input_handler.dialect)
 
 
+    def _get_file_info(self, filename):
+        file_timestamp = os.path.getmtime(filename)
+        file_dt = dt.datetime.fromtimestamp(file_timestamp)
+        file_size = os.path.getsize(filename)
+        return file_dt, file_size
+
+
     def _setup_counts(self) -> None:
         start_time = time.time()
+        self.col_cnt = len(self.nconfig.header.field_names)
+
         if self.temp_fn:
             self.rec_cnt = file_io.get_rec_count([self.temp_fn], self.input_handler.dialect)
         else:
-            self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
+            self.rec_cnt = -1
+            mod_datetime, file_size = self._get_file_info(self.nconfig.infiles[0])
+            if len(self.nconfig.infiles) == 1:
+                self.rec_cnt = self.metadata.file_index_tools.get_file_index_rec_count(filename=self.nconfig.infiles[0],
+                                                                                       mod_datetime=mod_datetime,
+                                                                                       file_bytes=file_size)
+            if self.rec_cnt == -1:
+                self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
+                if len(self.nconfig.infiles) == 1:
+                    mod_datetime, file_size = self._get_file_info(self.nconfig.infiles[0])
+                    self.metadata.file_index_tools.set_file_index_counts(filename=self.nconfig.infiles[0],
+                                                                         mod_datetime=mod_datetime,
+                                                                         file_bytes=file_size,
+                                                                         rec_count=self.rec_cnt,
+                                                                         col_count=self.col_cnt)
 
-        self.col_cnt = len(self.nconfig.header.field_names)
-        if self.col_cnt < 0:
-            self.col_cnt = None
+        assert self.col_cnt > 0
         if self.nconfig.verbosity == 'debug':
             print(f'--------> setup_counts  duration: {time.time() - start_time:.2f}')
 
@@ -609,7 +631,6 @@ class ColIndexOptimization:
         new_index = [x for x in self.index if x <= actual_col_cnt]
         self.index = new_index
         self.col_default_range = False
-
 
 
 
