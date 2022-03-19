@@ -259,8 +259,8 @@ class SchemaTools(simplesql.TableTools):
             result = connection.execute(sql,
                                         schema_name=kwargs['schema_name'],
                                         schema_desc=kwargs['schema_desc'])
-        except exc.IntegrityError as e:
-            raise ValueError('Insert failed. %s' % e.message)
+        except exc.IntegrityError as err:
+            raise ValueError('Insert failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -293,8 +293,8 @@ class SchemaTools(simplesql.TableTools):
                                         schema_name=kwargs['schema_name'],
                                         schema_desc=kwargs['schema_desc'],
                                         schema_id=kwargs['schema_id'])
-        except exc.IntegrityError as e:
-            raise ValueError('Update failed. %s' % e.message)
+        except exc.IntegrityError as err:
+            raise ValueError('Update failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -530,9 +530,9 @@ class FieldTools(simplesql.TableTools):
                                         field_order=vkwargs['field_order'],
                                         field_type=vkwargs['field_type'],
                                         field_len=vkwargs['field_len'])
-        except exc.IntegrityError as e:
+        except exc.IntegrityError as err:
             print(sql)
-            raise ValueError('Insert failed. %s' % e.message)
+            raise ValueError('Insert failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -576,9 +576,9 @@ class FieldTools(simplesql.TableTools):
                                         field_type=vkwargs['field_type'],
                                         field_len=vkwargs['field_len'],
                                         element_name=vkwargs['element_name'])
-        except exc.IntegrityError as e:
+        except exc.IntegrityError as err:
             print(sql)
-            raise ValueError('Insert failed. %s' % e.message)
+            raise ValueError('Insert failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -712,8 +712,8 @@ class FieldValueTools(simplesql.TableTools):
                                         fv_value=kwargs['fv_value'],
                                         fv_desc=kwargs['fv_desc'],
                                         fv_issues=kwargs['fv_issues'])
-        except exc.IntegrityError as e:
-            raise ValueError('Insert failed. %s' % e.message)
+        except exc.IntegrityError as err:
+            raise ValueError('Insert failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -745,9 +745,9 @@ class FieldValueTools(simplesql.TableTools):
                                         fv_value=vkwargs['fv_value'],
                                         fv_desc=vkwargs['fv_desc'],
                                         fv_issues=vkwargs['fv_issues'])
-        except exc.IntegrityError as e:
+        except exc.IntegrityError as err:
             print(sql)
-            raise ValueError('Insert failed. %s' % e.message)
+            raise ValueError('Insert failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -1194,8 +1194,8 @@ class FileIndexTools(simplesql.TableTools):
                                         rec_count=rec_count,
                                         col_count=col_count,
                                         epoch=curr_epoch)
-        except exc.IntegrityError as e:
-            raise ValueError('Insert failed. %s' % e.message)
+        except exc.IntegrityError as err:
+            raise ValueError('Insert failed. %s' % err)
         else:
             self.prune()
             return (result.lastrowid,
@@ -1221,8 +1221,8 @@ class FileIndexTools(simplesql.TableTools):
             result = connection.execute(sql,
                                         file_hash=file_hash,
                                         epoch=curr_epoch)
-        except exc.IntegrityError as e:
-            raise ValueError('Update failed. %s' % e.message)
+        except exc.IntegrityError as err:
+            raise ValueError('Update failed. %s' % err)
         else:
             return (result.lastrowid,
                     result.rowcount)
@@ -1241,8 +1241,8 @@ class FileIndexTools(simplesql.TableTools):
             connection = self.engine.connect()
             result = connection.execute(sql,
                                         epoch=min_epoch)
-        except exc.IntegrityError as e:
-            raise ValueError('Delete failed. %s' % e.message)
+        except exc.IntegrityError as err:
+            raise ValueError('Delete failed. %s' % err)
         else:
             return result.rowcount
 
