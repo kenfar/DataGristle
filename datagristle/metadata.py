@@ -163,6 +163,9 @@ class GristleMetaData(object):
         self.file_index_tools = FileIndexTools(self.metadata, self.engine)
         self.file_index = self.file_index_tools.table_create()
 
+        self.migration_tools = MigrationTools(self.metadata, self.engine)
+        self.migration = self.migration_tools.table_create()
+
         self.metadata.create_all()
 
         # we can't easily create views with sqlalchemy - so do that manually:
@@ -1242,6 +1245,65 @@ class FileIndexTools(simplesql.TableTools):
             raise ValueError('Delete failed. %s' % e.message)
         else:
             return result.rowcount
+
+
+
+class MigrationTools(simplesql.TableTools):
+    """ Tracks the schema versions
+    """
+
+    def table_create(self):
+        """ Handles creation of collection table.
+        """
+
+        self.migration = Table('migration',
+                                self.metadata,
+                                Column('version',
+                                       String(10),
+                                       nullable=False,
+                                       primary_key=True),
+                                Column('installation_timestamp',
+                                       DATETIME,
+                                       default=datetime.datetime.now,
+                                       onupdate=datetime.datetime.now,
+                                       nullable=False),
+                                Column('comment',
+                                       String(256),
+                                       nullable=True),
+                                extend_existing=True)
+        self._table = self.migration
+        self._table_name = 'migration'
+        return self._table
+
+
+    def write(self):
+        """ Write to migration table
+        """
+        raw_sql = """ DELETE FROM migration"""
+        sql = text(raw_sql)
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql)
+        except exc.IntegrityError as err:
+            raise ValueError('Delete failed. %s' % err)
+
+        raw_sql = """ INSERT INTO migration
+                      (version,
+                       installation_timestamp,
+                       comment)
+                      VALUES ('0.2.2',
+                              :dt,
+                              'Adds file_index')
+                  """
+        sql = text(raw_sql)
+        curr_epoch = time.time()
+        try:
+            connection = self.engine.connect()
+            result = connection.execute(sql,
+                                        dt=datetime.datetime.now())
+        except exc.IntegrityError as err:
+            raise ValueError(f'Insert failed: {err}')
+
 
 
 
