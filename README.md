@@ -26,6 +26,7 @@ And examples of all csv utilities can be found here:
    * Python 3.8
    * or Python 3.9
    * or Python 3.10
+   * or Python 3.11
 
 
 # CSV Utilities provided in this release:
@@ -131,7 +132,7 @@ And examples of all csv utilities can be found here:
                     Sort file by the 0-position string column in forward (ascending) direction,
                     dedupes the results and writes them to stdout.  The csv dialect is auto-
                     detected.
-       $ gristle_sorter -i sample.csv -k 0~s~f dept-s-r -D
+       $ gristle_sorter -i sample.csv -k 0sf dept-s-r -D
                     This example uses the optional tildes to separate the parts of the key,
                     and uses a fieldname reference from the file header (dept) rather than a
                     numeric field position.
