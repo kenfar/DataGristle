@@ -91,15 +91,18 @@ def get_case(field_type: str, values: common.StrFreqType) -> str:
         To do:
           - add consistency factor
     """
-    case = None
-
+    assert isinstance(values, dict)
     if field_type != 'string':
         return 'n/a'
+
+    case = None
 
     is_unknown = typer.is_unknown
     is_integer = typer.is_integer
     is_float = typer.is_float
-    clean_values = [x for x in values if not is_unknown(x[0])
+
+    value_items = values.items()
+    clean_values = [x for x in value_items if not is_unknown(x[0])
                     and not is_integer(x[0]) and not is_float(x[0])]
 
     lower_cnt = sum([x[1] for x in clean_values if x[0].islower()])

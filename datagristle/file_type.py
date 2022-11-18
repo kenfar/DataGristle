@@ -57,6 +57,9 @@ class FileTyper(object):
         self.record_cnt, self.record_cnt_is_est = self._count_records()
         self.field_cnt = get_field_cnt(self.dialect, self.fqfn)
 
+        if self.record_cnt == 1 and self.dialect.has_header:
+            raise IOErrorEmptyFile("Empty File")
+
 
     def _count_records(self) -> Tuple[int, bool]:
         """ Returns the number of records in the file

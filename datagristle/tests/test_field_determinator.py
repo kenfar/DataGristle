@@ -16,6 +16,7 @@ import os
 from pprint import pprint as pp
 
 import datagristle.configulator as configulator
+import datagristle.file_io as file_io
 import datagristle.field_determinator  as mod
 
 
@@ -27,7 +28,7 @@ class FileAndTestManager(object):
     def print_field(self, field_no):
         print('type:      %s' % self.MyFields.field_types[field_no])
         print('freq:     ')
-        print(self.MyFields.field_freqs[field_no])
+        print(self.MyFields.field_freq[field_no])
 
     def customSettings(self):
         """ gets run from setup_method()
@@ -59,9 +60,10 @@ class FileAndTestManager(object):
         self.string_col = 6
 
         # run FileTyper without csv dialect info:
-        self.MyFields = mod.FieldDeterminator(self.test1_fqfn,
-                                              self.field_cnt,
-                                              self.dialect,
+        input_handler = file_io.InputHandler(files=[self.test1_fqfn], dialect=self.dialect)
+        self.MyFields = mod.FieldDeterminator(input_handler=input_handler,
+                                              field_cnt=self.field_cnt,
+                                              dialect=self.dialect,
                                               verbosity='quiet')
 
     def teardown_method(self, method):
@@ -161,10 +163,6 @@ class FileAndTestManager(object):
         assert self.MyFields.field_case[self.string_col] == 'lower'
 
         assert self.MyFields.field_max_length[self.id_col] is None
-        print('\n=============================')
-        pp(self.MyFields.field_freqs[self.upper_col])
-        pp(self.MyFields.field_max_length[self.upper_col])
-        print('=============================')
         assert self.MyFields.field_max_length[self.upper_col] == 3
         assert self.MyFields.field_max_length[self.empty_col] is None
         assert self.MyFields.field_max_length[self.float_col] is None

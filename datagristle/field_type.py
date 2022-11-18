@@ -27,6 +27,7 @@ from typing import Any, List, Tuple, Dict, Optional, Union
 #--- CONSTANTS -----------------------------------------------------------
 
 GRISTLE_FIELD_TYPES = ['unknown', 'string', 'float', 'integer', 'timestamp']
+MAX_TYPE_SIZE = 1000
 MAX_FREQ_SIZE = 10000                  # limits entries within freq dictionaries
 DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01  # (not actual min)
 DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01  # (not acutal max)
@@ -100,11 +101,7 @@ def get_field_type(values: Union[List[Any], Dict[str, int]]) -> str:
         sorted_values = sorted(transformed_values)
         type_freq = {key:len(list(group)) for key, group in groupby(sorted_values)}
     elif isinstance(values, dict):
-        values = list(values.items())
-        keyfunc = lambda t: (t[0])
-        sorted_values = sorted(values, key=keyfunc)
-        for key, rows in groupby(sorted_values, keyfunc):
-            type_freq[_get_type(key)] = sum(row[1] for row in rows)
+        type_freq = _get_type_freq_from_dict(values)
     else:
         raise ValueError('invalid input type: {}'.format(type(values)))
 
@@ -115,6 +112,21 @@ def get_field_type(values: Union[List[Any], Dict[str, int]]) -> str:
         return result
 
     return _get_field_type_probability(type_freq) or 'unknown'
+
+
+def _get_type_freq_from_dict(values: Dict):
+    type_freq: Dict[str, int] = {}
+
+    # Truncate super-long lists: 10k or so should be enough to sample data
+    values = list(values.items())[:MAX_TYPE_SIZE]
+
+    for key, count in values:
+        key_type = _get_type(key)
+        try:
+            type_freq[key_type] += int(count)
+        except KeyError:
+            type_freq[key_type] = int(count)
+    return type_freq
 
 
 

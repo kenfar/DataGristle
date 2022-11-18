@@ -19,6 +19,7 @@
 """
 from operator import itemgetter
 from pprint import pprint as pp
+import time
 from typing import Optional, List, Tuple, Dict, Any
 
 import datagristle.common as common
@@ -58,25 +59,28 @@ class FieldDeterminator(object):
     """
 
     def __init__(self,
-                 filename: str,
+                 input_handler,
                  field_cnt: int,
                  dialect: csvhelper.Dialect,
                  verbosity: str='normal') -> None:
 
-        self.filename = filename
+        self.input_handler = input_handler
         self.field_cnt = field_cnt
         self.dialect = dialect
         self.verbosity = verbosity
         self.max_freq_number:   Optional[int] = None  # will be set in analyze_fields
+
+        # xperimental
+        self.field_freq: Dict[int, Dict[Any, int]] = {i:{} for i in range(self.field_cnt)}
+        self.field_min: Dict[int, Optional[Any]] = {}  # all data
+        self.field_max: Dict[int, Optional[Any]] = {}  # all data
 
         #--- public field dictionaries - organized by field_number --- #
         # every field should have a key in every one of these dictionaries
         # but if the dictionary doesn't apply, then the value may be None
         self.field_names:       Dict[int, str] = {}  # all data
         self.field_types:       Dict[int, str] = {}  # all data
-        self.field_min:         Dict[int, Optional[Any]] = {}  # all data
-        self.field_max:         Dict[int, Optional[Any]] = {}  # all data
-        self.field_trunc:       Dict[int, bool] = {}  # all data
+        self.field_trunc:       Dict[int, bool] = {i:False for i in range(self.field_cnt)}   # all data
         self.field_rows_invalid: Dict[int, int] = {}  # all data
 
         self.field_mean:        Dict[int, Optional[float]] = {}  # only for numeric data
@@ -92,7 +96,7 @@ class FieldDeterminator(object):
 
         #--- public field frequency distributions - organized by field number
         #--- each dictionary has a collection within it:
-        self.field_freqs:       Dict[int, Dict[Any, int]] = {}  # includes unknown values
+        #self.field_freqs:       Dict[int, Dict[Any, int]] = {}  # includes unknown values
 
         assert 0 < field_cnt < 1000
 
@@ -122,58 +126,52 @@ class FieldDeterminator(object):
         if self.verbosity in ('high', 'debug'):
             print('Field Analysis Progress: ')
 
-        for f_no in range(self.field_cnt):
-            if field_number is not None:  # optional analysis of a single field
-                if f_no != field_number:
-                    continue
 
-            if self.verbosity in ('high', 'debug'):
-                print('   Analyzing field: %d' % f_no)
-
-            self.field_names[f_no] = miscer.get_field_name(self.filename, self.dialect, f_no)
-
-            if max_freq_number is None:
-                if field_number is None:
-                    max_items = MAX_FREQ_MULTI_COL_DEFAULT
-                else:
-                    max_items = MAX_FREQ_SINGLE_COL_DEFAULT
+        #---- set max items for the freq -----------------
+        if max_freq_number is None:
+            if field_number is None:
+                self.max_items = MAX_FREQ_MULTI_COL_DEFAULT
             else:
-                max_items = max_freq_number
+                self.max_items = MAX_FREQ_SINGLE_COL_DEFAULT
+        else:
+            self.max_items = max_freq_number
 
-            (self.field_freqs[f_no],
-             self.field_trunc[f_no],
-             self.field_rows_invalid[f_no]) = miscer.get_field_freq(self.filename,
-                                                                    self.dialect,
-                                                                    f_no,
-                                                                    max_items,
-                                                                    read_limit)
-            field_freqs = list(self.field_freqs[f_no].items())
 
-            self.field_types[f_no] = typer.get_field_type(self.field_freqs[f_no])
-            if field_types_overrides:
-                for col_no in field_types_overrides:
-                    self.field_types[col_no] = field_types_overrides[col_no]
+        #---- field_freqs --------------------------------
+        for rec in self.input_handler:
+            self._get_field_freqs(rec)
+            if read_limit > -1 and self.input_handler.rec_cnt >= read_limit:
+                for f_no in range(self.field_cnt):
+                    self.field_trunc[f_no] = True
+                break
+        field_freq_list = list(self.field_freq.items())
 
-            self.field_max[f_no] = miscer.get_max(self.field_types[f_no], field_freqs)
-            self.field_min[f_no] = miscer.get_min(self.field_types[f_no], field_freqs)
+        self._get_field_types(field_types_overrides)
+        self._get_field_name()
+        self._get_field_minmax()
 
+
+
+        for f_no in self.field_freq.keys():
             if self.field_types[f_no] == 'string':
-                self.field_case[f_no] = miscer.get_case(self.field_types[f_no], field_freqs)
-                self.field_min_length[f_no] = miscer.get_min_length(field_freqs)
-                self.field_max_length[f_no] = miscer.get_max_length(field_freqs)
-                self.field_mean_length[f_no] = mather.get_mean_length(field_freqs)
+                self.field_case[f_no] = miscer.get_case(self.field_types[f_no], self.field_freq[f_no])
+                self.field_min_length[f_no] = miscer.get_min_length(self.field_freq[f_no].items())
+                self.field_max_length[f_no] = miscer.get_max_length(self.field_freq[f_no].items())
+                self.field_mean_length[f_no] = mather.get_mean_length(self.field_freq[f_no].items())
             else:
                 self.field_case[f_no] = None
                 self.field_min_length[f_no] = None
                 self.field_max_length[f_no] = None
                 self.field_mean_length[f_no] = None
 
+
+        for f_no in self.field_freq.keys():
             if self.field_types[f_no] in ('integer', 'float'):
-                self.field_mean[f_no] = mather.get_mean(field_freqs)
-                self.field_median[f_no] = mather.get_median(field_freqs)
+                self.field_mean[f_no] = mather.get_mean(self.field_freq[f_no].items())
+                self.field_median[f_no] = mather.get_median(self.field_freq[f_no].items())
                 (self.variance[f_no], self.stddev[f_no])   \
-                   = mather.get_variance_and_stddev(field_freqs, self.field_mean[f_no])
-                self.field_decimals[f_no] = mather.get_max_decimals(field_freqs, self.field_types[f_no])
+                   = mather.get_variance_and_stddev(self.field_freq[f_no].items(), self.field_mean[f_no])
+                self.field_decimals[f_no] = mather.get_max_decimals(self.field_freq[f_no].items(), self.field_types[f_no])
             else:
                 self.field_mean[f_no] = None
                 self.field_median[f_no] = None
@@ -182,11 +180,70 @@ class FieldDeterminator(object):
                 self.field_decimals[f_no] = None
 
 
+    def _get_field_freqs(self,
+                         rec):
+
+
+        for field_number, key in enumerate(rec):
+
+            if self.field_trunc.get(field_number):
+                continue
+            try:
+                key = key.strip()
+                if field_number not in self.field_freq:
+                    self.field_freq[field_number] = {}
+                self.field_freq[field_number][key] += 1
+            except KeyError:
+                self.field_freq[field_number][key] = 1
+            except IndexError:
+                try:
+                    self.field_rows_invalid[field_number] +1
+                except KeyError:
+                    self.field_rows_invalid[field_number] +1
+            except AttributeError as e: # quote_nonnumeric returns floats(!)
+                if ("'float' object has no attribute 'strip'")  in repr(e):
+                    if field_number not in self.field_freq:
+                        self.field_freq[field_number] = {}
+                    if rec[field_number] in self.field_freq[field_number]:
+                        self.field_freq[field_number][rec[field_number]] += 1
+                    else:
+                        self.field_freq[field_number][rec[field_number]] = 1
+
+            if self.max_items > -1 and len(self.field_freq[field_number]) >= self.max_items:
+                print(f'    WARNING: freq dict is too large for field {field_number} - will stop adding to it')
+                self.field_trunc[field_number] = True
+
+
+    def _get_field_types(self,
+                         field_types_overrides):
+
+        for f_no in self.field_freq.keys():
+            self.field_types[f_no] = typer.get_field_type(self.field_freq[f_no])
+            if field_types_overrides:
+                for col_no in field_types_overrides:
+                    self.field_types[col_no] = field_types_overrides[col_no]
+        if not self.field_types:
+            common.abort('ERROR: self.field_types is EMPTY! aborting')
+
+    def _get_field_name(self):
+        if self.input_handler.header:
+            self.field_names = self.input_handler.header
+        else:
+            filename = self.input_handler.files[0]
+            self.field_names = miscer.get_field_names(filename, self.dialect)
+
+
+    def _get_field_minmax(self):
+        for f_no in self.field_freq.keys():
+            self.field_max[f_no] = miscer.get_max(self.field_types[f_no], self.field_freq[f_no].items())
+            self.field_min[f_no] = miscer.get_min(self.field_types[f_no], self.field_freq[f_no].items())
+
+
     def get_known_values(self, fieldno: int) -> common.FreqType:
         """ returns a frequency-distribution dictionary that is the
             self.field_freqs with unknown values removed.
         """
-        return [val for val in self.field_freqs[fieldno]
+        return [val for val in self.field_freq[fieldno]
                 if typer.is_unknown(val) is False]
 
 
@@ -211,7 +268,7 @@ class FieldDeterminator(object):
                          ['ny',89],
                          ['tx',71]]
         """
-        sorted_values = sorted(list(self.field_freqs[fieldno].items()), key=itemgetter(1),
+        sorted_values = sorted(list(self.field_freq[fieldno].items()), key=itemgetter(1),
                                reverse=True)
         if limit:
             return sorted_values[:limit]

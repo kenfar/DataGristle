@@ -23,14 +23,14 @@ import datagristle.field_misc  as mod
 class Test_get_case(object):
 
     def test_misc_basics(self):
-        assert mod.get_case('string', [('AAA', 3), ('BBB', 2)]) == 'upper'
-        assert mod.get_case('string', [('AAA', 1), ('D`~!@#$%^&*()-+=[{]}', 1)]) == 'upper'
+        assert mod.get_case('string', {'AAA':3, 'BBB':2}) == 'upper'
+        assert mod.get_case('string', {'AAA':1, 'D`~!@#$%^&*()-+=[{]}':1}) == 'upper'
 
-        assert mod.get_case('string', [('aaa', 3), ('bbb', 1)]) == 'lower'
-        assert mod.get_case('string', [('aaa', 3), ('BBB', 2)]) == 'mixed'
+        assert mod.get_case('string', {'aaa':3, 'bbb':1}) == 'lower'
+        assert mod.get_case('string', {'aaa': 3, 'BBB':2}) == 'mixed'
 
-        assert mod.get_case('string', [('111', 2)]) == 'unknown'
-        assert mod.get_case('string', []) == 'unknown'
+        assert mod.get_case('string', {'111':2}) == 'unknown'
+        assert mod.get_case('string', {}) == 'unknown'
 
 
 

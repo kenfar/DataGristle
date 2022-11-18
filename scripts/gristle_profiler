@@ -195,6 +195,7 @@ import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.field_determinator as field_determinator
+import datagristle.file_io as file_io
 import datagristle.file_type as file_type
 import datagristle.helpdoc as helpdoc
 import datagristle.metadata as metadata
@@ -225,6 +226,8 @@ def main() -> int:
     if nconfig.metadata:
         md_man = MetadataManager(nconfig.schema_id, nconfig.collection_id)
 
+    input_handler = file_io.InputHandler(nconfig.infiles,
+                                         nconfig.dialect)
     out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.output_format)
 
     # Get Analysis on File:
@@ -242,7 +245,7 @@ def main() -> int:
         return 0
 
     # Get Analysis on ALL Fields:
-    my_fields = field_determinator.FieldDeterminator(nconfig.infiles[0],
+    my_fields = field_determinator.FieldDeterminator(input_handler,
                                                      my_file.field_cnt,
                                                      my_file.dialect,
                                                      nconfig.verbosity)
@@ -256,7 +259,7 @@ def main() -> int:
                              nconfig.max_freq,
                              nconfig.read_limit)
 
-    out_writer.write_field_results(my_fields, nconfig.col_position)
+    out_writer.write_field_results(my_fields, nconfig.col_position, input_handler.header)
     if nconfig.metadata:
         md_man.write_field_results(my_fields, nconfig.col_position)
 
@@ -407,6 +410,7 @@ class OutputWriter(object):
     def write_file_results(self,
                            my_file: file_type.FileTyper,
                            dialect: csvhelper.Dialect) -> None:
+        self.myfile = my_file
         self.write_header()
         self.write_header("File Analysis Results:")
         self.division = "File Analysis Results"
@@ -437,7 +441,8 @@ class OutputWriter(object):
 
     def write_field_results(self,
                             my_fields: field_determinator.FieldDeterminator,
-                            col_position: int) -> None:
+                            col_position: int,
+                            header: str) -> None:
         self.write_header()
         self.write_header("Field Analysis Results")
         self.division = "Field Analysis Results"
@@ -446,19 +451,20 @@ class OutputWriter(object):
             self.subsection = "main"
             if col_position is not None and sub != col_position:
                 continue
+
             self.write_header()
             self.write_header("------------------------------------------------------", indent=6)
             self.write_string("Name", my_fields.field_names[sub], indent=4)
             self.write_string("Gristle Name", my_fields.field_names[sub].strip().replace(' ', '_').lower(), indent=4)
             self.write_string("Field Number", sub, indent=4)
-            self.write_string("Wrong Field Cnt", my_fields.field_rows_invalid[sub], indent=4)
-            if my_fields.field_trunc[sub]:
+            self.write_string("Wrong Field Cnt", my_fields.field_rows_invalid.get(sub, 0), indent=4)
+            if my_fields.field_trunc.get(sub):
                 self.write_string("Data Truncated: analysis will be partial", indent=4)
 
             self.write_string("Type", my_fields.field_types[sub], indent=4)
             self.write_string("Min", my_fields.field_min[sub], indent=4)
             self.write_string("Max", my_fields.field_max[sub], indent=4)
-            self.write_string("Unique Values", len(my_fields.field_freqs[sub]), indent=4)
+            self.write_string("Unique Values", len(my_fields.field_freq[sub]), indent=4)
             self.write_string("Known Values", len(my_fields.get_known_values(sub)), indent=4)
 
             if my_fields.field_types[sub] in ("integer", "float"):
@@ -475,7 +481,8 @@ class OutputWriter(object):
                 self.write_string("Max Length", my_fields.field_max_length[sub], indent=4)
                 self.write_string("Mean Length", my_fields.field_mean_length[sub], indent=4)
 
-            self.write_field_freq(my_fields, sub)
+            if self.myfile.record_cnt > 1 or (self.myfile.record_cnt == 1 and not header):
+                self.write_field_freq(my_fields, sub)
 
 
     def write_field_freq(self,
@@ -484,7 +491,7 @@ class OutputWriter(object):
         """Writes out the top_values section for a single column."""
         self.subsection = "top_values"
 
-        if my_fields.field_freqs[col_no] is None:
+        if my_fields.field_freq[col_no] is None:
             self.write_string("Top Values", "no values found", indent=4)
             return
 

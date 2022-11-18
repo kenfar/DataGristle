@@ -49,6 +49,10 @@ def generate_test_file(delim, rec_list, quoted=False, dir_name=None):
     return fqfn
 
 
+def generate_output_filename(dir_name=None):
+    return pjoin(dir_name, 'gristle_profiler_output.csv')
+
+
 def get_value(parsable_out, division, section, subsection, key):
     """ Gets the value (right-most field) out of gristle_profiler
         parsable output given the key values for the rest of the fields.
@@ -110,9 +114,9 @@ class TestEmptyFile(object):
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
-        assert runner.status_code == 0
-        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') == '1'
-        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') == 'True'
+        assert runner.status_code == errno.ENODATA
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') is None
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') is None
 
     def test_empty_file_with_header_and_hasheader_arg(self):
         fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
@@ -121,9 +125,9 @@ class TestEmptyFile(object):
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
-        assert runner.status_code == 0
-        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') == '1'
-        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') == 'True'
+        assert runner.status_code == errno.ENODATA
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') is None
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') is None
 
 
 
@@ -184,10 +188,14 @@ class TestOutputFormattingAndContents(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
-        cmd = '%s --infiles %s --output-format=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn)
+        out_fqfn = generate_output_filename(dir_name=self.tmp_dir)
+        cmd = '%s --infiles %s --outfile %s --output-format=parsable' % (
+            os.path.join(script_path, 'gristle_profiler'), fqfn, out_fqfn)
+        pp(cmd)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
+        pp(runner.std_out)
         assert runner.status_code == 0
 
         mydialect = csv.Dialect
@@ -196,31 +204,32 @@ class TestOutputFormattingAndContents(object):
         mydialect.quotechar = '"'
         mydialect.lineterminator = '\n'
 
-        csvobj = csv.reader(runner.std_out.split('\n'), dialect=mydialect)
-        for record in csvobj:
-            if not record:
-                continue
-            assert len(record) == 5
-            division = record[0]
-            section = record[1]
-            subsection = record[2]
-            key = record[3]
-            value = record[4]
+        with open(out_fqfn, 'r') as csv_inbuf:
+            for record in csv.reader(csv_inbuf, dialect=mydialect):
+                pp(record)
+                if not record:
+                    continue
+                assert len(record) == 5
+                division = record[0]
+                section = record[1]
+                subsection = record[2]
+                key = record[3]
+                value = record[4]
 
-            assert division in ['file_analysis_results', 'field_analysis_results']
+                assert division in ['file_analysis_results', 'field_analysis_results']
 
-            if division == 'file_analysis_results':
-                assert section == 'main'
-                assert subsection == 'main'
-                self.file_struct[key] = value
-            elif division == 'field_analysis_results':
-                assert 'field_' in section
-                assert subsection in ['main', 'top_values']
-                if section not in self.field_struct:
-                    self.field_struct[section] = {}
-                if subsection not in self.field_struct[section]:
-                    self.field_struct[section][subsection] = {}
-                self.field_struct[section][subsection][key] = value
+                if division == 'file_analysis_results':
+                    assert section == 'main'
+                    assert subsection == 'main'
+                    self.file_struct[key] = value
+                elif division == 'field_analysis_results':
+                    assert 'field_' in section
+                    assert subsection in ['main', 'top_values']
+                    if section not in self.field_struct:
+                        self.field_struct[section] = {}
+                    if subsection not in self.field_struct[section]:
+                        self.field_struct[section][subsection] = {}
+                    self.field_struct[section][subsection][key] = value
 
     def teardown_method(self, teardown):
         shutil.rmtree(self.tmp_dir)
@@ -237,6 +246,7 @@ class TestOutputFormattingAndContents(object):
         assert self.file_struct['doublequote'] == 'False'
 
     def test_field_info(self):
+        pp(self.field_struct)
         assert self.field_struct['field_0']['main']['field_number'] == '0'
         assert self.field_struct['field_0']['main']['name'] == 'field_0'
         assert self.field_struct['field_0']['main']['type'] == 'string'
@@ -300,10 +310,12 @@ class TestReadLimit(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
+        out_fqfn = generate_output_filename(dir_name=self.tmp_dir)
         cmd = '%s \
                --infiles %s \
+               --outfile %s \
                --read-limit 4 \
-               --output-format=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn)
+               --output-format=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn, out_fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -316,30 +328,32 @@ class TestReadLimit(object):
         mydialect.lineterminator = '\n'
 
         csvobj = csv.reader(runner.std_out.split('\n'), dialect=mydialect)
-        for record in csvobj:
-            if not record:
-                continue
-            assert len(record) == 5
-            division = record[0]
-            section = record[1]
-            subsection = record[2]
-            key = record[3]
-            value = record[4]
+        with open(out_fqfn, 'r') as csv_inbuf:
+            for record in csv.reader(csv_inbuf, dialect=mydialect):
+                pp(record)
+                if not record:
+                    continue
+                assert len(record) == 5
+                division = record[0]
+                section = record[1]
+                subsection = record[2]
+                key = record[3]
+                value = record[4]
 
-            assert division in ['file_analysis_results', 'field_analysis_results']
+                assert division in ['file_analysis_results', 'field_analysis_results']
 
-            if division == 'file_analysis_results':
-                assert section == 'main'
-                assert subsection == 'main'
-                self.file_struct[key] = value
-            elif division == 'field_analysis_results':
-                assert 'field_' in section
-                assert subsection in ['main', 'top_values']
-                if section not in self.field_struct:
-                    self.field_struct[section] = {}
-                if subsection not in self.field_struct[section]:
-                    self.field_struct[section][subsection] = {}
-                self.field_struct[section][subsection][key] = value
+                if division == 'file_analysis_results':
+                    assert section == 'main'
+                    assert subsection == 'main'
+                    self.file_struct[key] = value
+                elif division == 'field_analysis_results':
+                    assert 'field_' in section
+                    assert subsection in ['main', 'top_values']
+                    if section not in self.field_struct:
+                        self.field_struct[section] = {}
+                    if subsection not in self.field_struct[section]:
+                        self.field_struct[section][subsection] = {}
+                    self.field_struct[section][subsection][key] = value
 
     def teardown_method(self, teardown):
         shutil.rmtree(self.tmp_dir)
@@ -388,10 +402,12 @@ class TestMaxFreq(object):
         self.field_struct = {}
 
         fqfn = generate_test_file(delim='|', rec_list=recs, quoted=False, dir_name=self.tmp_dir)
+        out_fqfn = generate_output_filename(dir_name=self.tmp_dir)
         cmd = '%s \
                --infiles %s \
+               --outfile %s \
                --max-freq 10  \
-               --output-format=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn)
+               --output-format=parsable' % (os.path.join(script_path, 'gristle_profiler'), fqfn, out_fqfn)
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
@@ -404,34 +420,36 @@ class TestMaxFreq(object):
         mydialect.lineterminator = '\n'
 
         csvobj = csv.reader(runner.std_out.split('\n'), dialect=mydialect)
-        for record in csvobj:
-            if not record:
-                continue
-            if len(record) != 5:
-                if 'WARNING: freq dict is too large' in record[0]:
-                    continue # ignore warning row
-                else:
-                    pytest.fail('Invalid result record: %s' % record[0])
+        with open(out_fqfn, 'r') as csv_inbuf:
+            for record in csv.reader(csv_inbuf, dialect=mydialect):
+                pp(record)
+                if not record:
+                    continue
+                if len(record) != 5:
+                    if 'WARNING: freq dict is too large' in record[0]:
+                        continue # ignore warning row
+                    else:
+                        pytest.fail('Invalid result record: %s' % record[0])
 
-            division = record[0]
-            section = record[1]
-            subsection = record[2]
-            key = record[3]
-            value = record[4]
-            assert division in ['file_analysis_results', 'field_analysis_results']
+                division = record[0]
+                section = record[1]
+                subsection = record[2]
+                key = record[3]
+                value = record[4]
+                assert division in ['file_analysis_results', 'field_analysis_results']
 
-            if division == 'file_analysis_results':
-                assert section == 'main'
-                assert subsection == 'main'
-                self.file_struct[key] = value
-            elif division == 'field_analysis_results':
-                assert 'field_' in section
-                assert subsection in ['main', 'top_values']
-                if section not in self.field_struct:
-                    self.field_struct[section] = {}
-                if subsection not in self.field_struct[section]:
-                    self.field_struct[section][subsection] = {}
-                self.field_struct[section][subsection][key] = value
+                if division == 'file_analysis_results':
+                    assert section == 'main'
+                    assert subsection == 'main'
+                    self.file_struct[key] = value
+                elif division == 'field_analysis_results':
+                    assert 'field_' in section
+                    assert subsection in ['main', 'top_values']
+                    if section not in self.field_struct:
+                        self.field_struct[section] = {}
+                    if subsection not in self.field_struct[section]:
+                        self.field_struct[section][subsection] = {}
+                    self.field_struct[section][subsection][key] = value
 
     def teardown_method(self, method):
         shutil.rmtree(self.tmp_dir)
