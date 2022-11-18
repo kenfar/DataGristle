@@ -29,30 +29,6 @@ MAX_FREQ_SIZE_DEFAULT = 1000000     # limits entries within freq dictionaries
 
 
 
-def get_field_name(filename: str,
-                   dialect: csvhelper.Dialect,
-                   col_number: int) -> str:
-    """ Determines names of fields
-        Inputs:
-        Outputs:
-        Misc:
-          - if the file is empty it will return None
-    """
-    reader = csv.reader(open(filename, newline=''), dialect=dialect)
-    for field_names in reader:
-        break
-    else:
-        raise EOFError
-
-    final_name = ''
-    if dialect.has_header:
-        final_name = field_names[col_number].strip()
-    else:
-        final_name = 'field_%d' % col_number
-    return final_name
-
-
-
 def get_field_names(filename: str,
                     dialect) -> List[str]:
     """ Determines names of fields
@@ -109,7 +85,7 @@ def get_case(field_type: str, values: common.StrFreqType) -> str:
     upper_cnt = sum([x[1] for x in clean_values if x[0].isupper()])
     mixed_cnt = sum([x[1] for x in clean_values if not x[0].isupper() and not x[0].islower()])
 
-    # evaluate frequency distribution:
+    # evaluate mix of types:
     if mixed_cnt:
         case = 'mixed'
     elif lower_cnt and not upper_cnt:
@@ -193,7 +169,7 @@ def get_min(value_type: str, values: common.FreqType) -> Any:
         no values found besides unknown it will just return 'None'
 
         Inputs:
-          - value_type - one of integer, float, string, timestap
+          - value_type - one of integer, float, string, timestamp
           - dictionary or list of string values
         Outputs:
           - the single minimum value of the appropriate type

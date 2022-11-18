@@ -142,35 +142,23 @@ class TestGetFieldNames(object):
     def test_misc_header_all_cols(self):
         assert mod.get_field_names(self.header_fqfn, self.dialect) == self.name_list
 
-    def test_misc_header_one_col(self):
-        assert mod.get_field_name(self.header_fqfn, self.dialect, 1) == 'phone'
-
     def test_misc_headless_all_col(self):
         self.dialect.has_header = False
         assert mod.get_field_names(self.headless_fqfn, self.dialect) \
                 == ['field_0', 'field_1', 'field_2', 'field_3']
 
-    def test_misc_headless_one_col(self):
-        self.dialect.has_header = False
-        assert mod.get_field_name(self.headless_fqfn, self.dialect, 1) == 'field_1'
-
     def test_misc_empty(self):
         # test with header:
         with pytest.raises(EOFError):
             assert mod.get_field_names(self.empty_fqfn, self.dialect) is None
-        with pytest.raises(EOFError):
-            assert mod.get_field_name(self.empty_fqfn, self.dialect, 1) is None
 
         # test without header
         self.dialect.has_header = False
         with pytest.raises(EOFError):
             assert mod.get_field_names(self.empty_fqfn, self.dialect) is None
-        with pytest.raises(EOFError):
-            assert mod.get_field_name(self.empty_fqfn, self.dialect, 1) is None
 
     def test_misc_noquote(self):
         assert mod.get_field_names(self.noquote_fqfn, self.dialect) == self.name_list
-        assert mod.get_field_name(self.noquote_fqfn, self.dialect, 1) == 'phone'
 
 
 
