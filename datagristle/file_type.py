@@ -101,6 +101,19 @@ class FileTyper(object):
 
 
 
+def get_field_cnt(dialect: csvhelper.Dialect,
+                  fqfn: str) -> Optional[int]:
+    """ determines the number of fields in the file.
+    """
+    field_cnt = None
+    for rec in csv.reader(fileinput.input(fqfn), dialect):
+        field_cnt = len(rec)
+        break
+    fileinput.close()
+
+    return field_cnt
+
+
 class IOErrorEmptyFile(IOError):
     """Error due to empty file
     """

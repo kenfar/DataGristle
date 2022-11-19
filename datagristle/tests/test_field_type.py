@@ -9,6 +9,8 @@
 #pylint: disable=protected-access
 #pylint: disable=no-self-use
 
+from pprint import pprint as pp
+
 import datagristle.field_type  as mod
 
 
@@ -91,47 +93,74 @@ class TestIsUnknown(object):
 class TestIsTimestamp(object):
 
     def runner(self, date):
-        result, scope, pattern = mod.is_timestamp(date)
-        return result, scope
+        return mod.is_timestamp(date)
 
-    def test_is_timestamp_bad_dates(self):
-        assert self.runner("0") == (False, None)
-        assert self.runner("-4") == (False, None)
-        assert self.runner("-4.7") == (False, None)
-        assert self.runner("blah") == (False, None)
-        assert self.runner("blah") == (False, None)
-        assert self.runner("2009 ") == (False, None)
-        assert self.runner("2009 ") == (False, None)
-        assert self.runner("2009-10-06-18") == (True, 'hour')
-        assert self.runner("2009-10-06-03.02.01") == (True, 'second')
+    def test_unsupported_timestamps_and_non_timestamps(self):
+        assert self.runner("0") is False
+        assert self.runner("-4") is False
+        assert self.runner("-4.7") is False
+        assert self.runner("blah") is False
+        assert self.runner("blah") is False
+        assert self.runner("2009 ") is False
+        assert self.runner("2009 ") is False
+        assert self.runner("1172969203.1") is False
+        assert self.runner("2009") is False
+        assert self.runner("200910") is False
+        assert self.runner("2009-10") is False
+        assert self.runner("20090206") is False
 
-    def test_is_timestamp_good_dates(self):
-        assert self.runner("1172969203.1") == (True, 'second')
-        assert self.runner("2009") == (True, 'year')
-        assert self.runner("200910") == (True, 'month')
-        assert self.runner("2009-10") == (True, 'month')
-        assert self.runner("20090206") == (True, 'day')
-        assert self.runner("2009-10-06") == (True, 'day')
-        assert self.runner("10/26/09") == (True, 'day')
-        assert self.runner("10-26-09") == (True, 'day')
-        assert self.runner("26/10/09") == (True, 'day')
-        assert self.runner("26-10-09") == (True, 'day')
-        assert self.runner("10/26/2009") == (True, 'day')
-        assert self.runner("10-26-2009") == (True, 'day')
-        assert self.runner("26/10/2009") == (True, 'day')
-        assert self.runner("26-10-2009") == (True, 'day')
-        assert self.runner("Feb 13,2009") == (True, 'day')
-        assert self.runner("Feb 13, 2009") == (True, 'day')
-        assert self.runner("February 13,2009") == (True, 'day')
-        assert self.runner("February 13, 2009") == (True, 'day')
-        assert self.runner("2009-10-06 18") == (True, 'hour')
-        assert self.runner("2009-10-06-18") == (True, 'hour')
-        assert self.runner("2009-10-06 18:10") == (True, 'minute')
-        assert self.runner("2009-10-06-18.10") == (True, 'minute')
-        assert self.runner("2009-10-06 03:02:01") == (True, 'second')
-        assert self.runner("2009-10-06 00:00:00") == (True, 'second')
-        assert self.runner("2009-10-06 03:02:01.01") == (True, 'microsecond')
-        assert self.runner("2009-10-06 03:02:01.01234") == (True, 'microsecond')
+    def test_unsupported_periods(self):
+        assert self.runner("2009-10-06-18.10") is False
+        assert self.runner("2009-10-06-03.02.01") is False
+
+    def test_dates(self):
+        assert self.runner("10/26/09") is True
+        assert self.runner("10-26-09") is True
+        assert self.runner("26/10/09") is True
+        assert self.runner("26-10-09") is True
+        assert self.runner("10/26/2009") is True
+        assert self.runner("10-26-2009") is True
+        assert self.runner("26/10/2009") is True
+        assert self.runner("26-10-2009") is True
+
+    def test_month_names(self):
+        assert self.runner("Feb 13,2009") is True
+        assert self.runner("Feb 13, 2009") is True
+        assert self.runner("February 13,2009") is True
+        assert self.runner("February 13, 2009") is True
+
+    def test_iso8601(self):
+        assert self.runner("2009-10-06") is True
+        assert self.runner("2009-10-06t18") is True
+        assert self.runner("2009-10-06T18:10") is True
+        assert self.runner("2009-10-06T03:02:01") is True
+        assert self.runner("2009-10-06T03:02:01.01234") is True
+
+    def test_non_iso8601_timestamps(self):
+        assert self.runner("2009-10-06 18") is True
+        assert self.runner("2009-10-06-18") is True
+        assert self.runner("2009-10-06 18:10") is True
+        assert self.runner("2009-10-06-18:10") is True
+        assert self.runner("2009-10-06 03:02:01") is True
+        assert self.runner("2009-10-06 00:00:00") is True
+        assert self.runner("2009-10-06-03:02:01") is True
+        assert self.runner("2009-10-06 03:02:01.01") is True
+        assert self.runner("2009-10-06 03:02:01.01234") is True
+        assert self.runner("2009-10-06-03:02:01.01234") is True
+
+    def test_timezone_z(self):
+        assert self.runner("2009-10-06T03:02:01.01234Z") is True
+        assert self.runner("2009-10-06T03:02:01Z") is True
+
+    def test_timezone_plus(self):
+        assert self.runner("2009-10-06T03:02:01.01234+0700") is True
+        assert self.runner("2009-10-06T03:02:01+0700") is True
+
+    def test_timezone_dash(self):
+        assert self.runner("2009-10-06T03:02:01.01234-0700") is True
+        assert self.runner("2009-10-06T03:02:01-0700") is True
+
+
 
 
 
@@ -164,7 +193,7 @@ class TestGetFieldType(object):
         assert mod.get_field_type({'n/a': 4, '55':4}) == 'integer'
         assert mod.get_field_type({'n/a': 4, '55.5':4}) == 'float'
         assert mod.get_field_type({'n/a': 4, '':4}) == 'unknown'
-        assert mod.get_field_type({'n/a': 4, '1310527566.7':4}) == 'timestamp'
+        assert mod.get_field_type({'n/a': 4, '1310527566.7':4}) == 'float'
         assert mod.get_field_type({'4.3': 4, '1310527566.7':4}) == 'float'
 
         test_data = {'n/a':   3,

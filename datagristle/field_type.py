@@ -15,12 +15,12 @@
       - change returned data format to be based on field
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011,2012,2013,2017 Ken Farmer
+    Copyright 2011,2012,2013,2017,2022 Ken Farmer
 """
 import datetime
 import math
-from itertools import groupby
 from pprint import pprint as pp
+import re
 from typing import Any, List, Tuple, Dict, Optional, Union
 
 
@@ -28,20 +28,9 @@ from typing import Any, List, Tuple, Dict, Optional, Union
 
 GRISTLE_FIELD_TYPES = ['unknown', 'string', 'float', 'integer', 'timestamp']
 MAX_TYPE_SIZE = 1000
-MAX_FREQ_SIZE = 10000                  # limits entries within freq dictionaries
-DATE_MIN_EPOCH_DEFAULT = 315561661     # 1980-01-01 01:01:01  # (not actual min)
-DATE_MAX_EPOCH_DEFAULT = 1893484861    # 2030-01-01 01:01:01  # (not acutal max)
-DATE_MAX_LEN = 26
-DATE_INVALID_CHARS = ['`', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',
-                      '_', '+', '=', '[', '{', '}', '}', '|',
-                      ';', '"', "'", '<', '>', '?',
-                      'q', 'z', 'x']
-DATE_FORMATS = [ # <scope>, <pattern>, <format>
-    ("year", "YYYY", "%Y"),
-    ("month", "YYYYMM", "%Y%m"),
-    ("month", "YYYY-MM", "%Y-%m"),
-    ("month", "YYYYMM", "%Y%m"),
-    ("day", "YYYYMMDD", "%Y%m%d"),
+DATE_MIN_LEN = 8
+DATE_MAX_LEN = 31 # supports iso8601 with microseconds and timezone
+NON_MICROSECOND_FORMATS = [
     ("day", "YYYY-MM-DD", "%Y-%m-%d"),
     ("day", "DD/MM/YY", "%d/%m/%y"),
     ("day", "DD-MM-YY", "%d-%m-%y"),
@@ -59,19 +48,23 @@ DATE_FORMATS = [ # <scope>, <pattern>, <format>
     ("day", "DD MON, YYYY", "%d %b, %Y"),
     ("day", "DD MONTH,YYYY", "%d %B,%Y"),
     ("day", "DD MONTH, YYYY", "%d %B, %Y"),
+    ("hour", "YYYY-MM-DDTHH", "%Y-%m-%dT%H"),
     ("hour", "YYYY-MM-DD HH", "%Y-%m-%d %H"),
     ("hour", "YYYY-MM-DD-HH", "%Y-%m-%d-%H"),
+    ("minute", "YYYY-MM-DDTHH:MM", "%Y-%m-%dT%H:%M"),
     ("minute", "YYYY-MM-DD HH:MM", "%Y-%m-%d %H:%M"),
-    ("minute", "YYYY-MM-DD-HH.MM", "%Y-%m-%d-%H.%M"),
+    ("minute", "YYYY-MM-DD-HH:MM", "%Y-%m-%d-%H:%M"),
+    ("second", "YYYY-MM-DDTHH:MM:SS", "%Y-%m-%dT%H:%M:%S"),
     ("second", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S"),
-    ("second", "YYYY-MM-DD-HH.MM.SS", "%Y-%m-%d-%H.%M.%S"),
-    # ".<microsecond>" at end is manually handled below
-    ("microsecond", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S")]
+    ("second", "YYYY-MM-DD-HH:MM:SS", "%Y-%m-%d-%H:%M:%S")]
+MICROSECOND_FORMATS = [
+    ("microsecond", "YYYY-MM-DDTHH:MM:SS", "%Y-%m-%dT%H:%M:%S"),
+    ("microsecond", "YYYY-MM-DD HH:MM:SS", "%Y-%m-%d %H:%M:%S"),
+    ("microsecond", "YYYY-MM-DD-HH:MM:SS", "%Y-%m-%d-%H:%M:%S")]
+INVALID_TIMESTAMP_SYMBOL_REGEX = re.compile('[`~!@#$%^&*()_={}[]|\\;\'\"<>?]')
 
 
-
-
-def get_field_type(values: Union[List[Any], Dict[str, int]]) -> str:
+def get_field_type(values: Dict[str, int]) -> str:
     """ Determines the type of every item in the value list or dictionary,
         then consolidates that into a single output type.  This is used to
         determine what type to convert an entire field into - often within
@@ -94,16 +87,8 @@ def get_field_type(values: Union[List[Any], Dict[str, int]]) -> str:
         return 'unknown'
 
     type_freq: Dict[str, int] = {}
-    assert isinstance(values, dict)
 
-    if isinstance(values, list):
-        transformed_values = [_get_type(x) for x in values]
-        sorted_values = sorted(transformed_values)
-        type_freq = {key:len(list(group)) for key, group in groupby(sorted_values)}
-    elif isinstance(values, dict):
-        type_freq = _get_type_freq_from_dict(values)
-    else:
-        raise ValueError('invalid input type: {}'.format(type(values)))
+    type_freq = _get_type_freq_from_dict(values)
 
     clean_type_list = [x for x in type_freq if x != 'unknown']
 
@@ -144,15 +129,17 @@ def _get_type(value: Any) -> str:
         Test Coverage:
           - complete via test harness
     """
-    dtc_status, _, _ = is_timestamp(value)
-    if dtc_status:
-        return 'timestamp'
-    elif is_unknown(value):
+    #dtc_status, _, _ = is_timestamp(value)
+    #if dtc_status:
+    #    return 'timestamp'
+    if is_unknown(value):
         return 'unknown'
     elif is_float(value):
         return 'float'
     elif is_integer(value):
         return 'integer'
+    elif is_timestamp(value):
+        return 'timestamp'
     elif is_string(value):
         return 'string'
     else:
@@ -344,54 +331,59 @@ def is_unknown(value: Any) -> bool:
 
 
 
-def is_timestamp(time_val: Union[float, str]) -> Tuple[bool, Optional[str], Optional[str]]:
+def is_timestamp(time_val: Union[float, str]) -> bool:
     """ Determine if arg is a timestamp and if so what format
 
     Args:
-        time_val - Value that may be a date, time, epoch or combo
+        time_val - normally a string, but could be a float
     Returns:
         status   - True if date/time False if not
-        scope    - kind of timestamp
-        pattern  - date mask
 
     To do:
         - consider overrides to default date min & max epoch limits
-        - consider consolidating epoch checks with rest of checks
     """
-    non_date = (False, None, None)
 
-    # Catch csv fields coming in as floats - from quoting=quote_nonnumeric
-    if not isinstance(time_val, str):
-        time_val = str(time_val)
-
+    if isinstance(time_val, float):
+        return False
     if len(time_val) > DATE_MAX_LEN:
-        return non_date
-    try:
-        float_str = float(time_val)
-        if DATE_MIN_EPOCH_DEFAULT < float_str < DATE_MAX_EPOCH_DEFAULT:
-            t_date = datetime.datetime.fromtimestamp(float(time_val))
-            return True, 'second', 'epoch'
-    except ValueError:
-        pass
+        return False
+    if len(time_val) < 8: #DATE_MIN_LEN:
+        return False
 
-    for scope, pattern, date_format in DATE_FORMATS:
-        if scope == "microsecond":
-            # Special handling for microsecond part. AFAIK there isn't a
-            # strftime code for this.
-            if time_val.count('.') != 1:
-                continue
-            time_val, microseconds_str = time_val.split('.')
+    if INVALID_TIMESTAMP_SYMBOL_REGEX.match(time_val):
+        return False
+
+    # remove timezones:
+    if time_val.endswith('z') or time_val.endswith('Z'):
+        time_val = time_val[:-1]
+    parts = time_val.split('+')
+    if parts:
+        time_val = parts[0]
+    if len(time_val) > 14:
+        dash_offset = time_val.rfind('-')
+        if dash_offset > 11:
+            time_val = time_val[:dash_offset]
+
+
+    if '.' in time_val:
+        time_val = time_val.split('.')[0]
+        for scope, _, date_format in MICROSECOND_FORMATS:
             try:
-                microsecond = int((microseconds_str + '000000')[:6])
+                t_date = datetime.datetime.strptime(time_val, date_format)
             except ValueError:
-                continue
-        try:
-            t_date = datetime.datetime.strptime(time_val, date_format)
-        except ValueError:
-            pass
+                pass
+            else:
+                return True
         else:
-            if scope == "microsecond":
-                t_date = t_date.replace(microsecond=microsecond)
-            return True, scope, pattern
+            return False
     else:
-        return False, None, None
+        for scope, _, date_format in NON_MICROSECOND_FORMATS:
+            try:
+                t_date = datetime.datetime.strptime(time_val, date_format)
+            except ValueError:
+                pass
+            else:
+                return True
+        else:
+            return False
+
