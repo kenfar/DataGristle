@@ -192,13 +192,13 @@ from typing import List, Tuple, Dict, Any, Optional
 
 from datagristle.common import abort
 import datagristle.common as comm
-import datagristle.configulator as configulator
-import datagristle.csvhelper as csvhelper
-import datagristle.field_determinator as field_determinator
-import datagristle.file_io as file_io
-import datagristle.file_type as file_type
-import datagristle.helpdoc as helpdoc
-import datagristle.metadata as metadata
+from datagristle import configulator
+from datagristle import csvhelper
+from datagristle import field_determinator
+from datagristle import file_io
+from datagristle import file_type
+from datagristle import helpdoc
+from datagristle import metadata
 
 # Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -231,7 +231,7 @@ def main() -> int:
     out_writer = OutputWriter(output_filename=nconfig.outfile, output_format=nconfig.output_format)
 
     # Get Analysis on File:
-    my_file = file_type.FileTyper(nconfig.dialect, nconfig.infiles[0], read_limit=nconfig.read_limit)
+    my_file = file_type.FileTyper(input_handler, read_limit=nconfig.read_limit)
     try:
         my_file.analyze_file()
     except file_type.IOErrorEmptyFile:
@@ -245,6 +245,7 @@ def main() -> int:
         return 0
 
     # Get Analysis on ALL Fields:
+    input_handler.reset()
     my_fields = field_determinator.FieldDeterminator(input_handler,
                                                      my_file.field_cnt,
                                                      my_file.dialect,
@@ -459,7 +460,7 @@ class OutputWriter(object):
             self.write_string("Field Number", sub, indent=4)
             self.write_string("Wrong Field Cnt", my_fields.field_rows_invalid.get(sub, 0), indent=4)
             if my_fields.field_trunc.get(sub):
-                self.write_string("Data Truncated: analysis will be partial", indent=4)
+                self.write_string("Data Truncated", "analysis based on subset", indent=4)
 
             self.write_string("Type", my_fields.field_types[sub], indent=4)
             self.write_string("Min", my_fields.field_min[sub], indent=4)

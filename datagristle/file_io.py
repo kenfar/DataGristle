@@ -6,18 +6,17 @@
 """
 import csv
 import errno
-import fileinput
 import io
 import os
-from os.path import join as pjoin
+from os.path import join as pjoin, getsize
 from pprint import pprint as pp
 import random
 import sys
 import tempfile
 import time
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-import datagristle.csvhelper as csvhelper
+from datagristle import csvhelper
 
 
 
@@ -140,7 +139,55 @@ class InputHandler(object):
             pass
 
 
+    def get_rec_count(self,
+                      read_limit=-1) -> Tuple[int, bool]:
+        """ Returns the number of records in the file
+            Outputs:
+               - rec count
+               - estimated - True or False, indicates if the rec count is an
+                 estimation based on the first self.read_limit rows.
+        """
+        rec_cnt = 0
+        estimated_rec_cnt = 0
+        byte_cnt = 0
+        estimated = False
 
+        if read_limit > -1:
+            # fastest method, should be helpful the files are very large
+            estimated = True
+            try:
+                while True:
+                    rec = self.__next__()
+                    byte_cnt += (len(''.join(rec)) + len(rec) + 1)
+                    if self.rec_cnt  > read_limit:
+                        break
+            except StopIteration:
+                pass
+            try:
+                bytes_per_rec = byte_cnt / self.rec_cnt
+                total_file_size = sum([int(getsize(x)) for x in self.files if x != '-' ])
+                estimated_rec_cnt = total_file_size / bytes_per_rec
+            except  ZeroDivisionError:
+                pass
+
+        else:
+            # slower method, but most accurate
+            try:
+                while True:
+                    _ = self.__next__()
+            except StopIteration:
+                pass
+
+        return estimated_rec_cnt or self.rec_cnt, estimated
+
+
+    def get_field_cnt(self):
+        """ returns the number of fields in the file.
+        """
+        if self.header:
+            return len(self.header)
+        rec = self.__next__()
+        return len(rec)
 
 
 
@@ -235,56 +282,6 @@ def get_file_size(files):
 
 
 
-def get_file_avg_rec_size(files, dialect):
-    if files[0] == '-':
-        return None
-
-    rec_sizes = []
-    rec_cnt = 0
-    for fn in files:
-        with open(fn, 'r', newline='', encoding='utf-8') as inbuf:
-            csv_reader = csv.reader(inbuf, dialect=dialect)
-            for rec in csv_reader:
-                rec_sizes.append(get_rec_memory_size_mb(rec))
-                rec_cnt += 1
-                if rec_cnt > 1000:
-                    break
-            if rec_cnt > 1000:
-                break
-    fileinput.close()
-    if rec_cnt == 0:
-        return 0
-    return int(sum([size for size in rec_sizes])/rec_cnt)
-
-
-
-def get_rec_memory_size_mb(rec):
-    return sum([sys.getsizeof(field) for field in rec])
-
-
-
-def get_approx_rec_count(files):
-    tot_size = get_file_size(files)
-    rec_size = 0
-    rec_cnt = 0
-    for fn in files:
-        if fn == '-':
-            continue
-        with open(fn, 'r') as inbuf:
-            for rec in inbuf:
-                rec_size += len(rec)
-                rec_cnt += 1
-                if rec_cnt > 1000:
-                    break
-    try:
-        avg_rec_size = rec_size / rec_cnt
-        approx_rec_cnt = tot_size / avg_rec_size
-    except ZeroDivisionError:
-        approx_rec_cnt = -1
-    return approx_rec_cnt
-
-
-
 def get_rec_count(files: List[str],
                   dialect: csv.Dialect) -> Optional[int]:
     """ Get record counts for input files.
@@ -315,128 +312,4 @@ def remove_all_temp_files(prefix: str,
         seconds = time.time() - os.path.getmtime(pjoin(tmpdir, fn))
         if seconds >= min_age_seconds:
             os.remove(pjoin(tmpdir, fn))
-
-
-
-def get_file_approx_partitions(file_name):
-    # first get file size
-    #    - also get estimated number of records & record size ?
-    # then determine the splits
-    #    - 10m bytes
-    #    - 100k records
-    # then kick off multiple processes, each at one of the splits
-    #    each then determines exact start, stop, record count
-    # return:
-    #    - each partition - start, stop, record-count
-    #    - total record count
-
-    file_size = os.path.getsize(file_name)
-    #partition_size = 15
-    #partition_size = 10 * 1024 * 1024  # 10 mbytes
-    partition_size = 1024 * 1024  # 10 mbytes
-    partition_number = int(file_size / partition_size)
-    partition_starts = [x * partition_size for x in range(partition_number)]
-    print('**** Runner setup **********************************')
-    print(f'{file_size=}')
-    print(f'{partition_starts=}')
-    print(f'{partition_number=}')
-    print(f'{partition_starts=}')
-    print(f'{partition_starts[-1] - partition_size}')
-    print(f'size of final partition: {file_size - partition_starts[-1]}')
-    print([x/1024/1024 for x in partition_starts])
-    print('****************************************************')
-
-    parts = []
-    for i, part_start in enumerate(partition_starts):
-        try:
-            part_stop = partition_starts[i+1]
-        except IndexError:
-            part_stop = None
-        parts.append(file_partition_counter2(file_name,
-                                             part_start,
-                                             part_stop))
-    print('\n********** file_partition_counter - complete ****************')
-    pp(parts)
-    print('*************************************************************')
-    actual_part_starts = [(x[2], x[1]) for x in parts]
-
-
-    recs = []
-    for i, (part_start, part_stop) in enumerate(actual_part_starts):
-        recs.append(file_partition_reader(file_name,
-                                          part_start,
-                                          part_stop))
-
-    print('\n********** file_partition_reader - complete *****************')
-    print(f'Count of partitions: {len(recs)}')
-    print(f'Record counts by partition: {recs}')
-    print(f'Sum of records in all partitions: {sum(recs)}')
-    print('*************************************************************')
-
-
-
-def file_partition_counter2(file_name,
-                           partition_start,
-                           partition_stop):
-
-    print(f'======= file_partition_counter - {partition_start=}, {partition_stop=}  ===================')
-    if partition_start == 0:
-        return [0, partition_stop, 0]
-
-    last_newline_offset = None
-    with open(file_name, 'rb') as inbuf:
-        read_bytes = 1000
-        inbuf.seek(partition_start)
-        data = inbuf.read(read_bytes)
-
-        io_buf = io.BytesIO(data)
-        rec = io_buf.read1(read_bytes)
-        proposed_stop = None
-        for i, byte in enumerate(rec):
-            pp(byte)
-            #if byte == b'\n':
-            if byte == 10:
-                actual_start = partition_start + i
-                print('found it!!!!!!!!!!!!')
-                break
-    if actual_start:
-        if partition_stop is None:
-            pass
-        elif actual_start >= partition_stop:
-            raise ValueError
-    else:
-        raise ValueError
-    return [partition_start, partition_stop, actual_start]
-
-
-
-
-def file_partition_reader(file_name,
-                          partition_start,
-                          partition_stop):
-    print(f'======= file_partition_reader - partition_start: {partition_start} stop: {partition_stop} ===================')
-    recs = []
-    # fixme: need to get next actual start!
-    read_bytes = (partition_stop - partition_start)+1000 if partition_stop else 1_000_000
-    pp(f'{read_bytes=}')
-
-    with open(file_name, 'rt') as inbuf:
-        inbuf.seek(partition_start)
-        data = inbuf.read(read_bytes)
-
-        #csv_reader = csv.reader(data)
-        #for rec in csv_reader:
-        str_buf = io.StringIO(data)
-        for rec in csv.reader(str_buf):
-            #pp(f'{rec=}')
-            recs.append(rec)
-
-        #csv_reader = csv.reader(inbuf)
-        #for rec in csv_reader:
-        #    last_offset = inbuf.tell()
-        #    if last_offset >= partition_stop:
-        #        break
-        #    recs.append(rec)
-    return len(recs)
-
 

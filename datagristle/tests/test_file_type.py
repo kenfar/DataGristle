@@ -16,8 +16,9 @@ import tempfile
 
 import pytest
 
-import datagristle.csvhelper as csvhelper
-import datagristle.file_type as mod
+from datagristle import csvhelper
+from datagristle import file_type as mod
+from datagristle import file_io
 
 
 
@@ -34,7 +35,8 @@ class TestQuotingFromFile(object):
     def test_quote_minimal(self):
         dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_MINIMAL, has_header=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
-        file_typer = mod.FileTyper(dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], dialect)
+        file_typer = mod.FileTyper(input_handler)
         file_typer.analyze_file()
 
         assert file_typer.record_cnt == self.record_cnt
@@ -45,7 +47,8 @@ class TestQuotingFromFile(object):
     def test_quote_all(self):
         dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
-        file_typer = mod.FileTyper(dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], dialect)
+        file_typer = mod.FileTyper(input_handler)
         file_typer.analyze_file()
 
         assert file_typer.record_cnt == self.record_cnt
@@ -56,7 +59,8 @@ class TestQuotingFromFile(object):
     def test_quote_none(self):
         dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
-        file_typer = mod.FileTyper(dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], dialect)
+        file_typer = mod.FileTyper(input_handler)
         file_typer.analyze_file()
 
         assert file_typer.record_cnt == self.record_cnt
@@ -80,7 +84,8 @@ class TestQuotingFromOverrides(object):
     def test_quote_minimal(self):
         dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_MINIMAL, has_header=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
-        file_typer = mod.FileTyper(dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], dialect)
+        file_typer = mod.FileTyper(input_handler)
         file_typer.analyze_file()
 
         assert file_typer.record_cnt == self.record_cnt
@@ -89,7 +94,8 @@ class TestQuotingFromOverrides(object):
     def test_quote_all(self):
         dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
-        file_typer = mod.FileTyper(dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], dialect)
+        file_typer = mod.FileTyper(input_handler)
         file_typer.analyze_file()
 
         assert file_typer.record_cnt == self.record_cnt
@@ -98,7 +104,8 @@ class TestQuotingFromOverrides(object):
     def test_quote_none(self):
         dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
-        file_typer = mod.FileTyper(dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], dialect)
+        file_typer = mod.FileTyper(input_handler)
         file_typer.analyze_file()
 
         assert file_typer.record_cnt == self.record_cnt
@@ -112,22 +119,25 @@ class TestInternals(object):
         self.record_cnt = 100
         self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
         self.test_fqfn = generate_test_file1(self.dialect, self.record_cnt)
-        self.file_typer = mod.FileTyper(self.dialect, self.test_fqfn)
+        input_handler = file_io.InputHandler([self.test_fqfn], self.dialect)
+        self.file_typer = mod.FileTyper(input_handler)
         self.file_typer.analyze_file()
 
     def teardown_method(self, method):
         os.remove(self.test_fqfn)
 
     def test_file_record_number_without_read_limit(self):
-        assert (self.record_cnt, False) == self.file_typer._count_records()
+        assert self.record_cnt == self.file_typer.record_cnt
+        assert False == self.file_typer.record_cnt_is_est
 
     def test_file_record_number_with_read_limit(self):
-        file_typer = mod.FileTyper(self.dialect, self.test_fqfn, read_limit=10)
+        input_handler = file_io.InputHandler([self.test_fqfn], self.dialect)
+        file_typer = mod.FileTyper(input_handler, read_limit=10)
         file_typer.analyze_file()
-        (est_rec_cnt, est_flag) = file_typer._count_records()
-        assert est_flag is True
+
+        assert file_typer.record_cnt_is_est is True
         # it should normally be within 5-10% of 100
-        assert abs(115-est_rec_cnt) < 30
+        assert abs(self.record_cnt - file_typer.record_cnt) < 20
 
 
 

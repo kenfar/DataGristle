@@ -5,7 +5,7 @@
     Todo:
       - change get_types to consider whatever has 2 STDs
       - replace get_types freq length logic with something that says,
-        if all types are basically numic, choose float
+        if all types are basically numeric, choose float
       - add quartiles, variances and standard deviations
       - add statistical analysis for data quality
       - add histogram to automatically bucketize data
@@ -15,16 +15,14 @@
       - change returned data format to be based on field
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 from operator import itemgetter
 from pprint import pprint as pp
-import time
 from typing import Optional, List, Tuple, Dict, Any
 
-import datagristle.common as common
-import datagristle.configulator as configulator
-import datagristle.csvhelper as csvhelper
+from datagristle import common
+from datagristle import csvhelper
 import datagristle.field_type as typer
 import datagristle.field_math as mather
 import datagristle.field_misc as miscer
@@ -80,8 +78,8 @@ class FieldDeterminator(object):
         # but if the dictionary doesn't apply, then the value may be None
         self.field_names:       Dict[int, str] = {}  # all data
         self.field_types:       Dict[int, str] = {}  # all data
-        self.field_trunc:       Dict[int, bool] = {i:False for i in range(self.field_cnt)}   # all data
-        self.field_rows_invalid: Dict[int, int] = {}  # all data
+        self.field_trunc:       Dict[int, bool] = {i:False for i in range(self.field_cnt)}
+        self.field_rows_invalid: Dict[int, int] = {i:0 for i in range(self.field_cnt)}
 
         self.field_mean:        Dict[int, Optional[float]] = {}  # only for numeric data
         self.field_median:      Dict[int, Optional[float]] = {}  # only for numeric data
@@ -89,10 +87,12 @@ class FieldDeterminator(object):
         self.stddev:            Dict[int, Optional[float]] = {}  # only for numeric data
         self.field_decimals:    Dict[int, Optional[int]] = {}    # only for numeric data
 
-        self.field_case:        Dict[int, Optional[str]] = {}  # only for string data
-        self.field_max_length:  Dict[int, Optional[int]] = {}  # only for string data
-        self.field_min_length:  Dict[int, Optional[int]] = {}  # only for string data
+        self.field_case:        Dict[int, Optional[str]] = {}    # only for string data
+        self.field_max_length:  Dict[int, Optional[int]] = {}    # only for string data
+        self.field_min_length:  Dict[int, Optional[int]] = {}    # only for string data
         self.field_mean_length: Dict[int, Optional[float]] = {}  # only for string data
+
+        self.field_format:      Dict[int, Optional[str]] = {}    # only for timestamps
 
         #--- public field frequency distributions - organized by field number
         #--- each dictionary has a collection within it:
@@ -126,7 +126,6 @@ class FieldDeterminator(object):
         if self.verbosity in ('high', 'debug'):
             print('Field Analysis Progress: ')
 
-
         #---- set max items for the freq -----------------
         if max_freq_number is None:
             if field_number is None:
@@ -136,94 +135,96 @@ class FieldDeterminator(object):
         else:
             self.max_items = max_freq_number
 
-
-        #---- field_freqs --------------------------------
+        #---- build field_freqs --------------------------------
         for rec in self.input_handler:
-            self._get_field_freqs(rec)
+            self._get_field_freqs(rec, self.field_freq, self.field_trunc, self.max_items)
             if read_limit > -1 and self.input_handler.rec_cnt >= read_limit:
                 for f_no in range(self.field_cnt):
                     self.field_trunc[f_no] = True
                 break
-        field_freq_list = list(self.field_freq.items())
 
+        #---- build aggregate fields ---------------------------
         self._get_field_types(field_types_overrides)
         self._get_field_name()
-        self._get_field_minmax()
-
-
 
         for f_no in self.field_freq.keys():
             if self.field_types[f_no] == 'string':
-                self.field_case[f_no] = miscer.get_case(self.field_types[f_no], self.field_freq[f_no])
-                self.field_min_length[f_no] = miscer.get_min_length(self.field_freq[f_no].items())
-                self.field_max_length[f_no] = miscer.get_max_length(self.field_freq[f_no].items())
-                self.field_mean_length[f_no] = mather.get_mean_length(self.field_freq[f_no].items())
-            else:
-                self.field_case[f_no] = None
-                self.field_min_length[f_no] = None
-                self.field_max_length[f_no] = None
-                self.field_mean_length[f_no] = None
+                str_values = miscer.StrFieldFreqMetrics(self.field_freq[f_no].items())
+                self.field_case[f_no] = str_values.get_case()
+                self.field_min_length[f_no] = str_values.get_min_length()
+                self.field_max_length[f_no] = str_values.get_max_length()
+                self.field_mean_length[f_no] = str_values.get_mean_length()
+                self.field_min[f_no] = str_values.get_min()
+                self.field_max[f_no] = str_values.get_max()
 
+                self._set_string_defaults(f_no)
+            elif self.field_types[f_no] in ('integer', 'float'):
+                num_values = mather.NumericFieldFreqMetrics(self.field_freq[f_no].items(),
+                                                               self.field_types[f_no])
+                self.field_mean[f_no] = num_values.get_mean()
+                self.field_median[f_no] = num_values.get_median()
+                (self.variance[f_no], self.stddev[f_no]) = num_values.get_variance_and_stddev()
+                self.field_decimals[f_no] = num_values.get_max_decimals()
+                self.field_min[f_no] = num_values.get_min()
+                self.field_max[f_no] = num_values.get_max()
 
-        for f_no in self.field_freq.keys():
-            if self.field_types[f_no] in ('integer', 'float'):
-                self.field_mean[f_no] = mather.get_mean(self.field_freq[f_no].items())
-                self.field_median[f_no] = mather.get_median(self.field_freq[f_no].items())
-                (self.variance[f_no], self.stddev[f_no])   \
-                   = mather.get_variance_and_stddev(self.field_freq[f_no].items(), self.field_mean[f_no])
-                self.field_decimals[f_no] = mather.get_max_decimals(self.field_freq[f_no].items(), self.field_types[f_no])
+                self._set_numeric_defaults(f_no)
+            elif self.field_types[f_no] == 'timestamp':
+                ts_values = miscer.TimestampFieldFreqMetrics(self.field_freq[f_no].items())
+                self.field_min[f_no] = ts_values.get_min()
+                self.field_max[f_no] = ts_values.get_max()
+                self._set_other_defaults(f_no)
             else:
-                self.field_mean[f_no] = None
-                self.field_median[f_no] = None
-                self.variance[f_no] = None
-                self.stddev[f_no] = None
-                self.field_decimals[f_no] = None
+                self._set_other_defaults(f_no)
 
 
     def _get_field_freqs(self,
-                         rec):
-
+                         rec,
+                         field_freq,
+                         field_trunc,
+                         max_items):
 
         for field_number, key in enumerate(rec):
 
-            if self.field_trunc.get(field_number):
-                continue
             try:
-                key = key.strip()
-                if field_number not in self.field_freq:
-                    self.field_freq[field_number] = {}
-                self.field_freq[field_number][key] += 1
+                if field_trunc[field_number]:
+                    continue
             except KeyError:
-                self.field_freq[field_number][key] = 1
+                pass
+
+            try:
+                field_freq[field_number][key] += 1
+            except KeyError:
+                field_freq[field_number][key] = 1
             except IndexError:
-                try:
-                    self.field_rows_invalid[field_number] +1
-                except KeyError:
-                    self.field_rows_invalid[field_number] +1
+                self.field_rows_invalid[field_number] +1
             except AttributeError as e: # quote_nonnumeric returns floats(!)
                 if ("'float' object has no attribute 'strip'")  in repr(e):
                     if field_number not in self.field_freq:
-                        self.field_freq[field_number] = {}
+                        field_freq[field_number] = {}
                     if rec[field_number] in self.field_freq[field_number]:
-                        self.field_freq[field_number][rec[field_number]] += 1
+                        field_freq[field_number][rec[field_number]] += 1
                     else:
-                        self.field_freq[field_number][rec[field_number]] = 1
+                        field_freq[field_number][rec[field_number]] = 1
 
-            if self.max_items > -1 and len(self.field_freq[field_number]) >= self.max_items:
+            if max_items > -1 and len(field_freq[field_number]) >= max_items:
                 print(f'    WARNING: freq dict is too large for field {field_number} - will stop adding to it')
-                self.field_trunc[field_number] = True
+                field_trunc[field_number] = True
 
 
     def _get_field_types(self,
                          field_types_overrides):
 
         for f_no in self.field_freq.keys():
-            self.field_types[f_no] = typer.get_field_type(self.field_freq[f_no])
+            field_type = typer.FieldType(self.field_freq[f_no].items())
+            self.field_types[f_no] = field_type.get_field_type()
+
             if field_types_overrides:
                 for col_no in field_types_overrides:
                     self.field_types[col_no] = field_types_overrides[col_no]
         if not self.field_types:
             common.abort('ERROR: self.field_types is EMPTY! aborting')
+
 
     def _get_field_name(self):
         if self.input_handler.header:
@@ -233,11 +234,41 @@ class FieldDeterminator(object):
             self.field_names = miscer.get_field_names(filename, self.dialect)
 
 
-    def _get_field_minmax(self):
-        for f_no in self.field_freq.keys():
-            self.field_max[f_no] = miscer.get_max(self.field_types[f_no], self.field_freq[f_no].items())
-            self.field_min[f_no] = miscer.get_min(self.field_types[f_no], self.field_freq[f_no].items())
+    def _set_string_defaults(self,
+                              f_no):
 
+        self.field_mean[f_no] = None
+        self.field_median[f_no] = None
+        self.variance[f_no] = None
+        self.stddev[f_no] = None
+        self.field_decimals[f_no] = None
+
+
+    def _set_numeric_defaults(self,
+                              f_no):
+
+        self.field_case[f_no] = None
+        self.field_min_length[f_no] = None
+        self.field_max_length[f_no] = None
+        self.field_mean_length[f_no] = None
+
+
+    def _set_other_defaults(self,
+                              f_no):
+
+        self.field_mean[f_no] = None
+        self.field_median[f_no] = None
+        self.variance[f_no] = None
+        self.stddev[f_no] = None
+        self.field_decimals[f_no] = None
+
+        self.field_case[f_no] = None
+        self.field_min_length[f_no] = None
+        self.field_max_length[f_no] = None
+        self.field_mean_length[f_no] = None
+
+        self.field_min[f_no] = ''
+        self.field_max[f_no] = ''
 
     def get_known_values(self, fieldno: int) -> common.FreqType:
         """ returns a frequency-distribution dictionary that is the

@@ -15,7 +15,7 @@
             number of fields
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 import csv
 from typing import List, Union, Dict, Tuple, Any, Optional
@@ -26,6 +26,8 @@ import datagristle.csvhelper as csvhelper
 import datagristle.common as common
 
 MAX_FREQ_SIZE_DEFAULT = 1000000     # limits entries within freq dictionaries
+
+StrFreqType = List[Tuple[str, int]]
 
 
 
@@ -53,213 +55,183 @@ def get_field_names(filename: str,
 
 
 
-def get_case(field_type: str, values: common.StrFreqType) -> str:
-    """ Determines the case of a list or dictionary of values.
-        Args:
-          - type:    if not == 'string', will return 'n/a'
-          - values:  could be either dictionary or list.  If it's a list, then
-                     it will only examine the keys.
-        Returns:
-          - one of:  'mixed','lower','upper','unknown'
-        Misc notes:
-          - "unknown values" are ignored
-          - empty values list/dict results in 'unknown' result
-        To do:
-          - add consistency factor
-    """
-    assert isinstance(values, dict)
-    if field_type != 'string':
-        return 'n/a'
+class StrFieldFreqMetrics:
 
-    case = None
+    def __init__(self,
+                 values: StrFreqType):
 
-    is_unknown = typer.is_unknown
-    is_integer = typer.is_integer
-    is_float = typer.is_float
+        self.values = values
+        self.clean_values = self._value_cleaner(self.values)
 
-    value_items = values.items()
-    clean_values = [x for x in value_items if not is_unknown(x[0])
-                    and not is_integer(x[0]) and not is_float(x[0])]
-
-    lower_cnt = sum([x[1] for x in clean_values if x[0].islower()])
-    upper_cnt = sum([x[1] for x in clean_values if x[0].isupper()])
-    mixed_cnt = sum([x[1] for x in clean_values if not x[0].isupper() and not x[0].islower()])
-
-    # evaluate mix of types:
-    if mixed_cnt:
-        case = 'mixed'
-    elif lower_cnt and not upper_cnt:
-        case = 'lower'
-    elif upper_cnt and not lower_cnt:
-        case = 'upper'
-    elif upper_cnt and lower_cnt:
-        case = 'mixed'
-    else:
-        case = 'unknown'
-
-    return case
+        self.case: str
+        self.min: str
+        self.max: str
+        self.min_length: int
+        self.max_length: int
+        self.mean_length: int
 
 
 
-def get_field_freq(filename: str,
-                   dialect: csvhelper.Dialect,
-                   field_number: int,
-                   max_freq_size: int = MAX_FREQ_SIZE_DEFAULT,
-                   read_limit: int = -1) -> Tuple[Dict[Any, int], bool, int]:
-    """ Collects a frequency distribution for a single field by reading the
-        file provided.
+    def _value_cleaner(self,
+                       values: StrFreqType):
 
-        Arguments:
-            - filename:
-            - dialect:
-            - field_number:
-            - max_freq_size: defaults to the system max, which is typically
-              over 1M.  A value of -1 will result in 'no limit'.
-            - read_limit:  A performance option that stops reading after this
-              number of records.  The default is -1 which means, no limit.
-
-        Returns:
-            - freq: a dictionary of values & counts
-            - truncated: a boolean that indicates whether or not the results
-              were obtained from the entire file, or had to stop due to
-              max_freq_size or read_limit.
-            - invalid_row_cnt: a count of rows that could not be analyzed,
-              because they were missing this field.
-
-        Issues:
-            - has limited checking for wrong number of fields in rec
-    """
-    freq: Dict[Any, int] = {}
-    truncated = False
-    invalid_row_cnt = 0
-
-    row_cnt = 0
-    with open(filename, 'rt', newline='') as infile:
-        reader = csv.reader(infile, dialect)
-        for fields in reader:
-            row_cnt += 1
-            if row_cnt == 1 and dialect.has_header:
-                continue
-            try:
-                freq[fields[field_number].strip()] += 1
-            except KeyError:
-                freq[fields[field_number].strip()] = 1
-            except IndexError:
-                invalid_row_cnt += 1
-            except AttributeError as e: # quote_nonnumeric returns floats(!)
-                if ("'float' object has no attribute 'strip'")  in repr(e):
-                    if fields[field_number] in freq:
-                        freq[fields[field_number]] += 1
-                    else:
-                        freq[fields[field_number]] = 1
-            if max_freq_size > -1 and len(freq) >= max_freq_size:
-                print('      WARNING: freq dict is too large - will trunc')
-                truncated = True
-                break
-            elif read_limit > -1 and row_cnt >= read_limit:
-                truncated = True
-                break
-
-    return freq, truncated, invalid_row_cnt
+        return [x for x in self.values
+               if x != ''
+               and not typer.is_unknown(x[0])]
 
 
+    def get_case(self):
+        """ Determines the case of a list or dictionary of values.
+            Args:
+            - type:    if not == 'string', will return 'n/a'
+            - values:  could be either dictionary or list.  If it's a list, then
+                        it will only examine the keys.
+            Returns:
+            - one of:  'mixed','lower','upper','unknown'
+            Misc notes:
+            - "unknown values" are ignored
+            - empty values list/dict results in 'unknown' result
+            To do:
+            - add consistency factor
+        """
+        case = None
 
-def get_min(value_type: str, values: common.FreqType) -> Any:
-    """ Returns the minimum value of the input.  Ignores unknown values, if
-        no values found besides unknown it will just return 'None'
+        lower_cnt = sum([x[1] for x in self.clean_values if x[0].islower()])
+        upper_cnt = sum([x[1] for x in self.clean_values if x[0].isupper()])
+        mixed_cnt = len(self.clean_values) - lower_cnt - upper_cnt
 
-        Inputs:
-          - value_type - one of integer, float, string, timestamp
-          - dictionary or list of string values
-        Outputs:
-          - the single minimum value of the appropriate type
-    """
-    assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
-
-    def transform(val):
-        try:
-            if value_type == 'integer':
-                result = int(val)
-            elif value_type == 'float':
-                result = float(val)
-            else:
-                result = str(val)
-        except ValueError:
-            pass # just drop any invalid data
+        # evaluate mix of types:
+        if mixed_cnt:
+            case = 'mixed'
+        elif lower_cnt:
+            case = 'lower'
+        elif upper_cnt:
+            case = 'upper'
         else:
-            return result
+            case = 'unknown'
 
-    try:
-        minimum = str(min([transform(x[0]) for x in values if not typer.is_unknown(x[0])]))
-    except ValueError:
-        return None
-    except TypeError:
-        return None
-    else:
-        return minimum
+        return case
 
 
+    def get_max_length(self) -> int:
+        """ Returns the maximum length value of the input.   If
+            no values found besides unknown it will just return 'None'
+
+            Inputs:
+            - dictionary or list of string values
+            Outputs:
+            - the single maximum value
+        """
+        max_length = 0
+        return max([len(value[0]) for value in self.clean_values]) or max_length
 
 
-
-def get_max(value_type: str, values: common.FreqType) -> Optional[Any]:
-    """ Returns the maximum value of the input.  Ignores unknown values, if
-        no values found besides unknown it will just return 'None'
+    def get_min_length(self) -> int:
+        """ Returns the minimum length value of the input.   If
+            no values found besides unknown it will just return 999999
 
         Inputs:
-          - value_type - one of integer, float, string, timestap
-          - dictionary or list of string values
+        - dictionary or list of string values
         Outputs:
-          - the single maximum value of the appropriate type
-    """
-    assert value_type in ['integer', 'float', 'string', 'timestamp', 'unknown', None]
+        - the single minimum value
+        """
+        min_length = 999999
+        return min([len(value[0]) for value in self.clean_values]) or min_length
 
-    def transform(val):
+
+    def get_mean_length(self) -> int:
+        """ Returns the mean length value of the input.   If
+            no values found besides unknown it will just return None
+
+        Inputs:
+        - dictionary or list of string values
+        Outputs:
+        - the single minimum value
+        """
+
+        accum = sum([len(x[0]) * x[1] for x in self.clean_values])
+        count = sum([x[1] for x in self.clean_values])
+
         try:
-            if value_type == 'integer':
-                result = int(val)
-            elif value_type == 'float':
-                result = float(val)
-            else:
-                result = str(val)
-        except ValueError:
-            pass # just drop any invalid data
-        else:
-            return result
-
-    try:
-        maximum = str(max([transform(x[0]) for x in values if not typer.is_unknown(x[0])]))
-    except ValueError:
-        return None
-    except TypeError:
-        return None
-    else:
-        return maximum
+            self.mean_length = accum / count
+        except ZeroDivisionError:
+            self.mean_length = 0
+        return self.mean_length
 
 
+    def get_min(self):
+        """ Returns the minimum value of the input.  Ignores unknown values, if
+            no values found besides unknown it will just return 'None'
 
-def get_max_length(values: common.StrFreqType) -> int:
-    """ Returns the maximum length value of the input.   If
-        no values found besides unknown it will just return 'None'
-
-        Inputs:
-          - dictionary or list of string values
-        Outputs:
-          - the single maximum value
-    """
-    max_length = 0
-    return max([len(value[0]) for value in values if not typer.is_unknown(value[0])]) or max_length
+            Inputs:
+            - value_type - one of integer, float, string, timestamp
+            - dictionary or list of string values
+            Outputs:
+            - the single minimum value of the appropriate type
+        """
+        self.min = min([x[0] for x in self.clean_values])
+        return self.min
 
 
+    def get_max(self):
+        """ Returns the maximum value of the input.  Ignores unknown values, if
+            no values found besides unknown it will just return 'None'
 
-def get_min_length(values: common.StrFreqType) -> int:
-    """ Returns the minimum length value of the input.   If
-        no values found besides unknown it will just return 999999
+            Inputs:
+            - value_type - one of integer, float, string, timestap
+            - dictionary or list of string values
+            Outputs:
+            - the single maximum value of the appropriate type
+        """
+        self.max = max([x[0] for x in self.clean_values])
+        return self.max
 
-    Inputs:
-       - dictionary or list of string values
-    Outputs:
-       - the single minimum value
-    """
-    min_length = 999999
-    return min([len(value[0]) for value in values if not typer.is_unknown(value[0])]) or min_length
+
+
+class TimestampFieldFreqMetrics:
+
+    def __init__(self,
+                 values: StrFreqType):
+
+        self.values = values
+        self.clean_values = self._value_cleaner(self.values)
+
+        self.min: str
+        self.max: str
+
+
+    def _value_cleaner(self,
+                       values: StrFreqType):
+
+        return [x for x in self.values
+               if x != ''
+               and not typer.is_unknown(x[0])]
+
+
+    def get_min(self):
+        """ Returns the minimum value of the input.  Ignores unknown values, if
+            no values found besides unknown it will just return 'None'
+
+            Inputs:
+            - value_type - one of integer, float, string, timestamp
+            - dictionary or list of string values
+            Outputs:
+            - the single minimum value of the appropriate type
+        """
+        self.min = min([x[0] for x in self.clean_values])
+        return self.min
+
+
+    def get_max(self):
+        """ Returns the maximum value of the input.  Ignores unknown values, if
+            no values found besides unknown it will just return 'None'
+
+            Inputs:
+            - value_type - one of integer, float, string, timestap
+            - dictionary or list of string values
+            Outputs:
+            - the single maximum value of the appropriate type
+        """
+        self.max = max([x[0] for x in self.clean_values])
+        return self.max
+
