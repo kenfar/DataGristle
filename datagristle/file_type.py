@@ -8,15 +8,9 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2022 Ken Farmer
 """
-import csv
-import fileinput
-import os
 import os.path
-from typing import Optional, Tuple, List
+from typing import Optional
 from pprint import pprint as pp
-
-from datagristle import csvhelper
-from datagristle import file_io
 
 
 
@@ -32,29 +26,31 @@ class FileTyper(object):
                  input_handler,
                  read_limit: int = -1) -> None:
         """
-        Arguments:
-            - input_handler =
-            - read_limit = default is -1, which means unlimited
+        Args:
+            - input_handler:
+            - read_limit: default is -1, which means unlimited
         """
         assert read_limit is not None
         self.input_handler = input_handler
+        self.read_limit: int = read_limit
+
         self.dialect = self.input_handler.dialect
         self.field_cnt: Optional[int] = None
         self.record_cnt: Optional[int] = None
         self.record_cnt_is_est: Optional[bool] = None
-        self.read_limit: int = read_limit
 
 
     def analyze_file(self) -> None:
         """ analyzes a file to determine the structure of the file in terms
             of whether or it it is delimited, what the delimiter is, etc.
         """
-        self.record_cnt, self.record_cnt_is_est = self.input_handler.get_rec_count(self.read_limit)
+        self.record_cnt, self.record_cnt_is_est \
+             = self.input_handler.get_rec_count(self.read_limit)
+        self.field_cnt = self.input_handler.get_field_count()
         if self.input_handler.header:
             self.record_cnt += 1
 
         self.input_handler.reset()
-        self.field_cnt = self.input_handler.get_field_cnt()
 
         if self.record_cnt == 1 and self.input_handler.dialect.has_header:
             raise IOErrorEmptyFile("Empty File")

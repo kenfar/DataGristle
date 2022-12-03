@@ -132,6 +132,7 @@ class TestInternals(object):
 
     def test_file_record_number_with_read_limit(self):
         input_handler = file_io.InputHandler([self.test_fqfn], self.dialect)
+        input_handler.use_cache = False
         file_typer = mod.FileTyper(input_handler, read_limit=10)
         file_typer.analyze_file()
 

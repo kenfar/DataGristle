@@ -107,7 +107,6 @@ import datagristle.common as comm
 import datagristle.configulator as configulator
 import datagristle.csvhelper as csvhelper
 import datagristle.file_io as file_io
-import datagristle.field_misc as field_misc
 import datagristle.file_freaker as freaker
 import datagristle.helpdoc as helpdoc
 

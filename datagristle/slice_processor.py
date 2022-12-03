@@ -153,14 +153,14 @@ class SliceRunner:
             self.rec_cnt = -1
             mod_datetime, file_size = self._get_file_info(self.nconfig.infiles[0])
             if len(self.nconfig.infiles) == 1:
-                self.rec_cnt = self.metadata.file_index_tools.get_file_index_rec_count(filename=self.nconfig.infiles[0],
+                self.rec_cnt = self.metadata.file_index_tools.get_rec_count(filename=self.nconfig.infiles[0],
                                                                                        mod_datetime=mod_datetime,
                                                                                        file_bytes=file_size)
             if self.rec_cnt == -1:
                 self.rec_cnt = file_io.get_rec_count(self.nconfig.infiles, self.input_handler.dialect)
                 if len(self.nconfig.infiles) == 1:
                     mod_datetime, file_size = self._get_file_info(self.nconfig.infiles[0])
-                    self.metadata.file_index_tools.set_file_index_counts(filename=self.nconfig.infiles[0],
+                    self.metadata.file_index_tools.set_counts(filename=self.nconfig.infiles[0],
                                                                          mod_datetime=mod_datetime,
                                                                          file_bytes=file_size,
                                                                          rec_count=self.rec_cnt,

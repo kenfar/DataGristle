@@ -1142,12 +1142,17 @@ class FileIndexTools(simplesql.TableTools):
         return hex_digest
 
 
-    def get_file_index_rec_count(self,
-                                 filename,
-                                 mod_datetime,
-                                 file_bytes) -> int:
+    def get_rec_count(self,
+                      filename,
+                      mod_datetime=None,
+                      file_bytes=None) -> int:
         """ Return the record count or -1 if there's no record count
         """
+        if filename == '-':
+            raise ValueError('get_rec_count does not support stdin')
+
+        if mod_datetime is None or file_bytes is None:
+            mod_datetime, file_bytes = get_file_info(filename)
 
         file_hash = self._hash_file_index(filename, mod_datetime, file_bytes)
         sql = """ SELECT record_count
@@ -1164,14 +1169,19 @@ class FileIndexTools(simplesql.TableTools):
             return -1
 
 
-    def set_file_index_counts(self,
-                              filename,
-                              mod_datetime,
-                              file_bytes,
-                              rec_count,
-                              col_count) -> Tuple[int, int]:
-        """ Write file_index counts
+    def set_counts(self,
+                   filename,
+                   mod_datetime=None,
+                   file_bytes=None,
+                   rec_count=0,
+                   col_count=0) -> Tuple[int, int]:
+        """ Write fcounts
         """
+        if filename == '-':
+            raise ValueError('get_rec_count does not support stdin')
+
+        if mod_datetime is None or file_bytes is None:
+            mod_datetime, file_bytes = get_file_info(filename)
 
         file_hash = self._hash_file_index(filename, mod_datetime, file_bytes)
         raw_sql = """ INSERT INTO file_index
@@ -1204,10 +1214,15 @@ class FileIndexTools(simplesql.TableTools):
 
     def update(self,
                filename,
-               mod_datetime,
-               file_bytes) -> int:
+               mod_datetime=None,
+               file_bytes=None) -> (int, int):
         """ Updates the last_update_epoch
         """
+        if filename == '-':
+            raise ValueError('get_rec_count does not support stdin')
+
+        if mod_datetime is None or file_bytes is None:
+            mod_datetime, file_bytes = get_file_info(filename)
 
         file_hash = self._hash_file_index(filename, mod_datetime, file_bytes)
         raw_sql = """ UPDATE file_index
@@ -1412,3 +1427,15 @@ def create_view_rpt_field_analysis_v(engine, connection):
     if 'rpt_field_analysis_v' not in existing_views:
         create_sql = text(sql)
         _ = engine.execute(create_sql)
+
+
+
+def get_file_info(filename):
+    file_timestamp = os.path.getmtime(filename)
+    file_dt = datetime.datetime.fromtimestamp(file_timestamp)
+    file_size = os.path.getsize(filename)
+    return file_dt, file_size
+
+
+
+

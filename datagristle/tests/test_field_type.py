@@ -9,7 +9,9 @@
 #pylint: disable=protected-access
 #pylint: disable=no-self-use
 
+
 from pprint import pprint as pp
+from typing import Any, Dict
 
 import datagristle.field_type  as mod
 
@@ -22,7 +24,7 @@ class TestIsInteger(object):
         assert mod.is_integer('-3')
         assert mod.is_integer(3)
         assert mod.is_integer(-3)
-        assert mod.is_integer(3.0)
+        assert mod.is_integer(3.0)        is False
         assert mod.is_integer('b')        is False
         assert mod.is_integer('')         is False
         assert mod.is_integer(' ')        is False
@@ -38,9 +40,9 @@ class TestIsFloat(object):
     def test_is_float_basics(self):
         assert mod.is_float('33.22')
         assert mod.is_float(44.55)
-        assert mod.is_float(44.0) is False
+        assert mod.is_float(44.0) is True
         assert mod.is_float(3) is False
-        assert mod.is_float(0.0) is False
+        assert mod.is_float(0.0) is True
         assert mod.is_float(0) is False
         assert mod.is_float('b') is False
         assert mod.is_float('') is False
@@ -90,127 +92,57 @@ class TestIsUnknown(object):
         assert mod.is_unknown(None) is False
 
 
-class TestIsTimestamp(object):
 
-    def runner(self, date):
-        return mod.is_timestamp(date)
+class TestFieldType(object):
 
-    def test_unsupported_timestamps_and_non_timestamps(self):
-        assert self.runner("0") is False
-        assert self.runner("-4") is False
-        assert self.runner("-4.7") is False
-        assert self.runner("blah") is False
-        assert self.runner("blah") is False
-        assert self.runner("2009 ") is False
-        assert self.runner("2009 ") is False
-        assert self.runner("1172969203.1") is False
-        assert self.runner("2009") is False
-        assert self.runner("200910") is False
-        assert self.runner("2009-10") is False
-        assert self.runner("20090206") is False
+    def runner(self, value):
+        field_type = mod.FieldType([(value, 1)])
+        return field_type.get_field_type()
 
-    def test_unsupported_periods(self):
-        assert self.runner("2009-10-06-18.10") is False
-        assert self.runner("2009-10-06-03.02.01") is False
-
-    def test_dates(self):
-        assert self.runner("10/26/09") is True
-        assert self.runner("10-26-09") is True
-        assert self.runner("26/10/09") is True
-        assert self.runner("26-10-09") is True
-        assert self.runner("10/26/2009") is True
-        assert self.runner("10-26-2009") is True
-        assert self.runner("26/10/2009") is True
-        assert self.runner("26-10-2009") is True
-
-    def test_month_names(self):
-        assert self.runner("Feb 13,2009") is True
-        assert self.runner("Feb 13, 2009") is True
-        assert self.runner("February 13,2009") is True
-        assert self.runner("February 13, 2009") is True
-
-    def test_iso8601(self):
-        assert self.runner("2009-10-06") is True
-        assert self.runner("2009-10-06t18") is True
-        assert self.runner("2009-10-06T18:10") is True
-        assert self.runner("2009-10-06T03:02:01") is True
-        assert self.runner("2009-10-06T03:02:01.01234") is True
-
-    def test_non_iso8601_timestamps(self):
-        assert self.runner("2009-10-06 18") is True
-        assert self.runner("2009-10-06-18") is True
-        assert self.runner("2009-10-06 18:10") is True
-        assert self.runner("2009-10-06-18:10") is True
-        assert self.runner("2009-10-06 03:02:01") is True
-        assert self.runner("2009-10-06 00:00:00") is True
-        assert self.runner("2009-10-06-03:02:01") is True
-        assert self.runner("2009-10-06 03:02:01.01") is True
-        assert self.runner("2009-10-06 03:02:01.01234") is True
-        assert self.runner("2009-10-06-03:02:01.01234") is True
-
-    def test_timezone_z(self):
-        assert self.runner("2009-10-06T03:02:01.01234Z") is True
-        assert self.runner("2009-10-06T03:02:01Z") is True
-
-    def test_timezone_plus(self):
-        assert self.runner("2009-10-06T03:02:01.01234+0700") is True
-        assert self.runner("2009-10-06T03:02:01+0700") is True
-
-    def test_timezone_dash(self):
-        assert self.runner("2009-10-06T03:02:01.01234-0700") is True
-        assert self.runner("2009-10-06T03:02:01-0700") is True
+    def multi_runner(self, field_freq: Dict[Any, int]):
+        field_type = mod.FieldType(field_freq)
+        return field_type.get_field_type()
 
 
-
-
-
-class TestGetType(object):
-
-    def test_get_type_basics(self):
-        assert mod._get_type('n/a') == 'unknown'
-        assert mod._get_type('UNK') == 'unknown'
-        assert mod._get_type('unk') == 'unknown'
-        assert mod._get_type(' ') == 'unknown'
-        assert mod._get_type('') == 'unknown'
-        assert mod._get_type('0') == 'integer'
-        assert mod._get_type('1') == 'integer'
-        assert mod._get_type('-1') == 'integer'
-        assert mod._get_type('+1') == 'integer'
-        assert mod._get_type('1.1') == 'float'
-        assert mod._get_type('blah') == 'string'
-
-
-
-class TestGetFieldType(object):
-
+    def test_misc(self):
+        assert self.runner('n/a') == 'unknown'
+        assert self.runner('UNK') == 'unknown'
+        assert self.runner('unk') == 'unknown'
+        assert self.runner(' ') == 'unknown'
+        assert self.runner('') == 'unknown'
+        assert self.runner('0') == 'integer'
+        assert self.runner('1') == 'integer'
+        assert self.runner('-1') == 'integer'
+        assert self.runner('+1') == 'integer'
+        assert self.runner('1.1') == 'float'
+        assert self.runner('blah') == 'string'
 
     def test_get_field_type_basics(self):
-        assert mod.get_field_type(None) == 'unknown'
-        assert mod.get_field_type({}) == 'unknown'
-        assert mod.get_field_type({'Texas': 4}) == 'string'
-        assert mod.get_field_type({'1': 4}) == 'integer'
-        assert mod.get_field_type({'n/a': 4, 'Texas':4}) == 'string'
-        assert mod.get_field_type({'n/a': 4, '55':4}) == 'integer'
-        assert mod.get_field_type({'n/a': 4, '55.5':4}) == 'float'
-        assert mod.get_field_type({'n/a': 4, '':4}) == 'unknown'
-        assert mod.get_field_type({'n/a': 4, '1310527566.7':4}) == 'float'
-        assert mod.get_field_type({'4.3': 4, '1310527566.7':4}) == 'float'
+        assert self.multi_runner([]) == 'unknown'
+        assert self.multi_runner([('Texas', 4)]) == 'string'
+        assert self.multi_runner([('1', 4)]) == 'integer'
+        assert self.multi_runner([('n/a',4), ('Texas',4)]) == 'string'
+        assert self.multi_runner([('n/a',4), ('55',4)]) == 'integer'
+        assert self.multi_runner([('n/a', 4), ('55.5',4)]) == 'float'
+        assert self.multi_runner([('n/a', 4), ('',4)]) == 'unknown'
+        assert self.multi_runner([('n/a', 4), ('1310527566.7',4)]) == 'float'
+        assert self.multi_runner([('4.3', 4), ('1310527566.7',4)]) == 'float'
 
         test_data = {'n/a':   3,
                      '0':     2,
                      '1.1':   4}
-        assert mod.get_field_type(test_data) == 'float'
+        assert self.multi_runner(test_data.items()) == 'float'
 
         test_data = {'n/a':   3,
                      '0':     2,
                      'blah':  4}
-        assert mod.get_field_type(test_data) == 'unknown'
+        assert self.multi_runner(test_data.items()) == 'unknown'
 
         test_data = {'n/a':   3,
                      'blah':  2,
                      '0':     2,
                      '1.1':   4}
-        assert mod.get_field_type(test_data) == 'unknown'
+        assert self.multi_runner(test_data.items()) == 'unknown'
 
     def test_get_field_type_mostly_strings(self):
         test_data = {'n/a':     1,
@@ -218,4 +150,118 @@ class TestGetFieldType(object):
                      '0':       1,
                      '1.1':     1,
                      '2011-04': 1}
-        assert mod.get_field_type(test_data) == 'string'
+        assert self.multi_runner(test_data.items()) == 'string'
+
+    def test_integers(self):
+        assert self.runner("0") == 'integer'
+        assert self.runner("-4") == 'integer'
+        assert self.runner("2009 ") == 'integer'
+        assert self.runner("2009 ") == 'integer'
+        assert self.runner("2009") == 'integer'
+        assert self.runner("200910") == 'integer'
+        assert self.runner("20090206") == 'integer'
+
+    def test_floats(self):
+        assert self.runner("-4.7") == 'float'
+        assert self.runner("1172969203.1") == 'float'
+
+    def test_strings(self):
+        assert self.runner("blah") == 'string'
+        assert self.runner("blah") == 'string'
+        assert self.runner("2009-10") == 'string'
+
+    def test_unsupported_periods(self):
+        assert self.runner("2009-10-06-18.10") == 'string'
+        assert self.runner("2009-10-06-03.02.01") == 'string'
+
+    def test_dates(self):
+        assert self.runner("10/26/09") == 'timestamp'
+        assert self.runner("10-26-09") == 'timestamp'
+        assert self.runner("26/10/09") == 'timestamp'
+        assert self.runner("26-10-09") == 'timestamp'
+        assert self.runner("10/26/2009") == 'timestamp'
+        assert self.runner("10-26-2009") == 'timestamp'
+        assert self.runner("26/10/2009") == 'timestamp'
+        assert self.runner("26-10-2009") == 'timestamp'
+
+    def test_month_names(self):
+        assert self.runner("Feb 13,2009") == 'timestamp'
+        assert self.runner("Feb 13, 2009") == 'timestamp'
+        assert self.runner("February 13,2009") == 'timestamp'
+        assert self.runner("February 13, 2009") == 'timestamp'
+
+    def test_iso8601(self):
+        assert self.runner("2009-10-06") == 'timestamp'
+        assert self.runner("2009-10-06T18:10") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01.01") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01.012") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01.01234") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01.012345") == 'timestamp'
+
+    def test_non_iso8601_timestamps(self):
+        assert self.runner("2009-10-06 18") == 'timestamp'
+        assert self.runner("2009-10-06-18") == 'timestamp'
+
+        assert self.runner("2009-10-06 18:10") == 'timestamp'
+        assert self.runner("2009-10-06-18:10")  == 'timestamp'
+
+        assert self.runner("2009-10-06 03:02:01") == 'timestamp'
+        assert self.runner("2009-10-06-03:02:01") == 'timestamp'
+
+        assert self.runner("2009-10-06-03:02:01.01") == 'timestamp'
+        assert self.runner("2009-10-06 03:02:01.01234") == 'timestamp'
+        assert self.runner("2009-10-06-03:02:01.01234") == 'timestamp'
+
+        assert self.runner("2009-10-06D18:10") == 'string'
+
+    def test_iso8601_with_timezone_z(self):
+        assert self.runner("2009-10-06T03:02:01.01234Z") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01Z") == 'timestamp'
+        assert self.runner("2009-10-06T03:02Z") == 'timestamp'
+
+    def test_iso8601_with_timezone_plus(self):
+        assert self.runner("2009-10-06T03:02:01.01234+0700") == 'timestamp'
+        assert self.runner("2009-10-06T03:02:01+0700") == 'timestamp'
+        assert self.runner("2009-10-06T03:02+0700") == 'timestamp'
+
+    def test_timezone_with_timezone_dash(self):
+        assert self.runner("2009-10-06T03:02:01.01234-0700") == 'timestamp'
+        assert self.runner("2009-10-06T03:02-0700") == 'timestamp'
+
+
+
+    def test_get_field_type_basicsII(self):
+        assert self.multi_runner({}) == 'unknown'
+        #assert self.multi_runner({'Texas': 4}) == 'string'
+        #assert self.multi_runner({'1': 4}) == 'integer'
+        #assert self.multi_runner({'n/a': 4, 'Texas':4}) == 'string'
+        #assert self.multi_runner({'n/a': 4, '55':4}) == 'integer'
+        #assert self.multi_runner({'n/a': 4, '55.5':4}) == 'float'
+        #assert self.multi_runner({'n/a': 4, '':4}) == 'unknown'
+        #assert self.multi_runner({'n/a': 4, '1310527566.7':4}) == 'float'
+        #assert self.multi_runner({'4.3': 4, '1310527566.7':4}) == 'float'
+
+        test_data = {'n/a':   3,
+                     '0':     2,
+                     '1.1':   4}
+        assert self.multi_runner(test_data.items()) == 'float'
+
+        test_data = {'n/a':   3,
+                     '0':     2,
+                     'blah':  4}
+        assert self.multi_runner(test_data.items()) == 'unknown'
+
+        test_data = {'n/a':   3,
+                     'blah':  2,
+                     '0':     2,
+                     '1.1':   4}
+        assert self.multi_runner(test_data.items()) == 'unknown'
+
+    def test_get_field_type_mostly_strings_b(self):
+        test_data = {'n/a':     1,
+                     'blah':  999,
+                     '0':       1,
+                     '1.1':     1,
+                     '2011-04': 1}
+        assert self.multi_runner(test_data.items()) == 'string'

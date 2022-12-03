@@ -194,7 +194,7 @@ from datagristle.common import abort
 import datagristle.common as comm
 from datagristle import configulator
 from datagristle import csvhelper
-from datagristle import field_determinator
+from datagristle import field_profiler
 from datagristle import file_io
 from datagristle import file_type
 from datagristle import helpdoc
@@ -246,10 +246,10 @@ def main() -> int:
 
     # Get Analysis on ALL Fields:
     input_handler.reset()
-    my_fields = field_determinator.FieldDeterminator(input_handler,
-                                                     my_file.field_cnt,
-                                                     my_file.dialect,
-                                                     nconfig.verbosity)
+    my_fields = field_profiler.FieldDeterminator(input_handler,
+                                                 my_file.field_cnt,
+                                                 my_file.dialect,
+                                                 nconfig.verbosity)
 
     if nconfig.column_type_overrides:
         if max(nconfig.column_type_overrides) > my_file.field_cnt:
@@ -310,7 +310,7 @@ class MetadataManager(object):
 
 
     def write_field_results(self,
-                            field_analysis: field_determinator.FieldDeterminator,
+                            field_analysis: field_profiler.FieldDeterminator,
                             col_number: int) -> None:
 
         for sub in range(field_analysis.field_cnt):
@@ -439,9 +439,17 @@ class OutputWriter(object):
         self.write_string("escapechar", dialect.escapechar)
         self.write_header()
 
+    def write_file_record_count(self,
+                                record_cnt,
+                                estimate=False) -> None:
+        if estimate:
+            self.write_string("record count", "%d (est)" % record_cnt)
+        else:
+            self.write_string("record count", record_cnt)
+        self.write_header()
 
     def write_field_results(self,
-                            my_fields: field_determinator.FieldDeterminator,
+                            my_fields: field_profiler.FieldDeterminator,
                             col_position: int,
                             header: str) -> None:
         self.write_header()
@@ -487,7 +495,7 @@ class OutputWriter(object):
 
 
     def write_field_freq(self,
-                         my_fields: field_determinator.FieldDeterminator,
+                         my_fields: field_profiler.FieldDeterminator,
                          col_no: int):
         """Writes out the top_values section for a single column."""
         self.subsection = "top_values"

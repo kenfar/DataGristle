@@ -5,6 +5,7 @@
     Copyright 2017-2022 Ken Farmer
 """
 import csv
+import datetime as dt
 import errno
 import io
 import os
@@ -14,9 +15,10 @@ import random
 import sys
 import tempfile
 import time
-from typing import List, Optional, Tuple
+from typing import Optional, Union
 
 from datagristle import csvhelper
+from datagristle import metadata
 
 
 
@@ -38,22 +40,27 @@ class InputHandler(object):
 
 
     def __init__(self,
-                 files: List[str],
+                 files: list[str],
                  dialect: csvhelper.Dialect,
                  return_header: bool = False) -> None:
 
-        self.dialect = dialect
-        self.header: List[str] = []
-        self.return_header = return_header
         self.files = files
+        self.dialect = dialect
+        self.return_header = return_header
+        self.use_cache = True                  # set to False, mostly for testing
+
+        self.header: list[str] = []
+        self.field_names: list[str] = []       # not populated until after a rec is read
+        self.first_rec: list[Union[str, float]] = []
         self.files_read = 0
-        self.rec_cnt = 0                # does not count header records
-        self.curr_file_rec_cnt = 0      # does not count header records
+        self.rec_cnt = 0                       # does not count header records
+        self.curr_file_rec_cnt = 0             # does not count header records
         self.infile = None
         self.eof = False
+        self.md = metadata.GristleMetaData()
 
         # If dialect.has_header==True then it will try to read the header.  If the file is empty
-        # we could get a stop iteration here.  Instead lets just leave self.header empty and let 
+        # we could get a stop iteration here.  Instead lets just leave self.header empty and let
         # the calling program pick up StopIteration on its first read.
         try:
             self._open_next_input_file()
@@ -91,12 +98,15 @@ class InputHandler(object):
         return self
 
 
-    def __next__(self):
+    def __next__(self,
+                 skip_to_end=False):
         """ Returns the next input record.   Can handle data piped in as well
             as multiple input files.   All data is assumed to be csv files.
         """
         while True:
             try:
+                if skip_to_end:
+                    raise StopIteration
                 return self._read_next_rec()
             except StopIteration:   # end of file, loop around and get another
                 if self.files[0] == '-' and self.files_read == 1 and self.curr_file_rec_cnt == 0:
@@ -109,9 +119,12 @@ class InputHandler(object):
                     raise
 
 
-    def _read_next_rec(self) -> List[str]:
+    def _read_next_rec(self) -> list[str]:
 
         rec = self.csv_reader.__next__()
+        if self.rec_cnt == 0:
+            self.first_rec = rec
+            self._determine_field_names()
         self.rec_cnt += 1
         self.curr_file_rec_cnt += 1
         return rec
@@ -139,56 +152,103 @@ class InputHandler(object):
             pass
 
 
-    def get_rec_count(self,
-                      read_limit=-1) -> Tuple[int, bool]:
-        """ Returns the number of records in the file
-            Outputs:
-               - rec count
-               - estimated - True or False, indicates if the rec count is an
-                 estimation based on the first self.read_limit rows.
-        """
-        rec_cnt = 0
-        estimated_rec_cnt = 0
-        byte_cnt = 0
-        estimated = False
+    def get_field_count(self):
+        self._determine_field_names()
+        return len(self.field_names)
 
+
+    def get_rec_count(self,
+                      read_limit: int = -1) -> tuple[int, bool]:
+        """ Returns the number of records in the file
+
+        Args:
+            read_limit: If provided then reads up to the read_limit and then estimates
+                        the remaining records.  Defaults to -1, which means no limit.
+        Returns:
+            rec count:  Count of rows read
+            estimated:  True or False, indicates if the rec count is an estimation based
+                        on the first self.read_limit rows.
+        """
+        byte_cnt = 0
+        estimated_rec_cnt = 0
+        estimated = False
+        read_limit_hit = False
+
+        # First check to see if we have cached the exact row count for a single file:
+        if len(self.files) == 1 and self.files[0] != '-' and self.use_cache:
+            temp_rec_cnt = self.md.file_index_tools.get_rec_count(filename=self.files[0])
+            if temp_rec_cnt >= 0:
+                return temp_rec_cnt, estimated
+
+        # fast method, should be helpful if the files are very large
         if read_limit > -1:
-            # fastest method, should be helpful the files are very large
             estimated = True
             try:
                 while True:
                     rec = self.__next__()
                     byte_cnt += (len(''.join(rec)) + len(rec) + 1)
                     if self.rec_cnt  > read_limit:
+                        read_limit_hit = True
                         break
             except StopIteration:
                 pass
-            try:
-                bytes_per_rec = byte_cnt / self.rec_cnt
-                total_file_size = sum([int(getsize(x)) for x in self.files if x != '-' ])
-                estimated_rec_cnt = total_file_size / bytes_per_rec
-            except  ZeroDivisionError:
-                pass
+            if read_limit_hit is False:
+                return self.rec_cnt, estimated
+            else:
+                try:
+                    bytes_per_rec = byte_cnt / self.rec_cnt
+                    total_file_size = sum([int(getsize(x)) for x in self.files if x != '-' ])
+                    estimated_rec_cnt = total_file_size / bytes_per_rec
+                except  ZeroDivisionError:
+                    pass
+                return estimated_rec_cnt, estimated
 
-        else:
-            # slower method, but most accurate
+        # slowest method, but most accurate
+        if read_limit < 0:
             try:
                 while True:
                     _ = self.__next__()
             except StopIteration:
                 pass
 
-        return estimated_rec_cnt or self.rec_cnt, estimated
+            if len(self.files) == 1 and self.use_cache:
+                mod_datetime, file_size = get_file_info(self.files[0])
+                if self.header:
+                    col_cnt = len(self.header)
+                else:
+                    col_cnt = len(self.first_rec)
+                self.md.file_index_tools.set_counts(filename=self.files[0],
+                                                    mod_datetime=mod_datetime,
+                                                    file_bytes=file_size,
+                                                    rec_count=self.rec_cnt,
+                                                    col_count=col_cnt)
+            return self.rec_cnt, estimated
 
 
-    def get_field_cnt(self):
-        """ returns the number of fields in the file.
+
+    def _determine_field_names(self) -> None:
+        """ Determines names of fields
+
+        Must be run after the program has read a record.
+
         """
         if self.header:
-            return len(self.header)
-        rec = self.__next__()
-        return len(rec)
-
+            self.field_names = self.header
+        elif self.first_rec:
+            self.field_names = [f'field_{x}' for x in range(len(self.first_rec))]
+        else:
+            # May not have read a rec yet - maybe got the rec count from metadata
+            # So, lets read a rec and then start over.  This won't work for stdin,
+            # but should be fine for reading files.
+            # raise InvalidSequence('Cannot access fields until a rec is read')
+            self.__next__()
+            if self.header:
+                self.field_names = self.header
+            elif self.first_rec:
+                self.field_names = [f'field_{x}' for x in range(len(self.first_rec))]
+            else:
+                raise ValueError('Logic Error: not finding first rec or header!')
+            self.reset()
 
 
 
@@ -238,7 +298,7 @@ class OutputHandler(object):
 
 
     def write_rec(self,
-                  record: List[str]) -> None:
+                  record: list[str]) -> None:
         """ Write a record to output.
             If silent arg was provided, then write is suppressed.
             If randomout arg was provided, then randomly determine
@@ -258,7 +318,7 @@ class OutputHandler(object):
 
 
     def write_csv_rec(self,
-                      record: List[str]) -> None:
+                      record: list[str]) -> None:
         self.write_rec(record)
 
 
@@ -282,7 +342,7 @@ def get_file_size(files):
 
 
 
-def get_rec_count(files: List[str],
+def get_rec_count(files: list[str],
                   dialect: csv.Dialect) -> Optional[int]:
     """ Get record counts for input files.
         - Counts have an offset of 0
@@ -313,3 +373,15 @@ def remove_all_temp_files(prefix: str,
         if seconds >= min_age_seconds:
             os.remove(pjoin(tmpdir, fn))
 
+
+
+def get_file_info(filename):
+    file_timestamp = os.path.getmtime(filename)
+    file_dt = dt.datetime.fromtimestamp(file_timestamp)
+    file_size = os.path.getsize(filename)
+    return file_dt, file_size
+
+
+
+class InvalidSequence(Exception):
+    pass
