@@ -241,9 +241,9 @@ def get_col_names_from_header(file1_fqfn: str,
 
 
 def validate_python_version():
-    if sys.version_info.major != 3 or sys.version_info.minor < 8:
+    if sys.version_info.major != 3 or sys.version_info.minor < 9:
         abort('Error: invalid version of python',
-              'Minimum version is 3.8 but this is being run on '
+              'Minimum version is 3.9 but this is being run on '
               f'{sys.version_info.major}.{sys.version_info.minor}')
 
 
