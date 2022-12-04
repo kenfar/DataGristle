@@ -198,31 +198,30 @@ class InputHandler(object):
                 try:
                     bytes_per_rec = byte_cnt / self.rec_cnt
                     total_file_size = sum([int(getsize(x)) for x in self.files if x != '-' ])
-                    estimated_rec_cnt = total_file_size / bytes_per_rec
+                    estimated_rec_cnt = int(total_file_size / bytes_per_rec)
                 except  ZeroDivisionError:
                     pass
                 return estimated_rec_cnt, estimated
 
         # slowest method, but most accurate
-        if read_limit < 0:
-            try:
-                while True:
-                    _ = self.__next__()
-            except StopIteration:
-                pass
+        try:
+            while True:
+                _ = self.__next__()
+        except StopIteration:
+            pass
 
-            if len(self.files) == 1 and self.use_cache:
-                mod_datetime, file_size = get_file_info(self.files[0])
-                if self.header:
-                    col_cnt = len(self.header)
-                else:
-                    col_cnt = len(self.first_rec)
-                self.md.file_index_tools.set_counts(filename=self.files[0],
-                                                    mod_datetime=mod_datetime,
-                                                    file_bytes=file_size,
-                                                    rec_count=self.rec_cnt,
-                                                    col_count=col_cnt)
-            return self.rec_cnt, estimated
+        if len(self.files) == 1 and self.use_cache:
+            mod_datetime, file_size = get_file_info(self.files[0])
+            if self.header:
+                col_cnt = len(self.header)
+            else:
+                col_cnt = len(self.first_rec)
+            self.md.file_index_tools.set_counts(filename=self.files[0],
+                                                mod_datetime=mod_datetime,
+                                                file_bytes=file_size,
+                                                rec_count=self.rec_cnt,
+                                                col_count=col_cnt)
+        return self.rec_cnt, estimated
 
 
 

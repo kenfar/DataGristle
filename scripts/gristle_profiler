@@ -259,7 +259,9 @@ def main() -> int:
                              nconfig.max_freq,
                              nconfig.read_limit)
 
-    out_writer.write_field_results(my_fields, nconfig.col_position, input_handler.header)
+    out_writer.write_field_results(my_fields,
+                                   nconfig.col_position,
+                                   has_header=bool(input_handler.header))
     if nconfig.metadata:
         md_man.write_field_results(my_fields, nconfig.col_position)
 
@@ -293,18 +295,23 @@ class MetadataManager(object):
                                                          analysis_profile_id=self.analysis_profile_id,
                                                          analysis_tool="gristle_determinator")
 
-    def write_file_results(self, filetype: file_type.FileTyper, dialect: csvhelper.Dialect) -> None:
+    def write_file_results(self,
+                           filetype: file_type.FileTyper,
+                           dialect: csvhelper.Dialect) -> None:
+
+        assert filetype.input_handler.files[0] != '-'
+        assert len(filetype.input_handler.files) == 1
 
         self.ca_id = self.md.collection_analysis_tools.setter(
             analysis_id=self.analysis_id,
             collection_id=self.collection_id,
             ca_name="unknown",
-            ca_location=filetype.fqfn,
+            ca_location=filetype.input_handler.files[0],
             ca_row_cnt=filetype.record_cnt,
             ca_field_cnt=filetype.field_cnt,
             ca_delimiter=dialect.delimiter,
             ca_has_header=dialect.has_header,
-            ca_quoting=csvhelper.get_quote_name(dialect.quoting).lower(),
+            ca_quoting=dialect.get_quote_name().lower(),
             ca_quote_char=dialect.quotechar)
 
 
@@ -353,7 +360,7 @@ class MetadataManager(object):
                 ca_id=self.ca_id,
                 field_id=field_id,
                 fa_type=field_analysis.field_types[sub],
-                fa_unique_cnt=len(field_analysis.field_freqs[sub]),
+                fa_unique_cnt=len(field_analysis.field_freq[sub]),
                 fa_known_cnt=len(field_analysis.get_known_values(sub)),
                 fa_min=field_analysis.field_min[sub],
                 fa_max=field_analysis.field_max[sub],
@@ -389,7 +396,7 @@ class OutputWriter(object):
     def __init__(self,
                  output_filename: str,
                  output_format: str) -> None:
-        self.division: str = None
+        self.division: str = ''
         self.output_filename = output_filename
         self.output_format = output_format
         assert self.output_format in ["readable", "parsable", "metadata"]
@@ -399,8 +406,8 @@ class OutputWriter(object):
         else:
             self.outfile = sys.stdout
 
-        self.section: Optional[str] = None
-        self.subsection: Optional[str] = None
+        self.section: str = ''
+        self.subsection: str = ''
 
     def terminate(self) -> None:
         if self.outfile:
@@ -430,7 +437,9 @@ class OutputWriter(object):
         else:
             self.write_string("delimiter", dialect.delimiter)
         self.write_string("skipinitialspace", dialect.skipinitialspace)
-        self.write_string("quoting", csvhelper.get_quote_name(dialect.quoting))
+
+        self.write_string("quoting", dialect.get_quote_name())
+
         self.write_string("doublequote", dialect.doublequote)
         if self.output_format == "readable":
             self.write_string("quotechar", dialect.quotechar)
@@ -450,7 +459,7 @@ class OutputWriter(object):
     def write_field_results(self,
                             my_fields: field_profiler.FieldDeterminator,
                             col_position: int,
-                            header: str) -> None:
+                            has_header: bool) -> None:
         self.write_header()
         self.write_header("Field Analysis Results")
         self.division = "Field Analysis Results"
@@ -489,7 +498,7 @@ class OutputWriter(object):
                 self.write_string("Max Length", my_fields.field_max_length[sub], indent=4)
                 self.write_string("Mean Length", my_fields.field_mean_length[sub], indent=4)
 
-            if self.myfile.record_cnt > 1 or (self.myfile.record_cnt == 1 and not header):
+            if self.myfile.record_cnt > 1 or (self.myfile.record_cnt == 1 and not has_header):
                 self.write_field_freq(my_fields, sub)
 
 
@@ -558,7 +567,8 @@ class OutputWriter(object):
                                                               trunc_key,
                                                               trunc_value))
 
-    def _parsify(self, val: str) -> str:
+    def _parsify(self,
+                 val: str) -> str:
         return '"%s"' % val.lower().replace(" ", "_")
 
 

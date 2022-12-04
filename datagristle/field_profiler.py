@@ -21,7 +21,7 @@ import csv
 import math
 from operator import itemgetter
 from pprint import pprint as pp
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Iterable
 
 from datagristle import common
 from datagristle import csvhelper
@@ -38,9 +38,10 @@ from datagristle import field_type as typer
 #------------------------------------------------------------------------------
 MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
 MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # ex: 10 cols, each with 1 mil entries & 20 byte key = ~400 MB total
-FreqType = list[tuple[Any, int]]
-StrFreqType = list[tuple[str, int]]
-NumericFreqType = list[tuple[Union[int, float], int]]
+
+FreqType = Iterable[tuple[Any, int]]
+StrFreqType = Iterable[tuple[str, int]]
+NumericFreqType = Iterable[tuple[Union[float, int], int]]
 
 
 
@@ -156,7 +157,7 @@ class FieldDeterminator(object):
 
         for f_no in self.field_freq.keys():
             if self.field_types[f_no] == 'string':
-                str_values = StrTypeFreq(self.field_freq[f_no].items())
+                str_values = StrTypeFreq(list(self.field_freq[f_no].items()))
                 self.field_case[f_no] = str_values.get_case()
                 self.field_min_length[f_no] = str_values.get_min_length()
                 self.field_max_length[f_no] = str_values.get_max_length()
@@ -166,7 +167,7 @@ class FieldDeterminator(object):
 
             elif self.field_types[f_no] in ('integer', 'float'):
                 num_values = NumericTypeFreq(self.field_freq[f_no].items(),
-                                                               self.field_types[f_no])
+                                             self.field_types[f_no])
                 self.field_mean[f_no] = num_values.get_mean()
                 self.field_median[f_no] = num_values.get_median()
                 (self.variance[f_no], self.stddev[f_no]) = num_values.get_variance_and_stddev()
@@ -276,7 +277,7 @@ class FieldDeterminator(object):
 class TypeFreq:
 
     def __init__(self,
-                 values: StrFreqType,
+                 values: FreqType,
                  field_type: str = 'unknown'):
 
         self.values = values
@@ -285,7 +286,7 @@ class TypeFreq:
 
 
     def _value_cleaner(self,
-                       values: StrFreqType):
+                       values: FreqType):
 
         return [x for x in self.values
                if x != ''
@@ -335,7 +336,7 @@ class StrTypeFreq(TypeFreq):
         self.max: str
         self.min_length: int
         self.max_length: int
-        self.mean_length: int
+        self.mean_length: float
 
 
 
@@ -350,7 +351,7 @@ class StrTypeFreq(TypeFreq):
         all_lower_cnt = sum([x[1] for x in self.clean_values if x[0].islower()])
         all_upper_cnt = sum([x[1] for x in self.clean_values if x[0].isupper()])
         mixed_cnt = sum([x[1] for x in self.clean_values
-			if x[0] != x[0].upper() and x[0] != x[0].lower()])
+                        if x[0] != x[0].upper() and x[0] != x[0].lower()])
 
         if mixed_cnt:
             return 'mixed'
@@ -391,7 +392,7 @@ class StrTypeFreq(TypeFreq):
         return min([len(value[0]) for value in self.clean_values]) or min_length
 
 
-    def get_mean_length(self) -> int:
+    def get_mean_length(self) -> float:
         """ Returns the mean length value of the input.   If
             no values found besides unknown it will just return None
 
@@ -436,7 +437,7 @@ class NumericTypeFreq(TypeFreq):
         self.min: Union[float, int]
         self.max: Union[float, int]
         self.mean: float
-        self.median: float
+        self.median: Optional[float]
         self.variance: float
         self.stddev: float
 
@@ -573,13 +574,13 @@ class NumericTypeFreq(TypeFreq):
                 raise ValueError('{} is not numeric'.format(val))
             else:
                 return float_val
-        elif field_type == 'integer':
-            try:
-                int_val = int(val)
-            except ValueError:
-                raise ValueError('{} is not numeric'.format(val))
-            else:
-                return int_val
+
+        try:
+            int_val = int(val)
+        except ValueError:
+            raise ValueError('{} is not numeric'.format(val))
+        else:
+            return int_val
 
 
 

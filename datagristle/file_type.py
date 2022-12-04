@@ -35,9 +35,9 @@ class FileTyper(object):
         self.read_limit: int = read_limit
 
         self.dialect = self.input_handler.dialect
-        self.field_cnt: Optional[int] = None
-        self.record_cnt: Optional[int] = None
-        self.record_cnt_is_est: Optional[bool] = None
+        self.field_cnt: int = 0
+        self.record_cnt: int = 0
+        self.record_cnt_is_est: bool = False
 
 
     def analyze_file(self) -> None:

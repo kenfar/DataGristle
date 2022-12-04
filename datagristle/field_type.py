@@ -89,10 +89,10 @@ class FieldType:
                  values: list[tuple[Any, int]]) -> None:
 
         self.raw_values = list(values)
-        self.converted_values = {}
+        self.converted_values: dict[Any, int] = {}
         self.type_freq: dict[str, int] = {}
         self.format_freq: dict[str, int] = {}
-        self.clean_type_values: list[tuple] = []
+        self.clean_type_values: list[str] = []
         self.final_field_type: str = 'unknown'
         self.timestamp_formats = TIMESTAMP_FORMATS
 
@@ -108,7 +108,7 @@ class FieldType:
 
         self._get_field_type_rule()
         if self.final_field_type == 'unknown':
-            self._get_field_type_probability() or 'unknown'
+            self._get_field_type_probability()
         return self.final_field_type
 
 
@@ -136,7 +136,7 @@ class FieldType:
                 self.converted_values[converted_val] = int(count)
 
 
-    def _sort_timestamp_formats(self):
+    def _sort_timestamp_formats(self) -> None:
         # update counts in self.timestamp_formats
         updated_list = []
         for scope, format_name, format, count in self.timestamp_formats:
@@ -150,7 +150,7 @@ class FieldType:
 
 
     def _get_type(self,
-                  value: Any) -> (str, str):
+                  value: Any) -> tuple[str, Optional[str], Optional[Any]]:
         """ accepts a single string value and returns its potential type
 
             Types identified (and returned) include:
@@ -176,7 +176,7 @@ class FieldType:
                 return 'string', None, None
 
 
-    def _get_field_type_rule(self) -> Optional[str]:
+    def _get_field_type_rule(self) -> None:
         """ The intent is to resolve type determinations through simplistic
             rules:
             Additional Notes to consider:
@@ -207,7 +207,7 @@ class FieldType:
 
 
 
-    def _get_field_type_probability(self) -> str:
+    def _get_field_type_probability(self) -> None:
         """ Determines type of field based on the type of the vast majority of
             values.
         """
@@ -219,7 +219,7 @@ class FieldType:
 
 
 def is_timestamp_extended(value: Union[float, str],
-                          timestamp_formats=TIMESTAMP_FORMATS) -> (bool, str, datetime):
+                          timestamp_formats=TIMESTAMP_FORMATS) -> tuple[bool, Optional[str], Optional[Any]]:
     """ Determine if arg is a timestamp and if so what format
 
     Args:
