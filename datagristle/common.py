@@ -2,27 +2,24 @@
 """ Used to hold all common  general-purpose functions and classes
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 import argparse
 import csv
 import inspect
 import math
-from os.path import isdir, isfile, exists
-from os.path import join as pjoin
-from pprint import pprint as pp
 import sys
 import traceback
-from typing import List, Dict, Any, Optional, Tuple, Union, NoReturn
+from typing import Any, Optional, Union, NoReturn
 
 import psutil
 
 from datagristle._version import __version__
 
 
-FreqType = List[Tuple[Any, int]]
-StrFreqType = List[Tuple[str, int]]
-NumericFreqType = List[Tuple[Union[int, float], int]]
+FreqType = list[tuple[Any, int]]
+StrFreqType = list[tuple[str, int]]
+NumericFreqType = list[tuple[Union[int, float], int]]
 
 
 def isnumeric(number: Any) -> bool:
@@ -39,7 +36,7 @@ def isnumeric(number: Any) -> bool:
         return False
 
 
-def get_common_key(count_dict: Dict[Any, Union[int, float]]) -> Tuple[Any, float]:
+def get_common_key(count_dict: dict[Any, Union[int, float]]) -> tuple[Any, float]:
     """  Provides the most common key in a frequency distribution dictionary,
          as well as its frequency expressed as a percentage.  For example:
          cd = {'car':    7
@@ -68,7 +65,7 @@ def coalesce(default: Any, *args: Any) -> Any:
     return default
 
 
-def dict_coalesce(struct: Dict, key: Any, default: Any=None) -> Any:
+def dict_coalesce(struct: dict, key: Any, default: Any=None) -> Any:
     try:
         return struct[key]
     except KeyError:
@@ -175,7 +172,7 @@ def get_tracepath():
 
 
 
-def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[int]:
+def colnames_to_coloff0(col_names: list[str], lookup_list: list[Any]) -> list[int]:
     """ Returns a list of collection column positions with offset of 0 for a list of
         collection column names (optional) and a lookup list of col names and/or col
         offsets.
@@ -211,8 +208,8 @@ def colnames_to_coloff0(col_names: List[str], lookup_list: List[Any]) -> List[in
 
 
 
-def get_best_col_names(config: Dict[str, Any],
-                       dialect) -> Optional[List[str]]:
+def get_best_col_names(config: dict[str, Any],
+                       dialect) -> Optional[list[str]]:
 
     if not dialect.has_header:
         return config['col_names']
@@ -232,7 +229,7 @@ def get_best_col_names(config: Dict[str, Any],
 
 
 def get_col_names_from_header(file1_fqfn: str,
-                              dialect: csv.Dialect) -> Optional[List[str]]:
+                              dialect: csv.Dialect) -> Optional[list[str]]:
     try:
         with open(file1_fqfn, newline='') as f:
             reader = csv.reader(f, dialect=dialect)
@@ -270,13 +267,13 @@ class MemoryLimiter:
         else:
             self.max_memory_bytes = max_mem_gbytes * 1024 * 1024 * 1024
 
-        self.rec_sizes: List[int] = []
+        self.rec_sizes: list[int] = []
         self.max_rec_number: int
         self.call_count = 0
 
 
     def check_record(self,
-                     record: List[Any],
+                     record: list[Any],
                      record_number: int):
         """ Checks memory consumption as records are added into memory.
 

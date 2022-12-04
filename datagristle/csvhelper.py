@@ -2,17 +2,16 @@
 """ Used to help interact with the csv module.
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 
 import csv
 import fileinput
 import os.path
-from pprint import pprint as pp
-from typing import Optional, List, Dict, Any, Union, Type
+from typing import Optional, Any, Union, Type
 import _csv
 
-import datagristle.common as comm
+from datagristle import common as comm
 
 
 
@@ -96,7 +95,7 @@ class Header:
 
 
     def load_from_list(self,
-                       field_names: List[str]):
+                       field_names: list[str]):
 
 
         for field_sub, raw_field_name in enumerate(field_names):
@@ -115,7 +114,7 @@ class Header:
 
     def _make_field_name_unique(self,
                                 starting_field_name: str,
-                                field_names: List[str]) -> str:
+                                field_names: list[str]) -> str:
         temp_field_name = starting_field_name
         for count in range(999):
             if temp_field_name in self.field_names:
@@ -132,7 +131,7 @@ class Header:
 
 
     def load_from_files(self,
-                        file_names: List[str],
+                        file_names: list[str],
                         dialect):
         for file_name in file_names:
             try:
@@ -164,7 +163,7 @@ class Header:
 
 
     def get_field_positions_from_any(self,
-                                    lookups: List[Union[str, int]]) -> List[int]:
+                                    lookups: list[Union[str, int]]) -> list[int]:
         """ Returns a list of field positions given a list of positions or names
         """
         return [self.get_field_position_from_any(x) for x in lookups]
@@ -228,7 +227,7 @@ def convert_dialect(std_dialect: Type[_csv.Dialect]) -> Dialect:
 
 
 
-def get_dialect(infiles: List[str],
+def get_dialect(infiles: list[str],
                 delimiter: Optional[str] = None,
                 quoting: Optional[str] = None,
                 quotechar: Optional[str] = None,
@@ -455,13 +454,13 @@ def _get_dialect_quoting(dialect: _csv.Dialect,
     # total_field_cnt has a key for each number of fields found in a
     # record, and a value that indicates how often this total was found
     #total_field_cnt  = collections.defaultdict(int)
-    total_field_cnt: Dict[Any, Union[int, float]] = {}
+    total_field_cnt: dict[Any, Union[int, float]] = {}
 
     # quoted_field_cnt has a key for each number of quoted fields found
     # in a record, and a value that indicates how often this total was
     # found.
     #quoted_field_cnt = collections.defaultdict(int)
-    quoted_field_cnt: Dict[Any, Union[int, float]] = {}
+    quoted_field_cnt: dict[Any, Union[int, float]] = {}
 
     for rec in fileinput.input(fqfn):
         fields = rec[:-1].split(dialect.delimiter)

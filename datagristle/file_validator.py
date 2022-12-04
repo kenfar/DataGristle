@@ -1,7 +1,7 @@
 from os.path import basename, exists, join as pjoin
 from pprint import pprint as pp
 import sys
-from typing import Any, Optional, Dict, List, Tuple, Union
+from typing import Any, Optional, Union
 
 import jsonschema
 import ruamel.yaml as yaml
@@ -145,7 +145,7 @@ def write_stats(input_cnt: int, valid_cnt: int, invalid_cnt: int) -> None:
 
 
 def load_schema(schema_file: str,
-                schema_path: List[str]) -> Optional[Dict[Any, Any]]:
+                schema_path: list[str]) -> Optional[dict[Any, Any]]:
     """ Loads validation schema.
         If the schema_file argument is None, then it will not load,
         this is useful when the user wants to check field counts,
@@ -196,7 +196,7 @@ class RecValidator(object):
         self.rec_schema = rec_schema
         self.valid_field_cnt: Optional[int] = valid_field_cnt
         self.last_field_cnt: Optional[int] = None
-        self.rec_errors: List[dict[str, str]] = []
+        self.rec_errors: list[dict[str, str]] = []
         self.rec_error_count = 0
         if rec_schema:
             self.validator = jsonschema.Draft7Validator(self.rec_schema)
@@ -205,7 +205,7 @@ class RecValidator(object):
 
 
     def run_all_checks(self,
-                       record: List[str]):
+                       record: list[str]):
 
         self.rec_errors = []
         self.rec_error_count = 0
@@ -233,7 +233,7 @@ class RecValidator(object):
 
 
     def check_schema(self,
-                     record: List[str]):
+                     record: list[str]):
         """ First translates the csv string to appropriate types.
             Then run the jsonschema validation.
         """
@@ -305,7 +305,7 @@ class RecValidator(object):
 
 
 
-def config_validation_simple(schema: Dict[Any, Any]):
+def config_validation_simple(schema: dict[Any, Any]):
 
     valid_keys = ['type', 'minimum', 'maximum', 'minLength', 'maxLength', 'title',
                   'description', 'enum', 'pattern', 'blank']

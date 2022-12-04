@@ -1,9 +1,9 @@
 import operator
 from pprint import pprint as pp
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-import datagristle.file_io as file_io
+from datagristle import file_io
 
 
 class ColSetFreaker(object):
@@ -30,12 +30,12 @@ class ColSetFreaker(object):
         self.max_key_len = max_key_len
 
         self.col_len_tracker: ColumnLengthTracker = None
-        self.field_freq: Dict[Any, Any] = {}
-        self.sorted_freq: List[Any] = None
+        self.field_freq: dict[Any, Any] = {}
+        self.sorted_freq: list[Any] = None
         self.truncated: bool = None
 
 
-    def create_freq_from_column_set(self, col_set: List[int]) -> None:
+    def create_freq_from_column_set(self, col_set: list[int]) -> None:
 
         #----- calculate field lengths -----
         self.build_freq(col_set)
@@ -52,7 +52,7 @@ class ColSetFreaker(object):
         self.col_len_tracker.trunc_all_col_lengths(self.max_key_len)
 
 
-    def build_freq(self, columns: List[int]) -> None:
+    def build_freq(self, columns: list[int]) -> None:
         """ Inputs:
                 - columns    - list of columns to put into key
             Updates instance variables:
@@ -66,7 +66,7 @@ class ColSetFreaker(object):
         self.field_freq = {}
         self.truncated = False
 
-        def process_rec(record: List[str]) -> None:
+        def process_rec(record: list[str]) -> None:
             nonlocal freq_cnt
             if self.sampling_method == 'interval':
                 if (self.input_handler.rec_cnt+1) % self.sampling_rate != 0:
@@ -91,8 +91,8 @@ class ColSetFreaker(object):
 
 
     def _create_key(self,
-                    fields: List[str],
-                    required_field_indexes: List[int]) -> Tuple[str, ...]:
+                    fields: list[str],
+                    required_field_indexes: list[int]) -> tuple[str, ...]:
         """ input:
                 - fields - a single record in the form of a list of fields
                 - required_field_indexes - identifies which fields to put into output key
@@ -116,7 +116,7 @@ class ColSetFreaker(object):
     def write_output(self,
                      output: file_io.OutputHandler,
                      write_limit: int,
-                     col_set_num: List[int]):
+                     col_set_num: list[int]):
 
         write_cnt = 0
         for key_tup in self.sorted_freq:
@@ -128,8 +128,8 @@ class ColSetFreaker(object):
 
 
     def format_output_row(self,
-                          freq_tup: Tuple[Tuple[str, ...], int],
-                          col_set_num: List[int]) -> str:
+                          freq_tup: tuple[tuple[str, ...], int],
+                          col_set_num: list[int]) -> str:
         """ input:
             - freq_tup - is a tuple consisting of two entries: key & count.
                 Each key is also a tuple.  So it looks like this:
@@ -164,7 +164,7 @@ class ColumnLengthTracker(object):
         Tested via test harness.
     """
     def __init__(self):
-        self.max_dict: Dict[int, int] = {}
+        self.max_dict: dict[int, int] = {}
 
     def add_val(self, col_num: int, value: str) -> None:
         """ Update tracked max length for a given column if the new value
@@ -181,7 +181,7 @@ class ColumnLengthTracker(object):
         except KeyError:
             self.max_dict[col_num] = len(value)
 
-    def add_all_values(self, freq_list: List[Tuple[Tuple[str, ...], int]]) -> None:
+    def add_all_values(self, freq_list: list[tuple[tuple[str, ...], int]]) -> None:
         """ Step through a list of tuples which the key is a tuple of 1-many
             parts, and the value is the count.  For each part of the key call
             the add_val function to then store the max length.

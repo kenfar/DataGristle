@@ -2,7 +2,7 @@
 """ Manages user config - arguments and environmental variables.
 
     See the file "LICENSE" for the full license governing this code.
-    Copyright 2020-2021 Ken Farmer
+    Copyright 2020-2022 Ken Farmer
 
     Challenges:
     1. config files are hierarchical, args & envs are flat
@@ -17,21 +17,21 @@ import collections
 import copy
 import json
 import os
-from os.path import isfile, splitext, basename, isabs, dirname, abspath, join as pjoin, exists
+from os.path import isfile, splitext, basename, isabs, dirname, abspath, join as pjoin
 from pprint import pprint as pp
 import sys
-from typing import List, Dict, Any, Callable, Optional, NamedTuple, Tuple
+from typing import Any, Optional, NamedTuple
 
 import ruamel.yaml as yaml
 
 from datagristle._version import __version__
-import datagristle.common as comm
-import datagristle.csvhelper as csvhelper
+from datagristle import common as comm
+from datagristle import csvhelper
 
 
-CONFIG_TYPE = Dict[str, Any]
-META_CONFIG_TYPE = Dict[str, Dict[str, Any]]
-METADATA_TYPE = Dict[str, Dict[str, Any]]
+CONFIG_TYPE = dict[str, Any]
+META_CONFIG_TYPE = dict[str, dict[str, Any]]
+METADATA_TYPE = dict[str, dict[str, Any]]
 
 
 def transform_delimiter(val):
@@ -48,7 +48,7 @@ def transform_lower(val):
 
 
 # These describe the valid types of the properties of configs
-VALID_CONFIG_PROP_TYPES: Dict[str, Any] = {}
+VALID_CONFIG_PROP_TYPES: dict[str, Any] = {}
 VALID_CONFIG_PROP_TYPES['short_name'] = str
 VALID_CONFIG_PROP_TYPES['required'] = bool
 VALID_CONFIG_PROP_TYPES['nargs'] = str
@@ -171,9 +171,9 @@ class Config(object):
         self.short_help = short_help
         self.long_help = long_help
         self.validate_dialect = validate_dialect
-        self.obsolete_options: Dict[str, Any] = {}
+        self.obsolete_options: dict[str, Any] = {}
         self._app_metadata: META_CONFIG_TYPE = {}
-        self.config: Dict = {}
+        self.config: dict = {}
         self.nconfig = self.NConfig
 
 
@@ -205,7 +205,7 @@ class Config(object):
 
 
     def get_config(self,
-                   override_filename: Optional[str]=None) -> Tuple[Any, Dict[Any, Any]]:
+                   override_filename: Optional[str]=None) -> tuple[Any, dict[Any, Any]]:
         self.define_user_config()
         self.define_obsolete_config()
         self.process_configs()
@@ -270,7 +270,7 @@ class Config(object):
 
 
     def process_configs(self,
-                        test_cli_args: List = None):
+                        test_cli_args: list = None):
 
         self._validate_config_metadata()
 
@@ -459,7 +459,7 @@ class Config(object):
         First all _app_metadata keys are added,
         Then values from matching file, then env, then cli keys are overlaid
         """
-        consolidated_args: Dict[str, Any] = {}
+        consolidated_args: dict[str, Any] = {}
 
         def _get_actual_value(key, config_val):
             bool_val = None
@@ -743,7 +743,7 @@ class _FileArgs(object):
     def _get_args(self) -> CONFIG_TYPE:
         """ Returns a dictionary of config keys & vals associated with the calling program.
         """
-        file_args: Dict[str, Any] = {}
+        file_args: dict[str, Any] = {}
 
         if not self.config_fn:
             return file_args
@@ -841,7 +841,7 @@ class _CommandLineArgs(object):
                  short_help,
                  long_help,
                  app_metadata: META_CONFIG_TYPE,
-                 obsolete_options: Dict[str, str] = None)-> None:
+                 obsolete_options: dict[str, str] = None)-> None:
 
         self._app_metadata = app_metadata
         self.short_help = short_help

@@ -110,7 +110,7 @@ Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
         http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
     See gristle_differ on the wiki for the most thorough documentation here:
         https://github.com/kenfar/DataGristle/wiki/gristle_differ
 """
@@ -120,19 +120,18 @@ import errno
 import logging
 import os
 from  os.path import exists, dirname, basename
-from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import List, Union, Dict, Any, Tuple
+from typing import Any
 
-import datagristle.common       as comm
-from   datagristle.common  import abort
-import datagristle.configulator as configulator
-import datagristle.csvhelper    as csvhelper
-import datagristle.file_delta   as gdelta
-import datagristle.file_sorter  as gsorter
-import datagristle.file_deduper as gdeduper
-import datagristle.helpdoc      as helpdoc
+from datagristle import common as comm
+from datagristle.common  import abort
+from datagristle import configulator
+from datagristle import csvhelper
+from datagristle import file_delta   as gdelta
+from datagristle import file_sorter  as gsorter
+from datagristle import file_deduper as gdeduper
+from datagristle import helpdoc
 
 import jsonschema
 
@@ -202,7 +201,7 @@ def delta_runner(nconfig,
 
     #--- handle all key, compare and ignore logic --------------
     def convert_cols(col_title: str,
-                     lookup_cols: List[Any]):
+                     lookup_cols: list[Any]):
         try:
             off0 = comm.colnames_to_coloff0(nconfig.col_names, lookup_cols)
         except (KeyError, ValueError, TypeError) as err:
@@ -265,8 +264,8 @@ def delta_runner(nconfig,
     return delta
 
 
-def get_assign_with_offsets_for_names(col_names: List[str],
-                                      assign_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def get_assign_with_offsets_for_names(col_names: list[str],
+                                      assign_config: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """ Return assignment config section after converting col names to offsets.
 
     Args:
@@ -278,7 +277,7 @@ def get_assign_with_offsets_for_names(col_names: List[str],
         KeyError - if colname from config not in col_names
                  - or if col position from config beyond col_name list
     """
-    new_assign_config: List[Dict[str, Any]] = copy.deepcopy(assign_config)
+    new_assign_config: list[dict[str, Any]] = copy.deepcopy(assign_config)
     for asgn in new_assign_config:
         if asgn.get("src_field", None) is not None:
             asgn["src_field"] = comm.colnames_to_coloff0(col_names, [asgn["src_field"]])[0]
@@ -290,11 +289,11 @@ def get_assign_with_offsets_for_names(col_names: List[str],
 
 def prep_file(filename: str,
               dialect: csvhelper.Dialect,
-              key_cols: List[int],
+              key_cols: list[int],
               temp_dir: str,
               out_dir: str,
               already_sorted: bool,
-              already_uniq: bool) -> Tuple[str, int]:
+              already_uniq: bool) -> tuple[str, int]:
     """ Set up a file for the delta class comparison.
 
     Args:
@@ -479,7 +478,7 @@ class ConfigManager(configulator.Config):
 
 
 
-def config_bonus_validator(config: Dict[str, Any]) -> None:
+def config_bonus_validator(config: dict[str, Any]) -> None:
     """ Provide additional validation of config.
 
     Purpose is to provide additional validation beyond what's done by JSON

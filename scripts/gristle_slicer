@@ -153,16 +153,14 @@ Licensing and Further Info:
 """
 import errno
 from os.path import basename
-from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import List, Tuple, Dict, Any, Optional, IO, Hashable
 
-import datagristle.common as comm
-import datagristle.configulator as conf
+from datagristle import common as comm
+from datagristle import configulator as conf
 from datagristle import helpdoc
-import datagristle.metadata as metadata
-import datagristle.slice_processor as processor
+from datagristle import metadata
+from datagristle import slice_processor as processor
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)

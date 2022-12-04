@@ -126,7 +126,7 @@ This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
   http://opensource.org/licenses/BSD-3-Clause
 
-Copyright 2014-2021 Ken Farmer
+Copyright 2014-2022 Ken Farmer
 """
 import errno
 import glob
@@ -136,16 +136,14 @@ import os
 from os.path import dirname, basename
 from os.path import isdir, isfile, exists, join as pjoin
 from os.path import getsize
-from pprint import pprint as pp
 import shutil
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
 import time
-from typing import Dict
 
-import datagristle.common as comm
-import datagristle.configulator as conf
-import datagristle.helpdoc as helpdoc
+from datagristle import common as comm
+from datagristle import configulator as conf
+from datagristle import helpdoc
 
 #--- Ignore SIG_PIPE and don't throw exceptions on it
 #--- (http://docs.python.org/library/signal.html)
@@ -204,8 +202,8 @@ class ProcessDirs(object):
         self.recursive = recursive
         self.matchon = matchon
         self.starting_src_dir = starting_src_dir
-        self.dest_dirs: Dict[str, int] = {} # key is dirpath, value is count of files within
-        self.dest_files: Dict[str, str] = {} # key is dirpath, value is list of files
+        self.dest_dirs: dict[str, int] = {} # key is dirpath, value is count of files within
+        self.dest_files: dict[str, str] = {} # key is dirpath, value is list of files
         self.full_match = full_match
         self.part_match = part_match
         self.merger = MergeFiles(dry_run, ignore_err)

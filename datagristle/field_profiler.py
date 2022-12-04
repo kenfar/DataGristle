@@ -21,11 +21,11 @@ import csv
 import math
 from operator import itemgetter
 from pprint import pprint as pp
-from typing import Optional, List, Tuple, Dict, Any, Union
+from typing import Optional, Any, Union
 
 from datagristle import common
 from datagristle import csvhelper
-import datagristle.field_type as typer
+from datagristle import field_type as typer
 
 #------------------------------------------------------------------------------
 # field_freq max dictionary size defaults:
@@ -38,9 +38,9 @@ import datagristle.field_type as typer
 #------------------------------------------------------------------------------
 MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
 MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # ex: 10 cols, each with 1 mil entries & 20 byte key = ~400 MB total
-FreqType = List[Tuple[Any, int]]
-StrFreqType = List[Tuple[str, int]]
-NumericFreqType = List[Tuple[Union[int, float], int]]
+FreqType = list[tuple[Any, int]]
+StrFreqType = list[tuple[str, int]]
+NumericFreqType = list[tuple[Union[int, float], int]]
 
 
 
@@ -79,36 +79,36 @@ class FieldDeterminator(object):
         #--- public field dictionaries - organized by field_number --- #
         # every field should have a key in every one of these dictionaries
         # but if the dictionary doesn't apply, then the value may be None
-        self.field_freq:        Dict[int, Dict[Any, int]] = {i:{} for i in range(self.field_cnt)}
-        self.field_names:       Dict[int, str] = {}
-        self.field_types:       Dict[int, str] = {}
-        self.field_trunc:       Dict[int, bool] = set_field_defaults(False)
-        self.field_rows_invalid: Dict[int, int] = set_field_defaults(0)
-        self.field_min:         Dict[int, Optional[Any]] = set_field_defaults(None)
-        self.field_max:         Dict[int, Optional[Any]] = set_field_defaults(None)
+        self.field_freq:        dict[int, dict[Any, int]] = {i:{} for i in range(self.field_cnt)}
+        self.field_names:       dict[int, str] = {}
+        self.field_types:       dict[int, str] = {}
+        self.field_trunc:       dict[int, bool] = set_field_defaults(False)
+        self.field_rows_invalid: dict[int, int] = set_field_defaults(0)
+        self.field_min:         dict[int, Optional[Any]] = set_field_defaults(None)
+        self.field_max:         dict[int, Optional[Any]] = set_field_defaults(None)
 
-        # Numeric Type Dicts:
-        self.field_mean:        Dict[int, Optional[float]] = set_field_defaults(None)
-        self.field_median:      Dict[int, Optional[float]] = set_field_defaults(None)
-        self.variance:          Dict[int, Optional[float]] = set_field_defaults(None)
-        self.stddev:            Dict[int, Optional[float]] = set_field_defaults(None)
-        self.field_decimals:    Dict[int, Optional[int]] = set_field_defaults(None)
+        # Numeric Type dicts:
+        self.field_mean:        dict[int, Optional[float]] = set_field_defaults(None)
+        self.field_median:      dict[int, Optional[float]] = set_field_defaults(None)
+        self.variance:          dict[int, Optional[float]] = set_field_defaults(None)
+        self.stddev:            dict[int, Optional[float]] = set_field_defaults(None)
+        self.field_decimals:    dict[int, Optional[int]] = set_field_defaults(None)
 
-        # String Type Dicts:
-        self.field_case:        Dict[int, Optional[str]] = set_field_defaults(None)
-        self.field_max_length:  Dict[int, Optional[int]] = set_field_defaults(None)
-        self.field_min_length:  Dict[int, Optional[int]] = set_field_defaults(None)
-        self.field_mean_length: Dict[int, Optional[float]] = set_field_defaults(None)
+        # String Type dicts:
+        self.field_case:        dict[int, Optional[str]] = set_field_defaults(None)
+        self.field_max_length:  dict[int, Optional[int]] = set_field_defaults(None)
+        self.field_min_length:  dict[int, Optional[int]] = set_field_defaults(None)
+        self.field_mean_length: dict[int, Optional[float]] = set_field_defaults(None)
 
-        # Timestamp Type Dicts:
-        self.field_format:      Dict[int, Optional[str]] = set_field_defaults(None)
+        # Timestamp Type dicts:
+        self.field_format:      dict[int, Optional[str]] = set_field_defaults(None)
 
         assert 0 < field_cnt < 1000
 
 
     def analyze_fields(self,
                        field_number: Optional[int] = None,
-                       field_types_overrides: Optional[Dict[int, str]] = None,
+                       field_types_overrides: Optional[dict[int, str]] = None,
                        max_freq_number: Optional[int] = None,
                        read_limit: int = -1) -> None:
         """ Determines types, names, and characteristics of fields.
@@ -245,7 +245,7 @@ class FieldDeterminator(object):
 
     def get_top_freq_values(self,
                             fieldno: int,
-                            limit: Optional[int]=None) -> List[Tuple[Any, int]]:
+                            limit: Optional[int]=None) -> list[tuple[Any, int]]:
         """  Returns a list of highest-occuring field values along with their
              frequency.
              Args:
@@ -281,7 +281,7 @@ class TypeFreq:
 
         self.values = values
         self.field_type = field_type
-        self.clean_values: List[Tuple] = self._value_cleaner(self.values)
+        self.clean_values: list[tuple] = self._value_cleaner(self.values)
 
 
     def _value_cleaner(self,
@@ -513,7 +513,7 @@ class NumericTypeFreq(TypeFreq):
         return (center_bottom_value + center_top_value) / 2
 
 
-    def get_variance_and_stddev(self) -> Tuple[Optional[float],
+    def get_variance_and_stddev(self) -> tuple[Optional[float],
                                                Optional[float]]:
         ''' Calculates the variance & population stddev of a frequency distribution.
 

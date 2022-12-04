@@ -6,11 +6,11 @@ import os
 from pprint import pprint as pp
 import tempfile
 import time
-from typing import List, Tuple, Dict, Any, Optional, IO, Hashable
+from typing import Any, Optional, IO, Hashable
 
-import datagristle.common as comm
+from datagristle import common as comm
 from datagristle import file_io
-import datagristle.slice_specs as slicer
+from datagristle import slice_specs as slicer
 
 
 MAX_MEM_INDEX_CNT = 20_000_000
@@ -335,8 +335,8 @@ class Processor:
 
 
     def get_cols_from_index(self,
-                            input_rec: List[str],
-                            col_index: List[int]) -> List[str]:
+                            input_rec: list[str],
+                            col_index: list[int]) -> list[str]:
         """ Slightly faster solution (about 20% faster) than evals, but requires
             more memory.
         """
@@ -350,10 +350,10 @@ class Processor:
 
 
     def get_cols_from_eval(self,
-                           input_rec: List[str],
+                           input_rec: list[str],
                            col_count: int,
                            incl_col_slicer: slicer.SpecProcessor,
-                           excl_col_slicer: slicer.SpecProcessor) -> List[str]:
+                           excl_col_slicer: slicer.SpecProcessor) -> list[str]:
         """ Primarily used for unbounded col ranges with stdin
             About 20% slower than get_cols_from_index()
             WARNING: is this actually safe?  does it process in the right order?
@@ -465,7 +465,7 @@ class MemProcessor(Processor):
 
         all_rows = []
 
-        rec: List[str] = []
+        rec: list[str] = []
         for rec_number, rec in enumerate(self.input_handler):
             if rec_number > self.rec_index.stop_rec:
                 if self.are_infiles_from_stdin():
@@ -522,7 +522,7 @@ class RecIndexOptimization:
         self.excl_rec_slicer = excl_rec_slicer
         self.verbosity = verbosity
 
-        self.index: List[int] = []
+        self.index: list[int] = []
         self.stop_rec: int = 0
         self.is_valid = False
 
@@ -587,7 +587,7 @@ class ColIndexOptimization:
         self.excl_col_slicer = excl_col_slicer
         self.verbosity = verbosity
 
-        self.index: List[int] = []
+        self.index: list[int] = []
         self.is_valid = False
         self.col_default_range: bool
 

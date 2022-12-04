@@ -6,16 +6,16 @@ from os.path import isfile
 from os.path import basename
 from os.path import join  as pjoin
 from pprint import pprint as pp
-from typing import Dict, Tuple, List, Union, Any, Optional, IO
+from typing import Union, Any, Optional, IO
 
-import datagristle.common as comm
+from datagristle import common as comm
 from datagristle.common import abort
-import datagristle.csvhelper as csvhelper
+from datagristle import csvhelper
 
 OUTPUT_TYPES = ['insert', 'delete', 'same', 'chgnew', 'chgold']
 
-FieldPositionsType = List[int]
-RecordType = List[str]
+FieldPositionsType = list[int]
+RecordType = list[str]
 
 
 
@@ -40,15 +40,15 @@ class FileDelta:
         self.compare_fields: FieldPositionsType = []
         self.ignore_fields: FieldPositionsType = []
         self.dry_run: bool = False
-        self.old_rec: List[str] = None
-        self.new_rec: List[str] = None
+        self.old_rec: list[str] = None
+        self.new_rec: list[str] = None
 
         self.new_read_cnt = 0
         self.old_read_cnt = 0
-        self.out_file: Dict[str, IO[str]] = {}
-        self.out_fqfn: Dict[str, str] = {}
-        self.out_writer: Dict[str, Any] = {}
-        self.out_counts: Dict[str, int] = {}
+        self.out_file: dict[str, IO[str]] = {}
+        self.out_fqfn: dict[str, str] = {}
+        self.out_writer: dict[str, Any] = {}
+        self.out_counts: dict[str, int] = {}
         self.dass = DeltaAssignments()
 
     def set_fields(self,
@@ -319,9 +319,9 @@ class DeltaAssignments:
     """
 
     def __init__(self) -> None:
-        self.assignments: Dict[str, Dict] = {} # supports minor transformations
-        self.special_values: Dict[str, str] = {}
-        self.seq: Dict[int, Dict[str, Any]] = {}
+        self.assignments: dict[str, dict] = {} # supports minor transformations
+        self.special_values: dict[str, str] = {}
+        self.seq: dict[int, dict[str, Any]] = {}
 
     def set_assignment(self,
                        dest_file: str,

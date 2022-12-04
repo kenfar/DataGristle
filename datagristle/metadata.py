@@ -41,7 +41,6 @@ import logging
 import os
 from pprint import pprint as pp
 import time
-from typing import Tuple, List, Dict
 
 import appdirs
 from sqlalchemy import (Table, Column, Boolean, Integer, String, Float, Index,
@@ -50,7 +49,7 @@ from sqlalchemy import (Table, Column, Boolean, Integer, String, Float, Index,
                         event, text, create_engine)
 from sqlalchemy import exc
 
-import datagristle.simplesql as simplesql
+from datagristle import simplesql
 
 
 
@@ -1174,7 +1173,7 @@ class FileIndexTools(simplesql.TableTools):
                    mod_datetime=None,
                    file_bytes=None,
                    rec_count=0,
-                   col_count=0) -> Tuple[int, int]:
+                   col_count=0) -> tuple[int, int]:
         """ Write fcounts
         """
         if filename == '-':

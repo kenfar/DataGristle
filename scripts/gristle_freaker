@@ -92,23 +92,20 @@ Licensing and further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
         http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 
 import sys
 from os.path import basename
 import errno
-from pprint import pprint as pp
-from typing import Dict, List, Tuple, Optional, Any
 from signal import signal, SIGPIPE, SIG_DFL
 
 from datagristle.common import abort
-import datagristle.common as comm
-import datagristle.configulator as configulator
-import datagristle.csvhelper as csvhelper
-import datagristle.file_io as file_io
-import datagristle.file_freaker as freaker
-import datagristle.helpdoc as helpdoc
+from datagristle import common as comm
+from datagristle import configulator
+from datagristle import file_io
+from datagristle import file_freaker as freaker
+from datagristle import helpdoc
 
 # Ignore SIG_PIPE and don't throw exceptions on it...
 # (http://docs.python.org/library/signal.html)
@@ -124,8 +121,6 @@ comm.validate_python_version()
 
 
 def main() -> int:
-
-    return_code = 0 # success
 
     try:
         config_manager = ConfigManager(NAME, SHORT_HELP, LONG_HELP)
@@ -143,14 +138,12 @@ def main() -> int:
             run_one_freq(nconfig, [position], output_handler)
 
     output_handler.close()
-    return return_code
 
 
 
 def run_one_freq(nconfig,
                  col_set,
                  output_handler):
-
 
     input_handler = file_io.InputHandler(nconfig.infiles,
                                          nconfig.dialect)

@@ -10,25 +10,25 @@ from pprint import pprint as pp
 import subprocess
 import sys
 import time
-from typing import List, Dict, Any, Union, Tuple, Optional
+from typing import Any, Union, Optional
 
-import datagristle.common as comm
-import datagristle.csvhelper as csvhelper
-import datagristle.file_io as file_io
+from datagristle import common as comm
+from datagristle import csvhelper
+from datagristle import file_io
 
 
 class SortKeysConfig(object):
 
     def __init__(self,
-                 sort_keys: List[str],
+                 sort_keys: list[str],
                  header=None):
 
-        self.key_fields: List[SortKeyRecord] = []
+        self.key_fields: list[SortKeyRecord] = []
         self.load_config(sort_keys, header)
 
 
     def load_config(self,
-                    sort_keys: List[str],
+                    sort_keys: list[str],
                     header: csvhelper.Header = None) -> None:
 
         for key_field in sort_keys:
@@ -84,7 +84,7 @@ class SortKeysConfig(object):
         else:
             return 'forward' if 'forward' in [x.order for x in self.key_fields] else 'reverse'
 
-    def get_sort_fields(self) -> List[int]:
+    def get_sort_fields(self) -> list[int]:
         """ Get the list of columns to sort the self.keys list on
             This will always be a sequential list of numbers starting with 0.
         """
@@ -149,9 +149,9 @@ class CSVPythonSorter(object):
         self.sort_key_config = sort_keys_config
         self.keep_header = keep_header
 
-        self.all_recs: List[str] = []
-        self.keys: List[Tuple[Any, ...]] = []
-        self.header_rec: List[str] = []
+        self.all_recs: list[str] = []
+        self.keys: list[tuple[Any, ...]] = []
+        self.header_rec: list[str] = []
 
         self.stats = {}
         self.stats['recs_deduped'] = 0
@@ -216,9 +216,9 @@ class CSVPythonSorter(object):
 
 
     def _get_sort_values(self,
-                         key_fields: List[Any],
-                         rec: List[Union[str, int, float]],
-                         primary_order: str) -> List[Any]:
+                         key_fields: list[Any],
+                         rec: list[Union[str, int, float]],
+                         primary_order: str) -> list[Any]:
 
         try:
             sort_values = [transform(rec[key_field.position], key_field, primary_order) for key_field in key_fields]
@@ -281,8 +281,8 @@ class CSVPythonSorter(object):
 
 
 
-def isduplicate(key: Tuple[Any, ...],
-                last_key: Optional[List[Any]] = [None]) -> bool:
+def isduplicate(key: tuple[Any, ...],
+                last_key: Optional[list[Any]] = [None]) -> bool:
 
     if last_key[0] is not None and last_key[0] == key:
         return True
@@ -331,7 +331,7 @@ class CSVSorter(object):
 
     def __init__(self,
                  dialect: csvhelper.Dialect,
-                 key_fields_0off: List[int],
+                 key_fields_0off: list[int],
                  tmp_dir: str = None,
                  out_dir: str = None) -> None:
 

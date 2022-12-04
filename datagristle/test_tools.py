@@ -8,20 +8,18 @@ import importlib
 import importlib.machinery
 import importlib.util
 import os
-from os.path import basename, join as pjoin
+from os.path import join as pjoin
 from pprint import pprint as pp
 import random
 import shutil
 import subprocess
 import sys
 import tempfile
-import types
 
 from colorama import Fore, Style, Back
 import envoy
-import ruamel.yaml as yaml
+from ruamel import yaml
 
-sys.dont_write_bytecode = True
 
 
 def load_script(script_name: str):

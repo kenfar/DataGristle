@@ -46,23 +46,21 @@ Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
         http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 
 import errno
 from os.path import basename
-from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Optional, Any
 
-import datagristle.common as comm
-import datagristle.configulator as conf
-import datagristle.csvhelper as csvhelper
-import datagristle.field_type as field_type
-import datagristle.file_io as file_io
-import datagristle.file_type as file_type
-import datagristle.helpdoc as helpdoc
+from datagristle import common as comm
+from datagristle import configulator as conf
+from datagristle import csvhelper
+from datagristle import field_type
+from datagristle import file_io
+from datagristle import helpdoc
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
@@ -151,7 +149,7 @@ def display_rec(rec: str,
 
 
 
-def get_rec(input_handler, recnum: int) -> Optional[List[Any]]:
+def get_rec(input_handler, recnum: int) -> Optional[list[Any]]:
     """ Gets a single record from a file
         Since it reads from the begining of the file it can take a while to get
         to records at the end of a large file

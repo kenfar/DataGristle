@@ -59,7 +59,7 @@ Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
         http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
     Home Page:  https://github.com/kenfar/DataGristle
 """
 
@@ -68,12 +68,11 @@ from os.path import basename
 from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
-from typing import Dict, Any
 
-import datagristle.common as comm
-import datagristle.configulator as conf
-import datagristle.file_sorter as file_sorter
-import datagristle.helpdoc as helpdoc
+from datagristle import common as comm
+from datagristle import configulator as conf
+from datagristle import file_sorter
+from datagristle import helpdoc
 
 # pylint: disable=no-member
 

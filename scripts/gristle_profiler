@@ -181,14 +181,13 @@ Licensing and Further Info:
     This source code is protected by the BSD license.  See the file "LICENSE"
     in the source code root directory for the full language or refer to it here:
     http://opensource.org/licenses/BSD-3-Clause
-    Copyright 2011-2021 Ken Farmer
+    Copyright 2011-2022 Ken Farmer
 """
 import errno
 import sys
 from os.path import basename
-from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
-from typing import List, Tuple, Dict, Any, Optional
+from typing import Any, Optional
 
 from datagristle.common import abort
 import datagristle.common as comm

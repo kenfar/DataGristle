@@ -5,9 +5,9 @@ from pprint import pprint as pp
 from os.path import isdir
 from os.path import dirname, basename
 from os.path import join  as pjoin
-from typing import Tuple, List
 
-import datagristle.csvhelper as csvhelper
+from datagristle import csvhelper
+
 
 
 class CSVDeDuper(object):
@@ -30,7 +30,7 @@ class CSVDeDuper(object):
 
     def __init__(self,
                  dialect: csvhelper.Dialect,
-                 key_fields_0off: List[int],
+                 key_fields_0off: list[int],
                  out_dir: str = None) -> None:
 
         assert dialect         is not None
@@ -53,7 +53,7 @@ class CSVDeDuper(object):
             self.out_dir = ''
 
 
-    def dedup_file(self, in_fqfn: str, out_fqfn: str = None) -> Tuple[str, int, int]:
+    def dedup_file(self, in_fqfn: str, out_fqfn: str = None) -> tuple[str, int, int]:
         """ Copy non-duplicated records from csv input file to csv output file.
 
         Args:
@@ -80,7 +80,7 @@ class CSVDeDuper(object):
         # walk through input file, dropping duplicates
         outfile = open(out_fqfn, 'w', newline='')
         outwriter = csv.writer(outfile, dialect=self.dialect)
-        last_rec: List[str] = []
+        last_rec: list[str] = []
         write_cnt = 0
         read_cnt = 0
         with open(in_fqfn, 'rt', newline='') as infile:

@@ -36,7 +36,7 @@ Options:
 This source code is protected by the BSD license.  See the file "LICENSE"
 in the source code root directory for the full language or refer to it here:
    http://opensource.org/licenses/BSD-3-Clause
-Copyright 2011-2021 Ken Farmer
+Copyright 2011-2022 Ken Farmer
 """
 import argparse
 from signal import signal, SIGPIPE, SIG_DFL
@@ -44,9 +44,9 @@ import sys
 
 from sqlalchemy import (text)
 
-import datagristle.common as comm
+from datagristle import common as comm
 from datagristle.common import ifprint    # pylint: disable=E0611
-import datagristle.metadata as metadata
+from datagristle import metadata
 
 #Ignore SIG_PIPE and don't throw exceptions on it... (http://docs.python.org/library/signal.html)
 signal(SIGPIPE, SIG_DFL)
