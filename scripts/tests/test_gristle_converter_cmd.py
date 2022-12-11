@@ -44,7 +44,7 @@ class TestCommandLine(object):
         r_recs = r_output[:-1].split('\n')
 
         for rec in r_recs:
-            pp(rec)
+            #pp(rec)
             assert rec.count(',') == 3
         assert len(r_recs) == 100
 

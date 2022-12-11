@@ -26,7 +26,9 @@ class TestDeduping(object):
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn = create_test_file(self.temp_dir)
-        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False,
+                               quotechar='"', doublequote=False, escapechar=None,
+                               skipinitialspace=False)
         self.out_dir = tempfile.mkdtemp(prefix='gristle_out_')
 
     def teardown_method(self, method):

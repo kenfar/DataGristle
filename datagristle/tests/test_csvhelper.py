@@ -20,143 +20,8 @@ import tempfile
 
 import pytest
 
-import datagristle.csvhelper as csvhelper
-import datagristle.test_tools as ttools
-
-
-
-class TestOverrideDialect(object):
-
-    def test_override(self):
-        dialect = csvhelper.Dialect(delimiter='|',
-                                    has_header=False,
-                                    quoting=csv.QUOTE_NONE,
-                                    quotechar=None,
-                                    doublequote=None,
-                                    escapechar=None)
-        override_dialect = csvhelper.override_dialect(dialect,
-                                                      delimiter=',',
-                                                      quoting='QUOTE_ALL',
-                                                      quotechar='"',
-                                                      has_header=False,
-                                                      doublequote=False,
-                                                      skipinitialspace=False,
-                                                      escapechar='\\')
-        assert override_dialect.delimiter == ','
-        assert override_dialect.quoting == csv.QUOTE_ALL
-        assert override_dialect.quotechar == '"'
-        assert override_dialect.has_header is False
-        assert override_dialect.doublequote is False
-        assert override_dialect.escapechar == '\\'
-
-    def test_non_override(self):
-        dialect = csvhelper.Dialect(delimiter='|',
-                                    has_header=False,
-                                    quoting=csv.QUOTE_NONE,
-                                    quotechar='!',
-                                    doublequote=False,
-                                    escapechar='\\')
-        override_dialect = csvhelper.override_dialect(dialect,
-                                                      delimiter=None,
-                                                      quoting=None,
-                                                      quotechar=None,
-                                                      has_header=None,
-                                                      doublequote=None,
-                                                      skipinitialspace=False,
-                                                      escapechar=None)
-        assert override_dialect.delimiter == '|'
-        assert override_dialect.quoting == csv.QUOTE_NONE
-        assert override_dialect.quotechar == '!'
-        assert override_dialect.has_header is False
-        assert override_dialect.doublequote is False
-        assert override_dialect.escapechar == '\\'
-
-
-class TestGetDialect(object):
-
-    def setup_method(self, method):
-        self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
-
-    def teardown_method(self, method):
-        shutil.rmtree(self.temp_dir)
-
-    def test_get_overridden_dialect(self):
-
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
-        fqfn = ttools.make_team_file(self.temp_dir, dialect, 1000)
-
-        resulting_dialect = csvhelper.get_dialect([fqfn],
-                                                  delimiter=',',
-                                                  quoting='quote_none',
-                                                  quotechar='!',
-                                                  has_header=True,
-                                                  doublequote=False,
-                                                  escapechar='\\',
-                                                  skipinitialspace=False,
-                                                  verbosity='normal')
-
-        assert resulting_dialect.delimiter == ','
-        assert resulting_dialect.quoting == csv.QUOTE_NONE
-        assert resulting_dialect.quotechar == '!'
-        assert resulting_dialect.has_header is True
-        assert resulting_dialect.doublequote is False
-        assert resulting_dialect.escapechar == '\\'
-
-    def test_get_dialect_from_file(self):
-
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
-        fqfn = ttools.make_team_file(self.temp_dir, dialect, 1000)
-
-        resulting_dialect = csvhelper.get_dialect([fqfn],
-                                                  delimiter=None,
-                                                  quoting=None,
-                                                  quotechar=None,
-                                                  has_header=None,
-                                                  doublequote=None,
-                                                  escapechar=None,
-                                                  skipinitialspace=False,
-                                                  verbosity='normal')
-        assert resulting_dialect.delimiter == '|'
-        assert resulting_dialect.quoting == csv.QUOTE_ALL
-        assert resulting_dialect.quotechar == '"'
-        assert resulting_dialect.has_header is False
-        assert resulting_dialect.doublequote is False
-        assert resulting_dialect.escapechar is None
-
-    def test_empty_file(self):
-
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
-        fqfn = ttools.make_team_file(self.temp_dir, dialect, 0)
-
-        with pytest.raises(EOFError):
-            resulting_dialect = csvhelper.get_dialect([fqfn],
-                                                      delimiter=None,
-                                                      quoting=None,
-                                                      quotechar=None,
-                                                      has_header=None,
-                                                      doublequote=None,
-                                                      escapechar=None,
-                                                      skipinitialspace=False,
-                                                      verbosity='normal')
-    def test_multiple_files(self):
-
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
-        fqfn1 = ttools.make_team_file(self.temp_dir, dialect, 0)
-        fqfn2 = ttools.make_team_file(self.temp_dir, dialect, 1000)
-
-        resulting_dialect = csvhelper.get_dialect([fqfn1, fqfn2],
-                                                  delimiter=None,
-                                                  quoting=None,
-                                                  quotechar=None,
-                                                  has_header=None,
-                                                  doublequote=None,
-                                                  escapechar=None,
-                                                  skipinitialspace=False,
-                                                  verbosity='normal')
-        assert resulting_dialect.delimiter == '|'
-        assert resulting_dialect.quoting == csv.QUOTE_ALL
-        assert resulting_dialect.quotechar == '"'
-        assert resulting_dialect.has_header is False
+from datagristle import csvhelper
+from datagristle import test_tools as ttools
 
 
 
@@ -169,7 +34,9 @@ class TestHeader(object):
         shutil.rmtree(self.temp_dir)
 
     def test_load_and_gets(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=True)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=True,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         fqfn = ttools.make_team_file(self.temp_dir, dialect, 10)
 
         header = csvhelper.Header()
@@ -186,7 +53,9 @@ class TestHeader(object):
 
 
     def test_load_from_files(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=True)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=True,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         fqfn1 = ttools.make_team_file(self.temp_dir, dialect, 0)
         fqfn2 = ttools.make_team_file(self.temp_dir, dialect, 10)
 
@@ -201,4 +70,80 @@ class TestHeader(object):
 
         assert header.get_field_position_from_any('3') == 3
         assert header.get_field_position_from_any('name') == 3
+
+
+
+class TestBuildDialect(object):
+
+    def setup_method(self, method):
+        self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
+        self.dialect_builder = csvhelper.BuildDialect()
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
+        self.fqfn = ttools.make_team_file(self.temp_dir, dialect, 1000)
+
+
+    def teardown_method(self, method):
+        shutil.rmtree(self.temp_dir)
+
+
+    def test_step1_discover(self):
+        self.dialect_builder.step1_discover_dialect([self.fqfn])
+
+        assert self.dialect_builder._step1.get('delimiter') == '|'
+        assert csvhelper.get_quote_name(self.dialect_builder._step1.get('quoting')) \
+               == 'QUOTE_ALL'
+        assert self.dialect_builder._step1.get('has_header') == False
+
+
+    def test_step2_override(self):
+        self.dialect_builder.step1_discover_dialect([self.fqfn])
+        self.dialect_builder.step2_override_dialect(delimiter='!',
+                                                    has_header=True)
+
+        assert self.dialect_builder._step2.get('delimiter') == '!'
+        assert csvhelper.get_quote_name(self.dialect_builder._step2.get('quoting')) \
+               == 'QUOTE_ALL'
+        assert self.dialect_builder._step2.get('has_header') == True
+
+
+    def test_step3_default(self):
+        self.dialect_builder.step1_discover_dialect([self.fqfn])
+        self.dialect_builder.step2_override_dialect(delimiter='!',
+                                                    has_header=True)
+        self.dialect_builder._step2['has_header'] = None
+        self.dialect_builder.step3_default_dialect()
+
+        assert self.dialect_builder._step3.get('delimiter') == '!'
+        assert csvhelper.get_quote_name(self.dialect_builder._step3.get('quoting')) \
+               == 'QUOTE_ALL'
+        assert self.dialect_builder._step3.get('has_header') == False
+
+
+    def test_step4_finalize(self):
+        self.dialect_builder.step1_discover_dialect([self.fqfn])
+        self.dialect_builder.step2_override_dialect(delimiter='!',
+                                                    has_header=True)
+        self.dialect_builder._step2['has_header'] = None
+        self.dialect_builder.step3_default_dialect()
+        self.dialect_builder.step4_finalize_dialect()
+
+        assert self.dialect_builder.final != {}
+        assert self.dialect_builder.dialect is not None
+
+
+    def test_final_dialect(self):
+        self.dialect_builder.step1_discover_dialect([self.fqfn])
+        self.dialect_builder.step2_override_dialect(delimiter='!',
+                                                    has_header=True)
+        self.dialect_builder._step2['has_header'] = None
+        self.dialect_builder.step3_default_dialect()
+        self.dialect_builder.step4_finalize_dialect()
+        dialect = self.dialect_builder.dialect
+
+        assert dialect.delimiter == '!'
+        assert dialect.quoting == 1
+
+
 

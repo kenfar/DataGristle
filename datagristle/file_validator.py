@@ -43,7 +43,10 @@ class RecordProcessor:
             self.outerr_escaping = False
         self.outerr_delimiter = self.outerr_handler.dialect.delimiter
         self.outerr_alt_delimiter = ';' if self.outerr_delimiter == ',' else ','
-        if csvhelper.get_quote_name(self.outerr_handler.dialect.quoting) == 'QUOTE_NONE':
+        if not self.outerr_handler.dialect.quoting:
+            self.outerr_quotechar = '"'
+            self.outerr_alt_quotechar = "'" if self.outerr_quotechar == '"' else '"'
+        elif csvhelper.get_quote_name(self.outerr_handler.dialect.quoting) == 'QUOTE_NONE':
             self.outerr_quotechar = None
             self.outerr_alt_quotechar = None
         else:

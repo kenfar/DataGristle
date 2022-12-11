@@ -185,17 +185,43 @@ class ConfigManager(conf.Config):
             else:
                 return getattr(self.nconfig.dialect, key)
 
-        # pylint: disable=no-member
-        out_dialect = csvhelper.get_dialect(infiles=['-'],
-            delimiter=coalesce('delimiter'),
-            quoting=self.config['out_quoting']
-                or csvhelper.get_quote_name(self.nconfig.dialect.quoting), # type: ignore
-            quotechar=coalesce('quotechar'),
-            has_header=coalesce('has_header'),
-            doublequote=coalesce('doublequote'),
-            escapechar=coalesce('escapechar'),
-            skipinitialspace=coalesce('skipinitialspace'),
-            verbosity='normal') # type: ignore
+        def transform_quote_options():
+
+            # quoting:
+            quoting = (csvhelper.get_quote_number(self.config['out_quoting'])
+                       or self.nconfig.dialect.quoting)
+            assert isinstance(quoting, int)
+
+            # explicit out_doublequote & out_escaping:
+            if self.config.get('out_doublequote'):
+                return quoting, self.config.get('out_doublequote'), None
+
+            if self.config.get('out_escapechar'):
+                return quoting, None, self.config.get('out_escapechar')
+
+            # use input file doublequote & escape:
+            if quoting == csvhelper.get_quote_number('quote_none'):
+                return quoting, False, self.config.get('escapechar')
+
+            if self.config.get('doublequote'):
+                return quoting, self.config.get('doublequote'), None
+            else:
+                return quoting, False, self.config.get('escapechar')
+
+
+        # Validation:
+        if self.config.get('out_doublequote') and self.config.get('out_escapechar'):
+            comm.abort('Error: cannot have both doublequote and escapechar on the input file')
+
+        quoting, doublequote, escapechar = transform_quote_options()
+
+        out_dialect = csvhelper.Dialect(delimiter=coalesce('delimiter'),
+                                        quoting=quoting,
+                                        quotechar=coalesce('quotechar'),
+                                        has_header=coalesce('has_header'),
+                                        doublequote=doublequote,
+                                        escapechar=escapechar,
+                                        skipinitialspace=coalesce('skipinitialspace'))
 
         self.update_config('out_dialect', out_dialect)
 

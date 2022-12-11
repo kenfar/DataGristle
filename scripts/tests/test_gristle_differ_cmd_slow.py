@@ -41,7 +41,9 @@ class TestBigFile(object):
     def setup_method(self, method):
 
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE,
+                                 has_header=False, quotechar=None, escapechar=None,
+                                 doublequote=False, skipinitialspace=False)
 
         self.start_time = time.time()
         print('\ncreating test files - starting')

@@ -282,11 +282,12 @@ class CSVPythonSorter(object):
 
 
 def isduplicate(key: tuple[Any, ...],
-                last_key: Optional[list[Any]] = [None]) -> bool:
+                last_key: list[Any] = [None]) -> bool:
 
     if last_key[0] is not None and last_key[0] == key:
         return True
     else:
+        assert last_key is not None
         last_key.clear()
         last_key.append(key)
         return False
@@ -298,7 +299,7 @@ def transform(field_value: str,
               primary_order: str) -> Union[str, int, float]:
     """ transforms fields into their type: int, float, str
     """
-    transformed_field_value: Union[str, int, float] = None
+    transformed_field_value: Union[str, int, float]
     if key_field.type == 'str':
         transformed_field_value = field_value
     elif key_field.type == 'int':
@@ -387,7 +388,6 @@ class CSVSorter(object):
              data just must be in the same order for both versions of the
              same file.
         """
-
         if not out_fqfn:
             out_dir = self.out_dir or dirname(in_fqfn)
             out_fqfn = pjoin(out_dir, basename(in_fqfn) + '.sorted')
@@ -395,7 +395,8 @@ class CSVSorter(object):
         if not isfile(in_fqfn):
             raise ValueError('Invalid input file: %s' % in_fqfn)
 
-        cmd = ['sort']
+        assert self.tmp_dir is not None
+        cmd: list[str] = ['sort']
         for field in self.field_key_1off:
             cmd.append('-k')
             cmd.append(str(field) + ',' + str(field))

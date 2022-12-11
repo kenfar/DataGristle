@@ -39,7 +39,9 @@ class TestKeyOptions(object):
 
     def test_one_key(self):
         in_fqfn = create_test_file(self.temp_dir, header=False)
-        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=False, doublequote=False)
+        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None,
+                                    has_header=False, doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         out_fqfn = in_fqfn + '.sorted'
         cmd = f''' {pjoin(SCRIPT_DIR, 'gristle_sorter')}   \
                     -i {in_fqfn}
@@ -57,7 +59,10 @@ class TestKeyOptions(object):
 
     def test_two_keys(self):
         in_fqfn = create_complex_test_file(self.temp_dir, header=False)
-        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=False, doublequote=False)
+        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None,
+                                    has_header=False, doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
+
         out_fqfn = in_fqfn + '.sorted'
         cmd = f''' {pjoin(SCRIPT_DIR, 'gristle_sorter')}   \
                     -i {in_fqfn}
@@ -88,7 +93,9 @@ class TestDuplicateOptions(object):
 
     def test_nondup(self):
         in_fqfn = create_test_file(self.temp_dir, duplicate=True)
-        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=False, doublequote=False)
+        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None,
+                                    has_header=False, doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         out_fqfn = in_fqfn + '.sorted'
         cmd = f''' {pjoin(SCRIPT_DIR, 'gristle_sorter')}   \
                     -i {in_fqfn}
@@ -106,7 +113,9 @@ class TestDuplicateOptions(object):
 
     def test_dup(self):
         in_fqfn = create_test_file(self.temp_dir, duplicate=True, header=False)
-        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None, has_header=False, doublequote=False)
+        dialect = csvhelper.Dialect(delimiter=',', quoting=csv.QUOTE_NONE, quotechar=None,
+                                    has_header=False, doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         out_fqfn = in_fqfn + '.sorted'
         cmd = f''' {pjoin(SCRIPT_DIR, 'gristle_sorter')}   \
                     -i {in_fqfn}

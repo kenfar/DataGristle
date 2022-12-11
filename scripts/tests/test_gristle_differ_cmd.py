@@ -34,7 +34,10 @@ class TestInvalidInput(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE,
+                                         has_header=False, quotechar=None,
+                                         doublequote=False, escapechar=None,
+                                         skipinitialspace=False)
         self.dialect.delimiter = '\t'
         file1_recs = [['chg-row', '4', '14'],
                       ['del-row', '6', '16'],
@@ -90,7 +93,10 @@ class TestCommandLine(object):
 
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_diff_')
-        self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE,
+                       has_header=False, quotechar=None, doublequote=False,
+                       escapechar=None, skipinitialspace=False)
+
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)

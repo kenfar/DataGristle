@@ -6,7 +6,7 @@ import os
 from pprint import pprint as pp
 import tempfile
 import time
-from typing import Any, Optional, IO, Hashable
+from typing import Any, Optional, IO, Hashable, Union
 
 from datagristle import common as comm
 from datagristle import file_io

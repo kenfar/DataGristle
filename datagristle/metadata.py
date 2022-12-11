@@ -1214,7 +1214,7 @@ class FileIndexTools(simplesql.TableTools):
     def update(self,
                filename,
                mod_datetime=None,
-               file_bytes=None) -> (int, int):
+               file_bytes=None) -> tuple[int, int]:
         """ Updates the last_update_epoch
         """
         if filename == '-':

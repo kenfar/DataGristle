@@ -5,13 +5,25 @@
     Copyright 2011-2022 Ken Farmer
 """
 
+import copy
 import csv
 import fileinput
 import os.path
+from pprint import pprint as pp
 from typing import Optional, Any, Union, Type
 import _csv
 
 from datagristle import common as comm
+
+DEFAULT_DELIMITER = ','
+DEFAULT_QUOTING = 'quote_none'
+DEFAULT_QUOTECHAR = '"'
+DEFAULT_ESCAPECHAR = None
+DEFAULT_DOUBLEQUOTE = False
+DEFAULT_HAS_HEADER = False
+DEFAULT_SKIPINITIALSPACE = False
+DEFAULT_LINETERMINATOR = '\n'
+
 
 
 
@@ -31,14 +43,10 @@ def get_quote_number(quote_name: Optional[str]) -> Optional[int]:
 
 
 
-def get_quote_name(quote_number: int) -> Optional[str]:
-    """ used to help applications look up quote names based on the number
-        users.
+def get_quote_name(quote_number: int) -> str:
+    """ used to help applications look up quote names
     """
-    assert type(quote_number) in (int, type(None))
-
-    if quote_number is None:
-        return None
+    assert quote_number is not None
 
     for key, value in csv.__dict__.items():
         if value == quote_number:
@@ -65,7 +73,7 @@ class Header:
 
     def load_from_file(self,
                        file_name: str,
-                       dialect):
+                       dialect: 'Dialect') -> None:
 
         if file_name == '-':
             comm.abort(f'Invalid file_name for Header: {file_name}')
@@ -126,13 +134,14 @@ class Header:
         return temp_field_name
 
 
-    def format_raw_header_field_name(self, field_name):
+    def format_raw_header_field_name(self,
+                                     field_name:str) -> str:
         return field_name.strip().replace(' ', '_').lower()
 
 
     def load_from_files(self,
                         file_names: list[str],
-                        dialect):
+                        dialect) -> None:
         for file_name in file_names:
             try:
                 self.load_from_file(file_name, dialect)
@@ -143,12 +152,12 @@ class Header:
 
 
     def get_field_position(self,
-                           field_name):
+                           field_name: str) -> int:
         return self.fields_by_name[field_name]
 
 
     def get_field_name(self,
-                       field_position):
+                       field_position: int) -> str:
         return self.fields_by_position[field_position]
 
 
@@ -189,200 +198,332 @@ class Dialect(csv.Dialect):
     """
     def __init__(self,
                  delimiter: str,
-                 has_header: Optional[bool],
                  quoting: int,
-                 quotechar: Optional[str] = None,
-                 doublequote: bool = True,
-                 escapechar: Optional[str] = None,
-                 lineterminator: Optional[str] = None,
-                 skipinitialspace: Optional[bool] = None) -> None:
-
-        assert quoting in [None, csv.QUOTE_NONE, csv.QUOTE_MINIMAL,
-                           csv.QUOTE_ALL, csv.QUOTE_NONNUMERIC]
-
-        skipinitialspace = False if skipinitialspace is None else skipinitialspace
-        lineterminator = lineterminator or '\n'
-        quotechar = quotechar or '"'
+                 quotechar: str,
+                 doublequote: bool,
+                 escapechar: Optional[str],
+                 skipinitialspace: bool,
+                 has_header: bool) -> None:
 
         self.delimiter = delimiter
         self.doublequote = doublequote
         self.escapechar = escapechar
-        self.lineterminator = lineterminator
         self.quotechar = quotechar
         self.quoting = quoting
         self.skipinitialspace = skipinitialspace
+        self.lineterminator = DEFAULT_LINETERMINATOR
         self.has_header = has_header
 
+        self.validate()
 
 
-def convert_dialect(std_dialect: Type[_csv.Dialect]) -> Dialect:
-    return Dialect(delimiter=std_dialect.delimiter,
-                   has_header=None,
-                   quoting=std_dialect.quoting,
-                   quotechar=std_dialect.quotechar,
-                   doublequote=std_dialect.doublequote,
-                   escapechar=std_dialect.escapechar,
-                   lineterminator=std_dialect.lineterminator,
-                   skipinitialspace=std_dialect.skipinitialspace)
+    def __str__(self):
+        string = f'''Dialect({self.delimiter=},   \n
+                             {self.quoting=},     \n
+                             {self.quotechar=},   \n
+                             {self.doublequote=}, \n
+                             {self.escapechar=},  \n
+                             {self.skipinitialspace=},  \n
+                             {self.has_header=})'''
+        return string
 
 
+    def validate(self):
+        if not self.delimiter:
+            comm.abort('delimiter is invalid')
 
-def get_dialect(infiles: list[str],
-                delimiter: Optional[str] = None,
-                quoting: Optional[str] = None,
-                quotechar: Optional[str] = None,
-                has_header: Optional[bool] = None,
-                doublequote: Optional[bool] = None,
-                escapechar: Optional[str] = None,
-                skipinitialspace: Optional[bool] = None,
-                verbosity: Optional[str] = None) -> Dialect:
-    """ Get the csv dialect from an inspection of the file and user input
-        Raises:
-            - EOFError if manual inspection of the file determines that it is empty.
+        if self.quoting not in [csv.QUOTE_NONE, csv.QUOTE_MINIMAL,
+                               csv.QUOTE_ALL, csv.QUOTE_NONNUMERIC]:
+            comm.abort(f'Dialect: quoting is invalid.  Value provided is: {self.quoting}')
 
-        Behavior is slightly different for piped-in data vs files:
-            - piped-in data must be provided with dialect info
-            - files could get auto-detected dialect
-            - and files could trigger a EOFError if empty
+        # Make sure we only have either doublequoting or escapechar turned on
+        if self.doublequote and self.escapechar:
+            comm.abort(f'Dialect: cannot have both doublequoting ({self.doublequote}) and escapechar ({self.escapechar}).')
 
-        Note that the dialect provided may be invalid - it may have some required
-        entries with a value of None.  This can be separately validated using the
-        is_valid_dialect() function.
-    """
+        if self.quoting == csv.QUOTE_NONE and self.doublequote:
+            comm.abort('Dialect: doublequote is incompatible with quote_none')
 
-    if infiles[0] == '-':
-        final_dialect = Dialect(delimiter=delimiter,
-                                quoting=get_quote_number(quoting),
-                                quotechar=quotechar,
-                                has_header=has_header,
-                                doublequote=doublequote,
-                                escapechar=escapechar,
-                                skipinitialspace=skipinitialspace)
-    else:
-        detected_dialect = None
-        try:
-            for infile in infiles:
-                if os.path.getsize(infile) > 0:
-                    detected_dialect = autodetect_dialect(infile, read_limit=5000)
-                    break
-        except _csv.Error as e:
-            # ex: _csv.Error: Could not determine delimiter
-            detected_dialect = get_empty_dialect()
+
+    def get_quote_name(self) -> str:
+        """ used to help applications look up quote names
+        """
+        for key, value in csv.__dict__.items():
+            if value == self.quoting:
+                return key
         else:
-            if not detected_dialect:
-                raise EOFError
-
-        if verbosity == 'debug':
-            print_dialect(detected_dialect, 'csvhelper.get_dialect.auto-detected')
-
-        final_dialect = override_dialect(detected_dialect,
-                                         delimiter=delimiter,
-                                         quoting=quoting,
-                                         quotechar=quotechar,
-                                         has_header=has_header,
-                                         doublequote=doublequote,
-                                         escapechar=escapechar,
-                                         skipinitialspace=skipinitialspace)
-
-    return final_dialect
+            raise ValueError('invalid quote_number: {}'.format(self.quoting))
 
 
 
-def get_empty_dialect() -> Dialect:
-    return Dialect(delimiter=None,
-                   quoting=None,
-                   quotechar=None,
-                   has_header=None,
-                   escapechar=None,
-                   doublequote=None,
-                   skipinitialspace=None)
+class BuildDialect(csv.Dialect):
+    """ Builds a Dialect instance one step at a time
 
-
-
-def override_dialect(dialect: Dialect,
-                     delimiter: Optional[str],
-                     quoting: Optional[str],
-                     quotechar: Optional[str],
-                     has_header: Optional[bool],
-                     doublequote: Optional[bool],
-                     escapechar: Optional[str],
-                     skipinitialspace: Optional[bool]) -> Dialect:
-    """ Overrides the dialect with any non-None values from other args
     """
-    assert isinstance(quoting, (str, type(None)))
-
-    if delimiter is not None:
-        dialect.delimiter = delimiter
-    if has_header is not None:
-        dialect.has_header = has_header
-    if skipinitialspace is not None:
-        dialect.skipinitialspace = skipinitialspace
-
-    # Cannot have a quotechar if there's no quoting
-    if quoting is not None:
-        dialect.quoting = get_quote_number(quoting)
-    if quotechar is not None:
-        dialect.quotechar = quotechar
-    if dialect.quoting is None:
-        dialect.quotechar = None
-
-    # We cannot have both doublequoting & escapechar at the same time:
-    if doublequote is True:
-        dialect.doublequote = True
-        dialect.escapechar = None
-    elif doublequote is False:
-        dialect.doublequote = False
-
-    if escapechar:
-        dialect.escapechar = escapechar
-        dialect.doublequote = False
-    elif escapechar:
-        dialect.escapechar = None
-
-    if dialect.escapechar and dialect.doublequote:
-        dialect.doublequote = True
-        dialect.escapechar = None
-
-    dialect.lineterminator = '\n'
-
-    return dialect
+    def __init__(self) -> None:
+        self._step1: dict[str, Any] = {}
+        self._step2: dict[str, Any] = {}
+        self._step3: dict[str, Any] = {}
+        self.final: dict[str, Any] = {}
+        self.dialect: Dialect
 
 
+    def step1_discover_dialect(self,
+                         files: list[str]) -> None:
+        if files[0] == '-':
+            return
 
-def default_dialect(dialect: Dialect,
-                    delimiter: Optional[str],
-                    quoting: Optional[str],
-                    quotechar: Optional[str],
-                    has_header: Optional[bool],
-                    doublequote: Optional[bool],
-                    escapechar: Optional[str],
-                    skipinitialspace: Optional[bool]) -> Dialect:
-    """ defaults the dialect with any non-None values from other args
-    """
-    assert isinstance(quoting, (str, type(None)))
+        for infile in files:
+            try:
+                if os.path.getsize(infile) > 0:
+                    self._step1 = self._discover_from_file(infile, 
+                                                          read_limit=5000)
+                if self._step1:
+                    break
+            except _csv.Error as err:
+                pass  # lets hope there's another file in the set that it can use
 
-    if dialect.delimiter is None:
-        dialect.delimiter = delimiter
-    if dialect.quoting is None:
-        dialect.quoting = get_quote_number(quoting)
-    if dialect.quotechar is None:
-        dialect.quotechar = quotechar
-    if dialect.has_header is None:
-        dialect.has_header = has_header
-    if dialect.skipinitialspace is None:
-        dialect.skipinitialspace = skipinitialspace
 
-    # Make sure we only have either doublequoting or escapechar turned on
-    if dialect.doublequote is None:
-        dialect.doublequote = doublequote
-    if dialect.escapechar is None:
-        dialect.escapechar = escapechar
-    if dialect.doublequote and dialect.escapechar:
-        comm.abort('Error: cannot have both doublequoting and escapechar')
+    def step2_override_dialect(self,
+                         delimiter: Optional[str] = None,
+                         has_header: Optional[bool] = None,
+                         quoting: Optional[int] = None,
+                         quotechar: Optional[str] = None,
+                         doublequote: bool = True,
+                         escapechar: Optional[str] = None,
+                         skipinitialspace: Optional[bool] = None) -> None:
+        # add verbosity?
 
-    dialect.lineterminator = '\n'
+        self._step2 = copy.deepcopy(self._step1)
+        if delimiter:
+            self._step2['delimiter'] = delimiter
 
-    return dialect
+        if doublequote:
+            self._step2['doublequote'] = doublequote
+            self._step2['escapechar'] = None
+
+        if escapechar:
+            self._step2['escapechar'] = escapechar
+            self._step2['doublequote'] = False
+
+        if quotechar:
+            self._step2['quotechar'] = quotechar
+
+        if quoting:
+            if isinstance(quoting, int):
+                self._step2['quoting'] = quoting
+            else:
+                self._step2['quoting'] = get_quote_number(quoting)
+
+        if skipinitialspace is not None:
+            self._step2['skipinitialspace'] = skipinitialspace
+
+        if has_header is not None:
+            self._step2['has_header'] = has_header
+
+
+
+    def step3_default_dialect(self) -> None:
+        # research: the configulator module hsa csv defaults, do those just get
+        # blended in with the overrides?!?
+        """ defaults the dialect with any non-None values from other args
+        """
+        if self._step2:
+            self._step3 = copy.deepcopy(self._step2)
+        else:
+            self._step3 = copy.deepcopy(self._step1)
+
+        if self._step3.get('delimiter') is None:
+            self._step3['delimiter'] = DEFAULT_DELIMITER
+
+        if self._step3.get('quoting') is None:
+            self._step3['quoting'] = get_quote_number(DEFAULT_QUOTING)
+
+        if self._step3.get('quotechar') is None:
+            self._step3['quotechar'] = DEFAULT_QUOTECHAR
+
+        if self._step3.get('has_header') is None:
+            self._step3['has_header'] = DEFAULT_HAS_HEADER
+
+        if self._step3.get('skipinitialspace') is None:
+            self._step3['skipinitialspace'] = DEFAULT_SKIPINITIALSPACE
+
+        if self._step3.get('doublequote') is None:
+            self._step3['doublequote'] = DEFAULT_DOUBLEQUOTE
+
+        if self._step3.get('escapechar') is None:
+            self._step3['escapechar'] = DEFAULT_ESCAPECHAR
+
+
+    def step4_finalize_dialect(self) -> None:
+
+        self.final = copy.deepcopy(self._step3)
+
+        assert isinstance(self.final['delimiter'], str)
+        assert isinstance(self.final['quoting'], int)
+        assert isinstance(self.final['quotechar'], str)
+        assert isinstance(self.final['doublequote'], bool)
+        assert isinstance(self.final['escapechar'], (str, type(None)))
+        assert isinstance(self.final['skipinitialspace'], bool)
+        assert isinstance(self.final['has_header'], bool)
+
+        self.dialect = Dialect(delimiter=self.final['delimiter'],
+                               quoting=self.final['quoting'],
+                               quotechar=self.final['quotechar'],
+                               doublequote=self.final['doublequote'],
+                               escapechar=self.final['escapechar'],
+                               skipinitialspace=self.final['skipinitialspace'],
+                               has_header=self.final['has_header'])
+
+
+    def simple_dialect(self, **kw) -> None:
+        self.dialect = Dialect(**kw)
+
+
+    def get_final_dialect(self):
+        return self.dialect
+
+
+    def _discover_from_file(self,
+                           fqfn: str,
+                           read_limit: int = 5000) -> dict[str, Any]:
+        """ gets the dialect for a file
+            Uses the csv.Sniffer class
+            Then performs additional processing to try to improve accuracy of quoting.
+        """
+        # Verify we have an actual file - not an input stream:
+        assert os.path.isfile(fqfn)
+
+        discover_dict = {}
+        with open(fqfn, newline='') as csvfile:
+            dialect = csv.Sniffer().sniff(csvfile.read(read_limit))
+            discover_dict = convert_dialect_to_dict(dialect)
+
+        # See if we can improve quoting accuracy:
+        discover_dict['quoting'] = self._get_dialect_quoting(dialect, fqfn)
+
+        # Populate the escapechar attribute
+        discover_dict['escapechar'] = self._get_dialect_escapechar(dialect)
+
+        # Populate the has_header attribute:
+        discover_dict['has_header'] = self._get_has_header(fqfn, read_limit)
+
+        return discover_dict
+
+
+    def _get_dialect_quoting(self,
+                             dialect: type[_csv.Dialect],
+                             fqfn: str) -> int:
+        """ Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
+            get a more accurate guess.  In the event that there's an extremely
+            consistent set of data that is either all quoted or not quoted at
+            all we will return that appropriate value.
+        """
+
+        # total_field_cnt has a key for each number of fields found in a
+        # record, and a value that indicates how often this total was found
+        #total_field_cnt  = collections.defaultdict(int)
+        total_field_cnt: dict[Any, Union[int, float]] = {}
+
+        # quoted_field_cnt has a key for each number of quoted fields found
+        # in a record, and a value that indicates how often this total was
+        # found.
+        #quoted_field_cnt = collections.defaultdict(int)
+        quoted_field_cnt: dict[Any, Union[int, float]] = {}
+
+        for rec in fileinput.input(fqfn):
+            fields = rec[:-1].split(dialect.delimiter)
+            try:
+                total_field_cnt[len(fields)] += 1
+            except KeyError:
+                total_field_cnt[len(fields)] = 1
+
+            quoted_cnt = 0
+            for field in fields:
+                if len(field) >= 2:
+                    if field[0] == '"' and field[-1] == '"':
+                        quoted_cnt += 1
+            try:
+                quoted_field_cnt[quoted_cnt] += 1
+            except KeyError:
+                quoted_field_cnt[quoted_cnt] = 1
+
+            if fileinput.lineno() > 1000:
+                break
+        fileinput.close()
+
+        # "Exact" scenario: simplest and most clear in which we have no confusing
+        # data, every record has the same number of fields and either all are quoted
+        # or none are.  This is handled specially since it's often screwed up
+        # by the Sniffer, and it's a common situation.
+        if len(total_field_cnt) == 1 and len(quoted_field_cnt) == 1:
+            if list(total_field_cnt.keys())[0] == list(quoted_field_cnt.keys())[0]:
+                return csv.QUOTE_ALL
+            elif list(quoted_field_cnt.values())[0] == 0:
+                return csv.QUOTE_NONE
+
+        # "Almost Exact" scenario: almost the same as with the exact scenario
+        # above, but in this case it allows for a few malformed records.
+        # The numbers must be nearly identical - with both the most common field
+        # count and most common quoted field count occuring 95% of the time.
+        common_field_cnt, common_field_pct = comm.get_common_key(total_field_cnt)
+        common_quoted_field_cnt, common_quoted_field_pct = comm.get_common_key(quoted_field_cnt)
+
+        if common_field_pct > .95 and common_quoted_field_pct > .95:
+            if common_field_cnt == common_quoted_field_cnt:
+                return csv.QUOTE_ALL
+            elif common_quoted_field_cnt == 0:
+                return csv.QUOTE_NONE
+
+        # Final scenario - we can't make much of an improvement, it's probably
+        # either QUOTED_MINIMAL or QUOTED_NONNUMERIC.  Sniffer probably labeled
+        # it QUOTED_MINIMAL.
+        return dialect.quoting
+
+
+    def _get_dialect_escapechar(self,
+                                dialect: type[_csv.Dialect]):
+        """ Populate the escapechar on a dialog if it is missing
+        """
+        if dialect.doublequote is True:
+            return None
+        elif 'escapechar' not in dialect.__dict__:
+            return None
+        else:
+            return dialect.escapechar
+
+
+    def _get_has_header(self,
+                        fqfn: str,
+                        read_limit: int = 50000) -> bool:
+        """ Figure out whether or not there's a header based on the first 50,000 bytes
+            Raises:
+                - csv.Snipper() can throw exceptions if it can't interpret file
+        """
+        sample = open(fqfn, 'r').read(read_limit)
+        return csv.Sniffer().has_header(sample)
+
+
+
+    def get_quote_name(self) -> str:
+        """ used to help applications look up quote names
+        """
+        for key, value in csv.__dict__.items():
+            if value == self.quoting:
+                return key
+        else:
+            raise ValueError('invalid quote_number: {}'.format(self.quoting))
+
+
+
+def convert_dialect_to_dict(in_dialect: Type[_csv.Dialect]) -> dict:
+    out: dict[str, Any] = {}
+    out['delimiter'] = in_dialect.delimiter
+    out['quoting'] = get_quote_name(in_dialect.quoting)
+    out['quotechar'] = in_dialect.quotechar
+    out['doublequote'] = in_dialect.doublequote
+    out['escapechar'] = in_dialect.escapechar
+    out['skipinitialspace'] = in_dialect.skipinitialspace
+    return out
 
 
 
@@ -400,135 +541,16 @@ def is_valid_dialect(dialect) -> bool:
     return True
 
 
+
 def print_dialect(dialect, name) -> None:
+
     print(f'{name} Dialect: ')
     print(f'    delimiter:              {dialect.delimiter}')
     print(f'    quoting:                {dialect.quoting}')
-    print(f'    quoting (translated):   {get_quote_name(dialect.quoting)}')
+    print(f'    quoting (translated):   {dialect.get_quote_name()}')
     print(f'    has_header:             {dialect.has_header}')
     print(f'    doublequote:            {dialect.doublequote}')
     print(f'    escapechar:             {dialect.escapechar}')
 
 
-
-def autodetect_dialect(fqfn: str,
-                       read_limit: int = 5000) -> Dialect:
-    """ gets the dialect for a file
-        Uses the csv.Sniffer class
-        Then performs additional processing to try to improve accuracy of quoting.
-    """
-    # Verify we have an actual file - not an input stream:
-    assert os.path.isfile(fqfn)
-
-    with open(fqfn, newline='') as csvfile:
-        try:
-            dialect = convert_dialect(csv.Sniffer().sniff(csvfile.read(read_limit)))
-            dialect.lineterminator = '\n'
-            dialect.has_header = None
-        except _csv.Error:
-            #This shouldn't raise error here - since it may get overridden later
-            dialect = get_empty_dialect()
-
-
-    # See if we can improve quoting accuracy:
-    dialect.quoting = _get_dialect_quoting(dialect, fqfn)
-
-    # Populate the escapechar attribute
-    dialect.escapechar = _get_dialect_escapechar(dialect)
-
-    # Populate the has_header attribute:
-    dialect.has_header = _get_has_header(fqfn, read_limit)
-
-    return dialect
-
-
-
-def _get_dialect_quoting(dialect: _csv.Dialect,
-                         fqfn: str) -> int:
-    """ Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
-        get a more accurate guess.  In the event that there's an extremely
-        consistent set of data that is either all quoted or not quoted at
-        all we will return that appropriate value.
-    """
-
-    # total_field_cnt has a key for each number of fields found in a
-    # record, and a value that indicates how often this total was found
-    #total_field_cnt  = collections.defaultdict(int)
-    total_field_cnt: dict[Any, Union[int, float]] = {}
-
-    # quoted_field_cnt has a key for each number of quoted fields found
-    # in a record, and a value that indicates how often this total was
-    # found.
-    #quoted_field_cnt = collections.defaultdict(int)
-    quoted_field_cnt: dict[Any, Union[int, float]] = {}
-
-    for rec in fileinput.input(fqfn):
-        fields = rec[:-1].split(dialect.delimiter)
-        try:
-            total_field_cnt[len(fields)] += 1
-        except KeyError:
-            total_field_cnt[len(fields)] = 1
-
-        quoted_cnt = 0
-        for field in fields:
-            if len(field) >= 2:
-                if field[0] == '"' and field[-1] == '"':
-                    quoted_cnt += 1
-        try:
-            quoted_field_cnt[quoted_cnt] += 1
-        except KeyError:
-            quoted_field_cnt[quoted_cnt] = 1
-
-        if fileinput.lineno() > 1000:
-            break
-    fileinput.close()
-
-    # "Exact" scenario: simplest and most clear in which we have no confusing
-    # data, every record has the same number of fields and either all are quoted
-    # or none are.  This is handled specially since it's often screwed up
-    # by the Sniffer, and it's a common situation.
-    if len(total_field_cnt) == 1 and len(quoted_field_cnt) == 1:
-        if list(total_field_cnt.keys())[0] == list(quoted_field_cnt.keys())[0]:
-            return csv.QUOTE_ALL
-        elif list(quoted_field_cnt.values())[0] == 0:
-            return csv.QUOTE_NONE
-
-    # "Almost Exact" scenario: almost the same as with the exact scenario
-    # above, but in this case it allows for a few malformed records.
-    # The numbers must be nearly identical - with both the most common field
-    # count and most common quoted field count occuring 95% of the time.
-    common_field_cnt, common_field_pct = comm.get_common_key(total_field_cnt)
-    common_quoted_field_cnt, common_quoted_field_pct = comm.get_common_key(quoted_field_cnt)
-
-    if common_field_pct > .95 and common_quoted_field_pct > .95:
-        if common_field_cnt == common_quoted_field_cnt:
-            return csv.QUOTE_ALL
-        elif common_quoted_field_cnt == 0:
-            return csv.QUOTE_NONE
-
-    # Final scenario - we can't make much of an improvement, it's probably
-    # either QUOTED_MINIMAL or QUOTED_NONNUMERIC.  Sniffer probably labeled
-    # it QUOTED_MINIMAL.
-    return dialect.quoting
-
-
-def _get_dialect_escapechar(dialect: _csv.Dialect):
-    """ Populate the escapechar on a dialog if it is missing
-    """
-    if dialect.doublequote is True:
-        return None
-    elif 'escapechar' not in dialect.__dict__:
-        return None
-    else:
-        return dialect.escapechar
-
-
-def _get_has_header(fqfn: str,
-                    read_limit: int = 50000) -> bool:
-    """ Figure out whether or not there's a header based on the first 50,000 bytes
-        Raises:
-            - csv.Snipper() can throw exceptions if it can't interpret file
-    """
-    sample = open(fqfn, 'r').read(read_limit)
-    return csv.Sniffer().has_header(sample)
 

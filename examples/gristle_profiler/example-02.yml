@@ -8,5 +8,4 @@ delimiter: ','
 escapechar: null
 has_header: true
 quotechar: null
-#doublequote: null              # will default to false
 skipinitialspace: true

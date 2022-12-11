@@ -14,4 +14,3 @@ out_quoting: quote_all
 out_delimiter: '|'
 out_has_no_header: true
 out_doublequote: true
-out_quotechar: '"'

@@ -374,37 +374,21 @@ class Config(object):
         else:
             filenames = self.config['infiles']
         md = self._app_metadata
-        try:
-            autodetected = csvhelper.get_dialect(filenames,
-                                                 verbosity=self.config['verbosity'])
-        except FileNotFoundError:
-            comm.abort('Error: File not found when generating csv dialect config',
-                       f"One of these files was not found: {','.join(self.config['infiles'])}")
 
-        # First override auto-detected dialect with any explicit options
-        overridden = csvhelper.override_dialect(autodetected,
-                                                delimiter=self.config['delimiter'],
-                                                quoting=self.config['quoting'],
-                                                quotechar=self.config['quotechar'],
-                                                has_header=self.config['has_header'],
-                                                doublequote=self.config['doublequote'],
-                                                escapechar=self.config['escapechar'],
-                                                skipinitialspace=self.config['skipinitialspace'])
+        dialect_builder = csvhelper.BuildDialect()
+        dialect_builder.step1_discover_dialect(filenames)
+        dialect_builder.step2_override_dialect(delimiter=self.config['delimiter'],
+                                               has_header=self.config['has_header'],
+                                               quoting=self.config['quoting'],
+                                               quotechar=self.config['quotechar'],
+                                               doublequote=self.config['doublequote'],
+                                               escapechar=self.config['escapechar'],
+                                               skipinitialspace=self.config['skipinitialspace'])
+        dialect_builder.step3_default_dialect()
+        dialect_builder.step4_finalize_dialect()
+        dialect = dialect_builder.dialect
 
-        # Finally we can apply any defaults needed - using the extended-defaults, which exist
-        # because regular defaults would have been automatically applied.
-        defaulted = csvhelper.default_dialect(overridden,
-                                              delimiter=md['delimiter']['extended_default'],
-                                              quoting=md['quoting']['extended_default'],
-                                              has_header=md['has_header']['extended_default'],
-                                              quotechar=md['quotechar']['extended_default'],
-                                              escapechar=md['escapechar']['extended_default'],
-                                              doublequote=md['doublequote']['extended_default'],
-                                              skipinitialspace=md['skipinitialspace']['extended_default'])
-
-        assert csvhelper.is_valid_dialect(defaulted)
-
-        self.update_config('dialect', defaulted)
+        self.update_config('dialect', dialect)
 
 
     def generate_csv_header_config(self,

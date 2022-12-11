@@ -33,7 +33,9 @@ class TestQuotingFromFile(object):
         os.remove(self.test_fqfn)
 
     def test_quote_minimal(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_MINIMAL, has_header=False)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_MINIMAL, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], dialect)
         file_typer = mod.FileTyper(input_handler)
@@ -45,7 +47,9 @@ class TestQuotingFromFile(object):
         assert file_typer.dialect.quoting == dialect.quoting
 
     def test_quote_all(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], dialect)
         file_typer = mod.FileTyper(input_handler)
@@ -57,7 +61,9 @@ class TestQuotingFromFile(object):
         assert file_typer.dialect.quoting == dialect.quoting
 
     def test_quote_none(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], dialect)
         file_typer = mod.FileTyper(input_handler)
@@ -82,7 +88,9 @@ class TestQuotingFromOverrides(object):
             os.remove(self.test_fqfn)
 
     def test_quote_minimal(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_MINIMAL, has_header=False)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_MINIMAL, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], dialect)
         file_typer = mod.FileTyper(input_handler)
@@ -92,7 +100,9 @@ class TestQuotingFromOverrides(object):
         assert file_typer.field_cnt == 4
 
     def test_quote_all(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_ALL, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], dialect)
         file_typer = mod.FileTyper(input_handler)
@@ -102,7 +112,9 @@ class TestQuotingFromOverrides(object):
         assert file_typer.field_cnt == 4
 
     def test_quote_none(self):
-        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
+        dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], dialect)
         file_typer = mod.FileTyper(input_handler)
@@ -117,7 +129,9 @@ class TestInternals(object):
 
     def setup_method(self, method):
         self.record_cnt = 100
-        self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = csvhelper.Dialect(delimiter='|', quoting=csv.QUOTE_NONE, has_header=False,
+                                    quotechar='"', doublequote=False, escapechar=None,
+                                    skipinitialspace=False)
         self.test_fqfn = generate_test_file1(self.dialect, self.record_cnt)
         input_handler = file_io.InputHandler([self.test_fqfn], self.dialect)
         self.file_typer = mod.FileTyper(input_handler)

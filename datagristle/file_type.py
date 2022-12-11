@@ -52,8 +52,12 @@ class FileTyper(object):
 
         self.input_handler.reset()
 
-        if self.record_cnt == 1 and self.input_handler.dialect.has_header:
-            raise IOErrorEmptyFile("Empty File")
+        # I think we can get rid of this code - it sometimes has false positives
+        # when it thinks a 1-record file is a header.  Leaving it out means that if
+        # there's just a file then the field-level analysis is skimpy.  That's ok.
+        # Research: impact on other programs! slicer?
+        #if self.record_cnt == 1 and self.input_handler.dialect.has_header:
+        #    raise IOErrorEmptyFile("Empty File")
 
         self.input_handler.close()
 

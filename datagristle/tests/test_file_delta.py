@@ -30,7 +30,9 @@ class TestAssignment(object):
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn = create_test_file(self.temp_dir)
-        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False,
+                               quotechar='"', doublequote=False, escapechar=None,
+                               skipinitialspace=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -208,7 +210,9 @@ class TestComparisonHelpers(object):
     def setup_method(self, method):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.fqfn = create_test_file(self.temp_dir)
-        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False,
+                               quotechar='"', doublequote=False, escapechar=None,
+                               skipinitialspace=False)
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
@@ -349,7 +353,10 @@ class TestComparison(object):
         self.temp_dir = tempfile.mkdtemp(prefix='gristle_test_')
         self.old_fqfn = pjoin(self.temp_dir, 'old.csv')
         self.new_fqfn = pjoin(self.temp_dir, 'new.csv')
-        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False)
+        self.dialect = Dialect(delimiter=',', quoting=csv.QUOTE_NONE, has_header=False,
+                               quotechar='"', doublequote=False, escapechar=None,
+                               skipinitialspace=False)
+
 
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
