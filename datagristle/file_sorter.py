@@ -267,7 +267,7 @@ class CSVPythonSorter(object):
         start_time = time.time()
 
         # Run it once to initiate
-        isduplicate(None)
+        isduplicate((None,))
 
         if self.keep_header and self.header_rec:
             self.output_handler.write_rec(self.header_rec)

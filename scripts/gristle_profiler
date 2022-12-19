@@ -186,6 +186,7 @@ Licensing and Further Info:
 import errno
 import sys
 from os.path import basename
+from pprint import pprint as pp
 from signal import signal, SIGPIPE, SIG_DFL
 from typing import Any, Optional
 
@@ -237,7 +238,7 @@ def main() -> int:
         return errno.ENODATA
 
     out_writer.write_file_results(my_file, nconfig.dialect)
-    if nconfig.metadata:
+    if md_man:
         md_man.write_file_results(my_file, nconfig.dialect)
 
     if nconfig.brief:
@@ -262,7 +263,7 @@ def main() -> int:
     out_writer.write_field_results(my_fields,
                                    nconfig.col_position,
                                    has_header=bool(input_handler.header))
-    if nconfig.metadata:
+    if md_man:
         md_man.write_field_results(my_fields, nconfig.col_position)
 
     out_writer.terminate()
@@ -319,7 +320,9 @@ class MetadataManager(object):
                             field_analysis: field_profiler.FieldDeterminator,
                             col_number: int) -> None:
 
+        pp('1111111111111111111111111')
         for sub in range(field_analysis.field_cnt):
+            pp('22222222222222222222222222')
             if col_number is not None and sub != col_number:
                 continue
             if field_analysis.field_types[sub] == "integer":

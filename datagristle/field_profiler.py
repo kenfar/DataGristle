@@ -143,8 +143,6 @@ class FieldDeterminator(object):
 
         #---- build field_freqs --------------------------------
         for rec in self.input_handler:
-            pp(rec)
-            print(rec)
             self._get_field_freqs(rec)
             if read_limit > -1 and self.input_handler.rec_cnt >= read_limit:
                 for f_no in range(self.field_cnt):
@@ -235,7 +233,6 @@ class FieldDeterminator(object):
         self.field_names = self.input_handler.field_names
 
 
-    
     def get_known_values(self, fieldno: int) -> common.FreqType:
         """ returns a frequency-distribution dictionary that is the
             self.field_freqs with unknown values removed.

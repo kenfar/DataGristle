@@ -162,17 +162,17 @@ class Header:
 
 
     def get_field_position_from_any(self,
-                                    lookup: Union[str, int]) -> int:
+                                    lookup: str) -> int:
         """ Returns a field position given either a field name or position
         """
-        if comm.isnumeric(lookup):
-             return int(lookup)
-        else:
-             return self.get_field_position(lookup)
+        try:
+            return int(lookup)
+        except ValueError:
+            return self.get_field_position(lookup)
 
 
     def get_field_positions_from_any(self,
-                                    lookups: list[Union[str, int]]) -> list[int]:
+                                    lookups: list[str]) -> list[int]:
         """ Returns a list of field positions given a list of positions or names
         """
         return [self.get_field_position_from_any(x) for x in lookups]
@@ -260,7 +260,7 @@ class BuildDialect(csv.Dialect):
 
     """
     def __init__(self) -> None:
-        self._step1: dict[str, Any] = {}
+        self._step1: dict[str, Any] = {} # will only include fields returned by sniff
         self._step2: dict[str, Any] = {}
         self._step3: dict[str, Any] = {}
         self.final: dict[str, Any] = {}
@@ -288,7 +288,7 @@ class BuildDialect(csv.Dialect):
                          has_header: Optional[bool] = None,
                          quoting: Optional[int] = None,
                          quotechar: Optional[str] = None,
-                         doublequote: bool = True,
+                         doublequote: bool = None,
                          escapechar: Optional[str] = None,
                          skipinitialspace: Optional[bool] = None) -> None:
         # add verbosity?

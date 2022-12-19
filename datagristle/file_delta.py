@@ -40,8 +40,10 @@ class FileDelta:
         self.compare_fields: FieldPositionsType = []
         self.ignore_fields: FieldPositionsType = []
         self.dry_run: bool = False
-        self.old_rec: list[str] = None
-        self.new_rec: list[str] = None
+        self.old_rec: list[str] = []
+        #self.old_rec: Optional[list[str]] = None
+        self.new_rec: list[str] = []
+        #self.new_rec: Optional[list[str]] = None
 
         self.new_read_cnt = 0
         self.old_read_cnt = 0
@@ -255,7 +257,7 @@ class FileDelta:
         try:
             last_rec = self.new_rec
             self.new_rec = self.new_csv.__next__()
-            if last_rec is None: # first read priming
+            if not last_rec: # first read priming
                 last_rec = self.new_rec
             if len(last_rec) != len(self.new_rec):
                 abort('new file has inconsistent number of fields', f'new_rec = {self.new_rec}')
@@ -267,7 +269,8 @@ class FileDelta:
                     abort('ERROR: new file is not sorted correctly',
                           f'This refers to file {self.new_fqfn}, and key: {key}, and record: {self.new_rec} and last rec: {last_rec}')
         except StopIteration:
-            self.new_rec = None
+            #self.new_rec = None
+            self.new_rec = []
 
 
     def _read_old_csv(self) -> None:
@@ -281,7 +284,7 @@ class FileDelta:
         try:
             last_rec = self.old_rec
             self.old_rec = self.old_csv.__next__()
-            if last_rec is None: # first read priming
+            if not last_rec: # first read priming
                 last_rec = self.old_rec
             if len(last_rec) != len(self.old_rec):
                 abort('old file has inconsistent number of fields', f'old_rec = {self.new_rec}')
@@ -293,7 +296,8 @@ class FileDelta:
                     abort('ERROR: old file is not sorted correctly',
                           f'This refers to file {self.old_fqfn}, and key: {key}, and record: {self.old_rec} and last rec: {last_rec}')
         except StopIteration:
-            self.old_rec = None
+            #self.old_rec = None
+            self.old_rec = []
 
     def _writer(self,
                 outtype: str,
@@ -329,7 +333,7 @@ class DeltaAssignments:
                        src_type: str,
                        src_val: str = None,
                        src_file: str = None,
-                       src_field: int = None) -> None:
+                       src_field: Optional[int] = None) -> None:
         """ Write instructions for the assignment of a csv field in an output file.
 
         Args:

@@ -114,10 +114,9 @@ class TestEmptyFile(object):
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
-        #assert runner.status_code == errno.ENODATA
         assert runner.status_code == 0
-        #assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') is None
-        #assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') is None
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') == '1'
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') == 'True'
 
     def test_empty_file_with_header_and_hasheader_arg(self):
         fqfn = os.path.join(self.tmp_dir, 'empty_header.csv')
@@ -126,10 +125,9 @@ class TestEmptyFile(object):
         runner = envoy.run(cmd)
         print(runner.std_out)
         print(runner.std_err)
-        #assert runner.status_code == errno.ENODATA
         assert runner.status_code == 0
-        #assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') is None
-        #assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') is None
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'record_count') == '1'
+        assert get_value(runner.std_out, 'file_analysis_results', 'main', 'main', 'has_header') == 'True'
 
 
 

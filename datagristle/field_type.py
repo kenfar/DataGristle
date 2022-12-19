@@ -115,7 +115,7 @@ class FieldType:
     def _build_type_freq(self):
 
         for i, (key, count) in enumerate(self.raw_values[:MAX_TYPE_SIZE]):
-            pp(f'column: {i}')
+            #pp(f'column: {i}')
 
             if 'timestamp' in self.type_freq:
                 if i in (100, 500, 1000):
@@ -353,23 +353,17 @@ def is_float(value: Any) -> bool:
     try:
         if isinstance(value, str):
             if '.' not in value:
-                pp(f'is_float - false - 1')
                 return False
         elif isinstance(value, float):
-            pp(f'is_float - true - 2')
             return True
         elif isinstance(value, int):
-            pp(f'is_float - false - 3')
             return False
         float(value)
     except ValueError:
-        pp(f'is_float - false - 4 ')
         return False
     except TypeError:
-        pp(f'is_float - false - 5')
         return False
     else:
-        pp(f'is_float - true - 6')
         return True
 
 

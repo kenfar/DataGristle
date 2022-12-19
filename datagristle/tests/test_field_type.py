@@ -103,7 +103,6 @@ class TestFieldType(object):
         field_type = mod.FieldType(field_freq)
         return field_type.get_field_type()
 
-
     def test_misc(self):
         assert self.runner('n/a') == 'unknown'
         assert self.runner('UNK') == 'unknown'
@@ -233,14 +232,14 @@ class TestFieldType(object):
 
     def test_get_field_type_basicsII(self):
         assert self.multi_runner({}) == 'unknown'
-        #assert self.multi_runner({'Texas': 4}) == 'string'
-        #assert self.multi_runner({'1': 4}) == 'integer'
-        #assert self.multi_runner({'n/a': 4, 'Texas':4}) == 'string'
-        #assert self.multi_runner({'n/a': 4, '55':4}) == 'integer'
-        #assert self.multi_runner({'n/a': 4, '55.5':4}) == 'float'
-        #assert self.multi_runner({'n/a': 4, '':4}) == 'unknown'
-        #assert self.multi_runner({'n/a': 4, '1310527566.7':4}) == 'float'
-        #assert self.multi_runner({'4.3': 4, '1310527566.7':4}) == 'float'
+        assert self.multi_runner({'Texas': 4}.items()) == 'string'
+        assert self.multi_runner({'1': 4}.items()) == 'integer'
+        assert self.multi_runner({'n/a': 4, 'Texas':4}.items()) == 'string'
+        assert self.multi_runner({'n/a': 4, '55':4}.items()) == 'integer'
+        assert self.multi_runner({'n/a': 4, '55.5':4}.items()) == 'float'
+        assert self.multi_runner({'n/a': 4, '':4}.items()) == 'unknown'
+        assert self.multi_runner({'n/a': 4, '1310527566.7':4}.items()) == 'float'
+        assert self.multi_runner({'4.3': 4, '1310527566.7':4}.items()) == 'float'
 
         test_data = {'n/a':   3,
                      '0':     2,
