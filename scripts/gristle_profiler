@@ -320,9 +320,7 @@ class MetadataManager(object):
                             field_analysis: field_profiler.FieldDeterminator,
                             col_number: int) -> None:
 
-        pp('1111111111111111111111111')
         for sub in range(field_analysis.field_cnt):
-            pp('22222222222222222222222222')
             if col_number is not None and sub != col_number:
                 continue
             if field_analysis.field_types[sub] == "integer":

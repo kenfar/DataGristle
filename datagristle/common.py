@@ -23,11 +23,12 @@ NumericFreqType = list[tuple[Union[int, float], int]]
 
 
 def isnumeric(number: Any) -> bool:
-    """ Tests whether or not the input is numeric.
-        Args:
-           - number:  a string containing a number that may be either an integer
-             or a float, a positive or a negative or zero.
-        Returns:  True or False
+    """ Returns True if the input is a float or integer
+
+    Args:
+        - number:  a string, int, or float that
+    Returns:
+        - True or False
     """
     try:
         float(number)
@@ -173,22 +174,26 @@ def get_tracepath():
 
 
 def colnames_to_coloff0(col_names: list[str], lookup_list: list[Any]) -> list[int]:
-    """ Returns a list of collection column positions with offset of 0 for a list of
-        collection column names (optional) and a lookup list of col names and/or col
-        offsets.
+    """ Returns a list of col positions with offset of 0
 
-        Inputs:
-           - col_names   - list of collection column names, may be empty
-           - lookup_list - list of column names or positions to lookup (off0)
-        Returns:
-           - result      - list of column positions (off0)
-        Raises:
-           - KeyError if column name from lookup_list not in colnames,
-                      or if col position from lookup_list extends beyond
-                      populated col_names list.
-        Notes:
-           - output will always be a list of integers
-           - input column offsets can be integers (0) or strings ('0')
+    This is for a list of collection column names (optional) and a lookup list 
+    of col names and/or col offsets.
+
+    Arguments:
+        - col_names   - list of collection column names, may be empty
+        - lookup_list - list of column names or positions to lookup (off0)
+
+    Returns:
+        - result      - list of column positions (off0)
+
+    Raises:
+        - KeyError if column name from lookup_list not in colnames,
+                    or if col position from lookup_list extends beyond
+                    populated col_names list.
+
+    Notes:
+        - output will always be a list of integers
+        - input column offsets can be integers (0) or strings ('0')
     """
     colname_lookup = dict((element, offset) for offset, element in enumerate(col_names))
     colname_lookup_len = len(colname_lookup)
@@ -228,6 +233,7 @@ def get_best_col_names(config: dict[str, Any],
         return None
 
 
+
 def get_col_names_from_header(file1_fqfn: str,
                               dialect: csv.Dialect) -> Optional[list[str]]:
     try:
@@ -238,6 +244,7 @@ def get_col_names_from_header(file1_fqfn: str,
         return col_names
     except StopIteration:
         return None
+
 
 
 def validate_python_version():
@@ -293,9 +300,6 @@ class MemoryLimiter:
         elif self.call_count == 100:
             avg_rec_size = sum(self.rec_sizes) / 100
             self.max_rec_number = self.max_memory_bytes / avg_rec_size
-            #print(f'*****************{self.max_memory_bytes=}')
-            #print(f'*****************{avg_rec_size=}')
-            #print(f'*****************{self.max_rec_number=}')
         else:
             if record_number > self.max_rec_number:
                 raise MemoryError

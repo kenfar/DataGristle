@@ -28,11 +28,13 @@ DEFAULT_LINETERMINATOR = '\n'
 
 
 def get_quote_number(quote_name: Optional[str]) -> Optional[int]:
-    """ used to help applications look up quote names typically provided by users.
-        Inputs:
-           - quote_name
-        Outputs:
-           - quote_number
+    """ Returns a quote_number from a quote_name
+
+    Arguments:
+        - quote_name
+
+    Returns:
+        - quote_number
     """
     assert type(quote_name) in (str, type(None))
 
@@ -44,7 +46,13 @@ def get_quote_number(quote_name: Optional[str]) -> Optional[int]:
 
 
 def get_quote_name(quote_number: int) -> str:
-    """ used to help applications look up quote names
+    """ Returns a quote_name from a quote_number
+
+    Argument:
+        - quote_number
+
+    Returns:
+        - quote_name
     """
     assert quote_number is not None
 
@@ -260,6 +268,13 @@ class BuildDialect(csv.Dialect):
 
     """
     def __init__(self) -> None:
+        """ Initializes BuildDialect
+
+        Public Attributes:
+            - final: a dictionary of dialect attributes (ex: delimiter) along
+              with their values.
+            - dialect: the final dialect built from final
+        """
         self._step1: dict[str, Any] = {} # will only include fields returned by sniff
         self._step2: dict[str, Any] = {}
         self._step3: dict[str, Any] = {}
@@ -269,6 +284,9 @@ class BuildDialect(csv.Dialect):
 
     def step1_discover_dialect(self,
                          files: list[str]) -> None:
+        """ Collects dialect from infiles
+
+        """
         if files[0] == '-':
             return
 
@@ -291,8 +309,10 @@ class BuildDialect(csv.Dialect):
                          doublequote: bool = None,
                          escapechar: Optional[str] = None,
                          skipinitialspace: Optional[bool] = None) -> None:
-        # add verbosity?
+        """ Overrides the infile dialect
 
+        Is typically provided by the user
+        """
         self._step2 = copy.deepcopy(self._step1)
         if delimiter:
             self._step2['delimiter'] = delimiter
@@ -323,9 +343,7 @@ class BuildDialect(csv.Dialect):
 
 
     def step3_default_dialect(self) -> None:
-        # research: the configulator module hsa csv defaults, do those just get
-        # blended in with the overrides?!?
-        """ defaults the dialect with any non-None values from other args
+        """ Applies defaults to any dialect attributes missing values
         """
         if self._step2:
             self._step3 = copy.deepcopy(self._step2)
@@ -355,6 +373,8 @@ class BuildDialect(csv.Dialect):
 
 
     def step4_finalize_dialect(self) -> None:
+        """ Builds the final dialect
+        """
 
         self.final = copy.deepcopy(self._step3)
 
@@ -386,9 +406,10 @@ class BuildDialect(csv.Dialect):
     def _discover_from_file(self,
                            fqfn: str,
                            read_limit: int = 5000) -> dict[str, Any]:
-        """ gets the dialect for a file
-            Uses the csv.Sniffer class
-            Then performs additional processing to try to improve accuracy of quoting.
+        """ Returns the dialect attributes for a file
+
+        Uses the csv.Sniffer class
+        Then performs additional processing to try to improve accuracy of quoting.
         """
         # Verify we have an actual file - not an input stream:
         assert os.path.isfile(fqfn)
@@ -413,10 +434,20 @@ class BuildDialect(csv.Dialect):
     def _get_dialect_quoting(self,
                              dialect: type[_csv.Dialect],
                              fqfn: str) -> int:
-        """ Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
-            get a more accurate guess.  In the event that there's an extremely
-            consistent set of data that is either all quoted or not quoted at
-            all we will return that appropriate value.
+        """ Return dialect quoting attribute
+
+        Arguments:
+            - dialect
+            - fqfn - fully qualified file name
+
+        Returns:
+            - quote number
+
+        Notes:
+            - Since Sniffer tends to default to QUOTE_MINIMAL we're going to try to
+              get a more accurate guess.  In the event that there's an extremely
+              consistent set of data that is either all quoted or not quoted at
+              all we will return that appropriate value.
         """
 
         # total_field_cnt has a key for each number of fields found in a
@@ -524,21 +555,6 @@ def convert_dialect_to_dict(in_dialect: Type[_csv.Dialect]) -> dict:
     out['escapechar'] = in_dialect.escapechar
     out['skipinitialspace'] = in_dialect.skipinitialspace
     return out
-
-
-
-def is_valid_dialect(dialect) -> bool:
-    # note that we're not checking escapechar for None - since that's valid.
-    if (dialect.delimiter is None
-            or dialect.quoting is None
-            or dialect.quotechar is None
-            or dialect.has_header is None
-            or dialect.doublequote is None):
-        return False
-    if dialect.quoting not in (None, csv.QUOTE_NONE, csv.QUOTE_ALL,
-                               csv.QUOTE_NONNUMERIC, csv.QUOTE_MINIMAL):
-        return False
-    return True
 
 
 

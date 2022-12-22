@@ -2,22 +2,10 @@
 """ Purpose of this module is to identify the types of fields
     Classes & Functions Include:
       FieldDeterminator   - class runs all checks on all fields
-    Todo:
-      - change get_types to consider whatever has 2 STDs
-      - replace get_types freq length logic with something that says,
-        if all types are basically numeric, choose float
-      - add quartiles, variances and standard deviations
-      - add statistical analysis for data quality
-      - add histogram to automatically bucketize data
-      - consistency metric
-      - leverage list comprehensions more
-      - consider try/except in get_min() & get_max() int/float conversion
-      - change returned data format to be based on field
 
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2022 Ken Farmer
 """
-import csv
 import math
 from operator import itemgetter
 from pprint import pprint as pp
@@ -36,8 +24,10 @@ from datagristle import field_type as typer
 #   Multi-column needs to be more conservative since there could be 10,20, or
 #   80 different columns.  So it's limited to 1/10th the number of items.
 #------------------------------------------------------------------------------
-MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
-MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # ex: 10 cols, each with 1 mil entries & 20 byte key = ~400 MB total
+#MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
+MAX_FREQ_SINGLE_COL_DEFAULT = 1_000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
+#MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # ex: 10 cols, ea with 1 mil & 20 byte key = ~400 MB tot
+MAX_FREQ_MULTI_COL_DEFAULT  = 1_000 # ex: 10 cols, ea with 1 mil & 20 byte key = ~400 MB tot
 
 FreqType = Iterable[tuple[Any, int]]
 StrFreqType = Iterable[tuple[str, int]]
@@ -47,18 +37,20 @@ NumericFreqType = Iterable[tuple[Union[float, int], int]]
 
 class FieldDeterminator(object):
     """ Examines ALL fields within a file
-        Output structures:
-          - self.field_names  - dictionary with fieldnumber key
-          - self.field_types  - dictionary with fieldnumber key
-          - self.field_min    - dictionary with fieldnumber key
-          - self.field_max    - dictionary with fieldnumber key
-          - self.field_mean   - dictionary with fieldnumber key
-          - self.field_median - dictionary with fieldnumber key
-          - self.field_case   - dictionary with fieldnumber key
-          - self.field_min_length   - dictionary with fieldnumber key
-          - self.field_max_length   - dictionary with fieldnumber key
-          - self.field_trunc  - dictionary with fieldnumber key
-          - self.field_decimals - dictionary with fieldnumber key
+
+    Output structures:
+        - self.field_freq       - dictionary with fieldnumber key
+        - self.field_names      - dictionary with fieldnumber key
+        - self.field_types      - dictionary with fieldnumber key
+        - self.field_min        - dictionary with fieldnumber key
+        - self.field_max        - dictionary with fieldnumber key
+        - self.field_mean       - dictionary with fieldnumber key
+        - self.field_median     - dictionary with fieldnumber key
+        - self.field_case       - dictionary with fieldnumber key
+        - self.field_min_length - dictionary with fieldnumber key
+        - self.field_max_length - dictionary with fieldnumber key
+        - self.field_trunc      - dictionary with fieldnumber key
+        - self.field_decimals   - dictionary with fieldnumber key
     """
 
     def __init__(self,
@@ -72,7 +64,7 @@ class FieldDeterminator(object):
         self.dialect = dialect
         self.verbosity = verbosity
         self.max_freq_number:   Optional[int] = None  # will be set in analyze_fields
-        self.max_items = 999999
+        self.max_items = 1_000
 
         def set_field_defaults(val):
             return {i:val for i in range(self.field_cnt)}
@@ -114,17 +106,17 @@ class FieldDeterminator(object):
                        read_limit: int = -1) -> None:
         """ Determines types, names, and characteristics of fields.
 
-            Arguments:
-               - field_number: if None, then analyzes all fields, otherwise
-                 analyzes just the single field (based on zero-offset)
-               - field_types_overrides:
-               - max_freq_number: limits size of collected frequency
-                 distribution, allowing for faster analysis or analysis of very
-                 large high-cardinality fields.
-               - read_limit: a performance setting that stops file reads after
-                 this number.  The default is -1 which means 'no limit'.
-            Returns:
-               - Nothing directly - populates instance variables.
+        Arguments:
+            - field_number: if None, then analyzes all fields, otherwise
+                analyzes just the single field (based on zero-offset)
+            - field_types_overrides: allows user to 
+            - max_freq_number: limits size of collected frequency
+                distribution, allowing for faster analysis or analysis of very
+                large high-cardinality fields.
+            - read_limit: a performance setting that stops file reads after
+                this number.  The default is -1 which means 'no limit'.
+        Returns:
+            - None
         """
         assert field_number is None or field_number > -1
         self.max_freq_number = max_freq_number
@@ -144,7 +136,8 @@ class FieldDeterminator(object):
         #---- build field_freqs --------------------------------
         for rec in self.input_handler:
             self._get_field_freqs(rec)
-            if read_limit > -1 and self.input_handler.rec_cnt >= read_limit:
+            if read_limit > -1 and read_limit <= self.input_handler.rec_cnt:
+            #if read_limit > -1 and self.input_handler.rec_cnt >= read_limit:
                 for f_no in range(self.field_cnt):
                     self.field_trunc[f_no] = True
                 break
@@ -211,7 +204,10 @@ class FieldDeterminator(object):
                         field_freq[field_number][rec[field_number]] = 1
 
             if max_items > -1 and len(field_freq[field_number]) >= max_items:
-                print(f'    WARNING: freq dict is too large for field {field_number} - will stop adding to it')
+                print(f'    WARNING: freq dict is too large for field {field_number}.')
+                print(f'             Profiling will be based on the first {self.input_handler.rec_cnt} rows')
+                print(f'             and {max_items} number of unique entries.')
+                print(f'             Use the gristle_profiler --max-freq option to increase dict size.')
                 field_trunc[field_number] = True
 
 
@@ -234,8 +230,8 @@ class FieldDeterminator(object):
 
 
     def get_known_values(self, fieldno: int) -> common.FreqType:
-        """ returns a frequency-distribution dictionary that is the
-            self.field_freqs with unknown values removed.
+        """ returns a cleansed version of freq-distribution dict
+
         """
         return [val for val in self.field_freq[fieldno]
                 if typer.is_unknown(val) is False]
@@ -244,23 +240,23 @@ class FieldDeterminator(object):
     def get_top_freq_values(self,
                             fieldno: int,
                             limit: Optional[int]=None) -> list[tuple[Any, int]]:
-        """  Returns a list of highest-occuring field values along with their
-             frequency.
-             Args:
-                 - fieldno - is the number of the field, offset from zero
-                 - limit - is an optional limit on the number of values to show
-             Returns:
-                 - rev_sort_list, which is a list of lists.
-                   - The inner list is the [field value, frequency]
-                   - The outer list contains up to limit number of inner lists,
-                     sorted by innerlist, frequency, descending.
-                   - For example, the following hypothetical results would be
-                     returned for a field that describes the number of failing
-                     schools by state with
-                     a limit of 3:
-                        [['ca',120],
-                         ['ny',89],
-                         ['tx',71]]
+        """  Returns a list of highest-occuring field values along with their frequency.
+
+        Args:
+            - fieldno - is the number of the field, offset from zero
+            - limit - is an optional limit on the number of values to show
+        Returns:
+            - rev_sort_list, which is a list of lists.
+            - The inner list is the [field value, frequency]
+            - The outer list contains up to limit number of inner lists,
+                sorted by innerlist, frequency, descending.
+            - For example, the following hypothetical results would be
+                returned for a field that describes the number of failing
+                schools by state with
+                a limit of 3:
+                [['ca',120],
+                 ['ny',89],
+                 ['tx',71]]
         """
         sorted_values = sorted(list(self.field_freq[fieldno].items()), key=itemgetter(1),
                                reverse=True)
@@ -292,13 +288,12 @@ class TypeFreq:
 
 
     def get_min(self):
-        """ Returns the minimum value of the input.  Ignores unknown values, if
-            no values found besides unknown it will just return 'None'
+        """ Returns the minimum value of the input.
 
-            Inputs:
-            - value_type - one of integer, float, string, timestamp
-            - dictionary or list of string values
-            Outputs:
+        Ignores unknown values, if no values found besides unknown it will
+        just return 'None'
+
+        Outputs:
             - the single minimum value of the appropriate type
         """
         self.min = str(min([x[0] for x in self.clean_values]))
@@ -306,13 +301,12 @@ class TypeFreq:
 
 
     def get_max(self):
-        """ Returns the maximum value of the input.  Ignores unknown values, if
-            no values found besides unknown it will just return 'None'
+        """ Returns the maximum value of the input.
 
-            Inputs:
-            - value_type - one of integer, float, string, timestap
-            - dictionary or list of string values
-            Outputs:
+        Ignores unknown values, if no values found besides unknown it will
+        just return 'None'
+
+        Outputs:
             - the single maximum value of the appropriate type
         """
         self.max = str(max([x[0] for x in self.clean_values]))
@@ -338,12 +332,10 @@ class StrTypeFreq(TypeFreq):
 
 
     def get_case(self):
-        """
-        Misc notes:
-            - "unknown values" are ignored
-        To do:
-            - consider adding consideration of proportions
-            - consider capping the number of rows to check
+        """" Returns a string name for the case of a string type field.
+
+        Returns:
+           - case: one of: 'mixed', 'lower', 'upper' 'unknown'
         """
         all_lower_cnt = sum([x[1] for x in self.clean_values if x[0].islower()])
         all_upper_cnt = sum([x[1] for x in self.clean_values if x[0].isupper()])
@@ -364,12 +356,11 @@ class StrTypeFreq(TypeFreq):
 
 
     def get_max_length(self) -> int:
-        """ Returns the maximum length value of the input.   If
-            no values found besides unknown it will just return 'None'
+        """ Returns the maximum length value of the input.
 
-            Inputs:
-            - dictionary or list of string values
-            Outputs:
+        If no values found besides unknown it will just return 'None'
+
+        Outputs:
             - the single maximum value
         """
         max_length = 0
@@ -377,28 +368,25 @@ class StrTypeFreq(TypeFreq):
 
 
     def get_min_length(self) -> int:
-        """ Returns the minimum length value of the input.   If
-            no values found besides unknown it will just return 999999
+        """ Returns the minimum length value of the input.
 
-        Inputs:
-        - dictionary or list of string values
+        If no values found besides unknown it will just return 999999
+
         Outputs:
-        - the single minimum value
+            - the single minimum value
         """
         min_length = 999999
         return min([len(value[0]) for value in self.clean_values]) or min_length
 
 
     def get_mean_length(self) -> float:
-        """ Returns the mean length value of the input.   If
-            no values found besides unknown it will just return None
+        """ Returns the mean length value of the input.
 
-        Inputs:
-        - dictionary or list of string values
+        If no values found besides unknown it will just return None
+
         Outputs:
-        - the single minimum value
+            - the single minimum value
         """
-
         accum = sum([len(x[0]) * x[1] for x in self.clean_values])
         count = sum([x[1] for x in self.clean_values])
 
@@ -518,10 +506,6 @@ class NumericTypeFreq(TypeFreq):
         The calculation takes into consideration the number of times each value
         occurs - based on a frequency number.
 
-        Args:
-            values: a list of tuples.  Non-integer|float values will be ignored.
-            mean: if the mean has already been computed it can be provided and used
-            to save time.
         Returns:
             A pair of floats that represents the variance and standard deviation.
             If the argument is empty then it will return None, None.
@@ -542,8 +526,8 @@ class NumericTypeFreq(TypeFreq):
     def get_max_decimals(self) -> Optional[int]:
         ''' Returns the maximum number of decimal places on any value.
 
-            Not using typical numeric methods since they can easily expand the size of the decimals
-            due to floating point characteristics.
+        Not using typical numeric methods since they can easily expand the size
+        of the decimals due to floating point characteristics.
         '''
         if not self.clean_values:
             self.max_decimals = None

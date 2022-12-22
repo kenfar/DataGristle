@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 """ Purpose of this module is to identify the types of fields
     Classes & Functions Include:
-      FieldTyper   - class runs all checks on all fields
+      FieldType()             - class runs all checks on all fields
       get_field_type()
-      is_timestamp() - determines if arg is a timestamp of some type
-      is_float()   - determines if arg is a float
-      is_integer() - determines if arg is an integer
-      is_string()  - determines if arg is a string
-    Todo:
-      - change get_types to consider whatever has 2 STDs
-      - replace get_types freq length logic with something that says, if all
-        types are basically numeric, choose float
-      - consistency metric
-      - change returned data format to be based on field
+      is_timestamp()          - returns True if arg is a timestamp and the format
+      is_timestamp_extended() - returns True if arg is a timestamp and the format
+      is_float()              - returns True if arg is a float
+      is_integer()            - returns True if arg is an integer
+      is_string()             - returns True if arg is a string
+      is_unknown()            - returns True if arg is a string
 
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2022 Ken Farmer
@@ -83,11 +79,20 @@ INVALID_TIMESTAMP_SYMBOL_REGEX = re.compile('[`~!@#$%^&*()_={}[]|\\;\'\"<>?]')
 ONLY_NUMBERS_REGEX = re.compile("[0-9]+")
 
 
+
 class FieldType:
+    """ Provides type and format information for a single field
+    """
 
     def __init__(self,
                  values: list[tuple[Any, int]]) -> None:
+        """ Initialize FieldType for a single field
 
+        Arguments:
+            - values: a frequency-dist in the format of a list of tuples, with
+              the first tuple value being the field value, and the second being
+              a count of its occurances.
+        """
         self.raw_values = list(values)
         self.converted_values: dict[Any, int] = {}
         self.type_freq: dict[str, int] = {}
@@ -98,6 +103,12 @@ class FieldType:
 
 
     def get_field_type(self) -> str:
+        """ Returns type of field
+
+        Returns:
+            type: one of "unknown", "string", "number", "integer", "float",
+                  "timestamp"
+        """
 
         if self.raw_values is None:
             return 'unknown'
@@ -113,9 +124,10 @@ class FieldType:
 
 
     def _build_type_freq(self):
+        """ Populates type dicts that reflect frequency of type
+        """
 
         for i, (key, count) in enumerate(self.raw_values[:MAX_TYPE_SIZE]):
-            #pp(f'column: {i}')
 
             if 'timestamp' in self.type_freq:
                 if i in (100, 500, 1000):
@@ -177,22 +189,15 @@ class FieldType:
 
 
     def _get_field_type_rule(self) -> None:
-        """ The intent is to resolve type determinations through simplistic
-            rules:
-            Additional Notes to consider:
-            1. Note that type of 'unknown' must not be included within types
-            2. empty list = unknown
-            3. one-item list = that item
-            4. 2-3 item list of number types = float
-            5. timestamps include epochs - which look like any integer or float.
-            Because of this a mix of timestamps + floats/integers will be considered
-            a float or integer.
-            Challenge is in handling data quality problems - like the documented
-            case in which a file with 8000 timestamps in the yyyy-mm-dd have 4 records
-            with floats.   These floats should have been kicked out as garbage data -
-            but if the timestamps were epochs then that would not be appropriate.
+        """ The intent is to resolve type determinations through simplistic rules:
+
+        There is no guarantee that this approach will determine the type,
+        it's simply the first attempt.
+            - It ignores any 'unknown' types
+            - If it only finds values of a single type - then it will return that
+            - if there only two types, and they are ints and floats then it will
+              return float
         """
-        # floats with nothing to the right of the decimal point may be ints
         float_set_2i = set(['integer', 'float'])
 
         type_set = set(self.clean_type_values)
@@ -208,25 +213,25 @@ class FieldType:
 
 
     def _get_field_type_probability(self) -> None:
-        """ Determines type of field based on the type of the vast majority of
-            values.
+        """ Determines type of field based on the type of the majority of values.
         """
         total = sum(self.type_freq.values())
         for key in self.type_freq:
-           if self.type_freq[key]/total >= 0.8:
-               self.final_field_type = key
+            if self.type_freq[key]/total >= 0.8:
+                self.final_field_type = key
 
 
 
 def is_timestamp_extended(value: Union[float, str],
-                          timestamp_formats=TIMESTAMP_FORMATS) -> tuple[bool, Optional[str], Optional[Any]]:
-    """ Determine if arg is a timestamp and if so what format
+                          timestamp_formats=TIMESTAMP_FORMATS) \
+                          -> tuple[bool, Optional[str], Optional[Any]]:
+    """ Returns True if arg is a date or time or datetime and if so what format
 
     Args:
-        value    - a string in one of about 50 formats
+        value          - a string in any of about 50 formats
     Returns:
         status         - True if date/time False if not
-        format_name    - name of format
+        format_name    - name of format,  ex: YYYY-MM-DD
         value_datetime - value cast as datetime
     """
     if isinstance(value, float):
@@ -266,11 +271,12 @@ def is_timestamp_extended(value: Union[float, str],
 
 def is_timestamp(value: Union[float, str],
                  timestamp_formats=TIMESTAMP_FORMATS) -> bool:
-    """ Determine if arg is a timestamp and if so what format
+    """ Returns True if the value is a date or time or datetime
 
     Args:
-        value    - a string in one of about 50 formats
-        timestamp_formats  - defaults to global TIMESTAMP_FORMATS
+        value             - a string of any of about 50 formats
+        timestamp_formats - defaults to global TIMESTAMP_FORMATS
+
     Returns:
         status   - True if date/time False if not
     """
@@ -280,8 +286,10 @@ def is_timestamp(value: Union[float, str],
 
 
 def is_string(value: Any) -> bool:
-    """ Returns True if the value is a string, subject to false-negatives
-        if the string is all numeric.
+    """ Returns True if the value is a string
+
+    Note that it is subject, subject to false-negatives if the string is all
+    numeric.
         'b'      is True
         ''       is True
         ' '      is True
@@ -293,8 +301,6 @@ def is_string(value: Any) -> bool:
         3        is False
         3.3      is False
         None     is False
-        Test coverage:
-          - complete, via test harness
     """
     try:                    # catch integers & floats
         float(value)
@@ -307,12 +313,15 @@ def is_string(value: Any) -> bool:
 
 
 def is_integer(value: Any) -> bool:
-    """ Returns True if the input consists soley of digits and represents an
-        integer rather than character data or a float.
+    """ Returns True if the input is an int rather than a float or character data
+
+        0         is True
         '3'       is True
         '-3'      is True
         3         is True
         -3        is True
+        0.0       is False
+        4.0       is False
         3.3       is False
         '33.22'   is False
         '4,333'   is False
@@ -337,10 +346,13 @@ def is_integer(value: Any) -> bool:
 
 
 def is_float(value: Any) -> bool:
-    """ Returns True if the input consists soley of digits and represents a
-        float rather than character data or an integer.
+    """ Returns True if the input is a float rather than int or character data
+
+        0.0     is True
+        4.0     is True
         44.55   is True
         '33.22' is True
+        0       is False
         6       is False
         '3'     is False
         '-3'    is False

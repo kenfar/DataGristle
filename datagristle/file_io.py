@@ -100,8 +100,10 @@ class InputHandler(object):
 
     def __next__(self,
                  skip_to_end=False):
-        """ Returns the next input record.   Can handle data piped in as well
-            as multiple input files.   All data is assumed to be csv files.
+        """ Returns the next input record.
+
+        Can handle data piped in as well as multiple input files.   All data is
+        assumed to be csv files.
         """
         while True:
             try:
@@ -239,7 +241,6 @@ class InputHandler(object):
             # May not have read a rec yet - maybe got the rec count from metadata
             # So, lets read a rec and then start over.  This won't work for stdin,
             # but should be fine for reading files.
-            # raise InvalidSequence('Cannot access fields until a rec is read')
             self.__next__()
             if self.header:
                 self.field_names = self.header

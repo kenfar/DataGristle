@@ -15,11 +15,12 @@ from pprint import pprint as pp
 
 
 class FileTyper(object):
-    """ Determines type of file - mostly using csv.Sniffer()
-        Populates public variables:
-          - format_type
-          - dialect
-          - record_cnt
+    """ Determines basic type of file
+
+    Populates public variables:
+      - dialect
+      - record_cnt
+      - field_cnt
     """
 
     def __init__(self,
@@ -46,18 +47,12 @@ class FileTyper(object):
         """
         self.record_cnt, self.record_cnt_is_est \
              = self.input_handler.get_rec_count(self.read_limit)
-        self.field_cnt = self.input_handler.get_field_count()
         if self.input_handler.header:
             self.record_cnt += 1
 
-        self.input_handler.reset()
+        self.field_cnt = self.input_handler.get_field_count()
 
-        # I think we can get rid of this code - it sometimes has false positives
-        # when it thinks a 1-record file is a header.  Leaving it out means that if
-        # there's just a file then the field-level analysis is skimpy.  That's ok.
-        # Research: impact on other programs! slicer?
-        #if self.record_cnt == 1 and self.input_handler.dialect.has_header:
-        #    raise IOErrorEmptyFile("Empty File")
+        self.input_handler.reset()
 
         self.input_handler.close()
 

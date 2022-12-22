@@ -100,6 +100,9 @@ class FileAndTestManager(object):
 
         # there are 100 unique values for this column normally, this time
         # it should be truncated at 10
+        pp('***************************************')
+        pp(self.MyFields.get_known_values(INT_COL))
+        pp('***************************************')
         assert len(self.MyFields.get_known_values(INT_COL)) == 5
         assert self.MyFields.field_trunc[INT_COL] is True
         assert self.MyFields.field_trunc[STRING_COL] is True
