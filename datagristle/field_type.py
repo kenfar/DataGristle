@@ -133,7 +133,7 @@ class FieldType:
                 if i in (100, 500, 1000):
                     self._sort_timestamp_formats()
 
-            key_type, key_format, converted_val = self._get_type(key)
+            key_type, key_format, converted_val = self._get_comprehensive_type(key)
             try:
                 self.type_freq[key_type] += int(count)
             except KeyError:
@@ -161,8 +161,8 @@ class FieldType:
                                         reverse=True)
 
 
-    def _get_type(self,
-                  value: Any) -> tuple[str, Optional[str], Optional[Any]]:
+    def _get_comprehensive_type(self,
+                                value: Any) -> tuple[str, Optional[str], Optional[Any]]:
         """ accepts a single string value and returns its potential type
 
             Types identified (and returned) include:
@@ -219,6 +219,29 @@ class FieldType:
         for key in self.type_freq:
             if self.type_freq[key]/total >= 0.8:
                 self.final_field_type = key
+
+
+
+def get_type(value: Any) -> str:
+    """ Accepts a single string value and returns its probable type
+
+        Types identified (and returned) include:
+        - unknown
+        - string
+        - integer
+        - float
+        - timestamp
+    """
+    if is_unknown(value):
+        return 'unknown'
+    elif is_float(value):
+        return 'float'
+    elif is_integer(value):
+        return 'integer'
+    elif is_timestamp(value):
+        return 'timestamp'
+    else:
+        return 'string'
 
 
 

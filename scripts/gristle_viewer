@@ -115,7 +115,7 @@ def main():
             recnum += 1
         elif response == 't':
             recnum = 0
-        elif field_type._get_type(response) == 'integer':
+        elif field_type.get_type(response) == 'integer':
             recnum = int(response)
         else:
             print('Invalid response, please enter q, p, n, t, or a specific record number')
