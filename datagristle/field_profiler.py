@@ -24,10 +24,8 @@ from datagristle import field_type as typer
 #   Multi-column needs to be more conservative since there could be 10,20, or
 #   80 different columns.  So it's limited to 1/10th the number of items.
 #------------------------------------------------------------------------------
-#MAX_FREQ_SINGLE_COL_DEFAULT = 10000000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
-MAX_FREQ_SINGLE_COL_DEFAULT = 1_000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
-#MAX_FREQ_MULTI_COL_DEFAULT  = 1000000  # ex: 10 cols, ea with 1 mil & 20 byte key = ~400 MB tot
-MAX_FREQ_MULTI_COL_DEFAULT  = 1_000 # ex: 10 cols, ea with 1 mil & 20 byte key = ~400 MB tot
+MAX_FREQ_SINGLE_COL_DEFAULT = 10_000_000 # ex: 1 col, 10 mil items with 20 byte key = ~400 MB
+MAX_FREQ_MULTI_COL_DEFAULT  = 1_000_000  # ex: 10 cols, ea with 1 mil & 20 byte key = ~400 MB tot
 
 FreqType = Iterable[tuple[Any, int]]
 StrFreqType = Iterable[tuple[str, int]]
@@ -64,7 +62,7 @@ class FieldDeterminator(object):
         self.dialect = dialect
         self.verbosity = verbosity
         self.max_freq_number:   Optional[int] = None  # will be set in analyze_fields
-        self.max_items = 1_000
+        self.max_items: int = -1
 
         def set_field_defaults(val):
             return {i:val for i in range(self.field_cnt)}
@@ -296,8 +294,11 @@ class TypeFreq:
         Outputs:
             - the single minimum value of the appropriate type
         """
-        self.min = str(min([x[0] for x in self.clean_values]))
-        return self.min
+        if not self.clean_values:
+            return None
+        else:
+            self.min = str(min([x[0] for x in self.clean_values]))
+            return self.min
 
 
     def get_max(self):
@@ -309,8 +310,11 @@ class TypeFreq:
         Outputs:
             - the single maximum value of the appropriate type
         """
-        self.max = str(max([x[0] for x in self.clean_values]))
-        return self.max
+        if not self.clean_values:
+            return None
+        else:
+            self.max = str(max([x[0] for x in self.clean_values]))
+            return self.max
 
 
 
@@ -435,13 +439,17 @@ class NumericTypeFreq(TypeFreq):
         if values is None:
             raise TypeError('invalid input is None')
         isnumeric = common.isnumeric
-        def cast_to_float(val):
+        cleaned = []
+        for value in values:
+            if not isnumeric(value[0]):
+                continue
+            if not isnumeric(value[1]):
+                continue
             try:
-                return float(val)
-            except (ValueError, TypeError):
-                pass
-        return [(self.cast_numeric(x[0], self.field_type), x[1])
-                for x in values if isnumeric(x[0]) and isnumeric(x[1]) ]
+                cleaned.append((self.cast_numeric(value[0], self.field_type), value[1]))
+            except ValueError:
+                continue
+        return cleaned
 
 
     def get_mean(self):
@@ -548,6 +556,12 @@ class NumericTypeFreq(TypeFreq):
     def cast_numeric(self,
                      val: Union[int, float],
                      field_type: str) -> Union[int, float]:
+        """ Return the value cast as the field type (int or float)
+
+        Raises
+            ValueError if it cannot cast the value.
+        """
+
         if field_type == 'float':
             try:
                 float_val = float(val)
@@ -558,7 +572,7 @@ class NumericTypeFreq(TypeFreq):
 
         try:
             int_val = int(val)
-        except ValueError:
+        except ValueError:  # it may be a value like: "9.9"
             raise ValueError('{} is not numeric'.format(val))
         else:
             return int_val

@@ -952,7 +952,7 @@ def binary_arg_fixer(app_metadata,
 
         if not transformed_config_val:
             comm.abort(f'Config item {key} has a non-true value of {orig_config_val}',
-                       'This is a flag type whose value is established by pgm metadata'
+                       'This is a flag type whose value is established by pgm metadata '
                        'and when provided via envvar or config file must always be set to true')
 
         return app_metadata[key]['const']
