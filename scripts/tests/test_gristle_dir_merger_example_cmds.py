@@ -48,6 +48,11 @@ class TestExamples:
     def teardown_method(self, method):
         shutil.rmtree(self.temp_dir)
 
+
+    def test_example_01_simple_directories(self):
+        self.run_example_config('example-01')
+
+
     def test_example_02_nested_directories(self):
         self.run_example_config('example-02')
 
@@ -78,7 +83,7 @@ class TestExamples:
         assert expected_basenames == actual_basenames
         for fqfn in self.actual_fqfns:
             pp(f'{fqfn=}')
-            assert self.get_file_contents(fqfn) in ('keep', 'same', 'dir')
+            assert self.get_file_contents(fqfn) in ('keep', 'same', 'dir', 'drop')
 
 
 
