@@ -122,6 +122,7 @@ import os
 from  os.path import exists, dirname, basename
 from signal import signal, SIGPIPE, SIG_DFL
 import sys
+import time
 from typing import Any
 
 from datagristle import common as comm
@@ -144,8 +145,15 @@ LONG_HELP = helpdoc.expand_long_help(__doc__)
 SHORT_HELP = helpdoc.get_short_help_from_long(LONG_HELP)
 
 comm.validate_python_version()
-logging.basicConfig()
 
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.CRITICAL)
+tz = time.strftime('%z')
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s.%(msecs)03d' + tz + '\t%(levelname)s\t%(module)s\t%(funcName)s\t%(message)s',
+                    datefmt="%Y-%m-%dT%H:%M:%S",
+                    handlers=[logging.FileHandler("/tmp/datagristle_differ.log", mode='w'),
+                              stream_handler])
 
 
 def main():
