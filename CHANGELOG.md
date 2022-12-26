@@ -1,3 +1,13 @@
+# V0.2.4 - 2022-12
+   * Improvement: gristle_profiler is now much faster. It previously took 120 seconds to
+     profile a 100,000 row file, it now takes 2-3.
+   * Improvement: gristle_profiler is now timestamp aware - min/max are based on timestamp
+     value - not string.
+   * BREAKING CHANGE: gristle_profiler will no longer exit with ENODATA (61) on an empty
+     file with a header, but Success (0) instead.
+   * Housekeeping: A lot of code was rewritten for profiling as well as for csv handling.
+     The code is simpler, easier to maintain, faster, and has fewer mypy violations.
+
 # V0.2.3 - 2022-11
    * Improvement: gristle_slicer - add support for writing data out in the config order
      rather than the data order, as well as negative, positive and random stepping.

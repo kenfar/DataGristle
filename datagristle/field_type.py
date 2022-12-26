@@ -99,6 +99,7 @@ class FieldType:
         self.format_freq: dict[str, int] = {}
         self.clean_type_values: list[str] = []
         self.final_field_type: str = 'unknown'
+        self.final_field_format: str = 'unknown'
         self.timestamp_formats = TIMESTAMP_FORMATS
 
 
@@ -121,6 +122,17 @@ class FieldType:
         if self.final_field_type == 'unknown':
             self._get_field_type_probability()
         return self.final_field_type
+
+
+    def get_field_format(self) -> str:
+        total = sum(self.format_freq.values())
+        for key in self.format_freq:
+            if self.format_freq[key]/total >= 0.9:
+                self.final_field_format = key
+                break
+        else:
+            self.final_field_format = 'unknown'
+        return self.final_field_format
 
 
     def _build_type_freq(self):
@@ -286,7 +298,8 @@ def is_timestamp_extended(value: Union[float, str],
         except ValueError:
             pass
         else:
-            return True, format_name, t_date
+            #return True, format_name, t_date
+            return True, date_format, t_date
     else:
         return False, None, None
 

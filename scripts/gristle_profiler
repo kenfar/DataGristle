@@ -183,6 +183,7 @@ Licensing and Further Info:
     http://opensource.org/licenses/BSD-3-Clause
     Copyright 2011-2022 Ken Farmer
 """
+import datetime as dt
 import errno
 import sys
 from os.path import basename
@@ -480,8 +481,14 @@ class OutputWriter(object):
                 self.write_string("Data Truncated", "analysis based on subset", indent=4)
 
             self.write_string("Type", my_fields.field_types[sub], indent=4)
-            self.write_string("Min", my_fields.field_min[sub], indent=4)
-            self.write_string("Max", my_fields.field_max[sub], indent=4)
+            if my_fields.field_types[sub] == "timestamp":
+                self.write_string("Min", my_fields.field_min[sub].strftime(
+                    my_fields.field_format[sub]), indent=4)
+                self.write_string("Max", my_fields.field_max[sub].strftime(
+                    my_fields.field_format[sub]), indent=4)
+            else:
+                self.write_string("Min", my_fields.field_min[sub], indent=4)
+                self.write_string("Max", my_fields.field_max[sub], indent=4)
             self.write_string("Unique Values", len(my_fields.field_freq[sub]), indent=4)
             self.write_string("Known Values", len(my_fields.get_known_values(sub)), indent=4)
 

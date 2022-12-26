@@ -6,6 +6,7 @@
     See the file "LICENSE" for the full license governing this code.
     Copyright 2011-2022 Ken Farmer
 """
+import datetime as dt
 import math
 from operator import itemgetter
 from pprint import pprint as pp
@@ -71,8 +72,10 @@ class FieldDeterminator(object):
         # every field should have a key in every one of these dictionaries
         # but if the dictionary doesn't apply, then the value may be None
         self.field_freq:        dict[int, dict[Any, int]] = {i:{} for i in range(self.field_cnt)}
+        self.field_formatted_freq:  dict[int, dict[Any, int]] = {i:{} for i in range(self.field_cnt)}
         self.field_names:       dict[int, str] = {}
         self.field_types:       dict[int, str] = {}
+        self.field_formats:     dict[int, str] = {}
         self.field_trunc:       dict[int, bool] = set_field_defaults(False)
         self.field_rows_invalid: dict[int, int] = set_field_defaults(0)
         self.field_min:         dict[int, Optional[Any]] = set_field_defaults(None)
@@ -107,7 +110,7 @@ class FieldDeterminator(object):
         Arguments:
             - field_number: if None, then analyzes all fields, otherwise
                 analyzes just the single field (based on zero-offset)
-            - field_types_overrides: allows user to 
+            - field_types_overrides: allows user to override the autodetected types
             - max_freq_number: limits size of collected frequency
                 distribution, allowing for faster analysis or analysis of very
                 large high-cardinality fields.
@@ -133,15 +136,15 @@ class FieldDeterminator(object):
 
         #---- build field_freqs --------------------------------
         for rec in self.input_handler:
-            self._get_field_freqs(rec)
+            self._build_field_freqs(rec)
             if read_limit > -1 and read_limit <= self.input_handler.rec_cnt:
-            #if read_limit > -1 and self.input_handler.rec_cnt >= read_limit:
                 for f_no in range(self.field_cnt):
                     self.field_trunc[f_no] = True
                 break
 
         #---- build aggregate fields ---------------------------
-        self._get_field_types(field_types_overrides)
+        self._get_field_types_and_formats(field_types_overrides)
+        self._build_formatted_field_freqs()
         self._get_field_names()
 
         for f_no in self.field_freq.keys():
@@ -165,13 +168,14 @@ class FieldDeterminator(object):
                 self.field_max[f_no] = num_values.get_max()
 
             elif self.field_types[f_no] == 'timestamp':
-                ts_values = TimestampTypeFreq(self.field_freq[f_no].items())
+                ts_values = TimestampTypeFreq(self.field_formatted_freq[f_no].items(),
+                                              self.field_format[f_no])
                 self.field_min[f_no] = ts_values.get_min()
                 self.field_max[f_no] = ts_values.get_max()
 
 
 
-    def _get_field_freqs(self,
+    def _build_field_freqs(self,
                          rec):
 
         field_freq = self.field_freq
@@ -209,12 +213,28 @@ class FieldDeterminator(object):
                 field_trunc[field_number] = True
 
 
-    def _get_field_types(self,
-                         field_types_overrides):
+    def _build_formatted_field_freqs(self):
+        for f_no in self.field_freq.keys():
+            if self.field_types[f_no] != 'timestamp':
+                continue
+            if self.field_format[f_no] == 'unknown':
+                continue
+            format = self.field_format[f_no]
+            for (timestamp_string, count) in self.field_freq[f_no].items():
+                try:
+                    self.field_formatted_freq[f_no][dt.datetime.strptime(timestamp_string, format)] = count
+                except ValueError:
+                    pass
+
+
+    def _get_field_types_and_formats(self,
+                                     field_types_overrides):
 
         for f_no in self.field_freq.keys():
             field_typer = typer.FieldType(self.field_freq[f_no].items())
             self.field_types[f_no] = field_typer.get_field_type()
+            if self.field_types[f_no] == 'timestamp':
+                self.field_format[f_no] = field_typer.get_field_format()
 
             if field_types_overrides:
                 for col_no in field_types_overrides:
@@ -284,7 +304,6 @@ class TypeFreq:
                and not typer.is_unknown(x[0])]
 
 
-
     def get_min(self):
         """ Returns the minimum value of the input.
 
@@ -316,6 +335,13 @@ class TypeFreq:
             self.max = str(max([x[0] for x in self.clean_values]))
             return self.max
 
+
+    def get_formatted_min(self):
+        return self.min
+
+
+    def get_formatted_max(self):
+        return self.max
 
 
 
@@ -356,7 +382,6 @@ class StrTypeFreq(TypeFreq):
             return 'upper'
         else:
             return 'unknown'
-
 
 
     def get_max_length(self) -> int:
@@ -405,13 +430,54 @@ class StrTypeFreq(TypeFreq):
 class TimestampTypeFreq(TypeFreq):
 
     def __init__(self,
-                 values: StrFreqType):
+                 values: StrFreqType,
+                 timestamp_format: str):
 
         super().__init__(values)
 
-        self.min: str
-        self.max: str
+        self.min: dt.datetime
+        self.max: dt.datetime
+        self.timestamp_format = timestamp_format
 
+
+    def get_min(self):
+        """ Returns the minimum value of the input.
+
+        Ignores unknown values, if no values found besides unknown it will
+        just return 'None'
+
+        Outputs:
+            - the single minimum value of the appropriate type
+        """
+        if not self.clean_values:
+            return None
+        else:
+            min_val = min([x[0] for x in self.clean_values])
+            if min_val:
+                 self.min = min_val
+            else:
+                 self.min = None
+            return self.min
+
+
+    def get_max(self):
+        """ Returns the minimum value of the input.
+
+        Ignores unknown values, if no values found besides unknown it will
+        just return 'None'
+
+        Outputs:
+            - the single minimum value of the appropriate type
+        """
+        if not self.clean_values:
+            return None
+        else:
+            max_val = max([x[0] for x in self.clean_values])
+            if max_val:
+                 self.max = max_val
+            else:
+                 self.max = None
+            return self.max
 
 
 class NumericTypeFreq(TypeFreq):
