@@ -247,10 +247,10 @@ def main() -> int:
 
     # Get Analysis on ALL Fields:
     input_handler.reset()
-    my_fields = field_profiler.FieldDeterminator(input_handler,
-                                                 my_file.field_cnt,
-                                                 my_file.dialect,
-                                                 nconfig.verbosity)
+    my_fields = field_profiler.FileProfiler(input_handler,
+                                            my_file.field_cnt,
+                                            my_file.dialect,
+                                            nconfig.verbosity)
 
     if nconfig.column_type_overrides:
         if max(nconfig.column_type_overrides) > my_file.field_cnt:
@@ -318,7 +318,7 @@ class MetadataManager(object):
 
 
     def write_field_results(self,
-                            field_analysis: field_profiler.FieldDeterminator,
+                            field_analysis: field_profiler.FileProfiler,
                             col_number: int) -> None:
 
         for sub in range(field_analysis.field_cnt):
@@ -459,7 +459,7 @@ class OutputWriter(object):
         self.write_header()
 
     def write_field_results(self,
-                            my_fields: field_profiler.FieldDeterminator,
+                            my_fields: field_profiler.FileProfiler,
                             col_position: int,
                             has_header: bool) -> None:
         self.write_header()
@@ -511,7 +511,7 @@ class OutputWriter(object):
 
 
     def write_field_freq(self,
-                         my_fields: field_profiler.FieldDeterminator,
+                         my_fields: field_profiler.FileProfiler,
                          col_no: int):
         """Writes out the top_values section for a single column."""
         self.subsection = "top_values"

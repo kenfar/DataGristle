@@ -61,7 +61,7 @@ class FileAndTestManager(object):
                                              self.record_cnt)
         # run FileTyper without csv dialect info:
         input_handler = file_io.InputHandler(files=[self.test1_fqfn], dialect=self.dialect)
-        self.MyFields = mod.FieldDeterminator(input_handler=input_handler,
+        self.MyFields = mod.FileProfiler(input_handler=input_handler,
                                               field_cnt=self.field_cnt,
                                               dialect=self.dialect,
                                               verbosity='quiet')

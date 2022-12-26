@@ -34,7 +34,8 @@ NumericFreqType = Iterable[tuple[Union[float, int], int]]
 
 
 
-class FieldDeterminator(object):
+
+class FileProfiler(object):
     """ Examines ALL fields within a file
 
     Output structures:
