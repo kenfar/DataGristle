@@ -238,19 +238,13 @@ def main() -> int:
     except file_type.IOErrorEmptyFile:
         return errno.ENODATA
 
-    out_writer.write_file_results(my_file, nconfig.dialect)
-    if md_man:
-        md_man.write_file_results(my_file, nconfig.dialect)
-
-    if nconfig.brief:
-        return 0
-
     # Get Analysis on ALL Fields:
     input_handler.reset()
-    my_fields = field_profiler.FileProfiler(input_handler,
-                                            my_file.field_cnt,
-                                            my_file.dialect,
-                                            nconfig.verbosity)
+    my_fields = field_profiler.RecordProfiler(input_handler,
+                                              my_file.field_cnt,
+                                              my_file.dialect,
+                                              nconfig.read_limit,
+                                              nconfig.verbosity)
 
     if nconfig.column_type_overrides:
         if max(nconfig.column_type_overrides) > my_file.field_cnt:
@@ -258,8 +252,17 @@ def main() -> int:
 
     my_fields.analyze_fields(nconfig.col_position,
                              nconfig.column_type_overrides,
-                             nconfig.max_freq,
-                             nconfig.read_limit)
+                             nconfig.max_freq)
+
+    # Write the output:
+    out_writer.write_file_results(my_file,
+                                  my_fields,
+                                  nconfig.dialect)
+    if md_man:
+        md_man.write_file_results(my_file, nconfig.dialect)
+
+    if nconfig.brief:
+        return 0
 
     out_writer.write_field_results(my_fields,
                                    nconfig.col_position,
@@ -318,7 +321,7 @@ class MetadataManager(object):
 
 
     def write_field_results(self,
-                            field_analysis: field_profiler.FileProfiler,
+                            field_analysis: field_profiler.RecordProfiler,
                             col_number: int) -> None:
 
         for sub in range(field_analysis.field_cnt):
@@ -363,7 +366,7 @@ class MetadataManager(object):
                 field_id=field_id,
                 fa_type=field_analysis.field_types[sub],
                 fa_unique_cnt=len(field_analysis.field_freq[sub]),
-                fa_known_cnt=len(field_analysis.get_known_values(sub)),
+                fa_known_cnt=len(field_analysis.get_known_values(sub)),    #ISSUE!!!!
                 fa_min=field_analysis.field_min[sub],
                 fa_max=field_analysis.field_max[sub],
                 fa_mean=fa_mean,
@@ -418,6 +421,7 @@ class OutputWriter(object):
 
     def write_file_results(self,
                            my_file: file_type.FileTyper,
+                           my_fields: field_profiler.RecordProfiler,
                            dialect: csvhelper.Dialect) -> None:
         self.myfile = my_file
         self.write_header()
@@ -428,9 +432,11 @@ class OutputWriter(object):
 
         self.write_string("field count", my_file.field_cnt)
         if my_file.record_cnt_is_est:
-            self.write_string("record count", "%d (est)" % my_file.record_cnt)
+            self.write_string("records read", "%d (est)" % my_file.record_cnt)
         else:
-            self.write_string("record count", my_file.record_cnt)
+            self.write_string("records read", my_file.record_cnt)
+        self.write_string("records rejected - missing fields", my_fields.invalid_rec_missing_fields_cnt)
+        self.write_string("records rejected - extra fields", my_fields.invalid_rec_extra_fields_cnt)
         self.write_string("has_header", my_file.dialect.has_header)
         if my_file.dialect.delimiter.strip() == "":
             self.write_string("delimiter", "[space]")
@@ -447,19 +453,20 @@ class OutputWriter(object):
             self.write_string("quotechar", dialect.quotechar)
             self.write_string("lineterminator", dialect.lineterminator, use_repr=True)
         self.write_string("escapechar", dialect.escapechar)
-        self.write_header()
+
 
     def write_file_record_count(self,
                                 record_cnt,
                                 estimate=False) -> None:
         if estimate:
-            self.write_string("record count", "%d (est)" % record_cnt)
+            self.write_string("records read", "%d (est)" % record_cnt)
         else:
-            self.write_string("record count", record_cnt)
+            self.write_string("records read", record_cnt)
         self.write_header()
 
+
     def write_field_results(self,
-                            my_fields: field_profiler.FileProfiler,
+                            my_fields: field_profiler.RecordProfiler,
                             col_position: int,
                             has_header: bool) -> None:
         self.write_header()
@@ -471,66 +478,87 @@ class OutputWriter(object):
             if col_position is not None and sub != col_position:
                 continue
 
+            field_profile = my_fields.field_profile[sub]
+
             self.write_header()
-            self.write_header("------------------------------------------------------", indent=6)
-            self.write_string("Name", my_fields.field_names[sub], indent=4)
-            self.write_string("Gristle Name", my_fields.field_names[sub].strip().replace(' ', '_').lower(), indent=4)
+            self.write_header("----------------------------------------------------------", indent=6)
+            self.write_string("Name", field_profile.field_name, indent=4)
+            self.write_string("Gristle Name", field_profile.field_name.strip().replace(' ', '_').lower(), indent=4)
             self.write_string("Field Number", sub, indent=4)
-            self.write_string("Wrong Field Cnt", my_fields.field_rows_invalid.get(sub, 0), indent=4)
-            if my_fields.field_trunc.get(sub):
+            if field_profile.value_trunc:
                 self.write_string("Data Truncated", "analysis based on subset", indent=4)
 
-            self.write_string("Type", my_fields.field_types[sub], indent=4)
-            if my_fields.field_types[sub] == "timestamp":
-                self.write_string("Min", my_fields.field_min[sub].strftime(
-                    my_fields.field_format[sub]), indent=4)
-                self.write_string("Max", my_fields.field_max[sub].strftime(
-                    my_fields.field_format[sub]), indent=4)
-            else:
-                self.write_string("Min", my_fields.field_min[sub], indent=4)
-                self.write_string("Max", my_fields.field_max[sub], indent=4)
-            self.write_string("Unique Values", len(my_fields.field_freq[sub]), indent=4)
-            self.write_string("Known Values", len(my_fields.get_known_values(sub)), indent=4)
-
-            if my_fields.field_types[sub] in ("integer", "float"):
-                max_decimals = my_fields.field_decimals[sub]
-                self.write_string("Mean", float_truncator(my_fields.field_mean[sub], max_decimals), indent=4)
-                self.write_string("Median", float_truncator(my_fields.field_median[sub], max_decimals), indent=4)
-                self.write_string("Variance", float_truncator(my_fields.variance[sub], max_decimals), indent=4)
-                self.write_string("Std Dev", float_truncator(my_fields.stddev[sub], max_decimals), indent=4)
-                if my_fields.field_types[sub] == 'float':
-                    self.write_string("Max Decimal Places", my_fields.field_decimals[sub], indent=4)
-            elif my_fields.field_types[sub] == "string":
-                self.write_string("Case", my_fields.field_case[sub], indent=4)
-                self.write_string("Min Length", my_fields.field_min_length[sub], indent=4)
-                self.write_string("Max Length", my_fields.field_max_length[sub], indent=4)
-                self.write_string("Mean Length", my_fields.field_mean_length[sub], indent=4)
+            self.write_field_profile(my_fields, sub)
+            self.write_field_counts(my_fields, sub)
 
             if self.myfile.record_cnt > 1 or (self.myfile.record_cnt == 1 and not has_header):
                 self.write_field_freq(my_fields, sub)
 
 
+    def write_field_profile(self,
+                            my_fields: field_profiler.RecordProfiler,
+                            col_no: int):
+
+        field_profile = my_fields.field_profile[col_no]
+        #self.subsection = "main"
+        self.write_string("Profile", indent=4, readable_only=True)
+
+        self.write_string("Type", field_profile.field_type, indent=8, key_width=30)
+        if field_profile.field_type == "timestamp":
+            self.write_string("Min", field_profile.value_min.strftime(
+                field_profile.field_format), indent=8, key_width=30)
+            self.write_string("Max", field_profile.value_min.strftime(
+                field_profile.field_format), indent=8, key_width=30)
+        else:
+            self.write_string("Min", field_profile.value_min, indent=8, key_width=30)
+            self.write_string("Max", field_profile.value_max, indent=8, key_width=30)
+
+        if field_profile.field_type in ("integer", "float"):
+            max_decimals = field_profile.value_decimals
+            self.write_string("Mean", float_truncator(field_profile.value_mean, max_decimals), indent=8, key_width=30)
+            self.write_string("Median", float_truncator(field_profile.value_median, max_decimals), indent=8, key_width=30)
+            self.write_string("Variance", float_truncator(field_profile.value_variance, max_decimals), indent=8, key_width=30)
+            self.write_string("Std Dev", float_truncator(field_profile.value_stddev, max_decimals), indent=8, key_width=30)
+            if field_profile.field_type == 'float':
+                self.write_string("Max Decimal Places", field_profile.value_decimals, indent=8, key_width=30)
+        elif field_profile.field_type == "string":
+            self.write_string("Case", field_profile.value_case, indent=8, key_width=30)
+            self.write_string("Min Length", field_profile.value_min_length, indent=8, key_width=30)
+            self.write_string("Max Length", field_profile.value_max_length, indent=8, key_width=30)
+            self.write_string("Mean Length", field_profile.value_mean_length, indent=8, key_width=30)
+
+
+    def write_field_counts(self,
+                         my_fields: field_profiler.RecordProfiler,
+                         col_no: int):
+
+        field_profile = my_fields.field_profile[col_no]
+        self.subsection = "main"
+        self.write_string("Counts", indent=4, readable_only=True)
+        #self.write_string("Profiled Field Cnt", field_profile.field_profiled_cnt, indent=8, key_width=30)
+        self.write_string("Unique Values", len(field_profile.value_counts), indent=8, key_width=30)
+        self.write_string("Known Values", field_profile.value_known_cnt, indent=8, key_width=30)
+        self.write_string("Unknown Values", field_profile.value_unknown_cnt, indent=8, key_width=30)
+
+
     def write_field_freq(self,
-                         my_fields: field_profiler.FileProfiler,
+                         my_fields: field_profiler.RecordProfiler,
                          col_no: int):
         """Writes out the top_values section for a single column."""
+        field_profile = my_fields.field_profile[col_no]
+
         self.subsection = "top_values"
-
-        if my_fields.field_freq[col_no] is None:
-            self.write_string("Top Values", "no values found", indent=4)
-            return
-
-        sorted_list = my_fields.get_top_freq_values(col_no, limit=10)
+        sorted_list = field_profile.get_top_values(limit=10)
 
         if not sorted_list:
-            self.write_string("Top Values", "no value found", indent=4)
+            self.write_string("Top Known Values", "no value found", indent=4)
             return
 
         if sorted_list[0][1] == 1:
-            self.write_string("Top Values", "not shown - all are unique", indent=4)
+            self.write_string("Top Known Values", "not shown - all are unique", indent=4)
             return
 
-        self.write_string("Top Values", indent=4)
+        self.write_string("Top Known Values", indent=4)
         for (key, val) in sorted_list:
             if self.output_format == "readable":
                 self.write_string(key, f"x {val} occurrences", indent=8, key_width=30)
@@ -551,11 +579,15 @@ class OutputWriter(object):
                      key: str,
                      value: Any = " ",
                      indent: int = 0,
-                     key_width: int = 20,
-                     use_repr: bool = False) -> None:
+                     key_width: int = 34,
+                     use_repr: bool = False,
+                     readable_only = False) -> None:
 
-        if self.output_format == "parsable" and self._parsify(self.subsection) != "top_values":
-            trunc_key = self._parsify(key[:key_width])
+        def parsify(val: str) -> str:
+            return '"%s"' % val.lower().replace(" ", "_").replace("_-_", "_")
+
+        if self.output_format == "parsable" and parsify(self.subsection) != "top_values":
+            trunc_key = parsify(key[:key_width])
             trunc_value = '"%s"' % str(value)[:30]
         else:
             trunc_key = key[:key_width]
@@ -569,16 +601,12 @@ class OutputWriter(object):
                 self.outfile.write("  {0:<{1}}{2:<{3}}{4}\n".format(
                                    "%s" % "", indent, trunc_key, key_width, trunc_value))
         elif self.output_format == "parsable":
-            self.outfile.write("{0}|{1}|{2}|{3}|{4}\n".format(self._parsify(self.division),
-                                                              self._parsify(self.section),
-                                                              self._parsify(self.subsection),
-                                                              trunc_key,
-                                                              trunc_value))
-
-    def _parsify(self,
-                 val: str) -> str:
-        return '"%s"' % val.lower().replace(" ", "_")
-
+            if not readable_only:
+                self.outfile.write("{0}|{1}|{2}|{3}|{4}\n".format(parsify(self.division),
+                                                                parsify(self.section),
+                                                                parsify(self.subsection),
+                                                                trunc_key,
+                                                                trunc_value))
 
 
 def float_truncator(numeric_value, max_decimals):
@@ -618,7 +646,8 @@ class ConfigManager(configulator.Config):
                                  short_name="c",
                                  type=str)
         self.add_custom_metadata(name="max_freq",
-                                 type=int)
+                                 type=int,
+                                 default=-1)
         self.add_custom_metadata(name="column_types",
                                  type=str)
         self.add_custom_metadata(name="metadata",

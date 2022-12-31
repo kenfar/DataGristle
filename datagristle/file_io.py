@@ -159,6 +159,17 @@ class InputHandler(object):
         return len(self.field_names)
 
 
+    def get_field_name(self,
+                       field_number: int):
+
+        field_name = ''
+        try:
+            field_name = self.field_names[field_number]
+        except IndexError:
+            raise DataNotYetAvailableError('Field Names have not yet been populated')
+        return field_name
+
+
     def get_rec_count(self,
                       read_limit: int = -1) -> tuple[int, bool]:
         """ Returns the number of records in the file
@@ -382,6 +393,8 @@ def get_file_info(filename):
     return file_dt, file_size
 
 
+class DataNotYetAvailableError(Exception):
+    pass
 
 class InvalidSequence(Exception):
     pass

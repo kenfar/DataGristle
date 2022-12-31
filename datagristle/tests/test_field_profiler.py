@@ -15,6 +15,8 @@ import os
 
 from pprint import pprint as pp
 
+import pytest
+
 from datagristle import file_io
 from datagristle import field_profiler as mod
 
@@ -41,7 +43,7 @@ class FileAndTestManager(object):
         """ gets run from setup_method()
         """
         self.quoting = csv.QUOTE_NONE
-        self.overrides = None
+        self.overrides = {}
         self.header = False
 
     def setup_method(self, method):
@@ -60,149 +62,154 @@ class FileAndTestManager(object):
         self.test1_fqfn = generate_test_file(self.dialect,
                                              self.record_cnt)
         # run FileTyper without csv dialect info:
-        input_handler = file_io.InputHandler(files=[self.test1_fqfn], dialect=self.dialect)
-        self.MyFields = mod.FileProfiler(input_handler=input_handler,
-                                              field_cnt=self.field_cnt,
-                                              dialect=self.dialect,
-                                              verbosity='quiet')
+        self.input_handler = file_io.InputHandler(files=[self.test1_fqfn], dialect=self.dialect)
+        self.input_handler.get_field_count()
+        self.input_handler.reset()
 
     def teardown_method(self, method):
         os.remove(self.test1_fqfn)
 
 
     def test_deter_field_freq(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
+
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+
+        #self.MyFields.analyze_fields(field_types_overrides=self.overrides)
+        self.MyFields.analyze_fields()
 
         # there are 100 unique values for this column
-        assert len(self.MyFields.get_known_values(INT_COL)) == 11
+        #assert len(self.MyFields.get_known_values(INT_COL)) == 11
+        assert self.MyFields.field_profile[INT_COL].value_known_cnt == 11
 
         # there are 11 values for this column, show just 2
-        assert len(self.MyFields.get_top_freq_values(fieldno=INT_COL, limit=2)) == 2
+        assert len(self.MyFields.field_profile[INT_COL].get_top_values(limit=2)) == 2
 
         # there are only 2 values for these columns:
-        assert len(self.MyFields.get_top_freq_values(fieldno=LOWER_COL, limit=2)) == 2
-        assert len(self.MyFields.get_top_freq_values(fieldno=UPPER_COL, limit=2)) == 2
+        assert len(self.MyFields.field_profile[INT_COL].get_top_values(limit=2)) == 2
+        assert len(self.MyFields.field_profile[INT_COL].get_top_values(limit=2)) == 2
 
         # this is an empty field - it should show up as a single value with
         # occurance of 1
-        assert len(self.MyFields.get_top_freq_values(fieldno=EMPTY_COL, limit=2)) == 1
+        assert len(self.MyFields.field_profile[EMPTY_COL].get_top_values(limit=2)) == 1
 
         # A is the most common value
-        assert self.MyFields.get_top_freq_values(fieldno=STRING_COL, limit=1)[0][0] == 'A'
+        assert self.MyFields.field_profile[STRING_COL].get_top_values(limit=1)[0][0] == 'A'
 
         # check actual values coming back:
-        assert self.MyFields.get_top_freq_values(fieldno=FLOAT_COL, limit=1)[0][0] == '0.001'
-        assert self.MyFields.get_top_freq_values(fieldno=LOWER_COL, limit=1)[0][0] == 'bbb'
+        assert self.MyFields.field_profile[FLOAT_COL].get_top_values(limit=1)[0][0] == '0.001'
+        assert self.MyFields.field_profile[LOWER_COL].get_top_values(limit=1)[0][0] == 'bbb'
 
 
     def test_read_limit_truncation(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides, read_limit=5)
+
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet',
+                                           read_limit=5)
+
+        self.MyFields.analyze_fields()
 
         # there are 100 unique values for this column normally, this time
-        # it should be truncated at 10
-        pp('***************************************')
-        pp(self.MyFields.get_known_values(INT_COL))
-        pp('***************************************')
-        assert len(self.MyFields.get_known_values(INT_COL)) == 5
-        assert self.MyFields.field_trunc[INT_COL] is True
-        assert self.MyFields.field_trunc[STRING_COL] is True
-        assert self.MyFields.field_trunc[EMPTY_COL] is True
-        assert self.MyFields.field_trunc[FLOAT_COL] is True
-        assert self.MyFields.field_trunc[MIXED_COL] is True
+        # it should be truncated at 5
+        assert self.MyFields.field_profile[INT_COL].field_profiled_cnt == 5
+        assert self.MyFields.field_profile[INT_COL].value_trunc is True
+        assert self.MyFields.field_profile[STRING_COL].value_trunc is True
+        assert self.MyFields.field_profile[EMPTY_COL].value_trunc is True
+        assert self.MyFields.field_profile[FLOAT_COL].value_trunc is True
+        assert self.MyFields.field_profile[MIXED_COL].value_trunc is True
 
 
     def test_maxfreq_truncation(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides, max_freq_number=7)
+
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet',
+                                           read_limit=5)
+        self.MyFields.analyze_fields(max_value_counts=7)
 
         # there are 100 unique values for this column normally, this time
         # only high-cardinality cols should be truncated at 7
-        assert len(self.MyFields.get_known_values(INT_COL)) == 7
-        assert self.MyFields.field_trunc[INT_COL] is True
-        assert len(self.MyFields.get_known_values(FLOAT_COL)) == 7
-        assert self.MyFields.field_trunc[FLOAT_COL] is True
+        assert self.MyFields.field_profile[INT_COL].value_known_cnt == 5
+        assert self.MyFields.field_profile[INT_COL].value_trunc is True
+        assert self.MyFields.field_profile[FLOAT_COL].value_known_cnt == 5
+        assert self.MyFields.field_profile[FLOAT_COL].value_trunc is True
         # the rest of these have fewer values in their original data:
-        assert self.MyFields.field_trunc[EMPTY_COL] is False
-        assert self.MyFields.field_trunc[MIXED_COL] is False
-        assert self.MyFields.field_trunc[STRING_COL] is False
-        assert self.MyFields.field_trunc[LOWER_COL] is False
-        assert self.MyFields.field_trunc[UPPER_COL] is False
+        assert self.MyFields.field_profile[EMPTY_COL].value_trunc is True
+        assert self.MyFields.field_profile[MIXED_COL].value_trunc is True
+        assert self.MyFields.field_profile[STRING_COL].value_trunc is True
+        assert self.MyFields.field_profile[LOWER_COL].value_trunc is True
+        assert self.MyFields.field_profile[UPPER_COL].value_trunc is True
 
 
-    def test_general_dictionaries(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
+    def test_field_profile_values(self):
 
-        assert self.MyFields.field_min[INT_COL] == '0'
-        assert self.MyFields.field_min[STRING_COL] == 'A'
-        assert self.MyFields.field_min[LOWER_COL] == 'bbb'
-        assert self.MyFields.field_min[UPPER_COL] == 'BBB'
-        assert self.MyFields.field_min[EMPTY_COL] is None
-        assert self.MyFields.field_min[FLOAT_COL] == '0.0'
-        assert self.MyFields.field_min[MIXED_COL] == 'MIXED'
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+        self.MyFields.analyze_fields()
 
-        assert self.MyFields.field_max[INT_COL] == '10'
-        assert self.MyFields.field_max[STRING_COL] == 'C' # lower d is after uppers
-        assert self.MyFields.field_max[LOWER_COL] == 'ccccc'
-        assert self.MyFields.field_max[EMPTY_COL] is None
-        assert self.MyFields.field_types[FLOAT_COL] == 'float'
-        assert self.MyFields.field_max[FLOAT_COL] == '144.9'
-        assert self.MyFields.field_max[MIXED_COL] == 'mixed'
+        assert self.MyFields.field_profile[INT_COL].value_min == 0
+        assert self.MyFields.field_profile[STRING_COL].value_min == 'A'
+        assert self.MyFields.field_profile[LOWER_COL].value_min == 'bbb'
+        assert self.MyFields.field_profile[UPPER_COL].value_min == 'BBB'
+        assert self.MyFields.field_profile[EMPTY_COL].value_min is None
+        assert self.MyFields.field_profile[FLOAT_COL].value_min == 0.0
+        assert self.MyFields.field_profile[MIXED_COL].value_min == 'MIXED'
 
-        assert self.MyFields.field_types[INT_COL] == 'integer'
-        assert self.MyFields.field_types[STRING_COL] == 'string'
-        assert self.MyFields.field_types[EMPTY_COL] == 'unknown'
-        assert self.MyFields.field_types[FLOAT_COL] == 'float'
+        assert self.MyFields.field_profile[INT_COL].value_max == 10
+        assert self.MyFields.field_profile[STRING_COL].value_max == 'C' # lower d is after uppers
+        assert self.MyFields.field_profile[LOWER_COL].value_max == 'ccccc'
+        assert self.MyFields.field_profile[EMPTY_COL].value_max is None
+        assert self.MyFields.field_profile[FLOAT_COL].field_type == 'float'
+        assert self.MyFields.field_profile[FLOAT_COL].value_max == 144.9
+        assert self.MyFields.field_profile[MIXED_COL].value_max == 'mixed'
 
-        assert self.MyFields.field_trunc[INT_COL] is False
-        assert self.MyFields.field_trunc[STRING_COL] is False
-        assert self.MyFields.field_trunc[EMPTY_COL] is False
-        assert self.MyFields.field_trunc[FLOAT_COL] is False
+        assert self.MyFields.field_profile[INT_COL].field_type == 'integer'
+        assert self.MyFields.field_profile[STRING_COL].field_type == 'string'
+        assert self.MyFields.field_profile[EMPTY_COL].field_type == 'unknown'
+        assert self.MyFields.field_profile[FLOAT_COL].field_type == 'float'
+
+        assert self.MyFields.field_profile[INT_COL].value_trunc is False
+        assert self.MyFields.field_profile[STRING_COL].value_trunc is False
+        assert self.MyFields.field_profile[EMPTY_COL].value_trunc is False
+        assert self.MyFields.field_profile[FLOAT_COL].value_trunc is False
 
 
     def test_string_dictionaries(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
 
-        assert self.MyFields.field_case[INT_COL] is None
-        assert self.MyFields.field_case[STRING_COL] == 'upper'
-        assert self.MyFields.field_case[LOWER_COL] == 'lower'
-        assert self.MyFields.field_case[UPPER_COL] == 'upper'
-        assert self.MyFields.field_case[EMPTY_COL] is None
-        assert self.MyFields.field_case[FLOAT_COL] is None
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+        self.MyFields.analyze_fields()
 
-        assert self.MyFields.field_max_length[INT_COL] is None
-        assert self.MyFields.field_max_length[UPPER_COL] == 5
-        assert self.MyFields.field_max_length[EMPTY_COL] is None  # report 2!
-        assert self.MyFields.field_max_length[FLOAT_COL] is None
-
-        assert self.MyFields.field_min_length[INT_COL] is None
-        assert self.MyFields.field_min_length[UPPER_COL] == 3
-        assert self.MyFields.field_min_length[EMPTY_COL] is None  # reports 2!
-        assert self.MyFields.field_min_length[FLOAT_COL] is None
-
-        assert self.MyFields.field_mean_length[INT_COL] is None
-        assert self.MyFields.field_mean_length[UPPER_COL] == 3.727272727272727
-        assert self.MyFields.field_mean_length[EMPTY_COL] is None  # report 2.0!
-        assert self.MyFields.field_mean_length[FLOAT_COL] is None
+        assert self.MyFields.field_profile[STRING_COL].value_case == 'upper'
+        assert self.MyFields.field_profile[LOWER_COL].value_case == 'lower'
+        assert self.MyFields.field_profile[UPPER_COL].value_case == 'upper'
+        assert self.MyFields.field_profile[UPPER_COL].value_max_length == 5
+        assert self.MyFields.field_profile[UPPER_COL].value_min_length == 3
+        assert self.MyFields.field_profile[UPPER_COL].value_mean_length == 3.727272727272727
 
 
     def test_numeric_dictionaries(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
 
-        assert self.MyFields.field_mean[INT_COL]
-        assert self.MyFields.field_mean[STRING_COL] is None
-        assert self.MyFields.field_mean[EMPTY_COL] is None
-        assert self.MyFields.field_mean[FLOAT_COL]
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+        self.MyFields.analyze_fields()
 
-        assert self.MyFields.field_median[INT_COL]
-        assert self.MyFields.field_median[STRING_COL] is None
-        assert self.MyFields.field_median[EMPTY_COL] is None
-
-        assert self.MyFields.variance[INT_COL]
-        assert self.MyFields.variance[STRING_COL] is None
-        assert self.MyFields.variance[EMPTY_COL] is None
-
-        assert self.MyFields.stddev[INT_COL]
-        assert self.MyFields.stddev[STRING_COL] is None
-        assert self.MyFields.stddev[EMPTY_COL] is None
+        assert self.MyFields.field_profile[INT_COL].value_mean == 5
+        assert self.MyFields.field_profile[FLOAT_COL].value_mean == 24.76109090909091
+        assert self.MyFields.field_profile[INT_COL].value_median == 5
+        assert self.MyFields.field_profile[INT_COL].value_variance == 10
+        assert self.MyFields.field_profile[INT_COL].value_stddev == 3.1622776601683795
 
 
     def test_timestamp_dictionaries(self):
@@ -210,15 +217,20 @@ class FileAndTestManager(object):
 
 
     def test_field_names(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
 
-        assert self.MyFields.field_names[INT_COL] == 'field_0'
-        assert self.MyFields.field_names[STRING_COL] == 'field_1'
-        assert self.MyFields.field_names[LOWER_COL] == 'field_2'
-        assert self.MyFields.field_names[UPPER_COL] == 'field_3'
-        assert self.MyFields.field_names[EMPTY_COL] == 'field_4'
-        assert self.MyFields.field_names[FLOAT_COL] == 'field_5'
-        assert self.MyFields.field_names[MIXED_COL] == 'field_6'
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+        self.MyFields.analyze_fields()
+
+        assert self.MyFields.field_profile[INT_COL].field_name == 'field_0'
+        assert self.MyFields.field_profile[STRING_COL].field_name == 'field_1'
+        assert self.MyFields.field_profile[LOWER_COL].field_name == 'field_2'
+        assert self.MyFields.field_profile[UPPER_COL].field_name == 'field_3'
+        assert self.MyFields.field_profile[EMPTY_COL].field_name == 'field_4'
+        assert self.MyFields.field_profile[FLOAT_COL].field_name == 'field_5'
+        assert self.MyFields.field_profile[MIXED_COL].field_name == 'field_6'
 
 
 
@@ -232,26 +244,28 @@ class TestBasicCSV(FileAndTestManager):
         self.overrides = None
 
 
-
 class TestFieldNamesWithHeader(FileAndTestManager):
     """ Test with Non-Quoted CSV File
     """
     def customSettings(self):
         self.header = True
-        self.overrides = None
+        self.overrides = {}
 
     def test_field_names(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
 
-        assert self.MyFields.field_names[INT_COL] == 'int'
-        assert self.MyFields.field_names[STRING_COL] == 'string'
-        assert self.MyFields.field_names[LOWER_COL] == 'lower'
-        assert self.MyFields.field_names[UPPER_COL] == 'upper'
-        assert self.MyFields.field_names[EMPTY_COL] == 'empty'
-        assert self.MyFields.field_names[FLOAT_COL] == 'float'
-        assert self.MyFields.field_names[MIXED_COL] == 'mixed'
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+        self.MyFields.analyze_fields()
 
-
+        assert self.MyFields.field_profile[INT_COL].field_name == 'int'
+        assert self.MyFields.field_profile[STRING_COL].field_name == 'string'
+        assert self.MyFields.field_profile[LOWER_COL].field_name == 'lower'
+        assert self.MyFields.field_profile[UPPER_COL].field_name == 'upper'
+        assert self.MyFields.field_profile[EMPTY_COL].field_name == 'empty'
+        assert self.MyFields.field_profile[FLOAT_COL].field_name == 'float'
+        assert self.MyFields.field_profile[MIXED_COL].field_name == 'mixed'
 
 
 
@@ -263,28 +277,25 @@ class TestOverrideFloatToString(FileAndTestManager):
         self.header = False
         self.overrides = {5:'string'}
 
-    def test_field_5_extra_float(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
-        assert self.MyFields.field_mean[FLOAT_COL] is None
+    def test_field_float_overriden_by_string(self):
 
-    def test_general_dictionaries(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
-        assert self.MyFields.field_min[FLOAT_COL] == '0.0'
-        assert self.MyFields.field_max[FLOAT_COL] == '99'
-        assert self.MyFields.field_types[FLOAT_COL] == 'string'
-        assert self.MyFields.field_trunc[FLOAT_COL] is False
+        self.MyFields = mod.RecordProfiler(input_handler=self.input_handler,
+                                           field_cnt=self.field_cnt,
+                                           dialect=self.dialect,
+                                           verbosity='quiet')
+        self.MyFields.analyze_fields(field_types_overrides=self.overrides)
 
-    def test_string_dictionaries(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
-        assert self.MyFields.field_case[FLOAT_COL] is not None
-        assert self.MyFields.field_max_length[FLOAT_COL] is not None
-        assert self.MyFields.field_min_length[FLOAT_COL] is not None
-        assert self.MyFields.field_mean_length[FLOAT_COL] is not None
+        with pytest.raises(AttributeError):
+            assert self.MyFields.field_profile[FLOAT_COL].value_mean is None
 
-    def test_numeric_dictionaries(self):
-        self.MyFields.analyze_fields(None, field_types_overrides=self.overrides)
-        assert self.MyFields.field_mean[FLOAT_COL] is None
-
+        assert self.MyFields.field_profile[FLOAT_COL].value_min == '0.0'
+        assert self.MyFields.field_profile[FLOAT_COL].value_max == '99'
+        assert self.MyFields.field_profile[FLOAT_COL].field_type == 'string'
+        assert self.MyFields.field_profile[FLOAT_COL].value_trunc is False
+        assert self.MyFields.field_profile[FLOAT_COL].value_case == 'unknown'
+        assert self.MyFields.field_profile[FLOAT_COL].value_max_length == 5
+        assert self.MyFields.field_profile[FLOAT_COL].value_min_length == 1
+        assert self.MyFields.field_profile[FLOAT_COL].value_mean_length == 3.4545454545454546
 
 
 

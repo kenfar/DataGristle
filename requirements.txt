@@ -1,13 +1,13 @@
 appdirs     == 1.4.4
 colorama    == 0.4.4
 envoy       == 0.0.3
-Flask       == 1.1.2
+Flask       == 2.0.3
 Jinja2      == 3.0.3
 jsonschema  == 3.2.0
 more-itertools == 8.12.0
 pre-commit  == 2.12.0
 psutil      == 5.9.0
-pydantic    == 1.9.0
+pydantic    >= 1.10.2
 pytest      == 7.0.1
 ruamel.yaml == 0.17.21
 SQLAlchemy  == 1.4.31
