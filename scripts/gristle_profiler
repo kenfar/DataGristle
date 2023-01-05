@@ -255,20 +255,20 @@ def main() -> int:
                              nconfig.max_freq)
 
     # Write the output:
-    out_writer.write_file_results(my_file,
-                                  my_fields,
-                                  nconfig.dialect)
+    out_writer.write_file_division(my_file,
+                                   my_fields,
+                                   nconfig.dialect)
     if md_man:
-        md_man.write_file_results(my_file, nconfig.dialect)
+        md_man.write_file_division(my_file, nconfig.dialect)
 
     if nconfig.brief:
         return 0
 
-    out_writer.write_field_results(my_fields,
-                                   nconfig.col_position,
-                                   has_header=bool(input_handler.header))
+    out_writer.write_field_division(my_fields,
+                                    nconfig.col_position,
+                                    has_header=bool(input_handler.header))
     if md_man:
-        md_man.write_field_results(my_fields, nconfig.col_position)
+        md_man.write_field_division(my_fields, nconfig.col_position)
 
     out_writer.terminate()
     return 0
@@ -300,7 +300,7 @@ class MetadataManager(object):
                                                          analysis_profile_id=self.analysis_profile_id,
                                                          analysis_tool="gristle_determinator")
 
-    def write_file_results(self,
+    def write_file_division(self,
                            filetype: file_type.FileTyper,
                            dialect: csvhelper.Dialect) -> None:
 
@@ -320,7 +320,7 @@ class MetadataManager(object):
             ca_quote_char=dialect.quotechar)
 
 
-    def write_field_results(self,
+    def write_field_division(self,
                             field_analysis: field_profiler.RecordProfiler,
                             col_number: int) -> None:
 
@@ -419,59 +419,63 @@ class OutputWriter(object):
             self.outfile.close()
 
 
-    def write_file_results(self,
-                           my_file: file_type.FileTyper,
-                           my_fields: field_profiler.RecordProfiler,
-                           dialect: csvhelper.Dialect) -> None:
+    def write_file_division(self,
+                            my_file: file_type.FileTyper,
+                            my_fields: field_profiler.RecordProfiler,
+                            dialect: csvhelper.Dialect) -> None:
+
         self.myfile = my_file
-        self.write_header()
-        self.write_header("File Analysis Results:")
+        self._print_header()
+        self._print_header("File Analysis Results:")
         self.division = "File Analysis Results"
         self.section = "main"
         self.subsection = "main"
 
-        self.write_string("field count", my_file.field_cnt)
-        if my_file.record_cnt_is_est:
-            self.write_string("records read", "%d (est)" % my_file.record_cnt)
-        else:
-            self.write_string("records read", my_file.record_cnt)
-        self.write_string("records rejected - missing fields", my_fields.invalid_rec_missing_fields_cnt)
-        self.write_string("records rejected - extra fields", my_fields.invalid_rec_extra_fields_cnt)
-        self.write_string("has_header", my_file.dialect.has_header)
-        if my_file.dialect.delimiter.strip() == "":
-            self.write_string("delimiter", "[space]")
+        self._write_file_counts(my_file, my_fields)
+        self._write_file_dialect(dialect)
+
+
+    def _write_file_dialect(self,
+                            dialect):
+
+        self._print_line("has_header", dialect.has_header)
+        if dialect.delimiter.strip() == "":
+            self._print_line("delimiter", "[space]")
         elif dialect.delimiter.strip() == "|":
-            self.write_string("delimiter", "'|'")
+            self._print_line("delimiter", "'|'")
         else:
-            self.write_string("delimiter", dialect.delimiter)
-        self.write_string("skipinitialspace", dialect.skipinitialspace)
+            self._print_line("delimiter", dialect.delimiter)
+        self._print_line("skipinitialspace", dialect.skipinitialspace)
 
-        self.write_string("quoting", dialect.get_quote_name())
+        self._print_line("quoting", dialect.get_quote_name())
 
-        self.write_string("doublequote", dialect.doublequote)
+        self._print_line("doublequote", dialect.doublequote)
         if self.output_format == "readable":
-            self.write_string("quotechar", dialect.quotechar)
-            self.write_string("lineterminator", dialect.lineterminator, use_repr=True)
-        self.write_string("escapechar", dialect.escapechar)
+            self._print_line("quotechar", dialect.quotechar)
+            self._print_line("lineterminator", dialect.lineterminator, use_repr=True)
+        self._print_line("escapechar", dialect.escapechar)
 
 
-    def write_file_record_count(self,
-                                record_cnt,
-                                estimate=False) -> None:
-        if estimate:
-            self.write_string("records read", "%d (est)" % record_cnt)
+    def _write_file_counts(self,
+                           my_file,
+                           my_fields):
+
+        self._print_line("field count", my_file.field_cnt)
+        if my_file.record_cnt_is_est:
+            self._print_line("records read", "%d (est)" % my_file.record_cnt)
         else:
-            self.write_string("records read", record_cnt)
-        self.write_header()
+            self._print_line("records read", my_file.record_cnt)
+        self._print_line("records rejected - missing fields", my_fields.invalid_rec_missing_fields_cnt)
+        self._print_line("records rejected - extra fields", my_fields.invalid_rec_extra_fields_cnt)
 
 
-    def write_field_results(self,
-                            my_fields: field_profiler.RecordProfiler,
-                            col_position: int,
-                            has_header: bool) -> None:
+    def write_field_division(self,
+                             my_fields: field_profiler.RecordProfiler,
+                             col_position: int,
+                             has_header: bool) -> None:
 
-        self.write_header()
-        self.write_header("Field Analysis Results")
+        self._print_header()
+        self._print_header("Field Analysis Results")
         self.division = "Field Analysis Results"
         for sub in range(my_fields.field_cnt):
             self.section = "field_%d" % sub
@@ -481,39 +485,43 @@ class OutputWriter(object):
 
             field_profile = my_fields.field_profile[sub]
 
-            self.write_header()
-            self.write_header("----------------------------------------------------------", indent=6)
-            self.write_string("Name", field_profile.field_name, indent=4)
-            self.write_string("Gristle Name", field_profile.field_name.strip().replace(' ', '_').lower(), indent=4)
-            self.write_string("Field Number", sub, indent=4)
-            if field_profile.value_trunc:
-                self.write_string("Data Truncated", "analysis based on subset", indent=4)
-
-            self.write_field_profile(field_profile)
-
-            self.write_field_counts(field_profile)
-
-            self.write_field_freq(field_profile)
+            self._write_field_intro(field_profile, sub)
+            self._write_field_profile(field_profile)
+            self._write_field_counts(field_profile)
+            self._write_field_freq(field_profile)
 
 
-    def write_field_profile(self,
+    def _write_field_intro(self,
+                           field_profile: field_profiler.FieldProfile,
+                           sub):
+
+        self._print_header()
+        self._print_header("-"*58, indent=6)
+        self._print_line("Name", field_profile.field_name, indent=4)
+        self._print_line("Gristle Name", make_gristle_field_name(field_profile.field_name), indent=4)
+        self._print_line("Field Number", field_profile.field_number, indent=4)
+        if field_profile.value_trunc:
+            self._print_line("Data Truncated", "analysis based on subset", indent=4)
+
+
+    def _write_field_profile(self,
                             field_profile: field_profiler.FieldProfile):
 
-        self.write_string("Profile", indent=4, readable_only=True)
+        self._print_line("Profile", indent=4, readable_only=True)
         for key, value in field_profile.get_display_properties():
-            self.write_string(key, value, indent=8, key_width=30)
+            self._print_line(key, value, indent=8, key_width=30)
 
 
-    def write_field_counts(self,
+    def _write_field_counts(self,
                            field_profile: field_profiler.FieldProfile):
 
         self.subsection = "main"
-        self.write_string("Counts", indent=4, readable_only=True)
+        self._print_line("Counts", indent=4, readable_only=True)
         for key, value in field_profile.get_display_counts():
-            self.write_string(key, value, indent=8, key_width=30)
+            self._print_line(key, value, indent=8, key_width=30)
 
 
-    def write_field_freq(self,
+    def _write_field_freq(self,
                          field_profile: field_profiler.FieldProfile):
         """Writes out the top_values section for a single column.
         """
@@ -522,21 +530,21 @@ class OutputWriter(object):
         sorted_list = field_profile.get_top_values(limit=10)
 
         if not sorted_list:
-            self.write_string("Top Known Values", "no value found", indent=4)
+            self._print_line("Top Known Values", "no value found", indent=4)
             return
         elif sorted_list[0][1] == 1:
-            self.write_string("Top Known Values", "not shown - all are unique", indent=4)
+            self._print_line("Top Known Values", "not shown - all are unique", indent=4)
             return
 
-        self.write_string("Top Known Values", indent=4)
+        self._print_line("Top Known Values", indent=4)
         for (key, val) in sorted_list:
             if self.output_format == "readable":
-                self.write_string(key, f"x {val} occurrences", indent=8, key_width=30)
+                self._print_line(key, f"x {val} occurrences", indent=8, key_width=30)
             else:
-                self.write_string(key, val, indent=8, key_width=30)
+                self._print_line(key, val, indent=8, key_width=30)
 
 
-    def write_header(self,
+    def _print_header(self,
                      val: str = "",
                      indent: int = 0) -> None:
         if self.output_format == "readable":
@@ -545,7 +553,7 @@ class OutputWriter(object):
             pass
 
 
-    def write_string(self,
+    def _print_line(self,
                      key: str,
                      value: Any = " ",
                      indent: int = 0,
@@ -553,11 +561,11 @@ class OutputWriter(object):
                      use_repr: bool = False,
                      readable_only = False) -> None:
 
-        def parsify(val: str) -> str:
+        def shape(val: str) -> str:
             return '"%s"' % val.lower().replace(" ", "_").replace("_-_", "_")
 
-        if self.output_format == "parsable" and parsify(self.subsection) != "top_values":
-            trunc_key = parsify(key[:key_width])
+        if self.output_format == "parsable" and shape(self.subsection) != "top_values":
+            trunc_key = shape(key[:key_width])
             trunc_value = '"%s"' % str(value)[:30]
         else:
             trunc_key = key[:key_width]
@@ -572,11 +580,16 @@ class OutputWriter(object):
                                    "%s" % "", indent, trunc_key, key_width, trunc_value))
         elif self.output_format == "parsable":
             if not readable_only:
-                self.outfile.write("{0}|{1}|{2}|{3}|{4}\n".format(parsify(self.division),
-                                                                parsify(self.section),
-                                                                parsify(self.subsection),
-                                                                trunc_key,
-                                                                trunc_value))
+                self.outfile.write("{0}|{1}|{2}|{3}|{4}\n".format(shape(self.division),
+                                                                  shape(self.section),
+                                                                  shape(self.subsection),
+                                                                  trunc_key,
+                                                                  trunc_value))
+
+
+def make_gristle_field_name(name):
+    return name.strip().replace(' ', '_').lower()
+
 
 
 def float_truncator(numeric_value, max_decimals=3):
