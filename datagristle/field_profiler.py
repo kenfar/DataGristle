@@ -40,15 +40,11 @@ class FieldProfile(BaseModel):
     field_number: int
     field_name: str
     field_type: str
-    value_trunc: bool
-    value_min: Any
-    value_max: Any
-
-    field_profiled_cnt: int
     value_known_cnt: int
+    field_profiled_cnt: int
+    value_counts: dict[str, int]
+    value_trunc: bool
     value_unknown_cnt: int
-
-    value_counts: dict[Optional[str], Optional[int]]
 
 
     @validator('field_type')
@@ -73,90 +69,108 @@ class FieldProfile(BaseModel):
                       key=itemgetter(1),
                       reverse=True)[:limit]
 
+    def _get_common_display_properties(self):
+        display = []
+        display.append(('Type', self.field_type))
+        display.append(('Truncated', self.value_trunc))
+        display.append(('Min', self.value_min))
+        display.append(('Max', self.value_max))
+        return display
+
+    def get_display_properties(self):
+        display = self._get_common_display_properties()
+        for key, value in self.__dict__.items():
+            if 'counts' in key:
+                continue
+            if key.endswith('_cnt'):
+                continue
+            if key in [x[0] for x in display]:
+                continue
+            display.append((key, str(value)))
+        return display
+
+    def get_display_counts(self):
+        display = []
+        display.append(('Unique Values', str(len(self.value_counts))))
+        display.append(('Known Values', str(self.value_known_cnt)))
+        display.append(('Unknown Values', str(self.value_unknown_cnt)))
+        return display
+
 
 
 class FloatFieldProfile(FieldProfile):
-    field_number: int
-    field_name: str
-    field_type: str
-
-    field_profiled_cnt: int
-    value_known_cnt: int
-    value_unknown_cnt: int
-
-    value_trunc: bool
-
     value_min: float
     value_max: float
-    value_counts: dict[Optional[str], Optional[int]]
 
     value_mean: float
     value_median: float
     value_variance: float
     value_stddev: float
     value_decimals: int
+
+    def get_display_properties(self):
+        display = self._get_common_display_properties()
+        display.append(('Decimals', str(self.value_decimals)))
+        display.append(('Mean', float_truncator(self.value_mean)))
+        display.append(('Median', float_truncator(self.value_median)))
+        display.append(('Stddev', float_truncator(self.value_stddev)))
+        display.append(('Variance', float_truncator(self.value_variance)))
+        return display
+
 
 
 class IntegerFieldProfile(FieldProfile):
-    field_number: int
-    field_name: str
-    field_type: str
-
-    field_profiled_cnt: int
-    value_known_cnt: int
-    value_unknown_cnt: int
-
-    value_trunc: bool
-
     value_min: int
     value_max: int
-    value_counts: dict[Optional[str], Optional[int]]
 
     value_mean: float
     value_median: float
     value_variance: float
     value_stddev: float
-    value_decimals: int
+
+    def get_display_properties(self):
+        display = self._get_common_display_properties()
+        display.append(('Mean', float_truncator(self.value_mean)))
+        display.append(('Median', float_truncator(self.value_median)))
+        display.append(('Stddev', float_truncator(self.value_stddev)))
+        display.append(('Variance', float_truncator(self.value_variance)))
+        return display
+
 
 
 class StringFieldProfile(FieldProfile):
-    field_number: int
-    field_name: str
-    field_type: str
-
-    field_profiled_cnt: int
-    value_known_cnt: int
-    value_unknown_cnt: int
-
-    value_trunc: bool
     value_min: str
     value_max: str
-    value_counts: dict[str, int]
 
     value_case: str
     value_min_length: int
     value_max_length: int
     value_mean_length: float
 
+    def get_display_properties(self):
+        display = self._get_common_display_properties()
+        display.append(('Case', self.value_case))
+        display.append(('Min Length', self.value_min_length))
+        display.append(('Max Length', self.value_max_length))
+        display.append(('Mean Length', float_truncator(self.value_mean_length)))
+        return display
+
 
 
 class TimestampFieldProfile(FieldProfile):
-    field_number: int
-    field_name: str
-    field_type: str
-
-    field_profiled_cnt: int
-    value_known_cnt: int
-    value_unknown_cnt: int
-
-    value_trunc: bool
-
-    value_min: Any
-    value_max: Any
-    value_counts: dict[str, int]
+    value_min: dt.datetime
+    value_max: dt.datetime
     formatted_value_counts: dict[dt.datetime, int]
 
     field_format: str
+
+    def get_display_properties(self):
+        display = self._get_common_display_properties()
+        display = [x for x in display if x[0] not in ('Min', 'Max')]
+        display.append(('Format', self.field_format))
+        display.append(('Min', dt.datetime.strftime(self.value_min, self.field_format)))
+        display.append(('Max', dt.datetime.strftime(self.value_max, self.field_format)))
+        return display
 
 
 
@@ -169,8 +183,8 @@ class FieldProfileBuilder:
 
         self.field_number = field_number
         self.field_name = field_name
-        self.value_counts = {}
-        self.formatted_value_counts = {}
+        self.value_counts: dict[str, int] = {}
+        self.formatted_value_counts: dict[Any, int] = {}
         self.value_trunc = False
         self.max_items = max_items
         self.values_profiled_cnt = 0
@@ -220,12 +234,6 @@ class FieldProfileBuilder:
         self.invalid_row_cnt += 1
 
 
-    def get_clean_value_count(self,
-                              raw_values):
-
-        return sum([x[1] for x in raw_values])
-
-
     def build_formatted_value_counter(self):
         assert self.field_type
         assert self.field_format
@@ -243,21 +251,20 @@ class FieldProfileBuilder:
 
     def output(self):
 
+        common_fields = {'field_number':self.field_number,
+                         'field_name':self.field_name,
+                         'field_type':self.field_type,
+                         'field_profiled_cnt':self.values_profiled_cnt,
+                         'value_trunc':self.value_trunc}
+
         if self.field_type in ('integer'):
             num_values = NumericTypeFreq(self.value_counts.items(), self.field_type)
             mean = num_values.get_mean()
             (variance, stddev) = num_values.get_variance_and_stddev()
-            clean_value_cnt = self.get_clean_value_count(num_values.clean_values)
-
-            profile = IntegerFieldProfile(field_number=self.field_number,
-                                          field_name=self.field_name,
-                                          field_type=self.field_type,
-
-                                          field_profiled_cnt=self.values_profiled_cnt,
+            clean_value_cnt = num_values.get_clean_value_count()
+            profile = IntegerFieldProfile(**common_fields,
                                           value_known_cnt=clean_value_cnt,
                                           value_unknown_cnt=self.values_profiled_cnt - clean_value_cnt,
-
-                                          value_trunc=self.value_trunc,
                                           value_min=num_values.get_min(),
                                           value_max=num_values.get_max(),
                                           value_mean=mean,
@@ -270,37 +277,25 @@ class FieldProfileBuilder:
             num_values = NumericTypeFreq(self.value_counts.items(), self.field_type)
             mean = num_values.get_mean()
             (variance, stddev) = num_values.get_variance_and_stddev()
-            clean_value_cnt = self.get_clean_value_count(num_values.clean_values)
+            clean_value_cnt = num_values.get_clean_value_count()
 
-            profile = FloatFieldProfile(field_number=self.field_number,
-                                          field_name=self.field_name,
-                                          field_type=self.field_type,
-
-                                          field_profiled_cnt=self.values_profiled_cnt,
-                                          value_known_cnt=clean_value_cnt,
-                                          value_unknown_cnt=self.values_profiled_cnt - clean_value_cnt,
-
-                                          value_trunc=self.value_trunc,
-                                          value_min=num_values.get_min(),
-                                          value_max=num_values.get_max(),
-                                          value_mean=mean,
-                                          value_median=num_values.get_median(),
-                                          value_variance=variance,
-                                          value_stddev=stddev,
-                                          value_decimals=num_values.get_max_decimals(),
-                                          value_counts=self.value_counts)
+            profile = FloatFieldProfile(**common_fields,
+                                        value_known_cnt=clean_value_cnt,
+                                        value_unknown_cnt=self.values_profiled_cnt - clean_value_cnt,
+                                        value_min=num_values.get_min(),
+                                        value_max=num_values.get_max(),
+                                        value_mean=mean,
+                                        value_median=num_values.get_median(),
+                                        value_variance=variance,
+                                        value_stddev=stddev,
+                                        value_decimals=num_values.get_max_decimals(),
+                                        value_counts=self.value_counts)
         elif self.field_type in ('string'):
             str_values = StrTypeFreq(list(self.value_counts.items()))
-            clean_value_cnt = self.get_clean_value_count(str_values.clean_values)
-            profile = StringFieldProfile(field_number=self.field_number,
-                                          field_name=self.field_name,
-                                          field_type=self.field_type,
-
-                                          field_profiled_cnt=self.values_profiled_cnt,
+            clean_value_cnt = str_values.get_clean_value_count()
+            profile = StringFieldProfile(**common_fields,
                                           value_known_cnt=clean_value_cnt,
                                           value_unknown_cnt=self.values_profiled_cnt - clean_value_cnt,
-
-                                          value_trunc=self.value_trunc,
                                           value_min=str_values.get_min(),
                                           value_max=str_values.get_max(),
                                           value_case=str_values.get_case(),
@@ -311,16 +306,10 @@ class FieldProfileBuilder:
         elif self.field_type in ('timestamp'):
             ts_values = TimestampTypeFreq(self.formatted_value_counts.items(),
                                           self.field_format)
-            clean_value_cnt = self.get_clean_value_count(ts_values.clean_values)
-            profile = TimestampFieldProfile(field_number=self.field_number,
-                                          field_name=self.field_name,
-                                          field_type=self.field_type,
-
-                                          field_profiled_cnt=self.values_profiled_cnt,
+            clean_value_cnt = ts_values.get_clean_value_count()
+            profile = TimestampFieldProfile(**common_fields,
                                           value_known_cnt=clean_value_cnt,
                                           value_unknown_cnt=self.values_profiled_cnt - clean_value_cnt,
-
-                                          value_trunc=self.value_trunc,
                                           value_min=ts_values.get_min(),
                                           value_max=ts_values.get_max(),
                                           field_format=self.field_format,
@@ -329,21 +318,14 @@ class FieldProfileBuilder:
         elif self.field_type in ('unknown'):
             ts_values = TimestampTypeFreq(self.formatted_value_counts.items(),
                                           self.field_format)
-            clean_value_cnt = self.get_clean_value_count(ts_values.clean_values)
-            profile = FieldProfile(field_number=self.field_number,
-                                          field_name=self.field_name,
-                                          field_type=self.field_type,
-
-                                          field_profiled_cnt=self.values_profiled_cnt,
-                                          value_known_cnt=clean_value_cnt,
-                                          value_unknown_cnt=self.values_profiled_cnt - clean_value_cnt,
-
-                                          value_trunc=self.value_trunc,
-                                          value_min=ts_values.get_min(),
-                                          value_max=ts_values.get_max(),
-                                          field_format=self.field_format,
-                                          value_counts=self.value_counts,
-                                          formatted_value_counts=self.formatted_value_counts)
+            profile = FieldProfile(**common_fields,
+                                   value_known_cnt=ts_values.get_clean_value_count(),
+                                   value_unknown_cnt=self.values_profiled_cnt - ts_values.get_clean_value_count(),
+                                   value_min=ts_values.get_min(),
+                                   value_max=ts_values.get_max(),
+                                   field_format=self.field_format,
+                                   value_counts=self.value_counts,
+                                   formatted_value_counts=self.formatted_value_counts)
         else:
             raise ValueError(f'Invalid self.field_type: {self.field_type}')
 
@@ -374,7 +356,7 @@ class RecordProfiler:
         self.verbosity = verbosity
 
         self.field_profile_builders: dict[int, Any] = {}
-        self.field_profile: dict[int, FieldProfile] = {}
+        self.field_profile: dict[int, Union[TimestampFieldProfile, IntegerFieldProfile, FloatFieldProfile]] = {}
 
         self.invalid_rec_missing_fields_cnt = 0
         self.invalid_rec_extra_fields_cnt = 0
@@ -474,15 +456,23 @@ class TypeFreq:
 
         self.values = values
         self.field_type = field_type
-        self.clean_values: list[tuple] = self._value_cleaner(self.values)
+        self.clean_values: list[tuple] = []
+        self.unknown_values: list[tuple] = []
+        self.invalid_values: list[tuple] = []
+        self._separate_values()
 
 
-    def _value_cleaner(self,
-                       values: FreqType):
+    def _separate_values(self):
+        for value, count in self.values:
+            if value == '' or typer.is_unknown(value):
+                self.unknown_values.append((value, count))
+            else:
+                self.clean_values.append((value, count))
 
-        return [x for x in self.values
-               if x != ''
-               and not typer.is_unknown(x[0])]
+
+
+    def get_clean_value_count(self):
+        return sum([x[1] for x in self.clean_values])
 
 
     def get_min(self):
@@ -634,9 +624,9 @@ class TimestampTypeFreq(TypeFreq):
         else:
             min_val = min([x[0] for x in self.clean_values])
             if min_val:
-                 self.min = min_val
+                self.min = min_val
             else:
-                 self.min = None
+                self.min = None
             return self.min
 
 
@@ -654,9 +644,9 @@ class TimestampTypeFreq(TypeFreq):
         else:
             max_val = max([x[0] for x in self.clean_values])
             if max_val:
-                 self.max = max_val
+                self.max = max_val
             else:
-                 self.max = None
+                self.max = None
             return self.max
 
 
@@ -677,25 +667,25 @@ class NumericTypeFreq(TypeFreq):
         self.stddev: float
 
 
-    def _value_cleaner(self,
-                       values: NumericFreqType) -> NumericFreqType:
+    def _separate_values(self):
         """
         Raises: TypeError if input is None
         """
+        values = self.values
         if values is None:
             raise TypeError('invalid input is None')
         isnumeric = common.isnumeric
         cleaned = []
+        cleaned = self.clean_values
         for value in values:
             if not isnumeric(value[0]):
-                continue
+                self.invalid_values.append(value)
             if not isnumeric(value[1]):
-                continue
+                self.invalid_values.append(value)
             try:
                 cleaned.append((self.cast_numeric(value[0], self.field_type), value[1]))
             except ValueError:
                 continue
-        return cleaned
 
 
     def get_mean(self):
@@ -753,7 +743,7 @@ class NumericTypeFreq(TypeFreq):
         return (center_bottom_value + center_top_value) / 2
 
 
-    def get_variance_and_stddev(self) -> tuple[float, int]:
+    def get_variance_and_stddev(self) -> tuple[float, float]:
         ''' Calculates the variance & population stddev of a frequency distribution.
 
         The calculation takes into consideration the number of times each value
@@ -822,6 +812,20 @@ class NumericTypeFreq(TypeFreq):
             raise ValueError('{} is not numeric'.format(val))
         else:
             return int_val
+
+
+def float_truncator(numeric_value, max_decimals=3):
+    """ trim unnecessary digits
+
+    Note though that quoted integers may be recorded with a single digit of precision,
+    and max_decimals of 1.   So, when this is run on an unquoted file it will produce
+    two decimals, but on a quoted file three.
+    """
+    str_value = str(numeric_value)
+    assert str_value.count('.') <= 1
+    return f'{numeric_value:.{max_decimals+2}f}'
+
+
 
 
 class NoDataError(ValueError):

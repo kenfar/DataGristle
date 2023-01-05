@@ -469,6 +469,7 @@ class OutputWriter(object):
                             my_fields: field_profiler.RecordProfiler,
                             col_position: int,
                             has_header: bool) -> None:
+
         self.write_header()
         self.write_header("Field Analysis Results")
         self.division = "Field Analysis Results"
@@ -488,64 +489,34 @@ class OutputWriter(object):
             if field_profile.value_trunc:
                 self.write_string("Data Truncated", "analysis based on subset", indent=4)
 
-            self.write_field_profile(my_fields, sub)
-            self.write_field_counts(my_fields, sub)
+            self.write_field_profile(field_profile)
 
-            if self.myfile.record_cnt > 1 or (self.myfile.record_cnt == 1 and not has_header):
-                self.write_field_freq(my_fields, sub)
+            self.write_field_counts(field_profile)
+
+            self.write_field_freq(field_profile)
 
 
     def write_field_profile(self,
-                            my_fields: field_profiler.RecordProfiler,
-                            col_no: int):
+                            field_profile: field_profiler.FieldProfile):
 
-        field_profile = my_fields.field_profile[col_no]
-        #self.subsection = "main"
         self.write_string("Profile", indent=4, readable_only=True)
-
-        self.write_string("Type", field_profile.field_type, indent=8, key_width=30)
-        if field_profile.field_type == "timestamp":
-            self.write_string("Min", field_profile.value_min.strftime(
-                field_profile.field_format), indent=8, key_width=30)
-            self.write_string("Max", field_profile.value_min.strftime(
-                field_profile.field_format), indent=8, key_width=30)
-        else:
-            self.write_string("Min", field_profile.value_min, indent=8, key_width=30)
-            self.write_string("Max", field_profile.value_max, indent=8, key_width=30)
-
-        if field_profile.field_type in ("integer", "float"):
-            max_decimals = field_profile.value_decimals
-            self.write_string("Mean", float_truncator(field_profile.value_mean, max_decimals), indent=8, key_width=30)
-            self.write_string("Median", float_truncator(field_profile.value_median, max_decimals), indent=8, key_width=30)
-            self.write_string("Variance", float_truncator(field_profile.value_variance, max_decimals), indent=8, key_width=30)
-            self.write_string("Std Dev", float_truncator(field_profile.value_stddev, max_decimals), indent=8, key_width=30)
-            if field_profile.field_type == 'float':
-                self.write_string("Max Decimal Places", field_profile.value_decimals, indent=8, key_width=30)
-        elif field_profile.field_type == "string":
-            self.write_string("Case", field_profile.value_case, indent=8, key_width=30)
-            self.write_string("Min Length", field_profile.value_min_length, indent=8, key_width=30)
-            self.write_string("Max Length", field_profile.value_max_length, indent=8, key_width=30)
-            self.write_string("Mean Length", field_profile.value_mean_length, indent=8, key_width=30)
+        for key, value in field_profile.get_display_properties():
+            self.write_string(key, value, indent=8, key_width=30)
 
 
     def write_field_counts(self,
-                         my_fields: field_profiler.RecordProfiler,
-                         col_no: int):
+                           field_profile: field_profiler.FieldProfile):
 
-        field_profile = my_fields.field_profile[col_no]
         self.subsection = "main"
         self.write_string("Counts", indent=4, readable_only=True)
-        #self.write_string("Profiled Field Cnt", field_profile.field_profiled_cnt, indent=8, key_width=30)
-        self.write_string("Unique Values", len(field_profile.value_counts), indent=8, key_width=30)
-        self.write_string("Known Values", field_profile.value_known_cnt, indent=8, key_width=30)
-        self.write_string("Unknown Values", field_profile.value_unknown_cnt, indent=8, key_width=30)
+        for key, value in field_profile.get_display_counts():
+            self.write_string(key, value, indent=8, key_width=30)
 
 
     def write_field_freq(self,
-                         my_fields: field_profiler.RecordProfiler,
-                         col_no: int):
-        """Writes out the top_values section for a single column."""
-        field_profile = my_fields.field_profile[col_no]
+                         field_profile: field_profiler.FieldProfile):
+        """Writes out the top_values section for a single column.
+        """
 
         self.subsection = "top_values"
         sorted_list = field_profile.get_top_values(limit=10)
@@ -553,8 +524,7 @@ class OutputWriter(object):
         if not sorted_list:
             self.write_string("Top Known Values", "no value found", indent=4)
             return
-
-        if sorted_list[0][1] == 1:
+        elif sorted_list[0][1] == 1:
             self.write_string("Top Known Values", "not shown - all are unique", indent=4)
             return
 
@@ -609,7 +579,7 @@ class OutputWriter(object):
                                                                 trunc_value))
 
 
-def float_truncator(numeric_value, max_decimals):
+def float_truncator(numeric_value, max_decimals=3):
     """ trim unnecessary digits
 
     Note though that quoted integers may be recorded with a single digit of precision,
