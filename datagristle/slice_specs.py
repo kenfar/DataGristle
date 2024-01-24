@@ -51,7 +51,7 @@ import sys
 from typing import List, Dict, Tuple, Union, Any, Optional, Type
 
 from pydantic.dataclasses import dataclass
-from pydantic import BaseModel, ValidationError, validator, root_validator
+from pydantic import BaseModel, ValidationError, model_validator, field_validator
 
 import datagristle.common as comm
 import datagristle.csvhelper as csvhelper
@@ -84,25 +84,25 @@ class SpecRecord(BaseModel):
     col_default_range: bool
     rec_default_range: bool
 
-    @validator('start')
+    @field_validator('start')
     def start_must_be_positive(cls, val) -> int:
         if val < 0:
             comm.abort('start must be >= 0')
         return val
 
-    @validator('stop')
+    @field_validator('stop')
     def stop_must_be_positive(cls, val) -> int:
         if val < -1:
             comm.abort(f'stop must be >= 0, is {val}')
         return val
 
-    @validator('step')
+    @field_validator('step')
     def step_must_be_nonzero(cls, val) -> float:
         if val == 0:
             comm.abort('step must be non-zero')
         return val
 
-    @root_validator()
+    @model_validator(mode='before')
     def start_stop_relationship(cls, values: Dict) -> Dict:
         start = values['start']
         stop = values['stop']
@@ -116,7 +116,7 @@ class SpecRecord(BaseModel):
                            'negative specs require the start (start:stop:step) to be AFTER the stop')
         return values
 
-    @root_validator()
+    @model_validator(mode='before')
     def limit_steps_to_inclusions(cls, values: Dict) -> Dict:
         spec_type = values.get('spec_type')
         step = values.get('step')
@@ -125,7 +125,7 @@ class SpecRecord(BaseModel):
                 comm.abort(f'Error: exclusion spec is not allowed to have steps: {step}')
         return values
 
-    @root_validator()
+    @model_validator(mode='before')
     def limit_col_default_range_to_cols(cls, values: Dict) -> Dict:
         spec_type = values.get('spec_type')
         col_default_range = values.get('col_default_range')
@@ -134,7 +134,7 @@ class SpecRecord(BaseModel):
              comm.abort(f'Error: col_default_range set for a record spec')
         return values
 
-    @root_validator()
+    @model_validator(mode='before')
     def limit_rec_default_range_to_recs(cls, values: Dict) -> Dict:
         spec_type = values.get('spec_type')
         rec_default_range = values.get('rec_default_range')
