@@ -1,7 +1,0 @@
-{% extends "layout.html" %}
-
-{% block body %}
-<form method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid }}/delete">
-	<p><input type=submit value="Are you Sure?" method=post action="/schema{{ sid }}/collection{{ cid }}/field{{ fid}}/delete">
-</form>
-{% endblock body %}

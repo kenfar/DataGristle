@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "datagristle"
+version = "0.3.0"
+description = "Datagristle is a toolbox of tough and flexible command line tools for working with data. It's kind of an interactive mix between ETL and data analysis optimized for rapid analysis and manipulation of a wide variety of data at the command line."
+authors = ["ken farmer <kenfar@gmail.com>"]
+license = "BSD"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+appdirs = "^1.4.4"
+colorama = "^0.4.6"
+envoy = "^0.0.3"
+jsonschema = "3.2.0"  # last version that doesn't break
+more-itertools = "^10.2.0"
+psutil = "^5.9.8"
+pydantic = "^2.5.3"
+ruamel-yaml = "^0.18.5"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.0"
+pytest = "^7.4.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ['datagristle']

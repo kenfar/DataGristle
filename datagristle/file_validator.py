@@ -351,14 +351,11 @@ def config_validation_detailed(schema):
     are very difficult to read.
     """
 
-    jsonschema.validate(instance=None, schema=schema)
     try:
         jsonschema.validate(instance=None, schema=schema)
     except jsonschema.exceptions.SchemaError as err:
         msgs = ['See jsonschema docs for help: https://json-schema.org/understanding-json-schema/']
-        for msg in err.context:
-            msgs.append(repr(msg))
+        msgs.append(str(err))
         msg_str = '\n'.join(msgs)
         comm.abort('Error: schema is invalid - failed jsonschema validation', msg_str)
 
-        #'See jsonschema docs for help: https://json-schema.org/understanding-json-schema/',
